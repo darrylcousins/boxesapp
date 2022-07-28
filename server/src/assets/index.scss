@@ -1,0 +1,12 @@
+@import "./variables.scss";
+@import "tachyons/src/tachyons.css";
+@import "@fortawesome/fontawesome-free/scss/fontawesome.scss";
+@import "@fortawesome/fontawesome-free/scss/solid.scss";
+@import "./styles/styles.scss";
+body {
+  font-family: Quattrocento Sans,sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  color: #4a4a4a;
+  line-height: 1.225;
+}

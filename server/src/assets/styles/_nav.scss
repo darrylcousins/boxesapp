@@ -1,0 +1,16 @@
+.menu {
+  display: none;
+}
+
+#burger:checked ~ .menu {
+  display: block;
+}
+
+li a:hover, li a:target {
+  color: #4BC0A9;
+}
+
+li a:hover span {
+  color: black;
+}
+

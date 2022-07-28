@@ -1,0 +1,9 @@
+#saveBar {
+  max-height: 0px;
+  overflow: hidden;
+  transition: max-height 0.85s ease-out;
+  background-color:rgba(51, 51, 51, 0.9);
+}
+#saveBar.open {
+  max-height: 100px;
+}

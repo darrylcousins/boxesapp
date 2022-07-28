@@ -1,0 +1,89 @@
+@import '_bar-loader.scss';
+@import '_spin-loader.scss';
+@import '_animation.scss';
+@import '_data-table.scss';
+@import '_nav.scss';
+@import '_info.scss';
+@import '_help.scss';
+@import '_push-menu.scss';
+@import '_input-icon.scss';
+@import '_skeleton.scss';
+@import '_save-bar.scss';
+@import 'app.scss';
+
+/*Hide info of no checked inputs for tabbed display */
+/*
+.tabs__content input:not(:checked) ~ .tabs__content__info {
+  display: none;
+}
+*/
+
+@media only screen and (min-width: 960px) {
+  h1#store {
+    color: #333;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+  }
+}
+
+.sticky-settings {
+  position: fixed;
+  top: 50px;
+  background-color: #fff;
+  width: 55%;
+}
+
+/* form elements */
+input:valid {
+  border-color: green;
+}
+input.invalid {
+  border-color: #b55103;
+}
+textarea:valid {
+  border-color: green;
+}
+textarea.invalid {
+  border-color: #b55103;
+}
+.hidden {
+  visibility: hidden;
+}
+
+.fg-streamside-blue {
+  color: #162842;
+}
+.bg-streamside-blue {
+  background-color: #162842;
+}
+.b--streamside-blue {
+  border-color: #162842;
+}
+.fg-streamside-maroon {
+  color: #4e1018;
+}
+.bg-streamside-maroon {
+  background-color: #4e1018;
+}
+.b--streamside-maroon {
+  border-color: #4e1018;
+}
+.fg-streamside-orange {
+  color: #b55103;
+}
+.bg-streamside-orange {
+  background-color: #b55103;
+}
+.b--streamside-orange {
+  border-color: #b55103;
+}
+.fg-streamside-green {
+  color: #332912;
+}
+.bg-streamside-green {
+  background-color: #332912;
+}
+.b--streamside-green {
+  border-color: #332912;
+}

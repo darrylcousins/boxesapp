@@ -5,6 +5,9 @@
 *.swp
 *.swo
 
+# any back up files saved temporarily
+bak
+
 # Dependency directory
 node_modules
 

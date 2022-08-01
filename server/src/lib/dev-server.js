@@ -3,14 +3,15 @@
  */
 
 import { resolve } from "path";
+
 /*
  * create and return the development server
  */
-export default async ({ app, root }) => {
+export default async ({ app, root, isTest }) => {
   return await import("vite").then(({ createServer }) => {
     return createServer({
       root,
-      logLevel: "info",
+      logLevel: isTest ? "error" : "info",
       configFile: resolve(root, "config/vite.js"),
       server: {
         port: process.env.PORT,

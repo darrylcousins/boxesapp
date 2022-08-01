@@ -70,24 +70,26 @@ logger.stream = {
   },
 };
 
-const mongo_uri = `mongodb://localhost/${process.env.DB_NAME}`;
-//const mongo_options = { useNewUrlParser: true, useUnifiedTopology: true };
-const mongo_options = { useUnifiedTopology: true };
+if (process.env.NODE_ENV !== 'test') {
+  const mongo_uri = `mongodb://localhost/${process.env.DB_NAME}`;
+  //const mongo_options = { useNewUrlParser: true, useUnifiedTopology: true };
+  const mongo_options = { useUnifiedTopology: true };
 
-// logger transport to log all actions on objects
-// this is made available in the app as globals._logger
-// notice level used to log changes made to objects
-// e.g. order created, subscription created etc
-// use 'metadata' to add ids and similar
-logger.add(
-  new winston.transports.MongoDB({
-    level: "notice",
-    db: mongo_uri,
-    options: mongo_options,
-    collection: 'logs',
-    metaKey: 'meta'
-  })
-);
+  // logger transport to log all actions on objects
+  // this is made available in the app as globals._logger
+  // notice level used to log changes made to objects
+  // e.g. order created, subscription created etc
+  // use 'metadata' to add ids and similar
+  logger.add(
+    new winston.transports.MongoDB({
+      level: "notice",
+      db: mongo_uri,
+      options: mongo_options,
+      collection: 'logs',
+      metaKey: 'meta'
+    })
+  );
+};
 
 // separate logger for console logging of requests using morgan
 const morganLogger = winston.createLogger({

@@ -8,6 +8,7 @@ import { graphql, rest } from 'msw'
 import "isomorphic-fetch";
 
 import { serve } from "./serve.js";
+import { Shopify } from "../lib/shopify/index.js";
 
 const SHOP_NAME = "test-shop";
 
@@ -22,14 +23,19 @@ describe("shopify-app-node server", async () => {
   *   expires_in: ?
   */
 
-  const url = `https://${process.env.SHOP}/admin/oauth/access_token`;
   const restHandlers = [
-    rest.post(url, (req, res, ctx) => {
-      //console.log(req.body);
+    rest.post(`https://${process.env.SHOP}/admin/oauth/access_token`, (req, res, ctx) => {
       return res(ctx.status(200), ctx.json({
         code: req.body.code,
         accessToken: btoa("accessToken"),
         scopes: process.env.SHOPIFY_SCOPES,
+      }))
+    }),
+    rest.post(`https://${process.env.SHOP}/webhooks`, (req, res, ctx) => {
+      return res(ctx.status(200), ctx.json({
+        webhook: {
+          id: 11111111
+        }
       }))
     }),
   ];
@@ -40,8 +46,11 @@ describe("shopify-app-node server", async () => {
   const server = setupServer(...restHandlers, ...graphqlHandlers)
 
   // Start server before all tests
-  beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
-  //beforeAll(() => server.listen())
+  beforeAll(async () => {
+    server.listen({ onUnhandledRequest: 'bypass' });
+    await Shopify.initialize();
+    Shopify.Registry.addHandler({topic: "TEST_HELLO", path: "shopify", handler: () => {}});
+  })
   
   // Reset handlers after each test `important for test isolation`
   afterEach(() => server.resetHandlers())
@@ -121,10 +130,6 @@ describe("shopify-app-node server", async () => {
   describe("handles the callback correctly", () => {
 
     test("redirects to / with the shop and host if nothing goes wrong", async () => {
-      /*
-       Spy on the mongodb shopify_sessions collection
-       Spy on the mongodb registry collection with label shopify
-      */
 
       const code = btoa("code");
       const host = btoa(`myhost`);
@@ -134,106 +139,52 @@ describe("shopify-app-node server", async () => {
 
       expect(response.status).toEqual(302);
       expect(response.headers.location).toEqual(
-        `/?shop=${process.env.SHOP}&host=myhost`
+        `/?shop=${process.env.SHOP}&host=${host}`
       );
 
     });
 
-  /*
     test("returns 400 if oauth is invalid", async () => {
-      vi.spyOn(Shopify.Auth, "validateAuthCallback").mockImplementationOnce(
-        () => {
-          throw new Shopify.Errors.InvalidOAuthError("test 400 response");
-        }
-      );
-
+      const host = btoa(`myhost`);
       const response = await request(app).get(
-        `/auth/callback?host=${SHOP_NAME}-host`
+        `/auth/callback?host=${host}`
       );
 
       expect(response.status).toEqual(400);
-      expect(response.text).toContain("test 400 response");
     });
 
-    test("redirects to auth if cookie is not found", async () => {
-      vi.spyOn(Shopify.Auth, "validateAuthCallback").mockImplementationOnce(
-        () => {
-          throw new Shopify.Errors.CookieNotFound("cookie not found");
-        }
-      );
-
-      const response = await request(app).get(
-        `/auth/callback?host=${SHOP_NAME}-host&shop=${SHOP_NAME}`
-      );
-
-      expect(response.status).toEqual(302);
-      expect(response.headers.location).toEqual(`/auth?shop=${SHOP_NAME}`);
-    });
-
-    test("redirects to auth if session is not found", async () => {
-      vi.spyOn(Shopify.Auth, "validateAuthCallback").mockImplementationOnce(
-        () => {
-          throw new Shopify.Errors.SessionNotFound("session not found");
-        }
-      );
-
-      const response = await request(app).get(
-        `/auth/callback?host=${SHOP_NAME}-host&shop=${SHOP_NAME}`
-      );
-
-      expect(response.status).toEqual(302);
-      expect(response.headers.location).toEqual(`/auth?shop=${SHOP_NAME}`);
-    });
-
-    test("returns a 500 error otherwise", async () => {
-      vi.spyOn(Shopify.Auth, "validateAuthCallback").mockImplementationOnce(
-        () => {
-          throw new Error("test 500 response");
-        }
-      );
-
-      const response = await request(app).get(
-        `/auth/callback?host=${SHOP_NAME}-host&shop=${SHOP_NAME}`
-      );
-
-      expect(response.status).toEqual(500);
-      expect(response.text).toContain("test 500 response");
-    });
-    */
   });
 
-  /*
   describe("webhook processing", () => {
-    const process = vi.spyOn(Shopify.Webhooks.Registry, "process");
 
     test.concurrent("processes webhooks", async () => {
-      Shopify.Webhooks.Registry.addHandler("TEST_HELLO", {
-        path: "/webhooks",
-        webhookHandler: () => {},
+
+      const body = JSON.stringify({
+        shop: process.env.SHOP
       });
 
       const response = await request(app)
-        .post("/webhooks")
+        .post("/shopify")
         .set(
           "X-Shopify-Hmac-Sha256",
-          createHmac("sha256", Shopify.Context.API_SECRET_KEY)
-            .update("{}", "utf8")
+          createHmac("sha256", process.env.SHOPIFY_API_SECRET)
+            .update(body, "utf8")
             .digest("base64")
         )
         .set("X-Shopify-Topic", "TEST_HELLO")
-        .set("X-Shopify-Shop-Domain", `${SHOP_NAME}`)
-        .send("{}");
+        .set("X-Shopify-Shop-Domain", `${process.env.SHOP}`)
+        .send(body);
 
       expect(response.status).toEqual(200);
-      expect(process).toHaveBeenCalledTimes(1);
     }, 12000);
 
+  /*
     test("returns a 500 error if webhooks do not process correctly", async () => {
       process.mockImplementationOnce(() => {
         throw new Error("test 500 response");
       });
 
-      const response = await request(app).post("/webhooks");
+      const response = await request(app).post("/shopify");
 
       expect(response.status).toEqual(500);
       expect(response.text).toContain("test 500 response");
@@ -253,8 +204,10 @@ describe("shopify-app-node server", async () => {
       expect(consoleSpy).toHaveBeenCalled();
       expect(consoleSpy.mock.lastCall[0]).toContain("something went wrong");
     });
+    */
   });
 
+  /*
   describe("content-security-policy", () => {
 
     test("sets Content Security Policy for embedded apps", async () => {

@@ -10,8 +10,8 @@ import "isomorphic-fetch";
 
 import topLevelAuthRedirect from "../lib/top-level-auth-redirect.js";
 import embeddedApp from "../lib/embedded-app.js";
-import digestMessage from "../lib/digest-message.js";
-//import { webhook_topics } from "../helpers/shopify.js";
+import { addShopifyWebhooks } from "../lib/shopify/webhooks.js";
+import { Shopify } from "../lib/shopify/index.js";
 
 export default function applyAuthMiddleware({ app }) {
 
@@ -69,6 +69,7 @@ export default function applyAuthMiddleware({ app }) {
 
   app.get("/auth", async (req, res) => {
     if (!req.signedCookies[app.get("top-level-oauth-cookie")]) {
+      // yes { shopify_top_level_oauth: 1 }
       return res.redirect(
         `/auth/toplevel?${new URLSearchParams(req.query).toString()}`
       );
@@ -92,8 +93,6 @@ export default function applyAuthMiddleware({ app }) {
       httpOnly: true,
       sameSite: "strict",
     });
-
-    console.log(req.query.host);
 
     res.set("Content-Type", "text/html");
     res.send(
@@ -134,6 +133,7 @@ export default function applyAuthMiddleware({ app }) {
      *
      * Then store the shop and response the collection shopify_sessions
      */
+    // no signed cookies here (see auth/)
 
     const params = { ...req.query };
 
@@ -142,10 +142,12 @@ export default function applyAuthMiddleware({ app }) {
     let state;
     let hmac;
 
+    if (!params.hasOwnProperty("shop")) {
+      return res.status(400).send();
+    };
     // check host
     if (params.hasOwnProperty("host")) {
       host = atob(params.host); // decode hostname
-      console.log(host);
       // southbridge-dev.myshopify.com/admin
     };
 
@@ -197,13 +199,13 @@ export default function applyAuthMiddleware({ app }) {
     session.timestamp = new Date().getTime();
     // store the session
     const result = await _mongodb.collection("shopify_sessions").insertOne(session);
+    await Shopify.addToken(session.access_token); // add in the token
+    addShopifyWebhooks(); // now we can add webhooks after install
 
     // this redirect shop pass the shop/session check now with the stored accessToken
     return res.redirect(`/?shop=${session.shop}&host=${params.host}`);
 
     try {
-
-      console.log(params);
 
       /*
       _logger.notice(`Auth callback.`, { meta: { app: { token: session.accessToken, scope: session.scope }} });

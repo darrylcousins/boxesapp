@@ -35,9 +35,6 @@ export default {
   build: {
     sourcemap: false,
     rollupOptions: {
-      input: {
-        app: fileURLToPath(new URL("../src/assets/index.html", import.meta.url)),
-      },
       output: {
         manualChunks: {
           vendor: vendors,

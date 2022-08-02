@@ -9,9 +9,14 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 
 import { morganLogger, winstonLogger, consoleFormat } from "./../config/winston.js"
-import { getMongoConnection, MongoStore } from "./lib/mongo.js";
-import { getMockConnection } from "./lib/mongo-mock.js";
+
+import { getMongoConnection, MongoStore } from "./lib/mongo/mongo.js";
+import { getMockConnection } from "./lib/mongo/mongo-mock.js";
 import getDevServer from "./lib/dev-server.js";
+import { Shopify } from "./lib/shopify/index.js";
+import { addShopifyWebhooks } from "./lib/shopify/webhooks.js";
+
+import applyShopifyWebhooks from "./middleware/shopify-webhooks.js";
 import applyAuthMiddleware from "./middleware/auth.js";
 
 import "dotenv/config";
@@ -25,19 +30,12 @@ global._mongodb = (process.env.NODE_ENV !== "test") ? await getMongoConnection()
 // usage: _logger(`{_filename(import.meta)} my log message`);
 global._filename = (_meta) => _meta.url.split("/").pop();
 
-/* store registered webhooks */
-const WebhookRegistry = new MongoStore({
-  mongodb: _mongodb,
-  collection: "registry"
-});
-
-/* store oauth tokens */
-const TokenStore = new MongoStore({
-  mongodb: _mongodb,
-  collection: "shopify_sessions"
-});
-
 const isTest = process.env.NODE_ENV === "test" || !!process.env.VITE_TEST_BUILD;
+
+if (!isTest) {
+  await Shopify.initialize();
+  if (Shopify.Context.ACCESS_TOKEN) addShopifyWebhooks();
+};
 
 export async function createServer(
   root = process.cwd(),
@@ -62,6 +60,10 @@ export async function createServer(
   app.use(cookieParser(process.env.SHOPIFY_API_SECRET));
   // checks for 'shop' parameter for (re)installing app
   applyAuthMiddleware({ app });
+  // handles webhooks using registry
+  if (!isTest) {
+    applyShopifyWebhooks({ app, Shopify });
+  };
 
   let vite;
 

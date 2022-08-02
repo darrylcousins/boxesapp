@@ -2,11 +2,18 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import appUninstalled from "../../webhooks/shopify/app-uninstalled.js";
 import { Shopify } from "./index.js";
+
+import appUninstalled from "../../webhooks/shopify/app-uninstalled.js";
+import ordersCreate from "../../webhooks/shopify/orders-create.js";
+import ordersUpdated from "../../webhooks/shopify/orders-updated.js";
+import productsUpdate from "../../webhooks/shopify/products-update.js";
 
 export const webhook_topics = {
   "APP_UNINSTALLED": appUninstalled,
+  "ORDERS_CREATE": ordersCreate,
+  "ORDERS_UPDATED": ordersUpdated,
+  "PRODUCTS_UPDATE": productsUpdate,
 };
 
 export const addShopifyWebhooks = () => {

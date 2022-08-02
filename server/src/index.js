@@ -15,9 +15,18 @@ import { getMockConnection } from "./lib/mongo/mongo-mock.js";
 import getDevServer from "./lib/dev-server.js";
 import { Shopify } from "./lib/shopify/index.js";
 import { addShopifyWebhooks } from "./lib/shopify/webhooks.js";
+import { Recharge } from "./lib/recharge/index.js";
+import { addRechargeWebhooks } from "./lib/recharge/webhooks.js";
 
 import applyShopifyWebhooks from "./middleware/shopify-webhooks.js";
+import applyRechargeWebhooks from "./middleware/recharge-webhooks.js";
 import applyAuthMiddleware from "./middleware/auth.js";
+import apiMiddleware from "./middleware/api.js";
+
+import verifyHost from "./middleware/verify-host.js";
+import { verifyProxy, verifyProxyAdmin, verifyProxyCustomer } from "./middleware/verify-proxy.js";
+
+import api from "./api/index.js";
 
 import "dotenv/config";
 
@@ -34,7 +43,11 @@ const isTest = process.env.NODE_ENV === "test" || !!process.env.VITE_TEST_BUILD;
 
 if (!isTest) {
   await Shopify.initialize();
-  if (Shopify.Context.ACCESS_TOKEN) addShopifyWebhooks();
+  await Recharge.initialize();
+  if (Shopify.Context.ACCESS_TOKEN) {
+    addShopifyWebhooks();
+    addRechargeWebhooks();
+  };
 };
 
 export async function createServer(
@@ -62,8 +75,23 @@ export async function createServer(
   applyAuthMiddleware({ app });
   // handles webhooks using registry
   if (!isTest) {
-    applyShopifyWebhooks({ app, Shopify });
+    applyShopifyWebhooks({ app });
+    applyRechargeWebhooks({ app });
   };
+
+  app.use('/api', apiMiddleware({}));
+  app.use('/api', api);
+
+  app.use('/proxy/api', apiMiddleware({}));
+  app.use('/proxy/api', api);
+
+  app.use("/proxy", verifyProxy({ app }));
+
+  // check query parameters and determine access
+  app.use("/proxy/admin-portal", verifyProxyAdmin({ app }));
+  app.use("/proxy/customer-portal", verifyProxyCustomer({ app }));
+
+  app.use(express.json()); // json for api
 
   let vite;
 

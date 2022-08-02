@@ -1,6 +1,7 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
+import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 
 export default async function appUninstalled(topic, shop, body) {
 
@@ -10,8 +11,17 @@ export default async function appUninstalled(topic, shop, body) {
     return;
   };
 
+  const rechargeIds = await _mongodb.collection("registry").find({service: "recharge"}).toArray();
   const shops = await _mongodb.collection("shopify_sessions").deleteMany({shop});
-  const webhooks = await _mongodb.collection("registry").deleteMany({service: "shopify"});
+  // delete all registered webhooks
+  const webhooks = await _mongodb.collection("registry").deleteMany({});
+  // also now delete the webhooks from recharge
+  for (const id of rechargeIds.map(el => el.webhook_id)) {
+    const deleteResult = await makeRechargeQuery({
+      method: "DELETE",
+      path: `webhooks/${id}`,
+    });
+  };
 
   const meta = {
     shopify: {
@@ -19,6 +29,7 @@ export default async function appUninstalled(topic, shop, body) {
       shop,
       deleted_shops: shops.deletedCount,
       deleted_webhooks: webhooks.deletedCount,
+      deleted_recharge: rechargeIds.length,
     }
   };
   _logger.notice(`Shop webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });

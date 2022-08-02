@@ -71,7 +71,7 @@ export const mongoInsert = async (collection, data) => {
 };
 
 /*
- * @class mongoRemove
+ * @class mongoStore
  */
 export class MongoStore {
 

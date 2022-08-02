@@ -103,7 +103,7 @@ export default class Registry {
    * Check that we have stored the webhook otherwise post the webhook
    */
   async addHandler({topic, path, handler}) {
-    const existing = await this.Store.getItem({topic});
+    const existing = await this.Store.getItem({topic, service: "shopify"});
     if (existing) {
       // double check by calling to api
       const options = {
@@ -158,10 +158,10 @@ export default class Registry {
           topic,
           webhook_id: data.webhook.id,
         };
-        this.Store.setItem(doc, {topic}); // upsert if found the topic
+        this.Store.setItem(doc, {topic, service: "shopify"}); // upsert if found the topic
         this.Handlers[topic] = handler;
         success = true;
-        meta.shopify = { topic };
+        meta.shopify = { topic, id: data.webhook.id };
         _logger.notice(`Shop webhook ${topic.toLowerCase().replace(/_/g, "/")} registered.`, { meta });
       } else {
         errors = typeof(data.errors) === "string" ? { error: data.errors } : data.errors;

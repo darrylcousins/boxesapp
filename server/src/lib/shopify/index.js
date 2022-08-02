@@ -26,7 +26,6 @@ export const Shopify = {
 
     this.Context.initialize(context);
     this.Registry = new Registry({
-      context: this.Context,
       store: new MongoStore({
         mongodb: _mongodb,
         collection: "registry"

@@ -2,7 +2,9 @@
   * Middleware for shopify setup
   *
  */
-export default function applyShopifyWebhooks({ app, Shopify }) {
+import { Shopify } from "../lib/shopify/index.js";
+
+export default function applyShopifyWebhooks({ app }) {
 
   app.post("/shopify", async (req, res) => {
     // Hmac/hash check takes place in registry.process!!

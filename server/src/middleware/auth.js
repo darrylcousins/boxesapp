@@ -11,6 +11,7 @@ import "isomorphic-fetch";
 import topLevelAuthRedirect from "../lib/top-level-auth-redirect.js";
 import embeddedApp from "../lib/embedded-app.js";
 import { addShopifyWebhooks } from "../lib/shopify/webhooks.js";
+import { addRechargeWebhooks } from "../lib/recharge/webhooks.js";
 import { Shopify } from "../lib/shopify/index.js";
 
 export default function applyAuthMiddleware({ app }) {
@@ -201,38 +202,12 @@ export default function applyAuthMiddleware({ app }) {
     const result = await _mongodb.collection("shopify_sessions").insertOne(session);
     await Shopify.addToken(session.access_token); // add in the token
     addShopifyWebhooks(); // now we can add webhooks after install
+    addRechargeWebhooks(); // now we can add webhooks after install
 
     // this redirect shop pass the shop/session check now with the stored accessToken
     return res.redirect(`/?shop=${session.shop}&host=${params.host}`);
 
     try {
-
-      /*
-      _logger.notice(`Auth callback.`, { meta: { app: { token: session.accessToken, scope: session.scope }} });
-
-      const topics = [ ...Object.keys(webhook_topics) ];
-      topics.shift("APP_UNINSTALLED");
-      for (const topic of topics) {
-        Shopify.Webhooks.Registry.register({
-          shop: session.shop,
-          accessToken: session.accessToken,
-          topic,
-          path: "/webhooks",
-        }).then(response => {
-          const meta = {
-            app: {
-              topic: topic,
-            }
-          };
-          if (!response[topic].success) {
-            _logger.info(`Failed to register webhook: ${reponse.result}`);
-            _logger.notice(`Failed to register webhook.`, { meta });
-          };
-        }).catch(err => {
-           _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-        });
-      };
-      */
 
       // Redirect to app with shop parameter upon auth - what's this?
       res.redirect(`/?shop=${session.shop}&host=${host}`);

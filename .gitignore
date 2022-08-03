@@ -8,6 +8,9 @@
 # dkimKey for mail
 .dkimKey
 
+# a confiuration file
+base-url.js
+
 # ThemeKit downloaded theme directory from store
 theme
 

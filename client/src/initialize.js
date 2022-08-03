@@ -2,6 +2,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  * @listens DOMContentLoaded
  */
+import boxApp from "./box-app.js";
 
 const init = () => {
 

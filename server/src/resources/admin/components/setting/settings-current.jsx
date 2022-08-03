@@ -312,7 +312,6 @@ function *Settings() {
                     id={el[2]}
                     name="setting"
                     class="input-reset ba b--black-20 pa2 mv2 db w-100"
-                    disabled={el[2] === "api-url"}
                     type="text" value={el[1]}
                   />
                 </div>

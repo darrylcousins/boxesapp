@@ -111,9 +111,10 @@ export async function createServer(
   const DEV_INDEX_PATH = resolve(root, "src/assets");
 
   const path = isProd ? PROD_INDEX_PATH : DEV_INDEX_PATH;
+  const tpl = isProd ? "" : "-portal";
 
-  app.use("/proxy/customer-portal", proxyWrite({ app, vite, template: "customer-portal", path }));
-  app.use("/proxy/admin-portal", proxyWrite({ app, vite, template: "admin-portal", path }));
+  app.use("/proxy/customer-portal", proxyWrite({ app, vite, template: `customer${tpl}`, path }));
+  app.use("/proxy/admin-portal", proxyWrite({ app, vite, template: `admin${tpl}`, path }));
 
   app.use("/*", (req, res, next) => {
     // will need to get more clever with this to account for the proxied liquid files

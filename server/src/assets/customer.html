@@ -1,0 +1,38 @@
+{% raw %}{% assign supplied_customer_id = {% endraw %}{{ customer_id }}{% raw %}  %}{% endraw %}
+
+  <link rel="stylesheet" href="/src/assets/index.scss">
+    {% raw %}
+      {% if customer.id == supplied_customer_id  %}
+
+          <script type="application/json" id="customer-json">
+            { "id": "{{ customer.id }}" }
+          </script>
+          <script type="text/javascript">
+            localStorage.setItem("proxy-path", "{% endraw %}{{ proxy_path }}{% raw %}"); // proxy path used in shop
+          </script>
+
+          <div class="tr mw9 center">
+            <div class="dib ml3">{{ 'Log out' | customer_logout_link }}</div>
+          </div>
+
+    {% endraw %}
+        <!-- used for most modals -->
+        <div id="modal-window" style="top: 0px"></div>
+        <!-- available for placing another modal on top of main modal - e.g. box-rules-remove -->
+        <div id="front-modal-window" style="top: 0px"></div>
+
+        <div id="app" class="mw9 center"><!-- app-html --></div>
+        <script type="module" src="/src/resources/customer/initialize.jsx"></script>
+    {% raw %}
+
+      {% else %}
+
+          <div class="ml3">
+            You need to be logged in to view this resource.
+            <div class="dib ml3">{{ 'Customer Log in' | customer_login_link }}</div>
+          </div>
+
+      {% endif %}
+    {% endraw %}
+
+

@@ -27,7 +27,7 @@ export default {
     "process.env.SHOPIFY_API_KEY": JSON.stringify(process.env.SHOPIFY_API_KEY),
   },
   // make all links to assets absolute urls
-  base: process.env.HOST,
+  base: `${process.env.HOST}/`,
   esbuild: {
     jsxFactory: "createElement",
     jsxFragment: "Fragment"
@@ -35,6 +35,10 @@ export default {
   build: {
     sourcemap: false,
     rollupOptions: {
+      input: {
+        admin: fileURLToPath(new URL("../src/assets/admin.html", import.meta.url)),
+        customer: fileURLToPath(new URL("../src/assets/customer.html", import.meta.url)),
+      },
       output: {
         manualChunks: {
           vendor: vendors,

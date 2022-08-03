@@ -1,6 +1,0 @@
-{
-  "devDependencies": {
-    "cookie-session": "^2.0.0",
-    "crossroads": "^0.12.2"
-  }
-}

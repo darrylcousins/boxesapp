@@ -691,18 +691,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       });
     };
 
-    /*
-    const basePriceElement = document.querySelector("#product-base-price");
-    animateFadeForAction(basePriceElement, async () => {
-      basePriceElement.innerHTML = basePrice;
-    });
-
-    const AddOnsPriceElement = document.querySelector("#addons-price");
-    animateFadeForAction(AddOnsPriceElement, async () => {
-      AddOnsPriceElement.innerHTML = addOnsPrice;
-    });
-    */
-
   };
 
   /**
@@ -714,9 +702,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
   const moveItem = async ({fromList, toList, id}) => {
     for (let i = 0; i < fromList.length; i++) {
       if (fromList[i].shopify_product_id === id) {
-        const el = fromList[i];
-        if (!el.hasOwnProperty("quantity")) el.quantity = 1;
-        toList.push(el);
+        toList.push(fromList[i]);
         fromList.splice(i, 1);
       }
     }
@@ -761,7 +747,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       // restore swapped item first check if the quantity has been incremented
       // if so change the quantity and move to addons
       const swappedItem = selectedSwaps.find(el => el.shopify_product_id === swappedId);
-      if (swappedItem.quantity > 1) {
+      if (swappedItem && swappedItem.quantity > 1) {
         swappedItem.quantity -= 1;
         selectedSwaps.splice(selectedSwaps.indexOf(swappedItem), 1);
         selectedAddons.push(swappedItem);

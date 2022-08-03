@@ -108,32 +108,51 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   } else if (subscription.order_interval_unit === "day") {
     days = subscription.order_interval_frequency;
   };
+
+  // tried using a while loop here but failed to make it work
   let delivered = new Date(Date.parse(boxProperties["Delivery Date"]));
-  do {
-    const box = await _mongodb.collection("boxes").findOne({
-      delivered: delivered.toDateString(),
-      shopify_product_id: parseInt(subscription.external_product_id.ecommerce)
-    });
-    if (box) {
-      if (!fetchBox) {
-        fetchBox = { ...box };
-      } else {
-        previousBox = { ...box };
-      };
-    };
-    delivered.setDate(delivered.getDate() - days);
-  } while (!previousBox);
+  const query = {
+    delivered: delivered.toDateString(),
+    shopify_product_id: parseInt(subscription.external_product_id.ecommerce),
+    active: true
+  };
+  let box = await _mongodb.collection("boxes").findOne(query);
+  if (box) { // do we have the next box created?
+    hasNextBox = true;
+    fetchBox = { ...box };
+  };
+  delivered.setDate(delivered.getDate() - days);
+  query.delivered = delivered.toDateString();
+  // this should always find a box
+  box = await _mongodb.collection("boxes").findOne(query);
+  if (box && fetchBox) {
+    previousBox = { ...box };
+  } else if (box) {
+    fetchBox = { ...box };
+  };
+  delivered.setDate(delivered.getDate() - days);
+  query.delivered = delivered.toDateString();
+  if (!previousBox) { // try one more time the last fetch may be fetchbox only
+    box = await _mongodb.collection("boxes").findOne(query);
+    if (box) previousBox = { ...box };
+  };
 
   if (fetchBox.delivered === boxProperties["Delivery Date"]) {
     hasNextBox = true;
   };
 
-  let notIncludedInThisBox = fetchBox.includedProducts.map(el => el.shopify_title)
-    .filter(x => !previousBox.includedProducts.map(el => el.shopify_title).includes(x));
-  let newIncludedInThisBox = previousBox.includedProducts.map(el => el.shopify_title)
-    .filter(x => !fetchBox.includedProducts.map(el => el.shopify_title).includes(x));
-  let nowAvailableAsAddOns = fetchBox.addOnProducts.map(el => el.shopify_title)
-    .filter(x => !previousBox.addOnProducts.map(el => el.shopify_title).includes(x));
+  let notIncludedInThisBox = [];
+  let newIncludedInThisBox = [];
+  let nowAvailableAsAddOns = [];
+
+  if (previousBox) {
+    notIncludedInThisBox = fetchBox.includedProducts.map(el => el.shopify_title)
+      .filter(x => !previousBox.includedProducts.map(el => el.shopify_title).includes(x));
+    newIncludedInThisBox = previousBox.includedProducts.map(el => el.shopify_title)
+      .filter(x => !fetchBox.includedProducts.map(el => el.shopify_title).includes(x));
+    nowAvailableAsAddOns = fetchBox.addOnProducts.map(el => el.shopify_title)
+      .filter(x => !previousBox.addOnProducts.map(el => el.shopify_title).includes(x));
+  };
 
   // init the boxLists for the subscription
   const boxLists = { ...boxProperties };

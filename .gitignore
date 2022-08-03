@@ -8,6 +8,9 @@
 # dkimKey for mail
 .dkimKey
 
+# ThemeKit downloaded theme directory from store
+theme
+
 # any back up files saved temporarily
 bak
 

@@ -1,0 +1,100 @@
+@import '_animation.scss';
+@import '_variables.scss';
+@import '_bar-loader.scss';
+@import '_icon.scss';
+@import '_info.scss';
+
+.transition-fade {
+  transition: opacity 0.4s;
+  opacity: 1;
+}
+html.is-animating .transition-fade {
+  opacity: 0;
+}
+.fade-out {
+  animation-name: fadeOut;
+  animation-duration: 2s;
+  animation-timing-function: ease;
+  animation-delay: 0s;
+  animation-iteration-count: 1;
+}
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.flash {
+  background-color: #D5F5E3;
+  border-color: #0B5345;
+  color: #0B5345;
+  border-width: 1px 1px 3px 1px;
+  /*
+  width: 400px;
+  left: 50%;
+  right: 25%;
+  transform: translate(-50%, -50%);
+  */
+}
+.warn {
+  background-color: #FDEBD0;
+  border-color: #F39C12;
+  border-color: #A04000;
+  border-width: 1px 2px 2px 1px;
+}
+.fg-warn {
+  color: #A04000;
+}
+.fg-streamside-blue {
+  color: $blue;
+}
+.bg-streamside-blue {
+  background-color: $blue;
+}
+.b--streamside-blue {
+  border-color: $blue;
+}
+.fg-streamside-maroon {
+  color: $maroon;
+}
+.bg-streamside-maroon {
+  background-color: $maroon;
+}
+.b--streamside-maroon {
+  border-color: $maroon;
+}
+.fg-streamside-orange {
+  color: $orange;
+}
+.bg-streamside-orange {
+  background-color: $orange;
+}
+.b--streamside-orange {
+  border-color: $orange;
+}
+.fg-streamside-green {
+  color: $green;
+}
+.bg-streamside-green {
+  background-color: $green;
+}
+.b--streamside-green {
+  border-color: $green;
+}
+.debut-yellow {
+  color: $yellow;
+}
+.bg-debut-yellow {
+  background-color: $yellow;
+}
+.b--debut-yellow {
+  border-color: $yellow;
+}
+.bg-debut-brown {
+  background-color: $brown;
+}
+.b--debut-brown {
+  border-color: $brown;
+}

@@ -123,14 +123,13 @@ function *AppView({settings}) {
                 <div class="relative">
                   <div class="relative">
                     <button class="select-dropdown-button"
-                      title="Select Date"
                       id="selectDate"
                       type="button"
                       data-settings-types={`["Translation"]`}
                       data-settings-keys={`["select-delivery-date"]`}
                       onmouseover={mouseOverSetting}
                       onmouseout={mouseOutSetting}
-                      title="Click to edit delivery note"
+                      title="Click to edit"
                     >
                       {getSetting("Translation", "select-delivery-date")}&nbsp;&nbsp;&nbsp;▾
                     </button>
@@ -147,7 +146,7 @@ function *AppView({settings}) {
                     data-settings-keys={`["notice-no-boxes", "notice-bg", "notice-fg"]`}
                     onmouseover={mouseOverSetting}
                     onmouseout={mouseOutSetting}
-                    title="Click to edit no boxes"
+                    title="Click to edit"
                     >{getSetting("Translation", "notice-no-boxes")}</p>
                 </div>
                 <div class="notice pointer"
@@ -159,7 +158,7 @@ function *AppView({settings}) {
                     data-settings-keys={`["notice-bg", "notice-fg"]`}
                     onmouseover={mouseOverSetting}
                     onmouseout={mouseOutSetting}
-                    title="Click to edit notice colours"
+                    title="Click to edit"
                   >
                     <p>Box or weekday specific rules. Edit these in boxes: </p>
                   <code class="red ph1 br2">Boxes &gt; ☰ &gt; Rules</code>
@@ -173,13 +172,12 @@ function *AppView({settings}) {
                       data-settings-keys={`["included-products-title"]`}
                       onmouseover={mouseOverSetting}
                       onmouseout={mouseOutSetting}
-                      title="Click to edit included products title"
+                      title="Click to"
                   >
                     {getSetting("Translation", "included-products-title")}
                   </div>
                   <div class="pill-wrapper">
                     <div class="pill pointer"
-                        crank-key="include-product-bg"
                         style={{
                           "color": getSetting("Colour", "included-product-fg-hi"),
                           "background-color": getSetting("Colour", "included-product-bg"),
@@ -189,12 +187,11 @@ function *AppView({settings}) {
                         data-settings-keys={`["included-product-bg", "included-product-fg-hi"]`}
                         onmouseover={mouseOverSetting}
                         onmouseout={mouseOutSetting}
-                        title="Click to edit included product hover"
+                        title="Click to edit"
                     >
                       Beetroot 3x (2) $5.00
                     </div>
                     <div class="pill pointer"
-                        crank-key="include-product-fg"
                         style={{
                           "color": getSetting("Colour", "included-product-fg"),
                           "background-color": getSetting("Colour", "included-product-bg"),
@@ -204,12 +201,11 @@ function *AppView({settings}) {
                         data-settings-keys={`["included-product-bg", "included-product-fg"]`}
                         onmouseover={mouseOverSetting}
                         onmouseout={mouseOutSetting}
-                        title="Click to edit included product colours"
+                        title="Click to edit"
                     >
                       Cabbage Green
                     </div>
                     <div class="pill pointer"
-                        crank-key="available-product-fg"
                         style={{
                           "color": getSetting("Colour", "available-product-fg"),
                           "background-color": getSetting("Colour", "available-product-bg"),
@@ -219,12 +215,11 @@ function *AppView({settings}) {
                         data-settings-keys={`["available-product-bg", "available-product-fg"]`}
                         onmouseover={mouseOverSetting}
                         onmouseout={mouseOutSetting}
-                        title="Click to edit available product colours"
+                        title="Click to edit"
                     >
                       Cauliflower (1) $5.00 ✘
                     </div>
                     <div class="pill pointer"
-                        crank-key="available-product-bg"
                         style={{
                           "color": getSetting("Colour", "available-product-fg-hi"),
                           "background-color": getSetting("Colour", "available-product-bg"),
@@ -234,7 +229,7 @@ function *AppView({settings}) {
                         data-settings-keys={`["available-product-bg", "available-product-fg-hi"]`}
                         onmouseover={mouseOverSetting}
                         onmouseout={mouseOutSetting}
-                        title="Click to edit available product hover"
+                        title="Click to edit"
                     >
                       Broccoli (2) $8.00 ✘
                     </div>
@@ -245,7 +240,7 @@ function *AppView({settings}) {
                       data-settings-keys={`["excluded-products-title"]`}
                       onmouseover={mouseOverSetting}
                       onmouseout={mouseOutSetting}
-                      title="Click to edit excluded product title"
+                      title="Click to edit"
                     >
                       {getSetting("Translation", "excluded-products-title")}
                     </div>
@@ -255,7 +250,7 @@ function *AppView({settings}) {
                       data-settings-keys={`["substitute-item"]`}
                       onmouseover={mouseOverSetting}
                       onmouseout={mouseOutSetting}
-                      title="Click to edit substitute title"
+                      title="Click to edit"
                     >
                       {getSetting("Translation", "substitute-item")}
                     </div>
@@ -271,7 +266,7 @@ function *AppView({settings}) {
                         data-settings-keys={`["offer-custom-box", "notice-bg", "notice-fg"]`}
                         onmouseover={mouseOverSetting}
                         onmouseout={mouseOutSetting}
-                        title="Click to edit custom box notice"
+                        title="Click to edit"
                       >{getSetting("Translation", "offer-custom-box")}</p>
                     </div>
                     <div class="pill-wrapper">
@@ -285,7 +280,7 @@ function *AppView({settings}) {
                         data-settings-keys={`["excluded-product-bg", "excluded-product-fg"]`}
                         onmouseover={mouseOverSetting}
                         onmouseout={mouseOutSetting}
-                        title="Click to edit excluded product colours"
+                        title="Click to edit"
                       >
                         Carrots 1kg ✘
                       </div>
@@ -304,7 +299,7 @@ function *AppView({settings}) {
                       data-settings-keys={`["customize-box"]`}
                       onmouseover={mouseOverSetting}
                       onmouseout={mouseOutSetting}
-                      title="Click to edit customize box title"
+                      title="Click to edit"
                     >
                     <input class="checkbox"
                          type="checkbox"
@@ -314,7 +309,7 @@ function *AppView({settings}) {
                 </div>
                 <div class="flex-right">
                   <div class="button-wrapper">
-                    <button title="Change product quantities"
+                    <button
                         id="qtyForm"
                         type="button"
                         style={{
@@ -326,7 +321,7 @@ function *AppView({settings}) {
                         data-settings-keys={`["edit-quantities", "button-background", "button-foreground"]`}
                         onmouseover={mouseOverSetting}
                         onmouseout={mouseOutSetting}
-                        title="Click to edit button colours"
+                        title="Click to edit"
                     >
                       {getSetting("Translation", "edit-quantities")}
                     </button>
@@ -339,14 +334,13 @@ function *AppView({settings}) {
                   <div>
                     <div class="relative">
                       <button class="select-dropdown-button"
-                          title="Remove items from your box"
                           id="removeItem"
                           type="button"
                           data-settings-types={`["Translation"]`}
                           data-settings-keys={`["select-excludes"]`}
                           onmouseover={mouseOverSetting}
                           onmouseout={mouseOutSetting}
-                          title="Click to edit select exludes text"
+                          title="Click to edit"
                         >
                         {getSetting("Translation", "select-excludes")}
                         &nbsp;&nbsp;&nbsp;▾
@@ -354,14 +348,13 @@ function *AppView({settings}) {
                     </div>
                     <div class="relative">
                       <button class="select-dropdown-button"
-                        title="Add items to your box"
                         id="addItem"
                         type="button"
                         data-settings-types={`["Translation"]`}
                         data-settings-keys={`["select-addons"]`}
                         onmouseover={mouseOverSetting}
                         onmouseout={mouseOutSetting}
-                        title="Click to edit select addons text"
+                        title="Click to edit"
                       >
                         {getSetting("Translation", "select-addons")}
                         &nbsp;&nbsp;&nbsp;▾
@@ -373,13 +366,12 @@ function *AppView({settings}) {
                         data-settings-keys={`["available-products-title"]`}
                         onmouseover={mouseOverSetting}
                         onmouseout={mouseOutSetting}
-                        title="Click to edit available products text"
+                        title="Click to edit"
                     >
                     {getSetting("Translation", "available-products-title")}
                   </div>
                   <div class="pill-wrapper">
                     <div class="pill pointer"
-                        title="Add to your box"
                         style={{
                           "color": getSetting("Colour", "available-product-fg"),
                           "background-color": getSetting("Colour", "available-product-bg"),
@@ -389,7 +381,7 @@ function *AppView({settings}) {
                         data-settings-keys={`["available-product-bg", "available-product-fg"]`}
                         onmouseover={mouseOverSetting}
                         onmouseout={mouseOutSetting}
-                        title="Click to edit available products colours"
+                        title="Click to edit"
                       >
                       Carrots 1kg $5.00
                     </div>
@@ -409,7 +401,7 @@ function *AppView({settings}) {
                     data-settings-keys={`["existing-box-warn", "notice-bg", "notice-fg"]`}
                     onmouseover={mouseOverSetting}
                     onmouseout={mouseOutSetting}
-                    title="Click to edit existing box text"
+                    title="Click to edit"
                   >{getSetting("Translation", "existing-box-warn")}</p>
                 </div>
                 <button type="submit"
@@ -424,7 +416,7 @@ function *AppView({settings}) {
                       data-settings-keys={`["add-to-cart", "button-background", "button-foreground"]`}
                       onmouseover={mouseOverSetting}
                       onmouseout={mouseOutSetting}
-                      title="Click to edit add button colours"
+                      title="Click to edit"
                     >
                     {getSetting("Translation", "add-to-cart")}
                 </button>
@@ -440,7 +432,7 @@ function *AppView({settings}) {
                     data-settings-keys={`["update-selection", "button-background", "button-foreground"]`}
                     onmouseover={mouseOverSetting}
                     onmouseout={mouseOutSetting}
-                    title="Click to edit update selection text"
+                    title="Click to edit"
                     >
                     {getSetting("Translation", "update-selection")}
                 </button>
@@ -465,7 +457,7 @@ function *AppView({settings}) {
                         data-settings-keys={`["existing-box-confirm", "warn-bg", "warn-fg"]`}
                         onmouseover={mouseOverSetting}
                         onmouseout={mouseOutSetting}
-                        title="Click to edit existing box text and colours"
+                        title="Click to edit"
                         >{getSetting("Translation", "existing-box-confirm")}</p>
                       <div class="button-wrapper">
                         <button type="button"
@@ -479,7 +471,7 @@ function *AppView({settings}) {
                           data-settings-keys={`["button-background", "button-foreground"]`}
                           onmouseover={mouseOverSetting}
                           onmouseout={mouseOutSetting}
-                          title="Click to edit button colours"
+                          title="Click to edit"
                         >
                         Not yet
                         </button>
@@ -494,7 +486,7 @@ function *AppView({settings}) {
                             data-settings-keys={`["button-background", "button-foreground"]`}
                             onmouseover={mouseOverSetting}
                             onmouseout={mouseOutSetting}
-                            title="Click to edit other button colours"
+                            title="Click to edit"
                           >
                           Yes
                         </button>

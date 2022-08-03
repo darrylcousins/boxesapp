@@ -36,7 +36,7 @@ const init = async () => {
         return json;
       }
     });
-  console.log("settings", settingsJson);
+  console.log(settingsJson);
   if (!settingsJson) {
     // assume that server is inaccessible and abort loading
     await renderer.render(
@@ -61,6 +61,7 @@ const init = async () => {
    * Each of the collected boxes as presented by theme/snippets/box-product-snippet
    */
   const productJson = await JSON.parse(document.getElementById("product-json").textContent);
+  console.log(productJson.variants);
 
   const loader = (
     <div class="progress-bar mt2">

@@ -1,9 +1,7 @@
 /**
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
-import { createElement, Fragment } from "@b9g/crank";
-import { renderer } from "@b9g/crank/dom";
-import BoxApp from "./src/box-app";
+import boxApp from "./src/box-app";
 
 import "./styles/app.scss";
 import "./styles/styles.scss";
@@ -14,7 +12,7 @@ const init = () => {
 
   switch (page_type) {
     case "product":
-      BoxApp.init();
+      boxApp.init();
     case "page":
       break;
   };

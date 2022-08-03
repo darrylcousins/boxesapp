@@ -92,7 +92,7 @@ function* VariantSelector({boxVariants, selectedVariant}) {
               <SelectMenu
                 id={selectorId}
                 menu={getVariants().map(el => ({text: el.title, item: el.id}))}
-                title="Select Variant"
+                title="Select Delivery Day"
                 active={selectVariantOpen}
               >
                 { selectedVariant.title }&nbsp;&nbsp;&nbsp;{ selectVariantOpen ? "▴" : "▾" }

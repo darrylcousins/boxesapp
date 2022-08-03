@@ -19,7 +19,6 @@ import { Fetch, PostFetch } from "./fetch";
 import { selectVariantEvent,
   selectSellingPlanEvent,
   selectDateEvent,
-  selectorOpenEvent,
   moveProductEvent,
   quantityUpdateEvent } from "./events";
 import Popup from "./popup";
@@ -715,7 +714,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
   const moveItem = async ({fromList, toList, id}) => {
     for (let i = 0; i < fromList.length; i++) {
       if (fromList[i].shopify_product_id === id) {
-        toList.push(fromList[i]);
+        const el = fromList[i];
+        if (!el.hasOwnProperty("quantity")) el.quantity = 1;
+        toList.push(el);
         fromList.splice(i, 1);
       }
     }
@@ -870,6 +871,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       if (error) {
         fetchError = error;
       } else {
+        console.log("fetched", json);
         if (Object.keys(json).length > 0) {
           fetchDates = Object.keys(json);
 

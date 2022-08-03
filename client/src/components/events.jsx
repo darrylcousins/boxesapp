@@ -61,6 +61,7 @@ export const containerDateSelectEvent = (boxId) =>
 
 /**
  * Event dispatched by all selectors so that the others can be closed if open
+ * Really wierd error caused by this so it is no longer used
  * @function selectorOpen
  * @param {string} selector The string indentifier that is open, the rest will close
  */

@@ -8,12 +8,8 @@
 import { createElement, Fragment } from "@b9g/crank";
 
 import CollapseWrapper from "../collapse-animator";
-import { moveProductEvent, selectorOpenEvent } from "../events";
-import SelectMenu from "../select-menu";
 import {
-  hasOwnProp,
   getSetting,
-  animateFadeForAction,
   sortObjectByKeys,
   getPrice,
 } from "./../../helpers";

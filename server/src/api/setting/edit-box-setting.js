@@ -10,14 +10,13 @@
  * @param (function) next
  */
 export default async (req, res, next) => {
-  _logger.info(JSON.stringify(req.body, null, 2));
   try {
     for (const setting of req.body) {
       const { handle, weekday, value } = setting;
       const result = await _mongodb.collection("settings").updateOne(
         { handle, weekday },
         { $set: { value: parseFloat(value) } },
-        { upsert: false }
+        { upsert: true }
       );
       _logger.info(JSON.stringify(result, null, 2));
     }

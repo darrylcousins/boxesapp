@@ -42,11 +42,13 @@ export const getDeliveryDays = async (db, product_id) => {
       const filter = filters[el.deliverDay];
       const count = el.delivered in counts ? counts[el.delivered] : 0;
       // a limit of zero means no limit at all
-      if (filter.limit > 0) {
-        if (count >= filter.limit) return null;
-      };
-      if (filter.cutoff > Math.abs(el.deliverDate - now) / 36e5) {
-        return null;
+      if (filter) {
+        if (filter.hasOwnProperty("limit") && filter.limit > 0) {
+          if (count >= filter.limit) return null;
+        };
+        if (filter.hasOwnProperty("cutoff") && filter.cutoff > Math.abs(el.deliverDate - now) / 36e5) {
+          return null;
+        };
       };
       return el.delivered;
     }).filter(el => el !== null);

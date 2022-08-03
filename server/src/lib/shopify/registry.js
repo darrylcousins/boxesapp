@@ -124,11 +124,12 @@ export default class Registry {
         // if it has then update the local store
       };
     } else {
+      const tidyTopic = topic.toLowerCase().replace(/_/g, '/');
       // create the webhook and update local store
       const body = {
         webhook: {
           "address": `https://${Shopify.Context.HOST_NAME}/${path}`,
-          "topic": topic.toLowerCase().replace(/_/g, '/'),
+          "topic": tidyTopic,
           "format": "json",
         }
       };
@@ -162,14 +163,14 @@ export default class Registry {
         this.Handlers[topic] = handler;
         success = true;
         meta.shopify = { topic, id: data.webhook.id };
-        _logger.notice(`Shop webhook ${topic.toLowerCase().replace(/_/g, "/")} registered.`, { meta });
+        _logger.notice(`Shop webhook ${tidyTopic} registered.`, { meta });
       } else {
         errors = typeof(data.errors) === "string" ? { error: data.errors } : data.errors;
       };
       if (!success) {
-        errors.topic = topic.toLowerCase().replace(/_/g, "/");
+        errors.topic = tidyTopic;
         meta.shopify = errors;
-        _logger.notice(`Shop webhook ${topic.toLowerCase().replace(/_/g, "/")} failed to register.`, { meta });
+        _logger.notice(`Shop webhook ${tidyTopic} failed to register.`, { meta });
       };
     };
   };

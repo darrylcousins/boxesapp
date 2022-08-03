@@ -19,8 +19,6 @@ export default async (req, res, next) => {
     const query = getQueryFilters(req, {delivered: deliveryDay});
     const settings = await getSettings();
     const pickingData = await collatePickingData({req, deliveryDay, query, settings});
-    console.log(pickingData);
-    console.log(settings);
 
     res.status(200).json({
       pickingData,

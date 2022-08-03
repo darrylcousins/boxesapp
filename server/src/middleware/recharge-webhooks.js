@@ -1,6 +1,7 @@
 /**
-  * Middleware for shopify setup
-  *
+ * @author Darryl Cousins <darryljcousins@gmail.com>
+ * Middleware for recharge webhooks
+ *
  */
 import { Recharge } from "../lib/recharge/index.js";
 

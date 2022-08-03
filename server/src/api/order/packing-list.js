@@ -19,8 +19,8 @@ export default async (req, res, next) => {
   try {
     const deliveryDay = getNZDeliveryDay(req.params.timestamp);
     const query = getQueryFilters(req, {delivered: deliveryDay});
-    const packingData = await collatePackingData({req, deliveryDay, query});
     const settings = await getSettings();
+    const packingData = await collatePackingData({req, deliveryDay, query, settings});
 
     res.status(200).json({
       packingData,

@@ -1,3 +1,6 @@
+/*
+ * @author Darryl Cousins <darryljcousins@gmail.com>
+ */
 import crypto from "crypto";
 import "dotenv/config";
 
@@ -69,7 +72,7 @@ export function verifyProxyAdmin({ app }) {
       && params.hasOwnProperty("ts")) {
       const str = `${ts}.${process.env.SHOP}.${process.env.SHOPIFY_API_KEY}`;
       const sig = crypto
-        .createHash('sha256')
+        .createHmac('sha256', process.env.SHOPIFY_API_SECRET)
         .update(str, 'utf8', 'hex')
         .digest('hex')
       res.locals.admin = (params.sig === sig);

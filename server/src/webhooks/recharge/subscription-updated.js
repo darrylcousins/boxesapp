@@ -11,8 +11,6 @@ export default async function subscriptionUpdated(topic, shop, body) {
   };
 
   const subscription = JSON.parse(body).subscription;
-  console.log("SUBSCRIPTION =============================== Updated");
-  //console.log(subscription);
 
   const meta = {
     recharge: {

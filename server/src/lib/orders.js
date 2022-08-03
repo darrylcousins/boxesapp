@@ -145,7 +145,6 @@ export const collatePickingData = async (options) => {
     };
     count++;
   };
-  console.log(final);
   // sort the products
   for (const [key, value] of Object.entries(final)) {
     final[key] = Object.keys(value)
@@ -169,9 +168,8 @@ export const collatePickingData = async (options) => {
  */
 export const collatePackingData = async (options) => {
 
-  const {deliveryDay, query} = options;
+  const {deliveryDay, query, settings} = options;
 
-  const settings = await getSettings();
   const custom_box_id = parseInt(settings["custom-box-id"]);
   const tags = settings["product-tags"].split(",").sort().reverse();
   const boxes = await getPackingData(query);

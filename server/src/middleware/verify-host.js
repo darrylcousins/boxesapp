@@ -1,3 +1,6 @@
+/*
+ * @author Darryl Cousins <darryljcousins@gmail.com>
+ */
 import "dotenv/config";
 
 /**
@@ -25,13 +28,15 @@ export default function verifyHost({ app, isProd }) {
       return res.sendStatus(403); // Forbidden
     };
 
+    /*
     const corsWhitelist = [
       process.env.HOST,
     ];
     if (corsWhitelist.indexOf(req.headers.origin) !== -1) {
       res.header('Access-Control-Allow-Origin', req.headers.origin);
       res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    }
+    };
+    */
     return next();
 
   };

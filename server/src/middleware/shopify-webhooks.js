@@ -1,6 +1,7 @@
 /**
-  * Middleware for shopify setup
-  *
+ * @author Darryl Cousins <darryljcousins@gmail.com>
+ * Middleware for shopify webhooks
+ *
  */
 import { Shopify } from "../lib/shopify/index.js";
 

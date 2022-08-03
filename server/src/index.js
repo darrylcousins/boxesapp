@@ -7,6 +7,7 @@ import bodyParser from "body-parser";
 import morgan from "morgan";
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import "dotenv/config";
 
 import { morganLogger, winstonLogger, consoleFormat } from "./../config/winston.js"
 
@@ -24,11 +25,10 @@ import applyAuthMiddleware from "./middleware/auth.js";
 import apiMiddleware from "./middleware/api.js";
 
 import verifyHost from "./middleware/verify-host.js";
+import proxyWrite from "./middleware/proxy-write.js";
 import { verifyProxy, verifyProxyAdmin, verifyProxyCustomer } from "./middleware/verify-proxy.js";
 
 import api from "./api/index.js";
-
-import "dotenv/config";
 
 // make logger and env available globally - only in middleware, webhooks etc
 global._logger = winstonLogger;
@@ -55,9 +55,6 @@ export async function createServer(
   isProd = process.env.NODE_ENV === "production"
 ) {
 
-  const PROD_INDEX_PATH = `${root}/dist/client/src/assets`;
-  const DEV_INDEX_PATH = `${root}/src/assets`;
-
   const app = express();
 
   morgan.token('host', function(req, res) {
@@ -79,6 +76,8 @@ export async function createServer(
     applyRechargeWebhooks({ app });
   };
 
+  app.use(express.json()); // json for api
+
   app.use('/api', apiMiddleware({}));
   app.use('/api', api);
 
@@ -90,8 +89,6 @@ export async function createServer(
   // check query parameters and determine access
   app.use("/proxy/admin-portal", verifyProxyAdmin({ app }));
   app.use("/proxy/customer-portal", verifyProxyCustomer({ app }));
-
-  app.use(express.json()); // json for api
 
   let vite;
 
@@ -110,10 +107,17 @@ export async function createServer(
     app.use(vite.middlewares);
   };
 
+  const PROD_INDEX_PATH = resolve(root, "dist/client/src/assets");
+  const DEV_INDEX_PATH = resolve(root, "src/assets");
+
+  const path = isProd ? PROD_INDEX_PATH : DEV_INDEX_PATH;
+
+  app.use("/proxy/customer-portal", proxyWrite({ app, vite, template: "customer-portal", path }));
+  app.use("/proxy/admin-portal", proxyWrite({ app, vite, template: "admin-portal", path }));
+
   app.use("/*", (req, res, next) => {
     // will need to get more clever with this to account for the proxied liquid files
     const url = req.path === "/" ? "notfound" : req.path;
-    const path = isProd ? PROD_INDEX_PATH : DEV_INDEX_PATH;
 
     let buffer;
     try {

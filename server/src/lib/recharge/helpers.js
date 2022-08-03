@@ -79,7 +79,7 @@ export const updateSubscriptions = async ({ updates }) => {
       });
     };
     if (options.method === "DELETE") {
-      console.log(result);
+      //console.log(result);
     };
   };
   return { includes };

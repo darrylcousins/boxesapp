@@ -5,7 +5,7 @@
 
 import Excel from "exceljs";
 import { buildPackingSheet, buildPickingSheet } from "../../lib/picking.js";
-import { collatePickingData, collatePackingData, getQueryFilters } from "../../lib/orders.js";
+import { getSettings, collatePickingData, collatePackingData, getQueryFilters } from "../../lib/orders.js";
 import { getNZDeliveryDay } from "../../lib/dates.js";
 
 /*
@@ -18,8 +18,9 @@ export default async (req, res, next) => {
 
   const deliveryDay = getNZDeliveryDay(req.params.timestamp);
   const query = getQueryFilters(req, {delivered: deliveryDay});
-  const packingData = await collatePackingData({req, deliveryDay, query});
-  const pickingData = await collatePickingData({req, deliveryDay, query});
+  const settings = await getSettings();
+  const packingData = await collatePackingData({req, deliveryDay, query, settings});
+  const pickingData = await collatePickingData({req, deliveryDay, query, settings});
 
   try {
     const workbook = new Excel.Workbook();

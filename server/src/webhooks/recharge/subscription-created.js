@@ -119,13 +119,10 @@ export default async function subscriptionCreated(topic, shop, body) {
       (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
       {});
     _logger.notice(`Recharge webhook ${topic.toLowerCase().replace(/_/g, "/")} subscription updated.`, { meta: { recharge: boxProperties } });
-    console.log("UPDATING SUBSCRIPTION IN WEBHOOK subscription/created");
-    console.log(updateData);
     const updateResult = await makeRechargeQuery({
       method: "PUT",
       path: `subscriptions/${id}`,
       body: JSON.stringify(updateData)
     });
-    console.log(updateResult);
   };
 };

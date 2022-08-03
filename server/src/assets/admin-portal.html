@@ -1,0 +1,91 @@
+{% raw %}{% assign supplied_admin = {% endraw %}{{ admin }}{% raw %}  %}{% endraw %}
+
+<link rel="stylesheet" href="{{ host }}/src/assets/index.scss">
+  <div id="boxes" class="absolute w-100 z-999 bg-white">
+
+    {% raw %}
+      {% if supplied_admin  %}
+    {% endraw %}
+
+    <!-- open main content -->
+    <main id="boxes-main" class="w-100 bg-white black-70 center">
+
+        <nav id="nav" class="w-100 tl bg-streamside-blue dark-gray z-99">
+          <ul class="w-100 pl0 ma0 pv3" style="font-size: 1.2em">
+            <li class="ph2 di pv2 tl">
+              <button type="button" id="boxes-toggle"
+                  class="link bg-transparent outline-0 dim white dib mr1 ml3 bn"
+                  title="Toggle Screen">&#x2303;</button>
+            </li>
+            <li class="ph2 di pv2 tl">
+              <a class="link dim white dib mr1 ml3" href="{{ proxy_path }}/admin-portal/orders{{ qs }}" title="Orders">Orders</a>
+            </li>
+            <li class="ph2 di pv2 tl">
+              <a class="link dim white dib mr1" href="{{ proxy_path }}/admin-portal/boxes{{ qs }}" title="Boxes">Boxes</a>
+            </li>
+            <li class="ph2 di pv2 tl">
+              <a class="link dim white dib mr1" href="{{ proxy_path }}/admin-portal/recharge{{ qs }}" title="Recharge">Recharge</a>
+            </li>
+            <li class="ph2 di pv2 tl">
+              <a class="link dim white dib mr1" href="{{ proxy_path }}/admin-portal/settings{{ qs }}" title="Settings">Settings</a>
+            </li>
+            <li class="ph2 di pv2 tl">
+              <a class="link dim white dib" href="{{ proxy_path }}/admin-portal/logs{{ qs }}" title="Logs">Logs</a>
+            </li>
+          </ul>
+        </nav>
+
+      <!-- used for most modals -->
+      <div id="modal-window"></div>
+      <!-- available for placing another modal on top of main modal - e.g. box-rules-remove -->
+      <div id="front-modal-window"></div>
+      <div id="app" class="ph4 pt3"></div>
+
+    </main>
+    <!-- close main content -->
+    <script type="module" src="{{ host }}/src/resources/admin/initialize.jsx"></script>
+    <script type="text/javascript">
+      localStorage.setItem("proxy-path", "{{ proxy_path }}"); // proxy path used in shop
+      localStorage.setItem("shop", "{{ shop }}"); // name of shop e.g. myshop-dev.myshopify.com
+      localStorage.setItem("recharge", "{{ recharge }}"); // name for recharge link e.g. myshop-dev-sh
+      localStorage.setItem("qs", "{{ qs }}"); // query string for admin session
+
+      const makeFullScreen = () => {
+        document.querySelectorAll(".shopify-section").forEach(el => {
+          el.style.display = "none";
+        });
+        const html = document.querySelector("html");
+        html.style.height = "100%";
+        const body = document.querySelector("body");
+        body.style.height = "100%";
+        const button = document.querySelector("#boxes-toggle");
+        button.blur();
+        button.innerHTML = "&#x2304;";
+        button.onclick = () => dropFullScreen();
+      };
+      const dropFullScreen = () => {
+        document.querySelectorAll(".shopify-section").forEach(el => {
+          el.style.display = "block";
+        });
+        const button = document.querySelector("#boxes-toggle");
+        button.blur();
+        button.innerHTML = "&#x2303;";
+        button.onclick = () => makeFullScreen();
+      };
+      document.addEventListener("DOMContentLoaded", () => {
+        makeFullScreen();
+      });
+    </script>
+    {% raw %}
+
+      {% else %}
+
+          <div class="ml3">
+            You need to be logged in to view this resource.
+            <div class="dib ml3">{{ 'Customer Log in' | customer_login_link }}</div>
+          </div>
+
+      {% endif %}
+    {% endraw %}
+
+  </div>

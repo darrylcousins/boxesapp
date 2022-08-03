@@ -1,0 +1,350 @@
+/**
+ * Provide some helper methods
+ *
+ * @module app/helpers
+ */
+
+/*
+ * 
+ */
+export const LABELKEYS = [
+  'Delivery Date', 
+  'Including', 
+  'Add on Items', 
+  'Removed Items', 
+  'Swapped Items', 
+];
+
+/*
+ * @ function stringTemplate
+ * @example:
+ * let template = "I'm ${name}. I'm almost ${age} years old."
+ * parseStringTemplate({name: 'Darryl', age: 60}) => I'm Darryl. I'm almost 60 years old
+ *
+ * <form
+ *   data-template="I'm ${name}. I'm almost ${age} years old."
+ *   data-name="Darryl"
+ *   data-age="60"> ... </form>
+ */
+export const parseStringTemplate = (template, args) => {
+  const result = Object.entries(args).reduce(
+    (result, [arg, val]) => result.replace(`$\{${arg}}`, `${val}`),
+    template,
+  );
+  return result;
+};
+
+/* 
+ * Group a list products by tag
+ */
+export const groupProducts = (products, spaced=true) => {
+  const grouped = {};
+  let tag;
+  for (const product of products) {
+    tag = product.shopify_tag;
+    if (!Object.hasOwnProperty.call(grouped, tag)) {
+      grouped[tag] = [];
+    };
+    grouped[tag].push(product);
+  };
+
+  const sorted = sortObjectByKeys(grouped, {reverse: true});
+  let final = [];
+  for (const [name, list] of Object.entries(sorted)) {
+    final = [...final, ...list];
+    if (spaced) {
+      final.push(null);
+    };
+  };
+  return final;
+};
+
+export const hasOwnProp = Object.prototype.hasOwnProperty;
+
+/*
+ * Capitalize an array of words and return
+ */
+export const capWords = (arr) => {
+  return arr.map(el => el.charAt(0).toUpperCase() + el.substring(1).toLowerCase());
+};
+
+/*
+ * Title case a sentence of words
+ */
+export const titleCase = (str) => capWords(str.split(" ").map(el => el.trim()).filter(el => el !== "")).join(" ");
+
+/*
+ * @function camelCaseToWords
+ * @params {string} str e.g addOnProducts
+ * @result {string} e.g "add on product"
+ */
+export const camelCaseToWords = (str) => str.replace(/[A-Z]/g, letter => ` ${letter.toLowerCase()}`);
+
+export const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+export const matchNumberedString = (str) => {
+  // e.g. 'Baby Kale (2)' => 'Baby Kale', 2
+  str = str.trim();
+  let count = 1;
+  const match = str.match(/\(\d+\)$/);
+  if (match) {
+    count = parseInt(str.slice(match.index+1, match.index+match[0].length-1));
+    str = str.slice(0, match.index).trim();
+  }
+  return { str, count };
+};
+
+/**
+ * Make up a string price
+ *
+ * @param {number} num The integer number to use
+ * @returns {string} Price string
+ */
+const fToString = (num) => `${(num * 0.01).toFixed(2)}`;
+export const floatToString = fToString; // is this how it should be done?
+
+/**
+ * Make up a string price
+ *
+ * @param {number} num The integer number to use
+ * @returns {string} Price string
+ */
+export const toPrice = (num) => `$${fToString(num)}`;
+
+/**
+ * Sort an object by it's keys.
+ *
+ * @function sortObjectByKeys
+ * @param {object} o An object
+ * @returns {object} The sorted object
+ * @example
+ * sortObjectByKeys({'c': 0, 'a': 2, 'b': 1});
+ * // returns {'a': 2, 'b': 1, 'c': 0}
+ */
+export const sortObjectByKeys = (o, options) => {
+  if (Object.hasOwnProperty.call(options, 'reverse')) {
+    return Object.keys(o)
+      .sort()
+      .reverse()
+      .reduce((r, k) => ((r[k] = o[k]), r), {});
+  } else {
+    return Object.keys(o)
+      .sort()
+      .reduce((r, k) => ((r[k] = o[k]), r), {});
+  };
+};
+
+/**
+ * Sort an array of objects by key.
+ *
+ * @function sortObjectByKey
+ * @param {object} o An object
+ * @param {string} key The attribute to sort
+ * @returns {object} The sorted object
+ * @example
+ * sortObjectByKey([{'s1': 5, 's2': 'e'}, {'s1': 2, 's2': 'b'}], 's1');
+ * // returns [{'s1': 2, 's2': 'b'}, {'s1': 5, 's2': 'e'}]
+ * sortObjectByKey([{'s1': 5, 's2': 'e'}, {'s1': 2, 's2': 'b'}], 's2');
+ * // returns [{'s1': 2, 's2': 'b'}, {'s1': 5, 's2': 'e'}]
+ */
+export const sortObjectByKey = (o, key, reverse) => {
+  o.sort((a, b) => {
+    let nameA = a[key];
+    let nameB = b[key];
+    if (!Number.isInteger) {
+      nameA = a[key].toUpperCase(); // ignore upper and lowercase
+      nameB = b[key].toUpperCase(); // ignore upper and lowercase
+    }
+    if (nameA < nameB) return -1;
+    if (nameA > nameB) return 1;
+    return 0;
+  });
+  if (reverse) {
+    return o.reverse();
+  };
+  return o;
+};
+
+/**
+ * Method to pass to sort an array of date strings
+ *
+ * @function dateStringSort
+ */
+export const dateStringSort = (a, b) => {
+  if (Date.parse(a) && Date.parse(b)) {
+    let dateA = new Date(Date.parse(a));
+    let dateB = new Date(Date.parse(b));
+    if (dateA < dateB) return -1;
+    if (dateA > dateB) return 1;
+    return 0;
+  } else {
+    return 0;
+  }
+};
+
+/**
+ * Get the next upcoming date for a particular weekday
+ *
+ * @function findNextWeekday
+ * @param {number} day Integer day of week, Monday -> 0
+ * @returns {object} Date object
+ */
+export const findNextWeekday = (day) => {
+  // return the date of next Thursday as 14/01/2021 for example
+  // Thursday day is 4, Saturday is 6
+  const now = new Date();
+  now.setDate(now.getDate() + ((day + (7 - now.getDay())) % 7));
+  return now;
+};
+
+/**
+ * Get date string to pass to input[type=date], i.e. "2020-12-31"
+ *
+ * @function dateStringForInput
+ * @param {string} A date string to pass to new Date.
+ * @returns {object} Date string
+ */
+export const dateStringForInput = (str) => {
+  let d;
+  let dateString;
+  if (str) {
+    d = new Date(str);
+  } else {
+    d = new Date();
+  }
+  const zeroPad = (num, places) => String(num).padStart(places, "0");
+  const year = d.getFullYear();
+  const day = zeroPad(d.getDate(), 2);
+  const month = zeroPad(d.getMonth() + 1, 2);
+
+  return `${year}-${month}-${day}`;
+};
+
+/** Provide standard animationOptions
+ *
+ * @member {object} animationOptions
+ */
+export const animationOptions = {
+  duration: 400,
+  easing: "ease",
+  fill: "both",
+};
+
+/**
+ * Animate a fade and execute an action on end
+ *
+ * @function animateFadeForAction
+ */
+export const animateFadeForAction = (id, action) => {
+  let target;
+  if (typeof id === "string") {
+    target = document.getElementById(id);
+  } else {
+    target = id;
+  }
+  const animate = target.animate(
+    {
+      opacity: 0.1,
+    },
+    animationOptions
+  );
+  animate.addEventListener("finish", async () => {
+    if (action) {
+      await action();
+    }
+    target.animate(
+      {
+        opacity: 1,
+      },
+      animationOptions
+    );
+  });
+};
+
+/**
+ * Animate a fade
+ *
+ * @function animateFade
+ */
+export const animateFade = (id, opacity) => {
+  let target;
+  if (typeof id === "string") {
+    target = document.getElementById(id);
+  } else {
+    target = id;
+  }
+  const animate = target.animate(
+    {
+      opacity,
+    },
+    animationOptions
+  );
+};
+
+/*
+ * @function collapseElement
+ * from https://css-tricks.com/using-css-transitions-auto-dimensions/
+ *
+ */
+export const collapseElement = (element) => {
+  if (!element) return;
+  const elementHeight = element.scrollHeight;
+  var elementTransition = element.style.transition;
+  element.style.transition = "";
+  requestAnimationFrame(() => {
+    element.style.height = elementHeight + "px";
+    element.style.transition = elementTransition;
+    requestAnimationFrame(() => {
+      element.style.height = 0 + "px";
+    });
+  });
+}
+
+/*
+ * @function transitionElementHeight
+ * from https://css-tricks.com/using-css-transitions-auto-dimensions/
+ * .collapsible {
+ *   overflow:hidden;
+ *   transition: height 0.8s ease-out;
+ *   height:auto;
+ * }
+ *
+ */
+export const transitionElementHeight = (element) => {
+  if (!element) return;
+  let calculatedHeight = 5;
+  // simply using el.scrollHeight can give some odd results when element is shrinking
+  element.childNodes.forEach(el => {
+    calculatedHeight += el.scrollHeight;
+  });
+  element.style.height = calculatedHeight + "px";
+}
+
+/*
+ * @function sleepUntil
+ * Wait for element to be rendered
+ * From https://levelup.gitconnected.com/javascript-wait-until-something-happens-or-timeout-82636839ea93
+ *
+ */
+export const sleepUntil = async (f, timeoutMs) => {
+  return new Promise((resolve, reject) => {
+    let timeWas = new Date();
+    let wait = setInterval(function() {
+      if (f()) {
+        try {
+          clearInterval(wait);
+        } catch(e) {
+        };
+        resolve();
+      } else if (new Date() - timeWas > timeoutMs) { // Timeout
+        try {
+          clearInterval(wait);
+        } catch(e) {
+        };
+        reject();
+      }
+      }, 20);
+    });
+}
+
+

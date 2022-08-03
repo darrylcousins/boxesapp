@@ -1,3 +1,6 @@
+/*
+ * @author Darryl Cousins <darryljcousins@gmail.com>
+ */
 import "dotenv/config";
 
 /**

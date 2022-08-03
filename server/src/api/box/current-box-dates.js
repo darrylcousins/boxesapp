@@ -30,7 +30,6 @@ export default async (req, res, next) => {
       }},
     );
   };
-  console.log(JSON.stringify(aggregate, null, 2));
   aggregate.push(
     { "$match": {
       shopify_title: {

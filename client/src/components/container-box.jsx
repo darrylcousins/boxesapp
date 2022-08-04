@@ -1025,6 +1025,8 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
   };
 
   const getVariants = () => {
+    if (productJson.variants.length === 1 &&
+      productJson.variants[0].title.toLowerCase() === "default title") return [];
     return productJson.variants.map(el => {
       // map directly as required for SelectMenu
       return {item: `${el.id}`, text: el.title};

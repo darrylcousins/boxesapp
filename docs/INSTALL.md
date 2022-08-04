@@ -41,6 +41,10 @@ Check the `base-url.js` file to point to the correct server. Check
 [ThemeKit](https://shopify.dev/themes/tools/theme-kit/) and directly building
 and uploading the built files into the assets directory.
 
+Note that the build is not minified because it failed on the staging shop due
+to 'Uncaught TypeError: Invalid value used as weak map key', and when minified
+this was a show stopper.
+
 ```bash
 node build.js
 ```
@@ -70,14 +74,13 @@ registry
 settings
 ```
 
-Import the settings
+# Settings
+
+Import the settings, these appear to be adequate.
 
 ```bash
 mongoimport --db=myshop --collection=settings --file=docs/settings/settings.json
 ```
-```
-
-# Settings
 
 Many settings have been made configurable by the administrator throught the
 admin web interface. But to get things started import some default settings to

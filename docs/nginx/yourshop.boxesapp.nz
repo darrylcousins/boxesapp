@@ -15,9 +15,10 @@ server {
 	ssl_certificate /etc/letsencrypt/live/boxesapp.nz/fullchain.pem;
 	ssl_certificate_key /etc/letsencrypt/live/boxesapp.nz/privkey.pem;
 
-        set $my_port 4000; # yourshop.boxesapp.nz
-        set $my_cors https://yourshop.myshopify.com;
-        # if the site has own domain this will also be needed for cors
+        set $my_port 3336; # yourshop.boxesapp.nz
+        set $my_cors https://yourshop-dev.myshopify.com;
+
+	root /home/cousinsd/Projects/boxesapp/server/dist/client;
 
 	location / {
 		auth_basic off;
@@ -29,12 +30,17 @@ server {
 		proxy_set_header Host $host;
 		proxy_cache_bypass $http_upgrade;
                 proxy_set_header X-Forwarded-For $remote_addr;
-	}
+
+        }
 	location /api {
 
-		# allow access - otherwise the box app would need to hold credentials
-		# see apiMiddleware in express server for authentication control
-		auth_basic off;
+		proxy_pass http://127.0.0.1:$my_port;
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection 'upgrade';
+		proxy_set_header Host $host;
+		proxy_cache_bypass $http_upgrade;
+                proxy_set_header X-Forwarded-For $remote_addr;
 
 		# https://webapplicationconsultant.com/nginx/enable-cors-with-credentials-in-nginx/
 		add_header Access-Control-Allow-Origin "$my_cors" always;
@@ -51,18 +57,8 @@ server {
 			return 204;
 		}
 
-		proxy_pass http://127.0.0.1:$my_port;
-		proxy_http_version 1.1;
-		proxy_set_header Upgrade $http_upgrade;
-		proxy_set_header Connection 'upgrade';
-		proxy_set_header Host $host;
-		proxy_cache_bypass $http_upgrade;
-                proxy_set_header X-Forwarded-For $remote_addr;
 	}
-	location /webhook {
-
-		# shopify secret used for verification, see webhookMiddleware in express server
-		auth_basic off;
+	location /assets/ {
 
 		proxy_pass http://127.0.0.1:$my_port;
 		proxy_http_version 1.1;
@@ -71,5 +67,21 @@ server {
 		proxy_set_header Host $host;
 		proxy_cache_bypass $http_upgrade;
                 proxy_set_header X-Forwarded-For $remote_addr;
+
+		# https://webapplicationconsultant.com/nginx/enable-cors-with-credentials-in-nginx/
+		add_header Access-Control-Allow-Origin "$my_cors" always;
+		add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+
+		if ($request_method = 'OPTIONS') {
+			# Tell client that this pre-flight info is valid for 20 days
+			add_header 'Access-Control-Max-Age' 1728000;
+			add_header 'Content-Type' 'text/plain charset=UTF-8';
+			add_header 'Content-Length' 0;
+			add_header Access-Control-Allow-Origin "$my_cors" always;
+			add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+			return 204;
+		}
+
 	}
 }

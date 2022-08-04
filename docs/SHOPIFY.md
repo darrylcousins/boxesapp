@@ -43,21 +43,21 @@ unexpected results.
 
 ## Recharge purchase options
 
-Purchase options in Recharge must be in **`weeks`** and **not** `days`. The
+Purchase options in Recharge must be in **weeks** and **not** `days`. The
 reason for this is that by using weeks we can define a specific weekday to make
-the charge (i.e. when the shopify order is created). The default (not
-configurable) is that the charge is processed - and the order created - 3 days
-prior to the delivery day and to advise the customer a further 3 days before
-that. The email to the customer details the changes made to the box between
-deliveries, namely:
+the charge (i.e. when the shopify order is created). Therefore the charge is
+processed - and the order created - 3 days prior to the delivery day and to
+advise the customer a further 3 days before that. The email to the customer
+details the changes made to the box between deliveries, namely:
 
 * items included or excluded for the upcoming delivery
 * addon items unavailable and their subscription updated
 * subscriber then has 3 days to update their box prior to the order being created
 
 **Every** item with product type of `Container Box` or `Box Produce` must have
-matching available options. I.e. if boxes have both weekly (`every 1 week`) and fornightly
-(`every 2 weeks`) then **every** `Box Produce` product must also share those options.
+matching available options. I.e. if boxes have both weekly (`every 1 week`) and
+fortnightly (`every 2 weeks`) then **every** `Box Produce` product must also
+share those options.
 
 NB: Products can be added in bulk in the `Recharge` admin.
 

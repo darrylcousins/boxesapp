@@ -32,15 +32,6 @@ function* VariantSelector({boxVariants, selectedVariant}) {
   const selectorId = "selectVariant";
 
   /**
-   * Sort the date array
-   *
-   * @function getVariants
-   */
-  const getVariants = () => {
-    return boxVariants;
-  };
-
-  /**
    * Handle mouse up on selected components
    *
    * @function handleMouseUp
@@ -58,9 +49,8 @@ function* VariantSelector({boxVariants, selectedVariant}) {
       switch(ev.target.getAttribute("name")) {
         case selectorId:
           const variant_id = ev.target.getAttribute("data-item");
-          const variant = boxVariants.find(el => el.id === parseFloat(variant_id));
           this.dispatchEvent(selectorOpenEvent(null));
-          this.dispatchEvent(selectVariantEvent(variant));
+          this.dispatchEvent(selectVariantEvent(variant_id));
           break;
       }
     }
@@ -85,13 +75,13 @@ function* VariantSelector({boxVariants, selectedVariant}) {
 
   for ({boxVariants, selectedVariant} of this) {
     yield (
-      <div id="dateSelector">
+      <div id="variantSelector">
         { (boxVariants.length > 0) ? (
           <Fragment>
             <div class="relative">
               <SelectMenu
                 id={selectorId}
-                menu={getVariants().map(el => ({text: el.title, item: el.id}))}
+                menu={boxVariants}
                 title="Select Delivery Day"
                 active={selectVariantOpen}
               >
@@ -99,9 +89,8 @@ function* VariantSelector({boxVariants, selectedVariant}) {
               </SelectMenu>
             </div>
           </Fragment>
-        ) : (
-          <div>No variants</div>
-        )}
+        ) : ""
+        }
       </div>
     )
   }

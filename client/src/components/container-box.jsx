@@ -547,7 +547,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    * @listens selectVariantEvent
    */
   const handleVariantSelect = (ev) => {
-    selectedVariant = ev.detail.variant;
+    selectedVariant = productJson.variants.find(el => el.id === parseInt(ev.detail.variant));
 
     // full reset ?? or can we just filter the fetchJson we already have?
     // similar to the first load in init()
@@ -857,7 +857,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       if (error) {
         fetchError = error;
       } else {
-        console.log("fetched", json);
         if (Object.keys(json).length > 0) {
           fetchDates = Object.keys(json);
 
@@ -1025,6 +1024,13 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     });
   };
 
+  const getVariants = () => {
+    return productJson.variants.map(el => {
+      // map directly as required for SelectMenu
+      return {item: `${el.id}`, text: el.title};
+    });
+  };
+
   await init();  // set up script
 
   for await ({ productJson } of this) {
@@ -1042,9 +1048,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 selectedSwaps={selectedSwaps}
               />
             )}
-            { productJson.variants.length > 1 && (
-              <VariantSelector boxVariants={productJson.variants} selectedVariant={selectedVariant} />
-            )}
+            <VariantSelector boxVariants={getVariants()} selectedVariant={selectedVariant} />
             <DateSelector fetchDates={fetchDates} selectedDate={selectedDate} />
             { selectedDate && boxRules.length > 0 && (
               <div class="notice"

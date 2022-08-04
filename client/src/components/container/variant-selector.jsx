@@ -5,7 +5,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
-import { selectVariantEvent, selectorOpenEvent } from "../events";
+import { selectVariantEvent } from "../events";
 import SelectMenu from "../select-menu";
 import { getSetting } from "../../helpers";
 
@@ -42,36 +42,23 @@ function* VariantSelector({boxVariants, selectedVariant}) {
     if (ev.target.tagName === "BUTTON") {
       switch(ev.target.id) {
         case selectorId:
-          this.dispatchEvent(selectorOpenEvent(selectorId));
+          selectVariantOpen = !selectVariantOpen;
+          this.refresh();
           break;
       }
     } else if (ev.target.tagName === "DIV") {
       switch(ev.target.getAttribute("name")) {
         case selectorId:
           const variant_id = ev.target.getAttribute("data-item");
-          this.dispatchEvent(selectorOpenEvent(null));
+          //this.dispatchEvent(selectorOpenEvent(null));
           this.dispatchEvent(selectVariantEvent(variant_id));
+          selectVariantOpen = false;
+          this.refresh();
           break;
       }
     }
   };
   this.addEventListener("mouseup", handleMouseUp);
-  /**
-   * Handle selector open event, if matching selectorId the menu is open, else close
-   *
-   * @function handleSelectorOpen
-   * @param {object} ev The firing event
-   * @listens selectorOpenEvent
-   */
-  const handleSelectorOpen = (ev) => {
-    if (selectorId === ev.detail.selector) {
-      selectVariantOpen = !selectVariantOpen;
-    } else {
-      selectVariantOpen = false;
-    }
-    this.refresh();
-  };
-  this.addEventListener("selectorOpenEvent", handleSelectorOpen)
 
   for ({boxVariants, selectedVariant} of this) {
     yield (

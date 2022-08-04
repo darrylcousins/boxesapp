@@ -4,13 +4,13 @@
  */
 import boxApp from "./box-app.js";
 
-const init = () => {
+const init = async () => {
 
   const page_type = document.querySelector("[role='main']").getAttribute("data-page-type");
 
   switch (page_type) {
     case "product":
-      boxApp.init();
+      await boxApp.init();
       break;
     case "page":
       break;
@@ -19,5 +19,5 @@ const init = () => {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  init();
+  await init();
 });

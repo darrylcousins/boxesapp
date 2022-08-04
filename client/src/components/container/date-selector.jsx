@@ -5,7 +5,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
-import { selectDateEvent, selectorOpenEvent } from "../events";
+import { selectDateEvent } from "../events";
 import SelectMenu from "../select-menu";
 import { getSetting } from "../../helpers";
 
@@ -58,36 +58,22 @@ function* DateSelector({fetchDates, selectedDate}) {
     if (ev.target.tagName === "BUTTON") {
       switch(ev.target.id) {
         case selectorId:
-          this.dispatchEvent(selectorOpenEvent(selectorId));
+          selectDateOpen = !selectDateOpen;
+          this.refresh();
           break;
       }
     } else if (ev.target.tagName === "DIV") {
       switch(ev.target.getAttribute("name")) {
         case selectorId:
           const date = ev.target.getAttribute("data-item");
-          this.dispatchEvent(selectorOpenEvent(null));
           this.dispatchEvent(selectDateEvent(date));
+          selectDateOpen = false;
+          this.refresh();
           break;
       }
     }
   };
   this.addEventListener("mouseup", handleMouseUp);
-  /**
-   * Handle selector open event, if matching selectorId the menu is open, else close
-   *
-   * @function handleSelectorOpen
-   * @param {object} ev The firing event
-   * @listens selectorOpenEvent
-   */
-  const handleSelectorOpen = (ev) => {
-    if (selectorId === ev.detail.selector) {
-      selectDateOpen = !selectDateOpen;
-    } else {
-      selectDateOpen = false;
-    }
-    this.refresh();
-  };
-  this.addEventListener("selectorOpenEvent", handleSelectorOpen)
 
   const wrapperStyle = {
     border: "1px solid #ccc",

@@ -61,7 +61,7 @@ matching available options. I.e. if boxes have both weekly (`every 1 week`) and 
 
 NB: Products can be added in bulk in the `Recharge` admin.
 
-# Theme edits
+## Theme edits
 
 Two edits are required to the theme to install the app.
 

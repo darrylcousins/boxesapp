@@ -1,5 +1,5 @@
 /*
- * @module mail/charge-upcoming.js
+ * @module mail/subscription-created.js
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import fs from "fs";
@@ -12,12 +12,14 @@ dotenv.config();
 import subscriptionTemplate from "./templates/subscription.js";
 
 /*
- * @function mail/charge-upcoming.js
+ * @function mail/subscription-created.js
  * @param (object) data
  */
 export default async ({ subscriptions }) => {
   const email = subscriptions[0].attributes.customer.email;
   const charge_id = subscriptions[0].attributes.charge_id;
+  const subscription_id = subscriptions[0].attributes.subscription_id;
+  const customer_id = subscriptions[0].attributes.customer.id;
 
   const engine = new Liquid();
   const options = {};
@@ -32,7 +34,7 @@ export default async ({ subscriptions }) => {
         <mj-section padding-bottom="0px">
           <mj-column>
             <mj-text align="center" font-size="20px" font-style="bold">
-            Charge created
+            Subscription created
             </mj-text>
           </mj-column>
         </mj-section>
@@ -42,16 +44,18 @@ export default async ({ subscriptions }) => {
 `);
         sendmail({
           to: email,
-          subject: "Charge created",
+          subject: "Subscription created",
           html: htmlOutput.html
         });
         const meta = {
           recharge: {
-            charge_id: charge_id,
+            subscription_id,
+            customer_id,
+            charge_id,
             email: email,
           }
         };
-        _logger.notice(`Recharge charge upcoming email sent.`, { meta });
+        _logger.notice(`Recharge subscription created email sent.`, { meta });
       });
 
   } catch(err) {

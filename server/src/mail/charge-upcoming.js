@@ -18,6 +18,7 @@ import subscriptionTemplate from "./templates/subscription.js";
 export default async ({ subscriptions }) => {
   const email = subscriptions[0].attributes.customer.email;
   const charge_id = subscriptions[0].attributes.charge_id;
+  const customer_id = subscriptions[0].attributes.customer.id;
 
   const engine = new Liquid();
   const options = {};
@@ -47,8 +48,9 @@ export default async ({ subscriptions }) => {
         });
         const meta = {
           recharge: {
-            charge_id: charge_id,
-            email: email,
+            customer_id,
+            charge_id,
+            email,
           }
         };
         _logger.notice(`Recharge charge upcoming email sent.`, { meta });

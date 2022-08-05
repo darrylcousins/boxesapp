@@ -357,11 +357,11 @@ async function *Subscription({ subscription, idx }) {
                   { subscription.properties["Delivery Date"] }
               </span></div>
             )}
-        <div class="flex w-100 pt2 relative" id={ `title-${idx}` }>
-          <div class="dt w-40">
+        <div class="w-100 pt2 relative" id={ `title-${idx}` }>
+          <div class="dt w-100 w-40-ns">
             <IDData />
           </div>
-          <div class="w-40 mb2">
+          <div class="w-100 w-40-ns mb2">
             <div class="dt">
               <AttributeRow title="Next Charge Date" value={ subscription.attributes.nextChargeDate } />
               <AttributeRow title="Next Scheduled Delivery" value={ subscription.properties["Delivery Date"] } />
@@ -370,7 +370,7 @@ async function *Subscription({ subscription, idx }) {
               <AttributeRow title="Last Delivery" value={ subscription.attributes.lastOrder.delivered } />
             </div>
           </div>
-          <div class="w-20 gray tr">
+          <div class="w-100 w-20-ns gray tr">
             <span class="db">{subscription.address.name}</span>
             <span class="db">{subscription.address.email}</span>
             <span class="db">{subscription.address.address1}</span>

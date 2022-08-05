@@ -39,7 +39,7 @@ export const reconcileGetGrouped = ({ charge }) => {
       grouped[box_subscription_id].charge = charge;
     };
   } catch(err) {
-    logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 
   return grouped;

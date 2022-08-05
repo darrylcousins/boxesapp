@@ -10,6 +10,7 @@ import { exec } from "child_process";
 import colors from "colors";
 import inquirer from "inquirer";
 import ora from "ora";
+import { writeFileSync } from "fs";
 import "isomorphic-fetch";
 
 import path from "path";
@@ -99,6 +100,7 @@ const run = async () => {
       } else {
         const data = await fetch(url, options).then(result => result.json());
         console.log(JSON.stringify(data, null, 2));
+        writeFileSync("recharge.subscription.json", JSON.stringify(data, null, 2));
       };
     })
 };

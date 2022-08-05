@@ -1,5 +1,6 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
+ * Borrowed heaviy from shopify-api code
  */
 import "dotenv/config";
 import "isomorphic-fetch";
@@ -72,7 +73,8 @@ export default class Registry {
           webhookHandler = this.getHandler(webhookTopic);
           if (webhookHandler) {
             try {
-              await webhookHandler(webhookTopic, domain, reqBody);
+              // don't wait for the handler to return
+              webhookHandler(webhookTopic, domain, reqBody);
               statusCode = 200;
             } catch(e) {
               //statusCode = 500;

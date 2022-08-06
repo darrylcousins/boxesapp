@@ -30,6 +30,10 @@ These are the products that can be included both as a regular item or an add on
 item and must have the custom `Product Type` of `Box Produce`. It is
 used by the server backend when adding or editing products in boxes.
 
+### Tags
+
+Products can be given tags, i.e. "Vege", "Fruit". XXX Expand on this - box app settings.
+
 ### Collections
 
 Best advice is to make these products hidden within the site by not including

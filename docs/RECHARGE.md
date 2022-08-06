@@ -21,3 +21,20 @@ access to the tokens or supply them from the recharge admin
 Had some grief 'auto' installing the widget. Ended up installing liquid script
 manually. Some clicking around the recharge admin managed to sort through the
 "confirm installation" procedure.
+
+## Settings
+
+Recharge admin -> Storefront -> Customer Portal
+
+Theses **Subscription Details** settings must be **off** to work with the [Boxes App](http://boxesapp.nz).
+
+1. Edit upcoming order date:
+  Could do this. It is simply a change in `next_charge_schedule_at` and update properties and all subscriptions.
+2. Edit upcoming quantity:
+  Also could do this, if an extra item then update box properties.
+3. Add products to subscription:
+  Again doable but if more than one box would have to choose a default.
+4. Change variants:
+  Definitely doable, this relates to a change of delivery date and `order_day_of_week`
+5. Swap product:
+  Also doable, again the difficulties will be when more than one `Container Box` is in the charge.

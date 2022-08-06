@@ -37,9 +37,8 @@ const closeButton = () => {
   outer.classList.add("b");
   outer.classList.add("flex-auto");
   const inner = document.createElement("span");
-  for (const c of ["fa", "fa-xmark"]) {
-    inner.classList.add(c);
-  };
+  inner.innerHTML = "𐄂";
+  inner.classList.add("b");
   outer.appendChild(inner);
   return outer;
 };

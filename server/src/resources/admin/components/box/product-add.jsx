@@ -37,7 +37,7 @@ const ShowLink = (opts) => {
       onclick={showModal}
       title={title}>
       <span class="dtc pl1">{title}</span>
-      <span class="dtc fa fa-plus tr" />
+      <span class="dtc tr pr2 b" style="font-size: large">+</span>
     </div>
   );
 };

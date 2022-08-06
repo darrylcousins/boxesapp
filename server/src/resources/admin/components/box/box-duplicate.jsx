@@ -246,7 +246,7 @@ async function* DuplicateBox(props) {
                     <div
                       class="near-black pointer hover-green pa1"
                       onclick={() => saveBoxId(el)}>
-                      <span class="fa fa-check dn" id={el.id} />{el.title}
+                      <span class="dn" id={el.id}>✓</span>{el.title}
                     </div>
                   ))
                 ) : (

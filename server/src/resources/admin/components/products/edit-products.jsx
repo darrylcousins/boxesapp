@@ -553,12 +553,12 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
         <div class="dtc pa2">
           { name } <span class="fw3">{ name === "Removed Items" && "(2 only)" }</span>
         </div>
-        { name === "Add on Items" && (
+        { name === "Add on Items" && isEditable && (
           <div class="dtc tr hover-dark-blue pointer w-10"
             onclick={() => addProduct({to_list_name: name})}
             title={`Add item to ${name}`}>
             <span class="v-mid">
-              <span class="dtc fa fa-plus pr2" />
+              <span class="dtc pr2" style="font-size: large">+</span>
             </span>
           </div>
         )}

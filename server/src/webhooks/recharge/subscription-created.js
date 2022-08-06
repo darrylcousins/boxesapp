@@ -86,6 +86,7 @@ export default async function subscriptionCreated(topic, shop, body) {
   // "order_interval_frequency" and "order_interval_unit": for us 1 weeks or 2 weeks
   // Requiring subscription to be made in "weeks" so as to be able to define order_day_of_week
   // if (subscription.order_interval_unit === "week") {
+  // Note XXX this will break if the user sets units to days!
   const daysToNextDelivery = parseInt(subscription.order_interval_frequency) * 7;
   deliveryDate.setDate(deliveryDate.getDate() + daysToNextDelivery);
 

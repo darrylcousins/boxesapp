@@ -20,16 +20,17 @@ export default async function chargeUpcoming(topic, shop, body) {
     _logger.notice(`Recharge webhook ${topic} received but expected ${mytopic}`, { meta: { recharge: {} } });
     return;
   };
+  const topicLower = topic.toLowerCase().replace(/_/g, "/");
 
   const charge = JSON.parse(body).charge;
   const meta = {
     recharge: {
-      topic: mytopic.toLowerCase().replace(/_/g, "/"),
+      topic: topicLower,
       charge_id: charge.id,
       email: charge.customer.email,
     }
   };
-  _logger.notice(`Recharge webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });
+  _logger.notice(`Recharge webhook ${topicLower} received.`, { meta });
 
 
   // First up we may assume that multiple boxes are present to find them we can

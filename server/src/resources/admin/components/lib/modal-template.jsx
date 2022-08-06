@@ -34,7 +34,7 @@ function* ModalTemplate({ children, closeModal, error, loading, withClose, maxWi
       >
         <div class="fixed absolute-fill h-100 w-100 pv4 flex items-center"
           style="left: 0; top: 0px; background: rgba(0, 0, 0, 0.9); overflow: scroll">
-          <div class={ `w-60 bg-white pa4 br3 ${ mw } mt5 mb8 relative center` }>
+          <div class={ `w-100 w-60-ns bg-white pa4 br3 ${ mw } mt5 mb8 relative center` }>
             <button
               class="bn bg-transparent outline-0 mid-gray dim o-70 absolute top-1 right-1 pointer"
               name="close"

@@ -655,6 +655,21 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     await getBoxPrice(); // refresh called from getBoxPrice
   };
 
+  const getListData = () => {
+    const not = [
+      ["Box Price", toPrice(box.shopify_price * 100)],
+      ["Likes", (boxProperties["Likes"] && boxProperties["Likes"].length > 0)
+        ? boxProperties["Likes"] : "None"],
+      ["Dislikes", (boxProperties["Dislikes"] && boxProperties["Dislikes"].length > 0)
+        ? boxProperties["Dislikes"] : "None"],
+    ];
+    return [
+      ["Next Charge Date", nextChargeDate ? nextChargeDate : "Unscheduled"],
+      ["Total Price", toPrice(totalPrice())],
+      ["Delivery Date", properties["Delivery Date"]],
+    ];
+  };
+
   init();
 
   for (const { box, properties, nextChargeDate, images, isEditable, key } of this) { // eslint-disable-line no-unused-vars
@@ -668,161 +683,83 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
         { fetchError && <Error msg={fetchError} /> }
         <div id={ `overlay-${key}` } class="dn aspect-ratio--object bg-black o-90"></div>
         <div id={ `edit-products-${key}` } class="mt2 ph1 relative w-100" style="font-size: 1.3rem">
-          <div class="flex w-100">
-            <div class="w-50">
-              <div class="tc center">
-                <h6 class="fw4 tl mb0 fg-streamside-maroon">{box.shopify_title}</h6>
-              </div>
-              <div class="dt w-100 mb2">
-                { false && (
-                  <Fragment>
-                    <div class="dt-row">
-                      <div class="dtc w-50 gray tr pr3 pv1">
-                        Box Price:
-                      </div>
-                      <div class="dtc w-50 pv1">
-                        { loading ? (
-                          <div class="skeleton mr1" />
-                        ) : (
-                          <span>{ toPrice(box.shopify_price * 100) }</span>
-                        )}
-                      </div>
-                    </div>
-                  </Fragment>
-                )}
-                { nextChargeDate && (
-                  <Fragment>
-                    <div class="dt-row">
-                      <div class="dtc w-50 gray tr pr3 pv1">
-                        Next Charge Date:
-                      </div>
-                      <div class="dtc w-50 pv1">
-                        { loading ? (
-                          <div class="skeleton mr1" />
-                        ) : (
-                          <span>{ nextChargeDate }</span>
-                        )}
-                      </div>
-                    </div>
-                  </Fragment>
-                )}
-                <div class="dt-row">
-                  <div class="dtc w-50 gray tr pr3 pv1">
-                    Total Price:
+          <div class="tc center">
+            <h6 class="fw4 tl mb0 fg-streamside-maroon">{box.shopify_title}</h6>
+          </div>
+          <div class="flex-container-reverse w-100">
+            <div class="mb2 w-100">
+              { !loading && getListData().map(([title, value]) => (
+                <div class="dt">
+                  <div class="dtc gray tr pr3 pv1">
+                    { title }:
                   </div>
-                  <div class="dtc w-50 pv1">
+                  <div class="dtc pv1">
                     { loading ? (
                       <div class="skeleton mr1" />
                     ) : (
-                      <span>{ toPrice(totalPrice()) }</span>
+                      <span>{ value }</span>
                     )}
                   </div>
                 </div>
-                <div class="dt-row pv1">
-                  <div class="dtc w-50 gray tr pr3 pv1">
-                    Delivery date:
-                  </div>
-                  <div class="dtc w-50 pv1 b">
-                    { properties["Delivery Date"] }
-                  </div>
-                </div>
-                { true && (
-                  <Fragment>
-                  <div class="dt-row pv1">
-                    <div class="dtc w-50 gray tr pr3 pv1">
-                      Likes:
-                    </div>
-                    <div class="dtc w-50 pv1">
-                      { (boxProperties["Likes"] && boxProperties["Likes"].length > 0) ? (
-                        <ul class="list pa0 ma0">
-                          { boxProperties["Likes"].split(",").filter(el => el.trim()).map(el => (
-                            <li>{ el }</li> 
-                          ))}
-                        </ul>
-                      ) : (
-                        <span>None</span>
-                      )}
-                    </div>
-                  </div>
-                  <div class="dt-row pv1">
-                    <div class="dtc w-50 gray tr pr3 pv1">
-                      Dislikes:
-                    </div>
-                    <div class="dtc w-50 pv1">
-                      { (boxProperties["Dislikes"] && boxProperties["Dislikes"].length > 0) ? (
-                        <ul class="list pa0 ma0">
-                          { boxProperties["Dislikes"].split(",").filter(el => el.trim()).map(el => (
-                            <li>{ el }</li> 
-                          ))}
-                        </ul>
-                      ) : (
-                        <span>None</span>
-                      )}
-                    </div>
-                  </div>
-                  </Fragment>
-                )}
-              </div>
+              ))}
             </div>
-            <div class="w-50">
-              <div id="pricedItems" class="mr2">
-                <div class="ml2 mb1 pt1 w-100 flex bt">
+            <div id="pricedItems" class="mr2 w-100">
+              <div class="ml2 mb1 pt1 flex bt">
+                <div class="w-10">
+                  { loading || !box.image ? (
+                    <div class="skeleton mr1 w-100 h-100" style="width: 3em; height: 3em" />
+                  ) : (
+                    <Image src={ box.image } id={`image-${key}`} />
+                  )}
+                </div>
+                <div class="w-70 bold pl2">{ box.shopify_title }</div>
+                <div class="pricing w-20 tr">
+                  { loading ? (
+                    <div class="skeleton mr1" />
+                  ) : (
+                    <span>{ toPrice(box.shopify_price ? box.shopify_price * 100 : null) }</span>
+                  )}
+                </div>
+              </div>
+              { pricedItems.map((el, idx) => (
+                <div class="ml2 mb1 flex">
                   <div class="w-10">
-                    { loading || !box.image ? (
+                    { loading && (
                       <div class="skeleton mr1 w-100 h-100" style="width: 3em; height: 3em" />
-                    ) : (
-                      <Image src={ box.image } id={`image-${key}`} />
+                    )}
+                    { !loading && el.image && (
+                      <Image src={ el.image } id={`image-${key}-${idx}`} />
+                    )}
+                    { !loading && !el.image && (
+                      <ShopifyProductImage
+                        shopify_title={ el.name }
+                        crank-key={`image-${key}-${el.name.toLowerCase().replace(/ /g, "-")}`}
+                      />
                     )}
                   </div>
-                  <div class="w-70 bold">{ box.shopify_title }</div>
+                  <div class="w-40 pl2">{ el.name }</div>
                   <div class="pricing w-20 tr">
-                    { loading ? (
-                      <div class="skeleton mr1" />
-                    ) : (
-                      <span>{ toPrice(box.shopify_price ? box.shopify_price * 100 : null) }</span>
-                    )}
+                    <span>{ toPrice(el.price) }</span>
+                  </div>
+                  <div class="w-10 tc">({ el.count })</div>
+                  <div class="pricing w-20 tr">
+                    <span>{ toPrice(el.count * el.price) }</span>
                   </div>
                 </div>
-                { pricedItems.map((el, idx) => (
-                  <div class="ml2 mb1 w-100 flex">
-                    <div class="w-10">
-                      { loading && (
-                        <div class="skeleton mr1 w-100 h-100" style="width: 3em; height: 3em" />
-                      )}
-                      { !loading && el.image && (
-                        <Image src={ el.image } id={`image-${key}-${idx}`} />
-                      )}
-                      { !loading && !el.image && (
-                        <ShopifyProductImage
-                          shopify_title={ el.name }
-                          crank-key={`image-${key}-${el.name.toLowerCase().replace(/ /g, "-")}`}
-                        />
-                      )}
-                    </div>
-                    <div class="w-70 pl3">{ el.name }</div>
-                    <div class="pricing w-20 tr">
-                      <span>{ toPrice(el.price) }</span>
-                    </div>
-                    <div class="w-20 tc">({ el.count })</div>
-                    <div class="pricing w-20 tr">
-                      <span>{ toPrice(el.count * el.price) }</span>
-                    </div>
-                  </div>
-                ))}
-                <div class="ml2 mb1 pt1 w-100 flex bt">
-                  <div class="w-80 bold">Total</div>
-                  <div class="pricing w-20 tr bold">
-                    { loading ? (
-                      <div class="skeleton mr1" />
-                    ) : (
-                      <span>{ toPrice(totalPrice()) }</span>
-                    )}
-                  </div>
+              ))}
+              <div class="ml2 mb1 pt1 flex bt">
+                <div class="w-80 bold">Total</div>
+                <div class="pricing w-20 tr bold">
+                  { loading ? (
+                    <div class="skeleton mr1" />
+                  ) : (
+                    <span>{ toPrice(totalPrice()) }</span>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-          <div class="flex flex-row w-100 h-100 mt1 pt2">
+          <div class="flex-container w-100 h-100 mt1 pt2">
             { sortedListNames.map((name, idx) => (
               <Fragment>
                 { Array.isArray(name) ? (

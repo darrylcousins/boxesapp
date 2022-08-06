@@ -103,13 +103,13 @@ async function *Customer({ customer, admin }) {
 
   for await ({ customer } of this) { // eslint-disable-line no-unused-vars
     yield (
-      <Fragment>
+      <div id="customer" class="pr3 pl3 w-100">
         { loading && <BarLoader /> }
         { loading && <div>Loading subscriptions ...</div> }
         { fetchError && <Error msg={fetchError} /> }
         { admin && (
           <div 
-            class="w-100 tr link bold pointer blue" 
+            class="w-100 tr ml2 mr2 link bold pointer blue" 
             onclick={ getNewCustomer }>
             Load another customer
           </div>
@@ -131,7 +131,7 @@ async function *Customer({ customer, admin }) {
             </div>
           )
         )}
-      </Fragment>
+      </div>
     )
   };
 };

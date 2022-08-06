@@ -138,7 +138,7 @@ function* Subscriptions() {
 
   for (const props of this) { // eslint-disable-line no-unused-vars
     yield (
-      <div class="w-100 pb2 center" id="subscriptions">
+      <div class="w-100 pa2 center" id="subscriptions">
         <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
           Recharge Subscriptions {""}
           { fetchCustomer && (

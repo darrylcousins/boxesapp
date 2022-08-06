@@ -306,45 +306,63 @@ async function *Subscription({ subscription, idx }) {
 
   const AttributeRow = ({ title, value }) => {
     return (
-      <div class="dt-row">
-        <div class="dtc w-50 gray tr pr3 pv1">
+      <Fragment>
+        <div class="fl w-50 gray tr pr3 pv1">
           { title }:
         </div>
-        <div class="dtc w-50 pv1">
+        <div class="fr w-50 pv1">
           <span>{ value }</span>
         </div>
-      </div>
+      </Fragment>
     );
   };
 
-  const IDData = () => {
-    const ids = [
-      "subscription_id",
-      "charge_id",
-      "address_id",
-    ];
-
-    const parts = ids.map(id => {
-      const title = id.split("_").map((el, idx) => {
-        return (idx === 0) ? titleCase(el) : el.toUpperCase();
-      }).join(" ");
-      return ({ title, value: subscription.attributes[id] })
-    });
-    parts.push({
-      title: "Recharge Customer ID",
-      value: subscription.attributes.customer.id,
-    });
-    parts.push({
-      title: "Shopify Customer ID",
-      value: subscription.attributes.customer.external_customer_id.ecommerce,
-    });
-
+  const AttributeColumn = ({ data }) => {
     return (
-      parts.map(({ title, value }) => (
-        <AttributeRow title={ title } value={ value } />
+      data.map(([title, value]) => (
+        value && (
+          <AttributeRow title={ title } value={ value } />
+        )
       ))
     );
   };
+
+  const idData = [
+      ["Subscription ID", subscription.attributes.subscription_id],
+      ["Charge Id", subscription.attributes.charge_id],
+      ["Address Id", subscription.attributes.address_id],
+      ["Recharge Customer Id", subscription.attributes.customer.id],
+      ["Shopify Customer Id", subscription.attributes.customer.external_customer_id.ecommerce],
+  ];
+  const chargeData = [
+      ["Next Charge Date", subscription.attributes.nextChargeDate],
+      ["Next Scheduled Delivery", subscription.properties["Delivery Date"]],
+      ["Frequency", subscription.attributes.frequency],
+      ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
+      ["Order Delivery", subscription.attributes.lastOrder.delivered],
+  ];
+
+  const AddressColumn = ({ data }) => {
+    return (
+      data.map((value) => (
+        value && (
+          <span class="db">{value}</span>
+        )
+      ))
+    );
+  };
+
+  const addressData = [
+    subscription.address.name,
+    subscription.address.email,
+    subscription.address.address1,
+    subscription.address.address2 ? subscription.address.address2 : "",
+    subscription.address.city,
+    subscription.address.zip,
+    subscription.address.phone,
+    subscription.address.email,
+  ]
+
 
   for await ({ subscription, idx } of this) { // eslint-disable-line no-unused-vars
     yield (
@@ -357,30 +375,17 @@ async function *Subscription({ subscription, idx }) {
                   { subscription.properties["Delivery Date"] }
               </span></div>
             )}
-        <div class="w-100 pt2 relative" id={ `title-${idx}` }>
-          <div class="dt w-100 w-40-ns">
-            <IDData />
+        <div class="flex-container-reverse w-100 pt2 relative" id={ `title-${idx}` }>
+          <div class="dt">
+            <AttributeColumn data={ idData } />
           </div>
-          <div class="w-100 w-40-ns mb2">
-            <div class="dt">
-              <AttributeRow title="Next Charge Date" value={ subscription.attributes.nextChargeDate } />
-              <AttributeRow title="Next Scheduled Delivery" value={ subscription.properties["Delivery Date"] } />
-              <AttributeRow title="Frequency" value={ subscription.attributes.frequency } />
-              <AttributeRow title="Last Order" value={ `#${subscription.attributes.lastOrder.order_number}` } />
-              <AttributeRow title="Last Delivery" value={ subscription.attributes.lastOrder.delivered } />
+          <div class="dt">
+            <div class="">
+              <AttributeColumn data={ chargeData } />
             </div>
           </div>
-          <div class="w-100 w-20-ns gray tr">
-            <span class="db">{subscription.address.name}</span>
-            <span class="db">{subscription.address.email}</span>
-            <span class="db">{subscription.address.address1}</span>
-            { subscription.address.address2 && (
-              <span class="db">{subscription.address.address2}</span>
-            )}
-            <span class="db">{subscription.address.city}</span>
-            <span class="db">{subscription.address.zip}</span>
-            <span class="db">{subscription.address.phone}</span>
-            <span class="db">{subscription.address.email}</span>
+          <div class="dt tr nowrap">
+            <AddressColumn data={ addressData } />
           </div>
         </div>
         <div class="w-100 tr pr2 pb2">
@@ -407,12 +412,12 @@ async function *Subscription({ subscription, idx }) {
         { loading && <div id={ `loader-${idx}` }><BarLoader /></div> }
         { fetchError && <Error msg={fetchError} /> }
         <div id="saveBar" class="white mv1 br2">
-          <div class="dt w-100 pa2">
-            <div class="dtc pl4 bold w-80">
+          <div class="flex-container-reverse w-100 pa2">
+            <div class="pl4 bold">
               Unsaved changes
             </div>
-            <div class="dtc tr w-20">
-              <div class="dib pr2">
+            <div class="tr">
+              <div class="dib pr2 nowrap">
                 <Button
                   onclick={ cancelEdits }
                   type="transparent/dark">

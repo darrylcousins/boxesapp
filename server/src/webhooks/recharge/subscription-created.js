@@ -63,10 +63,11 @@ export default async function subscriptionCreated(topic, shop, body) {
   meta.recharge.delivered = attributes["Delivery Date"];
   _logger.notice(`Recharge webhook ${topicLower} received.`, { meta });
 
-  // XXX Only match a box subscription!!
-  if (!Object.keys(attributes).includes("Including")) {
-    // getting a bit messy in the logs 
-    //_logger.notice(`Recharge webhook ${topicLower} received, not a box ${subscription.product_title}.`, { meta });
+  // XXX Only match a box subscription for logging
+  if (Object.keys(attributes).includes("Including")) {
+    _logger.notice(`Recharge webhook ${topicLower} received.`, { meta });
+  } else {
+    // updating the attached subscriptions happens when the 'parent' box comes through
     return;
   };
 
@@ -92,7 +93,7 @@ export default async function subscriptionCreated(topic, shop, body) {
 
   // Step 3 for created: find the other items using charge api, add metada to connect them together
   // Wait here to be sure the charge object has been created in the recharge backend
-  const charge = await getCharge(subscription, 5000);
+  const charge = await getCharge(subscription, 20000);
 
   let ids = [];
   if (charge) {
@@ -110,7 +111,12 @@ export default async function subscriptionCreated(topic, shop, body) {
   // now update the properties for all of these
   for (const id of ids) {
     // get each addon subscription
-    const itemSubscription = await getSubscription(id, 1000);
+    let itemSubscription;
+    if (id === subscription.id) {
+      itemSubscription = { ...subscription };
+    } else {
+      itemSubscription = await getSubscription(id, 1000);
+    };
     // do likes and dislikes here
     let likes = "";
     let dislikes = "";
@@ -152,7 +158,7 @@ export default async function subscriptionCreated(topic, shop, body) {
     });
   };
 
-  const updatedSubscription = await getSubscription(subscription.id, 20000);
+  const updatedSubscription = await getSubscription(subscription.id, 30000);
 
   // need to get the updated subscription after the charge was updated because
   // I don't trust myself to recalculaate the next_scheduled_at valueback or

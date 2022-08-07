@@ -32,9 +32,6 @@ export default async function subscriptionUpdated(topic, shop, body) {
     deliveryDate.setDate(deliveryDate.getDate() + days);
   };
 
-  console.log("current date", currentDate.toDateString());
-  console.log("updated date", deliveryDate.toDateString());
-
   if (currentDate.getTime() === deliveryDate.getTime()) {
     // date has not been changed
     return;

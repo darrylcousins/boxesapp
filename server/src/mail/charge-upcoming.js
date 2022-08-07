@@ -6,8 +6,7 @@ import fs from "fs";
 import mjml2html from "mjml";
 import { Liquid } from 'liquidjs';
 import sendmail from "./sendmail.js";
-import dotenv from "dotenv";
-dotenv.config();
+import "dotenv/config";
 
 import subscriptionTemplate from "./templates/subscription.js";
 

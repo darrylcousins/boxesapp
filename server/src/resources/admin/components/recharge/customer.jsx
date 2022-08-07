@@ -126,7 +126,7 @@ async function *Customer({ customer, admin }) {
           ) : (
             <div class="w-100">
               <div class="mw6 center pt3">
-                No subscriptions found for { customer }.
+                No subscriptions found.
               </div>
             </div>
           )

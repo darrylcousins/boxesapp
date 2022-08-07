@@ -434,10 +434,17 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
       });
     };
 
-    // do the moves by calling moveProduct
+    // do the moves by calling moveItem
     showSelectModal = false;
     clearSelectModalOptions();
     this.refresh();
+    setTimeout(() => {
+      this.dispatchEvent(
+        new CustomEvent("collapse.wrapper.resize", {
+          bubbles: true,
+        })
+      );
+    }, 100);
   };
 
   this.addEventListener("selectProductEvent", productSelected);
@@ -712,7 +719,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                     <Image src={ box.image } id={`image-${key}`} />
                   )}
                 </div>
-                <div class="w-70 bold pl2">{ box.shopify_title }</div>
+                <div class="w-70 bold"><span style="padding-left: 10px">{ box.shopify_title }</span></div>
                 <div class="pricing w-20 tr">
                   { loading ? (
                     <div class="skeleton mr1" />
@@ -737,7 +744,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                       />
                     )}
                   </div>
-                  <div class="w-40 pl2">{ el.name }</div>
+                  <div class="w-40"><span style="padding-left: 10px">{ el.name }</span></div>
                   <div class="pricing w-20 tr">
                     <span>{ toPrice(el.price) }</span>
                   </div>

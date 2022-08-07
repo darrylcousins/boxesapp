@@ -339,7 +339,7 @@ async function *Subscription({ subscription, idx }) {
       ["Next Scheduled Delivery", subscription.properties["Delivery Date"]],
       ["Frequency", subscription.attributes.frequency],
       ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
-      ["Order Delivery", subscription.attributes.lastOrder.delivered],
+      ["Order Delivered", subscription.attributes.lastOrder.delivered],
   ];
 
   const AddressColumn = ({ data }) => {
@@ -412,11 +412,11 @@ async function *Subscription({ subscription, idx }) {
         { loading && <div id={ `loader-${idx}` }><BarLoader /></div> }
         { fetchError && <Error msg={fetchError} /> }
         <div id="saveBar" class="white mv1 br2">
-          <div class="flex-container-reverse w-100 pa2">
-            <div class="pl4 bold">
+          <div class="flex-container w-100 pa2">
+            <div class="w-100 pl4 bold">
               Unsaved changes
             </div>
-            <div class="tr">
+            <div class="w-100 tr">
               <div class="dib pr2 nowrap">
                 <Button
                   onclick={ cancelEdits }

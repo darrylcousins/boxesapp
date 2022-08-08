@@ -15,8 +15,6 @@ import subscriptionTemplate from "./templates/subscription.js";
  * @param (object) data
  */
 export default async ({ subscriptions }) => {
-  console.log(subscriptions[0]);
-  console.log("GOT SUBSCRIPTON CREATED EMAIL", subscriptions.length);
   const email = subscriptions[0].attributes.customer.email;
   const charge_id = subscriptions[0].attributes.charge_id;
   const subscription_id = subscriptions[0].attributes.subscription_id;

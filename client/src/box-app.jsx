@@ -15,6 +15,15 @@ import baseUrl from "./base-url";
 
 const init = async () => {
   /**
+   * Each of the collected boxes as presented by theme/snippets/box-product-snippet
+   */
+  const productJson = await JSON.parse(document.getElementById("product-json").textContent);
+  // same if/else used in liquid template but here we are sure
+  if (productJson.type !== "Container Box") {
+    return;
+  };
+
+  /**
    * Contains cart data collected from html template json data
    * This will then also contain a selected date
    */
@@ -56,19 +65,10 @@ const init = async () => {
     });
   rulesData.textContent = JSON.stringify(rulesJson, null, 2);
 
-  /**
-   * Each of the collected boxes as presented by theme/snippets/box-product-snippet
-   */
-  const productJson = await JSON.parse(document.getElementById("product-json").textContent);
-
-  // same if/else used in liquid template but here we are sure
-  if (productJson.type === "Container Box") {
-    await renderer.render(
-      <ContainerBoxApp productJson={productJson} cartJson={cartJson} />, document.querySelector("#app")
-    );
-  } else {
-    return;
-  };
+  await renderer.render(
+    <ContainerBoxApp productJson={productJson} cartJson={cartJson} />, document.querySelector("#app")
+  );
+  return;
 };
 
 export default { init };

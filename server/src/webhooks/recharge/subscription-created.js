@@ -1,6 +1,7 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
+import { matchNumberedString } from "../../lib/helpers.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import subscriptionCreatedMail from "../../mail/subscription-created.js";
@@ -126,7 +127,11 @@ export default async function subscriptionCreated(topic, shop, body) {
       if (el.name === "Including") push = true;
       if (el.name === "Delivery Date") el.value = deliveryDate.toDateString(); // updated delivery date
       if (el.name === "Add on Items" || el.name === "Swapped Items") {
-        if (el.value) likes = likes === "" ? el.value : `${likes},${el.value}`;
+        // need to remove the count here
+        if (el.value) {
+          const strMatch = matchNumberedString(el.value);
+          likes = likes === "" ? strMatch.title : `${likes},${strMatch.title}`;
+        };
       };
       if (el.name === "Removed Items") {
         if (el.value) dislikes = dislikes === "" ? el.value : `${dislikes},${el.value}`;
@@ -134,9 +139,11 @@ export default async function subscriptionCreated(topic, shop, body) {
       if (el.value === null) el.value = "";
       return el;
     });
+    likes = likes.split(",").sort().join(",");
+    dislikes = dislikes.split(",").sort().join(",");
     if (push) { // i.e. only on the Box subscription
       properties.push({ name: "Likes", value: likes });
-      properties.push({ name: "Disikes", value: dislikes });
+      properties.push({ name: "Dislikes", value: dislikes });
     };
     // One property to bind them within the charge
     properties.push({ name: "box_subscription_id", value: subscription.id.toString() });
@@ -163,15 +170,19 @@ export default async function subscriptionCreated(topic, shop, body) {
   // need to get the updated subscription after the charge was updated because
   // I don't trust myself to recalculaate the next_scheduled_at valueback or
   // forward?
-  const updatedCharge = await getCharge(updatedSubscription, 20000);
-  if (!updatedCharge) {
-    // log it
-    _logger.notice(`Recharge ${topicLower} failed to locate charge for compiling customer email.`, { meta });
-  } else {
-    const grouped = reconcileGetGrouped({ charge: updatedCharge });
-    let result = [];
-    result = await gatherData({ grouped, result });
-    await subscriptionCreatedMail({ subscriptions: result });
+  try {
+    const updatedCharge = await getCharge(updatedSubscription, 20000);
+    if (!updatedCharge) {
+      // log it
+      _logger.notice(`Recharge ${topicLower} failed to locate charge for compiling customer email.`, { meta });
+    } else {
+      const grouped = reconcileGetGrouped({ charge: updatedCharge });
+      let result = [];
+      result = await gatherData({ grouped, result });
+      await subscriptionCreatedMail({ subscriptions: result });
+    };
+  } catch(err) {
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
   return;
 };

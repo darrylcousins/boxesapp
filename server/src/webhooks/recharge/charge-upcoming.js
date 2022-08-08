@@ -38,10 +38,16 @@ export default async function chargeUpcoming(topic, shop, body) {
   const grouped = reconcileGetGrouped({ charge });
 
   let result = [];
-  result = await gatherData({ grouped, result });
-  await chargeUpcomingMail({ subscriptions: result });
-  for (const data of result) {
-    updateSubscriptions(data.updates)
+  try {
+    result = await gatherData({ grouped, result });
+    await chargeUpcomingMail({ subscriptions: result });
+    for (const data of result) {
+      if (data.updates && data.updates.length) {
+        updateSubscriptions(data.updates);
+      };
+    };
+  } catch(err) {
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 };
 

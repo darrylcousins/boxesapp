@@ -45,6 +45,7 @@ const run = async () => {
   console.log('\nRemove all objects of a type from Recharge'.magenta);
   console.log(`\n${'-'.padEnd(70, '-')}`);
   console.log(`${'Api url'.padEnd(25)} ${base_url.blue}`);
+  console.log(`${'Shop url'.padEnd(25)} ${process.env.SHOP.blue}`);
 
   inquirer
     .prompt([

@@ -8,6 +8,9 @@
 # dkimKey for mail
 .dkimKey
 
+# testing files
+recharge.*.json
+
 # a configuration file
 base-url.js
 

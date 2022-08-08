@@ -8,7 +8,7 @@ export default {
     port: 3330,
   },
   build: {
-    minify: false,
+    // minify: false,
     rollupOptions: {
       // https://rollupjs.org/guide/en/#big-list-of-options
       input: {

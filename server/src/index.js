@@ -26,6 +26,7 @@ import apiMiddleware from "./middleware/api.js";
 
 import verifyHost from "./middleware/verify-host.js";
 import proxyWrite from "./middleware/proxy-write.js";
+import docWrite from "./middleware/doc-write.js";
 import { verifyProxy, verifyProxyAdmin, verifyProxyCustomer } from "./middleware/verify-proxy.js";
 
 import api from "./api/index.js";
@@ -113,6 +114,7 @@ export async function createServer(
   const path = isProd ? PROD_INDEX_PATH : DEV_INDEX_PATH;
   const tpl = isProd ? "" : "-portal";
 
+  app.use("/proxy/admin-portal/docs", docWrite({ app, vite, path }));
   app.use("/proxy/customer-portal", proxyWrite({ app, vite, template: `customer${tpl}`, path }));
   app.use("/proxy/admin-portal", proxyWrite({ app, vite, template: `admin${tpl}`, path }));
 

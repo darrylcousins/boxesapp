@@ -19,8 +19,10 @@ structure the site so that only these are listed in visible catalogues.
 ### Variants/Options
 
 An option name of `Weekday` must be added with values matching the days of week
-intended to for delivery which results in variant titles matching 
-`Thursday`, `Saturday` etc.
+intended to for delivery which results in variant titles matching `Thursday`,
+`Saturday` etc. This is how the delivery day information can be passed to
+Recharge.  It will not be necessary for "special" boxes that do not have a
+subscription - e.g a Xmas Box.
 
 ## Box Produce
 
@@ -32,7 +34,9 @@ used by the server backend when adding or editing products in boxes.
 
 ### Tags
 
-Products can be given tags, i.e. "Vege", "Fruit". XXX Expand on this - box app settings.
+Products can be given tags, i.e. "Vege", "Fruit". In the boxes admin
+`Settings -> General Settings` is a setting titled `Available tags on box
+product`. These must absolutely match the tags given to box products.
 
 ### Collections
 

@@ -353,22 +353,12 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    * @function getSellingPlan
    */
   const getSellingPlan = async (handle, selling_plan_name) => {
-    // if operating outside the store, e.g. in npm run start development mode
-    // if (typeof jQuery === "undefined" || !window.Shopify) return null;
 
     if (selling_plan_name) {
       const { json: product } = await Fetch(`/products/${ handle }.js`);
       const selling_plans = product.selling_plan_groups[0].selling_plans;
       const selling_plan = selling_plans.find(el => el.name === selling_plan_name);
       const selling_plan_id = selling_plan ? selling_plan.id : null;
-      /*
-      await jQuery.getJSON(`${window.Shopify.routes.root}products/${handle}.js`, (product) => {
-        console.log(product);
-        const selling_plans = product.selling_plan_groups[0].selling_plans;
-        const selling_plan = selling_plans.find(el => el.name === selling_plan_name);
-        selling_plan_id = selling_plan ? selling_plan.id : null;
-      });
-      */
       return selling_plan_id;
     };
     return null;
@@ -381,8 +371,13 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    */
   const submitCart = async () => {
 
-    const selling_plans = productJson.selling_plan_groups[0].selling_plans;
+    let selling_plans;
     let selling_plan_name = null;
+
+    if (Object.hasOwnProperty.call(productJson, "selling_plan_groups")
+      && productJson.selling_plan_groups.length) {
+      selling_plans = productJson.selling_plan_groups[0].selling_plans;
+    };
     if (selectedSellingPlanId) {
       selling_plan_name = selling_plans.find(el => el.id === selectedSellingPlanId).name;
     };

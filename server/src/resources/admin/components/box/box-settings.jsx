@@ -213,12 +213,12 @@ async function* BoxSettings({ delivered, settings }) {
                     <input 
                       id="limit"
                       type="number" 
-                      step="any"
+                      step="1"
                       min="0"
                       oninput={watchSettingsInput}
                       value={ currentSettings.limit}
                       class="input-reset ba b--black-10 br3"
-                      style="width: 3.5em; border-color: silver; padding: 0 3px; margin: 0"
+                      style="width: 4.5em; border-color: silver; padding: 0 3px; margin: 0"
                       />
                   </div>
                   <div class="tl ph2 mt1 ml0">
@@ -228,12 +228,12 @@ async function* BoxSettings({ delivered, settings }) {
                     <input 
                       id="cutoff"
                       type="number" 
-                      step="any"
+                      step="0.5"
                       min="0"
                       oninput={watchSettingsInput}
                       value={ currentSettings.cutoff }
                       class="input-reset ba b--black-10 br3"
-                      style="width: 3.5em; border-color: silver; padding: 0 3px; margin: 0"
+                      style="width: 4.5em; border-color: silver; padding: 0 3px; margin: 0"
                       />
                   </div>
                 </div>

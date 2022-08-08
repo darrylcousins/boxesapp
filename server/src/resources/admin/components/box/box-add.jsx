@@ -59,6 +59,8 @@ const options = {
  * @returns {object} Error (if any) and the boxes
  */
 const getBoxes = async ({search, delivered}) => {
+  console.log("Search", search);
+  console.log(delivered);
   const headers = { "Content-Type": "application/json" };
   const { error, json } = await PostFetch({
     src: "/api/query-store-boxes",
@@ -72,6 +74,7 @@ const getBoxes = async ({search, delivered}) => {
       error: e,
       json: null,
     }));
+  console.log(error, json);
   return { error, boxes: json };
 }
 
@@ -80,7 +83,7 @@ const getBoxes = async ({search, delivered}) => {
  *
  * @returns {object} Error (if any) and the fields
  */
-const getAddFields = async (delivered) => {
+const getAddFields = async (delivered, onDeliveredChange) => {
   const uri = "/api/get-core-box";
   const { error, json } = await Fetch(uri)
     .then((result) => result)
@@ -103,6 +106,7 @@ const getAddFields = async (delivered) => {
       datatype: "date",
       required: true,
       min: dateStringForInput(),
+      onchange: onDeliveredChange,
     };
     if (json) {
       fields["Use Core Box"] = {
@@ -162,11 +166,28 @@ async function* AddBox(props) {
    */
   let boxes = null;
   /**
+   * Date as changed in the input field
+   *
+   * @member {boolean} deliveredInput
+   */
+  let deliveredInput = delivered;
+
+  /*
+   * On delivered selection change
+   * Load boxes available for the selected box
+   * Update pickup options
+   */
+  const onDeliveredChange = async (ev) => {
+    if (!ev.target.checkValidity()) return;
+    deliveredInput = ev.target.value;
+  };
+
+  /**
    * Form fields passed to form
    *
    * @member {boolean} fields
    */
-  const { error, fields } = await getAddFields(delivered);
+  const { error, fields } = await getAddFields(delivered, onDeliveredChange);
 
   /**
    * Update boxes when search term entered
@@ -180,7 +201,7 @@ async function* AddBox(props) {
     if (search === "") {
       boxes = [];
     } else {
-      const result = await getBoxes({search, delivered: new Date(Date.parse(delivered)).getTime()});
+      const result = await getBoxes({search, delivered: new Date(Date.parse(deliveredInput)).getTime()});
       fetchError = result.error;
       boxes = result.boxes;
     };
@@ -213,7 +234,6 @@ async function* AddBox(props) {
    *
    */
   const saveBoxId = ({id, title}) => {
-    console.log(id, title);
     document.getElementById("add-box").shopify_product_id.value = id;
     document.getElementById(id.toString()).classList.remove("dn");
     document.getElementById("product-search").value = title;
@@ -231,7 +251,7 @@ async function* AddBox(props) {
      * @returns {object} The initial data for the form
      */
     const getInitialData = () => {
-      return {shopify_product_id, delivered: dateStringForInput(delivered)};
+      return {shopify_product_id, delivered: dateStringForInput(deliveredInput)};
     };
 
     /*
@@ -282,7 +302,7 @@ async function* AddBox(props) {
                       <Fragment>
                         <div class="ba br2 pa3 ml2 mr3 mv1 orange bg-washed-yellow" role="alert">
                           <div class="pa2">No boxes found for your search.</div>
-                          <div class="pa2">Are all the container boxes already included for { delivered }?</div>
+                          <div class="pa2">Are all the container boxes already included for { new Date(deliveredInput).toDateString() }?</div>
                         </div>
                       </Fragment>
                     )

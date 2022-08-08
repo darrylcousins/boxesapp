@@ -46,7 +46,7 @@ export const queryStoreProducts = async function (search, product_type) {
 
   return await makeShopQuery({path, limit, query, fields})
     .then(async ({products}) => {
-      const regexp = new RegExp(search, 'gi');
+      const regexp = new RegExp(search, 'i');
       const filtered = products.filter(({title}) => regexp.test(title));
       return filtered;
     });

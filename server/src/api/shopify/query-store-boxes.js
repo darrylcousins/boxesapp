@@ -15,6 +15,7 @@ export default async (req, res, next) => {
 
   let search = "";
   if (req.body.search) search = req.body.search;
+  if (search.trim() === "") search = " ";
   let boxes = null;
   if (req.body.delivered) {
     // a timestamp

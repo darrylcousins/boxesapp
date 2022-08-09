@@ -37,8 +37,6 @@ export default async ({to, subject, text, html, attachments}) => {
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
-  console.log(dkim);
-  console.log(dkimKeyPath);
 
   let transporter = Mailer.createTransport({
     sendmail: true,

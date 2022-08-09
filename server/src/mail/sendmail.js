@@ -10,21 +10,42 @@ import "dotenv/config";
 
 export default async ({to, subject, text, html, attachments}) => {
 
-  const dkimKey = fs.readFileSync(path
-    .join(path.dirname(fileURLToPath(import.meta.url)), ".dkimKey"), {
-      encoding:'utf8', flag:'r'
-    });
+  let dkimKey;
+  let dkim;
+  const dkimKeyPath = path
+    .join(path.dirname(fileURLToPath(import.meta.url)), ".dkimKey")
+
+  try {
+    if (fs.existsSync(dkimKeyPath)) {
+      dkimKey = fs.readFileSync(dkimKeyPath, {
+          encoding:'utf8', flag:'r'
+        });
+      dkim = {
+        domainName: process.env.MAIL_DOMAIN,
+        keySelector: "mail",
+        privateKey: dkimKey,
+      };
+    } else {
+      const meta = {
+        recharge: {
+          email: to,
+          subject,
+        }
+      };
+      _logger.notice(`Recharge email - missing dkim key file.`, { meta });
+    };
+  } catch(err) {
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
+  console.log(dkim);
+  console.log(dkimKeyPath);
 
   let transporter = Mailer.createTransport({
     sendmail: true,
     newline: "unix",
     path: "/usr/sbin/sendmail",
     secure: true,
-    dkim: {
-      domainName: process.env.MAIL_DOMAIN,
-      keySelector: "mail",
-      privateKey: dkimKey,
-    }
+    dkim,
   });
   const options = {
     to,

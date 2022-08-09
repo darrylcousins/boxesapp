@@ -1,5 +1,8 @@
 import sendmail from "./sendmail.js";
 
+global._logger = console;
+_logger.notice = console.info;
+
 const main = async () => {
 
   sendmail({

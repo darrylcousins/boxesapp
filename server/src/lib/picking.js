@@ -22,20 +22,21 @@ export const getPackingData = async (query) => {
     }},
     //{ "$unwind": "$products" },
     { "$group": { 
-      "_id": "$products.shopify_tag",
+      "_id": "$title",
       "products": { "$addToSet": "$products.shopify_title" },
-      "title": { "$first": "$title" },
+      "tags": { "$addToSet": "$products.shopify_tag" },
       "id": { "$first": "$id" },
       "delivered": { "$first": "$delivered" },
     }},
     { "$project": {
       "_id": "$id",
-      "title": "$title",
+      "title": "$_id",
       "delivered": "$delivered",
       "zip": {
         "$zip": {
           "inputs": [
-            { "$arrayElemAt": [ "$products", 0 ] }, "$_id"
+            { "$arrayElemAt": [ "$products", 0 ] },
+            { "$arrayElemAt": [ "$tags", 0 ] },
           ]
       }},
     }},

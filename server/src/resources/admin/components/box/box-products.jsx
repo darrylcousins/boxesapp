@@ -219,7 +219,8 @@ function *Products ({box, products, type, allproducts}) {
               id={el.shopify_product_id}
               data-type={type}
             >
-              <div class="dtc tl hover-dark-red pointer w-10"
+              <div class="dtc tl hover-dark-red pointer"
+                style="width: 30px"
                 onclick={(e) => removeProduct({
                   event: e,
                   shopify_product_id: el.shopify_product_id,
@@ -232,7 +233,7 @@ function *Products ({box, products, type, allproducts}) {
                 </span>
               </div>
               <div
-                class="dtc w-90"
+                class="dtc"
               >
                 <div
                   class="dib w-100"

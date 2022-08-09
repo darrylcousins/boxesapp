@@ -10,7 +10,7 @@
 import { createElement, Fragment } from "@b9g/crank";
 
 import Button from "../lib/button";
-import { PostFetch } from "../lib/fetch";
+import { Fetch, PostFetch } from "../lib/fetch";
 import BarLoader from "../lib/bar-loader";
 import Error from "../lib/error";
 import FormModalWrapper from "../form/form-modal";
@@ -75,9 +75,16 @@ const getProducts = async ({search}) => {
       error: e,
       json: null,
     }));
+  let products = [];
   if (!error) {
+    products = json.map(el => {
+      const product = { ...el };
+      product.tags = el.tags.split(",").map(el => el.trim());
+      return product;
+    });
   }
-  return { error, products: json };
+
+  return { error, products };
 }
 
 /**
@@ -110,6 +117,12 @@ async function* AddProductToBox(props) {
    * @member {boolean} error
    */
   let error = false;
+  /**
+   * Tags from settings
+   *
+   * @member {boolean} tags
+   */
+  let tags = [];
   /**
    * Products as result of search
    *
@@ -146,8 +159,45 @@ async function* AddProductToBox(props) {
     document.getElementById("add-product").shopify_product_id.value = id;
     const form = document.getElementById(formId);
     form.setAttribute("data-shopify_title", title);
-    doSave();
+    const product = products.find(el => el.id === id);
+    const testTags = product.tags.filter(el => tags.includes(el));
+    if (testTags.length === 0) {
+      error = `${product.title} tags do not conform to tags in general settings.`;
+      this.refresh();
+    } else {
+      doSave();
+    };
   };
+
+  /**
+   * Fetch settings data on mounting of component
+   *
+   * @function getSettings
+   */
+  const getSettings = async () => {
+    let uri = "/api/current-settings/General";
+    await Fetch(uri)
+      .then((result) => {
+        if (result.error !== null) {
+          error = result.error;
+          loading = false;
+          this.refresh();
+        } else {
+          loading = false;
+          const test = result.json.settings.find(el => el.handle === "product-tags");
+          if (test) {
+            tags = test.value.split(",");
+          };
+        }
+      })
+      .catch((err) => {
+        error = err;
+        loading = false;
+        this.refresh();
+      });
+  };
+
+  await getSettings();
 
   for await (const _ of this) { // eslint-disable-line no-unused-vars
 
@@ -171,7 +221,6 @@ async function* AddProductToBox(props) {
         const result = await getProducts({search});
         error = result.error;
         products = result.products.filter(el => !boxproducts.includes(el.id));
-        // need to also filter out from other product list i.e. cannont be both addon and included
       };
       loading = false;
       this.refresh();

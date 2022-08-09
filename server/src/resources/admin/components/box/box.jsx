@@ -146,7 +146,7 @@ function* Box({ box, index }) {
         </td>
         <td
           data-title="Included"
-          class="w-25-l pv3 pr3 bb b--black-20 black-50 v-top"
+          class="w-30-l pv3 pr3 bb b--black-20 black-50 v-top"
         >
           <div
             class="flex hover-dark-green pointer"
@@ -170,7 +170,7 @@ function* Box({ box, index }) {
         </td>
         <td
           data-title="Add Ons"
-          class="w-25-l pv3 pr3 bb b--black-20 black-50 v-top"
+          class="w-30-l pv3 pr3 bb b--black-20 black-50 v-top"
         >
           <div
             class="flex hover-dark-green pointer"

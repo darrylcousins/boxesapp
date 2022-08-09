@@ -135,7 +135,10 @@ export const collatePickingData = async (options) => {
       for (const product of order[column]) {
         const { title: name, quantity: count} = matchNumberedString(product);
         const key = (order.product_id === custom_box_id) ? "custom" : column;
-        const label = order.products[name];
+        const label = `${order.products[name]}`;
+        if (!Object.hasOwnProperty.call(final, label)) {
+          final[label] = {}; // allowing incorrect tags e.g. null 
+        };
         if (!Object.hasOwnProperty.call(final[label], name)) {
           final[label][name] = {...column_data};
         };

@@ -59,7 +59,7 @@ export default async function productsUpdate(topic, shop, body) {
         const update = { $set: {
           [`${products}.$[product].shopify_price`]: shopify_price,
           [`${products}.$[product].shopify_title`]: shopify_title,
-          [`${products}.$[product].shopify_tags`]: tags
+          [`${products}.$[product].shopify_tag`]: tag
         }};
         const options = { arrayFilters: [
           // This filter was working but not filtering for no changes to title nor price

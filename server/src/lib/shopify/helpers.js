@@ -37,7 +37,7 @@ export const makeShopQuery = async ({path, limit, query, fields}) => {
 export const queryStoreProducts = async function (search, product_type) {
 
   const path = "products.json";
-  const fields = ["id", "title"];
+  const fields = ["id", "title", "tags"];
   const limit = 250; // need to sort out paging, perhaps using 'since_id', not so successful, just relying on search terms
   const query = [
     ["product_type", product_type],

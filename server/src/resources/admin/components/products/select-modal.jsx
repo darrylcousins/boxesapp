@@ -45,7 +45,7 @@ function* SelectModal({ modalNote, modalType, modalSelectList, hideModal }) {
     const grouped = {};
     let tag;
     for (const product of products) {
-      tag = product.shopify_tags[0];
+      tag = product.shopify_tag;
       if (!Object.hasOwnProperty.call(grouped, tag)) {
         grouped[tag] = [];
       };

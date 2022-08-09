@@ -21,6 +21,12 @@ export default async (req, res, next) => {
       },
       ]).toArray((err, result) => {
         if (err) throw err;
+        if (Object.hasOwnProperty.call(req.params, "tag")) {
+          const tags = result.find(el => el._id === req.params.tag);
+          if (tags) {
+            return res.status(200).json(tags);
+          };
+        };
         res.status(200).json(result);
     });
   } catch(err) {

@@ -109,6 +109,10 @@ function* PickingModal({ delivered }) {
   const buildRows = async (json) => {
     const tags = json.settings["product-tags"].split(',').map(el => el.trim()).sort().reverse();
     const keys = listKeys.map(el => el.toLowerCase());
+    const orphanedTags = Object.keys(json.pickingData).filter(el => !tags.includes(el));
+    for (const badTag of orphanedTags) {
+      tags.push(badTag);
+    };
     let data = [];
     tags.forEach(tag => {
       const rows = Object.entries(json.pickingData[tag]).map(([name, el]) => {
@@ -118,7 +122,7 @@ function* PickingModal({ delivered }) {
         });
         return row;
       })
-      rows.push([]);
+      if (rows.length) rows.push([]);
       data = [...data, ...rows];
     });
     return {data, tags};
@@ -188,13 +192,17 @@ function* PickingModal({ delivered }) {
                     </thead>
                     <tbody class="lh-copy">
                       { pickingList.map(row => (
-                        (row.length > 0) && (
+                        (row.length > 0) ? (
                           <tr>
                             { row.map((el, idx) => (
                               <td crank-key={ `${ el }-${ idx }` }
                                 class="pv1 pr3 bb b--black-20">{ el }</td>
                             ))}
                             <td class="pv0 pr3 bb b--black-20" colspan="5">&nbsp;</td>
+                          </tr>
+                        ) : (
+                          <tr>
+                            <td class="" colspan="5">&nbsp;</td>
                           </tr>
                         )
                       ))}

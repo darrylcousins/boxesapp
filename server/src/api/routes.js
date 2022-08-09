@@ -171,6 +171,9 @@ router.get(
   "/current-box-rules", 
   await import("./setting/current-box-rules.js").then(({ default: fn }) => fn));
 router.get(
+  "/current-settings/:tag", 
+  await import("./setting/current-settings.js").then(({ default: fn }) => fn));
+router.get(
   "/current-settings", 
   await import("./setting/current-settings.js").then(({ default: fn }) => fn));
 router.post(

@@ -73,6 +73,10 @@ function OrderDetail({ order }) {
           </div>
         </div>
       </div>
+      <div>
+        <div><span class="b mr2">Order id:</span><span>{ order.shopify_order_id }</span></div>
+        <div><span class="b mr2">Customer id:</span><span>{ order.shopify_customer_id }</span></div>
+      </div>
       <div class="dt dt--fixed">
         <div class="dtc pv2">
             <div class="mt3 fw6">Delivery note:</div>

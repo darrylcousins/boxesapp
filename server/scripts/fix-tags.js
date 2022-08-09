@@ -26,7 +26,7 @@ const run = async () => {
     console.log('this ran');
     const query = { "includedProducts.shopify_tag": { "$eq" : null } };
     const update = {
-      $set: { "includedProducts.$[elem].shopify_tag" : "Veggies },
+      $set: { "includedProducts.$[elem].shopify_tag" : "Vege" },
     };
     const filters = {
       "arrayFilters": [

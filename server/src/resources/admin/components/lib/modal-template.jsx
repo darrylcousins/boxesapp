@@ -26,7 +26,7 @@ import Error from "../lib/error";
 function* ModalTemplate({ children, closeModal, error, loading, withClose, maxWidth }) {
 
   for ({ children, closeModal, error, loading, withClose, maxWidth } of this) { // eslint-disable-line no-unused-vars
-    const mw = (typeof maxWidth === "string") ? maxWidth : "mw8";
+    const mw = (typeof maxWidth === "string") ? maxWidth : "mw9";
     yield (
       <div
         class="db absolute absolute-fill w-100 h-100 z-max pa4 mv4"
@@ -34,7 +34,7 @@ function* ModalTemplate({ children, closeModal, error, loading, withClose, maxWi
       >
         <div class="fixed absolute-fill h-100 w-100 pv4 flex items-center"
           style="left: 0; top: 0px; background: rgba(0, 0, 0, 0.9); overflow: scroll">
-          <div class={ `w-100 w-60-ns bg-white pa4 br3 ${ mw } mt5 mb8 relative center` }>
+          <div class={ `w-100 w-80-ns bg-white pa4 br3 ${ mw } mt5 mb8 relative center` }>
             <button
               class="bn bg-transparent outline-0 mid-gray dim o-70 absolute top-1 right-1 pointer"
               name="close"

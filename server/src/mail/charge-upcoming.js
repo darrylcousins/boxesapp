@@ -24,7 +24,11 @@ export default async ({ subscriptions }) => {
   
   try {
     engine
-      .parseAndRender(subscriptionTemplate, { subscriptions, env: process.env })
+      .parseAndRender(subscriptionTemplate, {
+        subscriptions,
+        env: process.env,
+        last_delivery: "Last Delivered",
+      })
       .then(sections => {
         const htmlOutput = mjml2html(`
     <mjml>

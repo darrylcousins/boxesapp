@@ -71,9 +71,7 @@ export const updateStoreObject = async (id, objName, data) => {
     body: JSON.stringify(body),
   })
     .then(response => {
-      if (typeof _logger !== 'undefined') {
-        _logger.info(`${_filename(import.meta)} Updated store ${objName} with id ${id} with data ${JSON.stringify(data, null, 2)}`);
-      };
+      //_logger.info(`${_filename(import.meta)} Updated store ${objName} with id ${id} with data ${JSON.stringify(data, null, 2)}`);
       return response.status;
     });
 };

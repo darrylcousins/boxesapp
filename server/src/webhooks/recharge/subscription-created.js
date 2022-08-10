@@ -62,7 +62,7 @@ export default async function subscriptionCreated(topic, shop, body) {
     }
   };
   meta.recharge.delivered = attributes["Delivery Date"];
-  _logger.notice(`Recharge webhook ${topicLower} received.`, { meta });
+  //_logger.notice(`Recharge webhook ${topicLower} received.`, { meta });
 
   // XXX Only match a box subscription for logging
   if (Object.keys(attributes).includes("Including")) {
@@ -98,31 +98,28 @@ export default async function subscriptionCreated(topic, shop, body) {
 
   let ids = [];
   if (charge) {
-    // purchase_item_id matches the subscription.id
-    // for each of these and the current subscription object
-    ids = charge.line_items.map(el => el.purchase_item_id);
+    // collect the subscribed item ids, omit subscription
+    ids = charge.line_items.map(el => el.purchase_item_id).filter(el => el !== subscription.id);
   };
+  const line_items = charge.line_items.filter(el => el.purchase_item_id !== subscription.id);
 
-  if (ids.length === 0) {
+  if (line_items.length === 0) {
     _logger.notice(`Recharge ${topicLower} no charge ${Boolean(charge)} or no ids ${ids.length}.`, { meta });
   };
 
-  // XXX if this doesn't get anything then we have no idea
+  const first = charge.line_items.find(el => el.purchase_item_id === subscription.id);
+  line_items.unshift(first); // make sure its the first
+
+  const updatedLineItems = []; // updated with new properties
 
   // now update the properties for all of these
-  for (const id of ids) {
-    // get each addon subscription
-    let itemSubscription;
-    if (id === subscription.id) {
-      itemSubscription = { ...subscription };
-    } else {
-      itemSubscription = await getSubscription(id, 1000);
-    };
+  for (const lineItem of line_items) {
+    
     // do likes and dislikes here
     let likes = "";
     let dislikes = "";
     let push = false;
-    const properties = itemSubscription.properties.map(el => {
+    const properties = lineItem.properties.map(el => {
       // only the Box subscription has this property
       if (el.name === "Including") push = true;
       if (el.name === "Delivery Date") el.value = deliveryDate.toDateString(); // updated delivery date
@@ -148,39 +145,57 @@ export default async function subscriptionCreated(topic, shop, body) {
     // One property to bind them within the charge
     properties.push({ name: "box_subscription_id", value: subscription.id.toString() });
 
+    if (lineItem.item_purchase_id === subscription.id) {
+      subscription.properties = properties;
+    };
+
     const updateData = {
       order_day_of_week: orderDayOfWeek, // assign orderDay
       properties,
     };
 
-    const boxProperties = updateData.properties.reduce(
-      (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
-      {});
-    meta.recharge.next_delivery = boxProperties["Delivery Date"];
-    _logger.notice(`Recharge ${topicLower} completed and subscription updated.`, { meta });
+    lineItem.properties = properties;
+    updatedLineItems.push(lineItem);
+
     const updateResult = await makeRechargeQuery({
       method: "PUT",
-      path: `subscriptions/${id}`,
+      path: `subscriptions/${lineItem.purchase_item_id}`,
       body: JSON.stringify(updateData)
     });
+
+    await delay(2000); // give time between requests
   };
 
-  const updatedSubscription = await getSubscription(subscription.id, 30000);
+  meta.recharge.next_delivery = deliveryDate.toDateString();
+  _logger.notice(`Recharge ${topicLower} completed and subscription updated.`, { meta });
 
-  // need to get the updated subscription after the charge was updated because
-  // I don't trust myself to recalculaate the next_scheduled_at valueback or
-  // forward?
+  //const updatedSubscription = await getSubscription(subscription.id, 30000);
+
+  let nextChargeScheduledAt = subscription.next_charge_scheduled_at;
+  const currentSchedule = new Date(Date.parse(nextChargeScheduledAt));
+  const currentDayOfWeek = currentSchedule.getDay() - 1;
+
+  if (currentDayOfWeek !== orderDayOfWeek) {
+    const diff = orderDayOfWeek - currentDayOfWeek;
+    currentSchedule.setDate(currentSchedule.getDate() + diff);
+    nextChargeScheduledAt = currentSchedule.toISOString().substring(0,10);
+  };
+
   try {
-    const updatedCharge = await getCharge(updatedSubscription, 20000);
-    if (!updatedCharge) {
-      // log it
-      _logger.notice(`Recharge ${topicLower} failed to locate charge for compiling customer email.`, { meta });
-    } else {
-      const grouped = reconcileGetGrouped({ charge: updatedCharge });
-      let result = [];
-      result = await gatherData({ grouped, result });
-      await subscriptionCreatedMail({ subscriptions: result });
-    };
+    // doing this to avoid a further call to api for the updated charge
+    // which I often found wasn't updated in time to make the call
+    const updatedCharge = { ...charge };
+    updatedCharge.scheduled_at = nextChargeScheduledAt;
+    updatedCharge.line_items = updatedLineItems;
+
+    const grouped = reconcileGetGrouped({ charge: updatedCharge });
+    grouped[subscription.id].subscription = subscription; // pass subscription to avoid api call
+
+    let result = [];
+    result = await gatherData({ grouped, result });
+    result[0].attributes.charge_id = null;
+    await subscriptionCreatedMail({ subscriptions: result });
+
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };

@@ -32,10 +32,12 @@ export default `
                   <td style="color:#777;text-align:right;padding-right:20px;">Next Charge Date</td>
                   <td>{{ subscription.attributes.nextChargeDate }}</td>
                 </tr>
+                {% if subscription.attributes.hasNextBox == true %}
                 <tr>
                   <td style="color:#777;text-align:right;padding-right:20px;">Next Scheduled Delivery</td>
                   <td style="font-weight:bold">{{ subscription.box.delivered }}</td>
                 </tr>
+                {% endif %}
                 <tr>
                   <td style="color:#777;text-align:right;padding-right:20px;">Frequency</td>
                   <td>{{ subscription.attributes.frequency }}</td>
@@ -49,7 +51,7 @@ export default `
                   <td>#{{ subscription.attributes.lastOrder.order_number }}</td>
                 </tr>
                 <tr>
-                  <td style="color:#777;text-align:right;padding-right:20px;">Last Delivery</td>
+                  <td style="color:#777;text-align:right;padding-right:20px;">{{ last_delivery }}</td>
                   <td>{{ subscription.attributes.lastOrder.delivered }}</td>
                 </tr>
               </mj-table>
@@ -86,10 +88,12 @@ export default `
                   <td style="color:#777;text-align:right;padding-right:20px;">Subscription ID</td>
                   <td>{{ subscription.attributes.subscription_id }}</td>
                 </tr>
+                {% if subscription.attributes.charge_id %}
                 <tr>
                   <td style="color:#777;text-align:right;padding-right:20px;">Charge ID</td>
                   <td>{{ subscription.attributes.charge_id }}</td>
                 </tr>
+                {% endif %}
                 <tr>
                   <td style="color:#777;text-align:right;padding-right:20px;">Address ID</td>
                   <td>{{ subscription.attributes.address_id }}</td>

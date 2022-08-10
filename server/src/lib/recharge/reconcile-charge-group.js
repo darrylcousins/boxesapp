@@ -526,9 +526,15 @@ export const gatherData = async ({ grouped, result }) => {
     const chargeDate = new Date(Date.parse(charge.scheduled_at));
     const nextChargeDate = getNZDeliveryDay(chargeDate.getTime());
 
-    const { subscription } = await makeRechargeQuery({
-      path: `subscriptions/${group.box.purchase_item_id}`,
-    });
+    let subscription;
+    if (!Object.hasOwnProperty.call(group, "subscription")) {
+      const result = await makeRechargeQuery({
+        path: `subscriptions/${group.box.purchase_item_id}`,
+      });
+      subscription = result.subscription;
+    } else {
+      subscription = group.subscription;
+    };
 
     // subscription.purchase_item_id === actual subscription.id
     // XXX in order to get the frequency I need to get the actual subscription

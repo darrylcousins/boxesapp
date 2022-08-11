@@ -92,7 +92,6 @@ async function *Subscription({ subscription, idx }) {
       setTimeout(() => {
           const el = document.querySelector("#saveBar");
           el.classList.add("open");
-          console.log("fixing save bar");
         }, 
         1000);
     };
@@ -132,7 +131,6 @@ async function *Subscription({ subscription, idx }) {
       const el = document.querySelector(`#overlay-${idx}`);
       const products = document.querySelector(`#loader-${idx}`);
       const rect = products.getBoundingClientRect();
-      console.log(rect.top, window.scrollY, products.scrollTop);
       el.style.top = `${parseInt(rect.top) + window.scrollY + 5}px`;
       el.classList.remove("dn");
       el.classList.add("db");
@@ -145,7 +143,6 @@ async function *Subscription({ subscription, idx }) {
         const { error, json } = result;
         if (error !== null) {
           fetchError = error;
-          console.log("Fetch:", fetchError);
           loading = false;
           this.refresh();
         } else {
@@ -177,7 +174,6 @@ async function *Subscription({ subscription, idx }) {
         }
       })
       .catch((err) => {
-        console.error("ERROR:", err);
         fetchError = err;
         loading = false;
         this.refresh();
@@ -193,7 +189,6 @@ async function *Subscription({ subscription, idx }) {
     }).sort().join(",");
   };
 
-  console.log(subscription);
   /**
    * @function productsChanged
    * @listens productChangeEvent From EditProducts component
@@ -390,8 +385,10 @@ async function *Subscription({ subscription, idx }) {
         </div>
         <div class="w-100 tr pr2 pb2">
           { subscription.messages.length === 0 && (
-            <Button type="secondary" onclick={toggleCollapse}>
-              { collapsed ? (subscription.attributes.hasNextBox ? "Edit products" : "Show products") : "Hide products" }
+            <Button type="success" onclick={toggleCollapse}>
+              <span class="b">
+                { collapsed ? (subscription.attributes.hasNextBox ? "Edit products" : "Show products") : "Hide products" }
+              </span>
             </Button>
           )}
         </div>
@@ -401,9 +398,14 @@ async function *Subscription({ subscription, idx }) {
                   <ul class="">
                     { subscription.messages.map(el => <li>{el}</li>) }
                   </ul>
+                  { subscription.attributes.nowAvailableAsAddOns.length > 0 && (
+                    <p class="pl5">New available this week: { subscription.attributes.nowAvailableAsAddOns.join(", ") }</p>
+                  )}
                   <div class="tr mv2 mr3">
                     <Button type="primary" onclick={() => saveChanges("updates")}>
-                      Save changes
+                      <span class="b">
+                        Continue
+                      </span>
                     </Button>
                   </div>
                 </Fragment>

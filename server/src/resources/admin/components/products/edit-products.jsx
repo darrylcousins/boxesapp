@@ -67,6 +67,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
    *
    * @member {object} sortedListNames
    */
+  //let sortedListNames = [ "Including", "Add on Items", [ "Removed Items", "Swapped Items" ] ];
   let sortedListNames = [ "Including", "Add on Items", [ "Removed Items", "Swapped Items" ] ];
   /**
    * The priced items collected for display
@@ -679,7 +680,22 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
 
   init();
 
+  /*
+   * @function testVisiblity
+   *
+   * Always show add on items - the plus
+   * If no Included don't show an empty list
+   * No swaps or removed? Don't show them
+  */
+  const testVisibility = (name) => {
+    if (name === "Add on Items") return true;
+    if (Array.isArray(name) && name.find(el => boxLists[el].length > 0)) return true;
+    if (name === "Including" && boxLists[name].length > 0) return true;
+    return false;
+  };
+
   for (const { box, properties, nextChargeDate, images, isEditable, key } of this) { // eslint-disable-line no-unused-vars
+
     yield (
       <Fragment>
         { showSelectModal && (
@@ -714,13 +730,15 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
               <div class="ml2 mb1 pt1 flex bt">
                 <div class="w-10">
                   { loading || !box.image ? (
-                    <div class="skeleton mr1 w-100 h-100" style="width: 3em; height: 3em" />
+                    <div class="skeleton mr1 w-100 h-100" style="width: 40px; height: 40px" />
                   ) : (
                     <Image src={ box.image } id={`image-${key}`} />
                   )}
                 </div>
-                <div class="w-70 bold"><span style="padding-left: 10px">{ box.shopify_title }</span></div>
-                <div class="pricing w-20 tr">
+                <div class="w-70 bold" style="height: 40px; line-height: 40px;">
+                  { box.shopify_title }
+                </div>
+                <div class="pricing w-20 tr" style="height: 40px; line-height: 40px;">
                   { loading ? (
                     <div class="skeleton mr1" />
                   ) : (
@@ -732,7 +750,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                 <div class="ml2 mb1 flex">
                   <div class="w-10">
                     { loading && (
-                      <div class="skeleton mr1 w-100 h-100" style="width: 3em; height: 3em" />
+                      <div class="skeleton mr1 w-100 h-100" style="width: 40px; height: 40px" />
                     )}
                     { !loading && el.image && (
                       <Image src={ el.image } id={`image-${key}-${idx}`} />
@@ -744,12 +762,14 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                       />
                     )}
                   </div>
-                  <div class="w-40"><span style="padding-left: 10px">{ el.name }</span></div>
-                  <div class="pricing w-20 tr">
+                  <div class="w-40 bold" style="height: 40px; line-height: 40px;">
+                    { el.name }
+                  </div>
+                  <div class="pricing w-20 tr" style="height: 40px; line-height: 40px;">
                     <span>{ toPrice(el.price) }</span>
                   </div>
-                  <div class="w-10 tc">({ el.count })</div>
-                  <div class="pricing w-20 tr">
+                  <div class="w-10 tc" style="height: 40px; line-height: 40px;">({ el.count })</div>
+                  <div class="pricing w-20 tr" style="height: 40px; line-height: 40px;">
                     <span>{ toPrice(el.count * el.price) }</span>
                   </div>
                 </div>
@@ -769,7 +789,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
           <div class="flex-container w-100 h-100 mt1 pt2">
             { sortedListNames.map((name, idx) => (
               <Fragment>
-                { Array.isArray(name) ? (
+                { Array.isArray(name) && testVisibility(name) ? (
                   <div class={`flex flex-column w-100 ba b--silver ${ idx > 0 && "bl-0" }`}>
                     { name.map((item, index) => (
                       <div class={`w-100 h-100 flex flex-column b--silver ${ index > 0 && "bt" }`}>
@@ -781,12 +801,14 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                     ))}
                   </div>
                 ) : (
-                  <div id={ name } class={`w-100 flex flex-column ba b--silver ${ idx > 0 && "bl-0" }`}>
-                    <Title name={ name } idx={ idx } />
-                    <div class="w-100 pb2">
-                      <Body properties={ boxLists } name={ name } idx={ idx } />
+                  testVisibility(name) && (
+                    <div id={ name } class={`w-100 flex flex-column ba b--silver ${ idx > 0 && "bl-0" }`}>
+                      <Title name={ name } idx={ idx } />
+                      <div class="w-100 pb2">
+                        <Body properties={ boxLists } name={ name } idx={ idx } />
+                      </div>
                     </div>
-                  </div>
+                  )
                 )}
               </Fragment>
             ))}

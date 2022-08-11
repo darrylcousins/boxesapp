@@ -20,6 +20,7 @@ const Button = (props) => {
   let classList;
   let hint = "";
   let elProps = { ...props };
+  // doh, why?
   delete elProps["hover"];
   delete elProps["border"];
   if (type === "secondary") {

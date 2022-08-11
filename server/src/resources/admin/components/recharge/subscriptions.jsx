@@ -101,7 +101,6 @@ function* Subscriptions() {
           } else {
 
             const result = json.customer;
-            console.log('got customer', result);
             if (!result) {
               searchError = "No customer found with the given id";
               return null;

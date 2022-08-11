@@ -74,7 +74,6 @@ async function *Customer({ customer, admin }) {
           return null;
         };
         chargeGroups = json;
-        console.log(chargeGroups);
         loading = false;
         this.refresh();
       })

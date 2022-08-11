@@ -171,7 +171,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     boxListArrays[name] = product_string.split(",").map(el => el.trim()).filter(el => el !== "");
   });
   // should I just get the strings here and ignore the counts because after all I can find the counts again
-  const boxIncludedExtras = boxListArrays["Including"]
+  let boxIncludedExtras = boxListArrays["Including"]
     .map(el => matchNumberedString(el))
     .filter(el => el.quantity > 1)
     .map(el => ({ title: el.title, quantity: el.quantity - 1 }));
@@ -181,7 +181,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     .map(el => ({ title: el.title, quantity: el.quantity - 1 }));
   let boxAddOnExtras = boxListArrays["Add on Items"]
     .map(el => matchNumberedString(el));
-  const boxRemovedItems = boxListArrays["Removed Items"]
+  let boxRemovedItems = boxListArrays["Removed Items"]
     .map(el => matchNumberedString(el));
 
   // subscribedExtras are subscribed items in the package - should also be in boxListExtras
@@ -219,37 +219,38 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   const messages = [];
   const subscriptionUpdates = [];
   let item;
+  let itemInner;
   let idx;
   let quantity;
 
   /* REMOVED ITEMS one only is allowed with the matching swap */
-  for  ([idx, item] of boxRemovedItems.entries()) {
+  for  (item of [ ...boxRemovedItems ]) {
     if (includedProducts.indexOf(item.title) === -1) { // not included this week
       // remove from removedItem list
-      boxRemovedItems.splice(idx, 1);
+      boxRemovedItems = boxRemovedItems.filter(el => el.title !== item.title);
       messages.push(`Removed item ${item.title} not in this weeks box.`);
-      for ([idx, item] of boxSwappedExtras.entries()) {
-        quantity = item.quantity;
-        if (item.quantity === 0) {
+      for (itemInner of [ ...boxSwappedExtras ]) {
+        quantity = itemInner.quantity;
+        if (quantity === 0) {
           // only a swap and no subscribed item
-          boxSwappedExtras.splice(idx, 1);
-          messages.push(`Swapped item ${item.title} not swapped this week.`);
+          boxSwappedExtras = boxSwappedExtras.filter(el => el.title !== itemInner.title);
+          messages.push(`Swapped item ${itemInner.title} not swapped this week.`);
         } else {
-          if (addOnProducts.indexOf(item.title) === -1) { // not included this week
+          if (addOnProducts.indexOf(itemInner.title) === -1) { // not included this week
             // drop the subscription altogether
-            messages.push(`Extra swapped item ${item.title} not available this week.`);
-            boxSwappedExtras.splice(idx, 1);
-            item.quantity = 0;
-            if (titledSubscribedExtras.includes(item.title)) {
-              subscriptionUpdates.push(item); // can later read the zero an remove subscription
+            messages.push(`Extra swapped item ${itemInner.title} not available this week.`);
+            boxSwappedExtras = boxSwappedExtras.filter(el => el.title !== itemInner.title);
+            itemInner.quantity = 0;
+            if (titledSubscribedExtras.includes(itemInner.title)) {
+              subscriptionUpdates.push(itemInner); // can later read the zero an remove subscription
             };
           } else {
             // there will be a subscription for this item we can leave as is
-            if (titledSubscribedExtras.includes(item.title)) {
-              messages.push(`Extra swapped item ${item.title} included as an add on this week.`);
-              boxAddOnExtras.push(item);
+            if (titledSubscribedExtras.includes(itemInner.title)) {
+              messages.push(`Extra swapped item ${itemInner.title} included as an add on this week.`);
+              boxAddOnExtras.push(itemInner);
             } else {
-              messages.push(`${item.title} removed because has no matching subscription.`);
+              messages.push(`${itemInner.title} removed because has no matching subscription.`);
             };
           };
         };
@@ -260,9 +261,9 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   const tempBoxRemovedItems = [ ...boxRemovedItems ];
 
   /* SWAPPED ITEMS one only is allowed with the matching swap */
-  for ([idx, item] of boxSwappedExtras.entries()) {
+  for (item of [ ...boxSwappedExtras ]) {
     if (addOnProducts.indexOf(item.title) === -1) { // not included this week
-      boxSwappedExtras.splice(idx, 1);
+      boxSwappedExtras = boxSwappedExtras.filter(el => el.title !== item.title);
       if (includedProducts.indexOf(item.title) === -1) {
         // drop the subscription altogether
         messages.push(`Swapped item ${item.title} not available this week.`);
@@ -291,7 +292,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
           };
         };
       };
-      //for ([idx, item] of boxRemovedItems.entries()) {
       let removed = tempBoxRemovedItems.pop();
       let product = fetchBox.includedProducts.find(el => el.shopify_title === removed.title);
       let swaps = fetchBox.addOnProducts.filter(el => {
@@ -319,9 +319,9 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   };
 
   /* EXTRA INCLUDED ITEMS */
-  for ([idx, item] of boxIncludedExtras.entries()) {
+  for (item of [ ...boxIncludedExtras ]) {
     if (includedProducts.indexOf(item.title) === -1) { // not included this week
-      boxIncludedExtras.splice(idx, 1);
+      boxIncludedExtras = boxIncludedExtras.filter(el => el.title !== item.title);
       if (addOnProducts.indexOf(item.title) === -1) {
         messages.push(`Included extra item ${item.title} unavailable this week.`);
         item.quantity = 0;
@@ -338,16 +338,16 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
       };
     } else {
       if (!titledSubscribedExtras.includes(item.title)) {
-        boxIncludedExtras.splice(idx, 1);
+        boxIncludedExtras = boxIncludedExtras.filter(el => el.title !== item.title);
         messages.push(`Extra ${item.title} removed because has no matching subscription.`);
       };
     };
   };
 
   /* ADD ON ITEMS */
-  for ([idx, item] of boxAddOnExtras.entries()) {
+  for (item of [ ...boxAddOnExtras ]) {
     if (addOnProducts.indexOf(item.title) === -1) { // not included this week
-      boxAddOnExtras.splice(idx, 1);
+      boxAddOnExtras = boxAddOnExtras.filter(el => el.title !== item.title);
       if (includedProducts.indexOf(item.title) === -1) {
         messages.push(`Add on item ${item.title} unavailable this week.`);
         item.quantity = 0;
@@ -375,7 +375,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
       };
     } else {
       if (!titledSubscribedExtras.includes(item.title)) {
-        boxAddOnExtras.splice(idx, 1);
+        boxAddOnExtras = boxAddOnExtras.filter(el => el.title !== item.title);
         messages.push(`Add on ${item.title} removed because has no matching subscription.`);
       };
     };
@@ -385,7 +385,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
       .map(item => ({ [item.shopify_title]: item.shopify_price }) )));
 
   // work through the subscription updates to update quantities
-  for (const [idx, update] of subscriptionUpdates.entries()) {
+  for (const [idx, update] of [ ...subscriptionUpdates ].entries()) {
     const lineItem = subscribedExtras.find(el => el.title === update.title);
     if (lineItem) {
       lineItem.quantity = update.quantity;
@@ -473,8 +473,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   for (const templateKey of templateKeys) {
     templateSubscription[templateKey] = subscription[templateKey];
   };
-  //console.log(subscription);
-  // XXX Check box price for update too!!!
   if (!isEqual(boxProperties, updateProperties)) {
     subscriptionUpdates.push({
       subscription_id: subscription.id,
@@ -577,7 +575,6 @@ export const gatherData = async ({ grouped, result }) => {
         shopify_product_id: el.shopify_product_id,
       };
     });
-    //console.log(updates);
 
     const images = {
       [`${subscription.product_title}`]: group.box.images.small

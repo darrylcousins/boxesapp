@@ -4,16 +4,13 @@ import path from "path";
 import { MongoClient, ObjectID } from "mongodb";
 import "isomorphic-fetch";
 
-global._filename = (_meta) => _meta.url.split("/").pop();
-// necessary path resolution for running as cron job
 dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
+global._filename = (_meta) => _meta.url.split("/").pop();
 const username = encodeURIComponent(process.env.DB_USER);
 const password = encodeURIComponent(process.env.DB_PASSWORD);
 const mongo_uri = `mongodb://${username}:${password}@localhost/${process.env.DB_NAME}`;
-global.client = new MongoClient(mongo_uri, { useNewUrlParser: true, useUnifiedTopology: true });
-await client.connect();
-global._mongodb = client.db();
 global._logger = console;
+global._mongodb;
 _logger.notice = (e) => console.log(e);
 
 import chargeUpcoming from "../src/webhooks/recharge/charge-upcoming.js";

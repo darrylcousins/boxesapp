@@ -192,8 +192,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
       shopify_product_id: parseInt(el.external_product_id.ecommerce),
       title: el.title, 
       quantity: el.quantity,
-      total_price: el.total_price,
-      unit_price: el.unit_price,
+      price: el.unit_price,
       properties: el.properties,
       image: el.images.small,
     };
@@ -400,12 +399,12 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   for (const item of subscribedExtras) {
     if (item.quantity > 0) {
       const checkPrice = parseFloat(priceMap[item.title]) * 0.01;
-      const oldPrice = item.unit_price;
-      if (checkPrice !== parseFloat(item.unit_price)) {
-        item.unit_price =  `${checkPrice.toFixed(2)}`;
-        item.total_price = `${(checkPrice * item.quantity).toFixed(2)}`;
+      const oldPrice = item.price;
+      if (checkPrice !== parseFloat(item.price)) {
+        item.price = `${checkPrice.toFixed(2)}`;
+        //item.total_price = `${(checkPrice * item.quantity).toFixed(2)}`;
         subscriptionUpdates.push(item);
-        messages.push(`${item.title} price has this week changed from $${oldPrice} to $${item.unit_price}.`);
+        messages.push(`${item.title} price has this week changed from $${oldPrice} to $${item.price}.`);
       };
     };
   };
@@ -573,8 +572,10 @@ export const gatherData = async ({ grouped, result }) => {
         properties: el.properties,
         title: el.title,
         shopify_product_id: el.shopify_product_id,
+        price: el.price,
       };
     });
+    console.log(updates);
 
     const images = {
       [`${subscription.product_title}`]: group.box.images.small

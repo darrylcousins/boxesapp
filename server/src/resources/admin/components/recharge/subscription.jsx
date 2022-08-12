@@ -358,6 +358,7 @@ async function *Subscription({ subscription, idx }) {
     subscription.address.email,
   ]
 
+  console.log(subscription.updates);
 
   for await ({ subscription, idx } of this) { // eslint-disable-line no-unused-vars
     yield (

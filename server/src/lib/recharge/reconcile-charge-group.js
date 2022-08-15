@@ -495,6 +495,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   return {
     fetchBox,
     hasNextBox,
+    nextDeliveryDate,
     boxProperties,
     finalProperties,
     subscribedExtras,
@@ -551,6 +552,7 @@ export const gatherData = async ({ grouped, result }) => {
     const {
       fetchBox,
       hasNextBox,
+      nextDeliveryDate,
       boxProperties,
       finalProperties,
       subscribedExtras,

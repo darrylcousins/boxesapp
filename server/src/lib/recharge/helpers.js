@@ -59,7 +59,12 @@ export const updateSubscriptions = async ({ updates }) => {
         console.log("Deleting", update.title, update.subscription_id);
       } else {
         options.method = "PUT";
-        options.body = JSON.stringify({ properties: update.properties, quantity: update.quantity });
+        const body = {
+          properties: update.properties,
+          quantity: update.quantity,
+        };
+        if (Object.hasOwnProperty.call(update, "price")) body.price = update.price;
+        options.body = JSON.stringify(body);
       };
     } else {
       options.path = "subscriptions";

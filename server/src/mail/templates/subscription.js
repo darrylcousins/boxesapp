@@ -48,10 +48,6 @@ export default `
                   <td style="color:#777;text-align:right;padding-right:20px;">Last Order</td>
                   <td>#{{ subscription.attributes.lastOrder.order_number }}</td>
                 </tr>
-                <tr>
-                  <td style="color:#777;text-align:right;padding-right:20px;">{{ last_delivery }}</td>
-                  <td>{{ subscription.attributes.lastOrder.delivered }}</td>
-                </tr>
               </mj-table>
             </mj-column>
           </mj-section>

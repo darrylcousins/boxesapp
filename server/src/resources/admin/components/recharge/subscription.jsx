@@ -331,7 +331,8 @@ async function *Subscription({ subscription, idx }) {
   ];
   const chargeData = [
       ["Next Charge Date", subscription.attributes.nextChargeDate],
-      ["Next Scheduled Delivery", subscription.properties["Delivery Date"]],
+    //["Next Scheduled Delivery", subscription.properties["Delivery Date"]],
+      ["Next Scheduled Delivery", subscription.attributes.nextDeliveryDate],
       ["Frequency", subscription.attributes.frequency],
       ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
       ["Order Delivered", subscription.attributes.lastOrder.delivered],

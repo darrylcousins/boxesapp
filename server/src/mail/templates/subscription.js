@@ -32,12 +32,10 @@ export default `
                   <td style="color:#777;text-align:right;padding-right:20px;">Next Charge Date</td>
                   <td>{{ subscription.attributes.nextChargeDate }}</td>
                 </tr>
-                {% if subscription.attributes.hasNextBox == true %}
                 <tr>
                   <td style="color:#777;text-align:right;padding-right:20px;">Next Scheduled Delivery</td>
-                  <td style="font-weight:bold">{{ subscription.box.delivered }}</td>
+                  <td style="font-weight:bold">{{ subscription.attributes.nextDeliveryDate }}</td>
                 </tr>
-                {% endif %}
                 <tr>
                   <td style="color:#777;text-align:right;padding-right:20px;">Frequency</td>
                   <td>{{ subscription.attributes.frequency }}</td>

@@ -102,6 +102,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   let fetchBox = null;
   let previousBox = null;
   let hasNextBox = false;
+  const nextDeliveryDate = boxProperties["Delivery Date"];
   let days;
   if (subscription.order_interval_unit === "week") {
     days = subscription.order_interval_frequency * 7;
@@ -575,7 +576,6 @@ export const gatherData = async ({ grouped, result }) => {
         price: el.price,
       };
     });
-    console.log(updates);
 
     const images = {
       [`${subscription.product_title}`]: group.box.images.small
@@ -587,6 +587,7 @@ export const gatherData = async ({ grouped, result }) => {
     const totalPrice = includes.map(el => parseFloat(el.price) * el.quantity).reduce((sum, el) => sum + el, 0);
     const attributes = {
       nextChargeDate,
+      nextDeliveryDate,
       hasNextBox,
       variant: subscription.variant_title,
       frequency,

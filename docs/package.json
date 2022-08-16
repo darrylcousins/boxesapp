@@ -3,13 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "build": "npm run build:client",
-    "build:client": "vite build --config config/vite.js --outDir dist/client",
-    "debug": "node --inspect-brk src/index.js",
-    "dev": "cross-env NODE_ENV=development nodemon src/index.js --watch ./src",
-    "preserve": "npm run build",
-    "serve": "cross-env NODE_ENV=production node src/index.js",
-    "start": "npm run serve"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "type": "module",
   "engines": {
@@ -20,11 +16,9 @@
     "url": "git+ssh://git@github.com/darrylcousins/boxesapp.git"
   },
   "devDependencies": {
-    "@b9g/crank": "^0.4.4",
-    "cross-env": "^7.0.3",
-    "express": "^4.18.1",
+    "highlight.js": "^11.6.0",
     "markdown-it": "^13.0.1",
-    "nodemon": "^2.0.19",
+    "tachyons": "^4.12.0",
     "vite": "^2.9.9"
   }
 }

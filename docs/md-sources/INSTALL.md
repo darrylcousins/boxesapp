@@ -105,16 +105,18 @@ TODO: More documentation of settings will be helpful.
 `db.settings.find({tag: "General"})`
 
 Important! When building client this url is inserted but then pulls this url with other settings.
-```javascript
-{ "handle": "api-url",
+```js
+{
+  "handle": "api-url",
   "value": "https://yourshop.myshopify.com",
   ...
 }
 ```
 
 Must match tags set on `Box Produce` products in shopify to group products in client app and picking lists.
-```javascript
-{ "handle": "product-tags",
+```js
+{
+  "handle": "product-tags",
   "value": "Vege,Bread,Fruit",
   ...
 }
@@ -122,8 +124,9 @@ Must match tags set on `Box Produce` products in shopify to group products in cl
 
 Must match the shopify product id of the custom box, this is to separate items
 in the picking list allowing the packers to organise products for packing.
-```javascript
-{ "handle": "box-rule",
+```js
+{
+  "handle": "box-rule",
   "value": "<CustomBox.shopify_product_id>",
   ...
 }
@@ -139,7 +142,7 @@ The weekday will match a variant title of the shopify `Container Box` product. M
 
 An example:
 
-```javascript
+```js
 {
   "handle": "box-rule",
   "tag": "Boxes",
@@ -159,7 +162,7 @@ midnight of the day of delivery after which an order cannot be placed.
 
 For example Thursday boxes will cut off at 10:30 on Tuesday morning.
 
-```javascript
+```js
 {
   "handle": "box-cutoff",
   "tag": "Box Cutoff",
@@ -176,7 +179,7 @@ For example only 20 boxes total (of any type) can be ordered for a Tuesday.
 NB setting a value of 0 means and infinite number (this is made clear in the
 admin interface for editing this setting).
 
-```javascript
+```js
 {
   "handle": "box-limit",
   "tag": "Box Limit",
@@ -194,12 +197,13 @@ cp server/docs/env/example-env server/.env
 
 Edits required to this file.
 
-`SHOPIFY_API_PASSWORD` - Still a mystery to me where to find this one - received after installing app?
 `SHOPIFY_API_SECRET` - Comes with creating the custom app in partners dashboard
+
 `SHOPIFY_API_KEY` - Comes with creating the custom app in partners dashboard
 
 `RECHARGE_ACCESS_TOKEN` - From recharge - the store owner will need to grant
 access to the tokens or supply them from the recharge admin
+
 `RECHARGE_CLIENT_SECRET` - From recharge, as above
 
 # Build the client

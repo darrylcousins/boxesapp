@@ -1,27 +1,27 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
-import { existsSync, readFileSync } from "fs";
-import { resolve } from "path";
-
+import hljs from "highlight.js";
+/*
+import hljs from "highlight.js/lib/common"; // smaller set of languages
+import hljs from "highlight.js/lib/core"; // smallest set
+*/
 const md = await import("markdown-it").then(
-  ({ default: fn }) => fn()
+  ({ default: fn }) => fn({
+    highlight: function (str, lang) {
+      if (lang && hljs.getLanguage(lang)) {
+        try {
+          return hljs.highlight(str, { language: lang }).value;
+        } catch (__) {}
+      }
+      return ''; // use external default escaping
+    }
+  })
 );
 
-const _filename = (_meta) => _meta.url.split("/").pop();
+export default (source) => {
 
-export default async (page) => {
-
-  let markdown;
-  let html = null;
-  const markdownPath = resolve(_filename(import.meta), "..", "markdown", "INSTALL.md");
-
-  if (existsSync(markdownPath)) {
-    markdown = readFileSync(markdownPath, {
-        encoding:'utf8', flag:'r'
-      });
-    html = md.render(markdown);
-  };
+  const html = md.render(source);
 
   return html;
 };

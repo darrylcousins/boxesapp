@@ -2,7 +2,11 @@
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  color: #404040;
+  margin: 60px auto;
+  max-width: 64rem;
+}
+pre {
+  border: 1px solid #707070;
+  padding: 2em;
 }

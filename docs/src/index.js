@@ -1,19 +1,21 @@
-/*
- * @author Darryl Cousins <darryljcousins@gmail.com>
- */
-import express from "express";
-import markdown from "./markdown.js";
+import markdownToHTML from "./markdown.js";
 
-const app = express();
-const port = 4000;
+const vitePluginMdToHTML = (pluginOptions) => {
+  return {
+    name: "vite-md-to-html",
+    transform(source, id) {
+      if (id.endsWith(".md")) {
 
-app.get('/', async (req, res) => {
-  res.setHeader("Content-Type", "text/html");
-  const html = await markdown();
-  console.log(html);
-  res.send(html);
-});
+        const html = markdownToHTML(source, pluginOptions);
+        const code = `
+export const html = ${JSON.stringify(html)};
+export default html;
+        `;
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
+        return { code };
+      }
+    },
+  };
+};
+
+export default vitePluginMdToHTML;

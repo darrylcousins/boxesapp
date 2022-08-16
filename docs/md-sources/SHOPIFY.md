@@ -76,7 +76,7 @@ Two edits are required to the theme to install the app.
 Firstly we need to load the `boxesapp` files in `layout/theme.liquid`. I've
 been placing it below other javascript script tags.
 
-```liquid
+```php
   {% if request.page_type == 'product' %}
     {{ 'boxesapp.css' | asset_url | stylesheet_tag }}
     {{ 'boxesapp.js' | asset_url | script_tag }}
@@ -90,7 +90,7 @@ any product **not** a `Container Box` should still render the correct form. The
 disabled for `Container Boxes` but should still render it's widget for any
 other subscription products in the shop.
 
-```liquid
+```php
   {% if product.type == 'Container Box' %}
     <script type="application/json" id="cart-json">
       {{ cart | json }}

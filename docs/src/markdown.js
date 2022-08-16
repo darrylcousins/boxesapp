@@ -19,9 +19,13 @@ const md = await import("markdown-it").then(
   })
 );
 
+const headings = await import("markdown-it-github-headings").then(
+  ({ default: fn }) => fn
+);
+
 export default (source) => {
 
-  const html = md.render(source);
+  const html = md.use(headings, {}).render(source);
 
   return html;
 };

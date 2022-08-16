@@ -2,11 +2,28 @@
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #404040;
   margin: 60px auto;
   max-width: 64rem;
 }
+.markdown-body {
+  box-sizing: border-box;
+  min-width: 200px;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 45px;
+}
 pre {
-  border: 1px solid #707070;
-  padding: 2em;
+  border: 1px solid #e3e3e3;
+}
+
+#navigation {
+  transition: opacity 0.5s linear 0.1s;
+}
+#navigation.on {
+  opacity: 1;
+}
+@media (max-width: 767px) {
+  .markdown-body {
+    padding: 15px;
+  }
 }

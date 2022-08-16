@@ -1,6 +1,17 @@
-//import "tachyons/src/tachyons.css";
+import "tachyons/src/tachyons.css";
 import "./style.css";
+import "./github-markdown.css";
 import "highlight.js/styles/stackoverflow-light.css";
-import installHTML from "./md-sources/INSTALL.md";
 
-document.querySelector("#app").innerHTML = installHTML;
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("Initialized app");
+
+  const paths = window.location.pathname.split("/").filter(el => el !== "");
+
+  if (paths.length === 0) paths.push("index");
+
+  import(`./md-sources/${paths.join("/")}.md`).then(({ default: html }) => {
+    document.querySelector("#navigation").classList.add("on");
+    document.querySelector("#app").innerHTML = html;
+  });
+});

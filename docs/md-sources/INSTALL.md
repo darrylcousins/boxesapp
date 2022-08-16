@@ -4,7 +4,7 @@ A client/server app to run a boxes app for Shopify.
 
 Installation for a shopify site running on https://yourshop.myshopify.com.
 
-# Add a subdomain
+## Add a subdomain
 
 Make a subdomain e.g. https://yourshop.boxesapp.nz
 
@@ -16,13 +16,13 @@ cp server/docs/nginx/yourshop.boxesapp.nz /etc/nginx/site-available
 
 Edits required to this file.
 
-# Get code from git
+## Get code from git
 
 ```bash
 git clone git@github.com:darrylcousins/boxesnode.git
 ```
 
-# Install
+## Install
 
 ```bash
 cd client
@@ -34,7 +34,7 @@ cd server
 npm install
 ```
 
-# Client
+## Client
 
 Check the `base-url.js` file to point to the correct server. Check
 `vite-config.js` for the install directory. I've been using
@@ -50,7 +50,7 @@ node build.js
 ```
 
 
-# Mongo DB
+## Mongo DB
 
 Setting up the database can all be done using mongo shell. The database name,
 user and password will go into `.env`.
@@ -74,7 +74,7 @@ registry
 settings
 ```
 
-# Settings
+## Settings
 
 Import the settings, these appear to be adequate.
 
@@ -95,12 +95,12 @@ mongoimport --db=yourshop --collection=settings --file=server/docs/settings/sett
 NB: These needs to be tested. Perhaps more settings should also be created
 using a script to read env at the very least manage setup of general settings:
 
-## More settings
+### More settings
 
 All settings are primarily used to configure the client app, though some also in the server.
 TODO: More documentation of settings will be helpful.
 
-### General
+#### General
 
 `db.settings.find({tag: "General"})`
 
@@ -132,13 +132,13 @@ in the picking list allowing the packers to organise products for packing.
 }
 ```
 
-### Box Rules
+#### Box Rules
 
 `db.settings.find({tag: "Boxes"})`
 
 Box rules allow different text to be presented to user dependent on day of week and the box.
 
-The weekday will match a variant title of the shopify `Container Box` product. More on this in the section [Shopify Products](/docs/SHOPIFY.md).
+The weekday will match a variant title of the shopify `Container Box` product.
 
 An example:
 
@@ -153,7 +153,7 @@ An example:
 }
 ```
 
-### Other Box Rules
+#### Other Box Rules
 
 `db.settings.find({tag: "Box Cutoff"})`
 
@@ -189,7 +189,7 @@ admin interface for editing this setting).
 }
 ```
 
-# Env
+## Env
 
 ```bash
 cp server/docs/env/example-env server/.env
@@ -206,7 +206,7 @@ access to the tokens or supply them from the recharge admin
 
 `RECHARGE_CLIENT_SECRET` - From recharge, as above
 
-# Build the client
+## Build the client
 
 ```bash
 cp client/src/base-url.example.js client/src/base-url.js

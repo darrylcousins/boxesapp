@@ -17,9 +17,10 @@ _logger.notice = (e) => console.log(e);
  */
 
 const run = async () => {
-  await Shopify.initialize();
 
   global._mongodb = await getMongoConnection();
+  await Shopify.initialize();
+
   try {
     console.log('this ran');
 

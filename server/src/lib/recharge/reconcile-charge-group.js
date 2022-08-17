@@ -479,7 +479,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
       shopify_product_id: parseInt(subscription.external_product_id.ecommerce),
       title: subscription.product_title, 
       quantity: subscription.quantity,
-      unit_price: subscription.price,
+      price: subscription.price,
       total_price: subscription.price,
       properties: Object.entries(updateProperties).map(([name, value]) => ({name, value})),
     });

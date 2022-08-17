@@ -28,14 +28,16 @@ export default `
           <mj-section padding="0px">
             <mj-column>
               <mj-table align="center" width="300px">
-                <tr>
-                  <td style="color:#777;text-align:right;padding-right:20px;">Next Charge Date</td>
-                  <td>{{ subscription.attributes.nextChargeDate }}</td>
-                </tr>
-                <tr>
-                  <td style="color:#777;text-align:right;padding-right:20px;">Next Scheduled Delivery</td>
-                  <td style="font-weight:bold">{{ subscription.attributes.nextDeliveryDate }}</td>
-                </tr>
+                {% if type == "upcoming" %}
+                  <tr>
+                    <td style="color:#777;text-align:right;padding-right:20px;">Next Charge Date</td>
+                    <td>{{ subscription.attributes.nextChargeDate }}</td>
+                  </tr>
+                  <tr>
+                    <td style="color:#777;text-align:right;padding-right:20px;">Next Scheduled Delivery</td>
+                    <td style="font-weight:bold">{{ subscription.attributes.nextDeliveryDate }}</td>
+                  </tr>
+                {% endif %}
                 <tr>
                   <td style="color:#777;text-align:right;padding-right:20px;">Frequency</td>
                   <td>{{ subscription.attributes.frequency }}</td>
@@ -44,10 +46,17 @@ export default `
                   <td style="color:#777;text-align:right;padding-right:20px;">Total Price</td>
                   <td><span>$</span>{{ subscription.attributes.totalPrice | money }}</td>
                 </tr>
-                <tr>
-                  <td style="color:#777;text-align:right;padding-right:20px;">Last Order</td>
-                  <td>#{{ subscription.attributes.lastOrder.order_number }}</td>
-                </tr>
+                {% if type == "upcoming" %}
+                  <tr>
+                    <td style="color:#777;text-align:right;padding-right:20px;">Last Order</td>
+                    <td>#{{ subscription.attributes.lastOrder.order_number }}</td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td style="color:#777;text-align:right;padding-right:20px;">Current Order</td>
+                    <td>#{{ subscription.attributes.lastOrder.order_number }}</td>
+                  </tr>
+                {% endif %}
               </mj-table>
             </mj-column>
           </mj-section>
@@ -130,7 +139,7 @@ export default `
                   </td>
                 </tr>
                 <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                  <td width="100px" style="color:#777;text-align:left;padding:0px 20px 20px 0px;">
+                  <td width="100px" style="color:#777;text-align:left;padding:10px 0px 10px 0px;">
                     Add on items:
                   </td>
                   <td valign="top">
@@ -138,7 +147,7 @@ export default `
                   </td>
                 </tr>
                 <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                  <td width="100px" style="color:#777;text-align:left;padding:0px 20px 20px 0px;">
+                  <td width="100px" style="color:#777;text-align:left;padding:10px 0px 10px 0px;">
                     Swapped items:
                   </td>
                   <td valign="top">
@@ -146,7 +155,7 @@ export default `
                   </td>
                 </tr>
                 <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                  <td width="100px" style="color:#777;text-align:left;padding:0px 20px 20px 0px;">
+                  <td width="100px" style="color:#777;text-align:left;padding:10px 0px 10px 0px;">
                     Removed items:
                   </td>
                   <td valign="top">
@@ -161,7 +170,7 @@ export default `
               <mj-table>
                 {% for product in subscription.includes %}
                   <tr>
-                    <td width="45px">
+                    <td width="45px" style="padding: 3px 0px">
                       <div
                         style="background-image:url('{{ subscription.attributes.images[product.title] }}');background-size:cover;width:40px;height:40px;border:1px solid #ccc"></div>
                     </td>
@@ -184,41 +193,43 @@ export default `
               </mj-table>
             </mj-column>
           </mj-section>
-          <mj-section padding-top="0px">
-            <mj-column>
-              <mj-table>
-                {% if subscription.attributes.newIncludedInThisBox.size > 0 %}
-                  <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                    <td valign="top" width="100px">
-                      New this box:
-                    </td>
-                    <td valign="top" style="padding-left: 20px">
-                      {{ subscription.attributes.newIncludedInThisBox | join: ", " }}
-                    </td>
-                  </tr>
-                {% endif %}
-                {% if subscription.attributes.notIncludedInThisBox.size > 0 %}
-                  <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                    <td valign="top" width="100px">
-                      Not in this box:
-                    </td>
-                    <td valign="top" style="padding-left: 20px">
-                      {{ subscription.attributes.notIncludedInThisBox | join: ", " }}
-                    </td>
-                  </tr>
-                {% endif %}
-                {% if subscription.attributes.nowAvailableAsAddOns.size > 0 %}
-                  <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                    <td valign="top" width="100px">
-                      New add ons:
-                    </td>
-                    <td valign="top" style="padding-left: 20px">
-                      {{ subscription.attributes.nowAvailableAsAddOns | join: ", " }}
-                    </td>
-                  </tr>
-                {% endif %}
-              </mj-table>
-            </mj-column>
-          </mj-section>
+          {% if type == "upcoming" %}
+            <mj-section padding-top="0px">
+              <mj-column>
+                <mj-table>
+                  {% if subscription.attributes.newIncludedInThisBox.size > 0 %}
+                    <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
+                      <td valign="top" width="100px">
+                        New in upcoming box:
+                      </td>
+                      <td valign="top" style="padding: 5px 0px 5px 20px">
+                        {{ subscription.attributes.newIncludedInThisBox | join: ", " }}
+                      </td>
+                    </tr>
+                  {% endif %}
+                  {% if subscription.attributes.notIncludedInThisBox.size > 0 %}
+                    <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
+                      <td valign="top" width="100px">
+                        Not in this upcoming box:
+                      </td>
+                      <td valign="top" style="padding: 5px 0px 5px 20px">
+                        {{ subscription.attributes.notIncludedInThisBox | join: ", " }}
+                      </td>
+                    </tr>
+                  {% endif %}
+                  {% if subscription.attributes.nowAvailableAsAddOns.size > 0 %}
+                    <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
+                      <td valign="top" width="100px">
+                        New add ons in upcoming box:
+                      </td>
+                      <td valign="top" style="padding: 5px 0px 5px 20px">
+                        {{ subscription.attributes.nowAvailableAsAddOns | join: ", " }}
+                      </td>
+                    </tr>
+                  {% endif %}
+                </mj-table>
+              </mj-column>
+            </mj-section>
+          {% endif %}
         {% endfor %}
         `;

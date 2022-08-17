@@ -349,7 +349,7 @@ async function *Subscription({ subscription, idx }) {
   };
 
   const addressData = [
-    subscription.address.name,
+    `${subscription.address.first_name} ${subscription.address.last_name}`,
     subscription.address.email,
     subscription.address.address1,
     subscription.address.address2 ? subscription.address.address2 : "",
@@ -357,9 +357,7 @@ async function *Subscription({ subscription, idx }) {
     subscription.address.zip,
     subscription.address.phone,
     subscription.address.email,
-  ]
-
-  console.log(subscription.updates);
+  ];
 
   for await ({ subscription, idx } of this) { // eslint-disable-line no-unused-vars
     yield (

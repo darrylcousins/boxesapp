@@ -4,8 +4,8 @@ import path from "path";
 import { MongoClient, ObjectID } from "mongodb";
 import "isomorphic-fetch";
 
-dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
 global._filename = (_meta) => _meta.url.split("/").pop();
+dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
 const username = encodeURIComponent(process.env.DB_USER);
 const password = encodeURIComponent(process.env.DB_PASSWORD);
 const mongo_uri = `mongodb://${username}:${password}@localhost/${process.env.DB_NAME}`;

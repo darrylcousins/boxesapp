@@ -29,6 +29,7 @@ export default async ({ subscriptions }) => {
         subscriptions,
         env: process.env,
         last_delivery: "Delivery Date",
+        type: "created",
       })
       .then(sections => {
         const htmlOutput = mjml2html(`

@@ -131,7 +131,7 @@ export default `
             <mj-column>
               <mj-table>
                 <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                  <td width="100px" style="color:#777;text-align:left;padding:0px 20px 20px 0px;">
+                  <td valign="top" width="100px" style="color:#777;text-align:left;padding:0px 20px 20px 0px;">
                     Includes:
                   </td>
                   <td valign="top">
@@ -139,7 +139,7 @@ export default `
                   </td>
                 </tr>
                 <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                  <td width="100px" style="color:#777;text-align:left;padding:10px 0px 10px 0px;">
+                  <td valign="top" width="100px" style="color:#777;text-align:left;padding:10px 0px 10px 0px;">
                     Add on items:
                   </td>
                   <td valign="top">
@@ -147,7 +147,7 @@ export default `
                   </td>
                 </tr>
                 <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                  <td width="100px" style="color:#777;text-align:left;padding:10px 0px 10px 0px;">
+                  <td valign="top" width="100px" style="color:#777;text-align:left;padding:10px 0px 10px 0px;">
                     Swapped items:
                   </td>
                   <td valign="top">
@@ -155,7 +155,7 @@ export default `
                   </td>
                 </tr>
                 <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                  <td width="100px" style="color:#777;text-align:left;padding:10px 0px 10px 0px;">
+                  <td valign="top" width="100px" style="color:#777;text-align:left;padding:10px 0px 10px 0px;">
                     Removed items:
                   </td>
                   <td valign="top">
@@ -199,8 +199,8 @@ export default `
                 <mj-table>
                   {% if subscription.attributes.newIncludedInThisBox.size > 0 %}
                     <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                      <td valign="top" width="100px">
-                        New in upcoming box:
+                      <td valign="top" width="120px">
+                        New in box:
                       </td>
                       <td valign="top" style="padding: 5px 0px 5px 20px">
                         {{ subscription.attributes.newIncludedInThisBox | join: ", " }}
@@ -209,8 +209,8 @@ export default `
                   {% endif %}
                   {% if subscription.attributes.notIncludedInThisBox.size > 0 %}
                     <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                      <td valign="top" width="100px">
-                        Not in this upcoming box:
+                      <td valign="top" width="120px">
+                        Not in box:
                       </td>
                       <td valign="top" style="padding: 5px 0px 5px 20px">
                         {{ subscription.attributes.notIncludedInThisBox | join: ", " }}
@@ -219,8 +219,8 @@ export default `
                   {% endif %}
                   {% if subscription.attributes.nowAvailableAsAddOns.size > 0 %}
                     <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                      <td valign="top" width="100px">
-                        New add ons in upcoming box:
+                      <td valign="top" width="120px">
+                        New add ons:
                       </td>
                       <td valign="top" style="padding: 5px 0px 5px 20px">
                         {{ subscription.attributes.nowAvailableAsAddOns | join: ", " }}

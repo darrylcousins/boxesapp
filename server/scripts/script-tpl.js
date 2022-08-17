@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { MongoClient, ObjectID } from "mongodb";
+import { Shopify } from "../src/lib/shopify/index.js";
 import { getMongoConnection, MongoStore } from "../src/lib/mongo/mongo.js";
 
 global._filename = (_meta) => _meta.url.split("/").pop();
@@ -15,9 +16,9 @@ _logger.notice = (e) => console.log(e);
  */
 
 const run = async () => {
-  console.log('This tried');
+  await Shopify.initialize(); // if shopify query required
 
-  global._mongodb = await getMongoConnection();
+  global._mongodb = await getMongoConnection(); // if mongo connection required
   try {
     console.log('this ran');
 

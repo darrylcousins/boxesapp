@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { MongoClient, ObjectID } from "mongodb";
 import { getMongoConnection, MongoStore } from "../src/lib/mongo/mongo.js";
+import { Shopify } from "../src/lib/shopify/index.js";
 import { getLastOrder } from "../src/lib/recharge/helpers.js";
 
 global._filename = (_meta) => _meta.url.split("/").pop();
@@ -16,7 +17,7 @@ _logger.notice = (e) => console.log(e);
  */
 
 const run = async () => {
-  console.log('This tried');
+  await Shopify.initialize();
 
   global._mongodb = await getMongoConnection();
   try {

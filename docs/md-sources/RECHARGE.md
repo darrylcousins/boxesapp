@@ -1,4 +1,6 @@
-# Recharge purchase options
+# Recharge
+
+## Purchase options
 
 Purchase options in Recharge must be in `weeks` and **not** `days`. The reason
 for this is that by using weeks we can define a specific weekday to make the charge
@@ -26,15 +28,15 @@ manually. Some clicking around the recharge admin managed to sort through the
 
 Recharge admin -> Storefront -> Customer Portal
 
-Theses **Subscription Details** settings must be **off** to work with the [Boxes App](http://boxesapp.nz).
+These **Subscription Details** settings must be **off** to work with the [Boxes App](http://boxesapp.nz). The notes refer briefly to how the boxesapp "could" be enhanced to allow these settings.
 
-1. Edit upcoming order date:
-  Could do this. It is simply a change in `next_charge_schedule_at` and update properties and all subscriptions.
-2. Edit upcoming quantity:
+1. *Edit upcoming order date*:
+  Could allow this by marking a change in `next_charge_schedule_at` and update properties and all subscriptions.
+2. *Edit upcoming quantity*:
   Also could do this, if an extra item then update box properties.
-3. Add products to subscription:
+3. *Add products to subscription*:
   Again doable but if more than one box would have to choose a default.
-4. Change variants:
+4. *Change variants*:
   Definitely doable, this relates to a change of delivery date and `order_day_of_week`
-5. Swap product:
+5. *Swap product*:
   Also doable, again the difficulties will be when more than one `Container Box` is in the charge.

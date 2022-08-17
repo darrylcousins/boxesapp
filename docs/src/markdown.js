@@ -8,6 +8,7 @@ import hljs from "highlight.js/lib/core"; // smallest set
 */
 const md = await import("markdown-it").then(
   ({ default: fn }) => fn({
+    html: true,
     highlight: function (str, lang) {
       if (lang && hljs.getLanguage(lang)) {
         try {

@@ -43,7 +43,7 @@ export default async function chargeUpcoming(topic, shop, body) {
     await chargeUpcomingMail({ subscriptions: result });
     for (const data of result) {
       if (data.updates && data.updates.length) {
-        updateSubscriptions(data.updates);
+        updateSubscriptions({ updates: data.updates });
       };
     };
   } catch(err) {

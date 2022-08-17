@@ -82,6 +82,8 @@ const run = async () => {
       });
   } catch(e) {
     console.error(e);
+  } finally {
+    process.emit("SIGINT");
   };
 };
 

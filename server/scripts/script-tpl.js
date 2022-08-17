@@ -2,39 +2,30 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { MongoClient, ObjectID } from "mongodb";
+import { getMongoConnection, MongoStore } from "../src/lib/mongo/mongo.js";
 
-const _filename = (_meta) => _meta.url.split("/").pop();
+global._filename = (_meta) => _meta.url.split("/").pop();
+dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
 global._logger = console;
+global._mongodb;
 _logger.notice = (e) => console.log(e);
+
 /**
  * Simple template for node script
  */
 
-// necessary path resolution for running as cron job
-dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
-
 const run = async () => {
   console.log('This tried');
 
-  const re = /^[a-zA-Z0-9][a-zA-Z0-9\-]*.myshopify.com/;
-  console.log(re.test("my-shop.myshopify.com"));
-
-  /* If mongo connection required
-  const username = encodeURIComponent(process.env.DB_USER);
-  const password = encodeURIComponent(process.env.DB_PASSWORD);
-  const mongo_uri = `mongodb://${username}:${password}@localhost/${process.env.DB_NAME}`;
-  const client = new MongoClient(mongo_uri, { useNewUrlParser: true, useUnifiedTopology: true });
-  await client.connect();
+  global._mongodb = await getMongoConnection();
   try {
-    const db = client.db();
     console.log('this ran');
 
   } catch(e) {
     console.error(e);
   } finally {
-    await client.close();
+    process.emit('SIGINT'); // will close mongo connection
   };
-  */
 };
 
 const main = async () => {

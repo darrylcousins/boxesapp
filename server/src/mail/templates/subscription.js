@@ -186,7 +186,10 @@ export default `
                   </tr>
                 {% endfor %}
                 <tr>
-                  <td colspan="4" style="text-align:right;border-top:1px solid #333">
+                  <td colspan="3" style="text-align:left;border-top:1px solid #333">
+                    Total, excluding shipping.
+                  </td>
+                  <td style="text-align:right;border-top:1px solid #333">
                     <span>$</span>{{ subscription.attributes.totalPrice | money }}
                   </td>
                 </tr>

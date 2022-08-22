@@ -762,14 +762,20 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                       />
                     )}
                   </div>
-                  <div class="w-40 bold" style="height: 40px; line-height: 40px;">
+                  <div class="w-60 bold" style={{
+                    "text-overflow": "ellipsis",
+                    "white-space": "nowrap",
+                    "overflow": "hidden",
+                    "height": "40px",
+                    "line-height": "40px",
+                  }}>
                     { el.name }
                   </div>
-                  <div class="pricing w-20 tr" style="height: 40px; line-height: 40px;">
+                  <div class="pricing w-10 tr" style="height: 40px; line-height: 40px;">
                     <span>{ toPrice(el.price) }</span>
                   </div>
                   <div class="w-10 tc" style="height: 40px; line-height: 40px;">({ el.count })</div>
-                  <div class="pricing w-20 tr" style="height: 40px; line-height: 40px;">
+                  <div class="pricing w-10 tr" style="height: 40px; line-height: 40px;">
                     <span>{ toPrice(el.count * el.price) }</span>
                   </div>
                 </div>

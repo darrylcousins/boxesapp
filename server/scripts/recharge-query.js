@@ -32,6 +32,7 @@ const paths = [
   'webhooks',
   'metafields',
   'charges',
+  'orders',
 ];
 
 const methods = [
@@ -100,7 +101,7 @@ const run = async () => {
       } else {
         const data = await fetch(url, options).then(result => result.json());
         console.log(JSON.stringify(data, null, 2));
-        //writeFileSync("recharge.charge.json", JSON.stringify(data, null, 2));
+        //writeFileSync("recharge.order.json", JSON.stringify(data, null, 2));
       };
     })
 };

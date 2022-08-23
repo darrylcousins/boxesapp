@@ -124,7 +124,7 @@ export default async function subscriptionCreated(topic, shop, body) {
       if (el.name === "Including") push = true;
       if (el.name === "Delivery Date") el.value = deliveryDate.toDateString(); // updated delivery date
       if (el.name === "Add on Items" || el.name === "Swapped Items") {
-        // need to remove the count here
+        // need to remove the count here for likes and dislikes
         if (el.value) {
           const strMatch = matchNumberedString(el.value);
           likes = likes === "" ? strMatch.title : `${likes},${strMatch.title}`;

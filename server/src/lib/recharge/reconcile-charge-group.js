@@ -526,6 +526,7 @@ export const gatherData = async ({ grouped, result }) => {
     const nextChargeDate = getNZDeliveryDay(chargeDate.getTime());
 
     let subscription;
+    // XXX in order to get the frequency I need to get the actual subscription
     if (!Object.hasOwnProperty.call(group, "subscription")) {
       const result = await makeRechargeQuery({
         path: `subscriptions/${group.box.purchase_item_id}`,

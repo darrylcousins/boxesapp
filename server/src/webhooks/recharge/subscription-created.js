@@ -96,16 +96,12 @@ export default async function subscriptionCreated(topic, shop, body) {
   // Wait here to be sure the charge object has been created in the recharge backend
   const charge = await getCharge(subscription, 20000);
 
-  let ids = [];
-  if (charge) {
-    // collect the subscribed item ids, omit subscription
-    ids = charge.line_items.map(el => el.purchase_item_id).filter(el => el !== subscription.id);
+  if (!charge) {
+    _logger.notice(`Recharge ${topicLower} no charge found.`, { meta });
+    return;
   };
-  const line_items = charge.line_items.filter(el => el.purchase_item_id !== subscription.id);
 
-  if (line_items.length === 0) {
-    _logger.notice(`Recharge ${topicLower} no charge ${Boolean(charge)} or no ids ${ids.length}.`, { meta });
-  };
+  const line_items = charge.line_items.filter(el => el.purchase_item_id !== subscription.id);
 
   const first = charge.line_items.find(el => el.purchase_item_id === subscription.id);
   line_items.unshift(first); // make sure its the first

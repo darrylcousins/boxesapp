@@ -21,21 +21,18 @@ export default async function ordersCreate(topic, shop, body) {
   const orderJson = JSON.parse(body);
   //console.log(JSON.stringify(orderJson, null, 2));
   // assumes box to be first, this is fine for now but somewhat dodgy
-  const box = orderJson.line_items[0].name;
   const order_number = orderJson.order_number.toString();
   const meta = {
     order: {
       shopify_order_id: orderJson.id,
       order_number: `#${order_number}`,
-      box,
     }
   };
   // check firstly if order already stored
   // XXX this will fail when we have multiple boxes in a single order
-  // We could then add a counter to the order e.g. #1020A, #1020B
+  // We may then to add a counter to the order e.g. #1020A, #1020B???
   const orders = await collection.countDocuments({ order_number });
   if (orders > 0) {
-    _logger.notice(`Webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });
     return;
   };
   // to determine if this is a box item?? Best would be to compare against list of boxes?
@@ -43,10 +40,12 @@ export default async function ordersCreate(topic, shop, body) {
   // do this differently to allow multiple boxes ???
   // test for properties is the only way me thinks
   let product_id = null;
+  let box;
   for (const line_item of orderJson.line_items) {
     if (boxIds.includes(line_item.product_id)) {
       // a container box
       product_id = line_item.product_id;
+      box = line_item;
       break;
     };
   };
@@ -56,6 +55,8 @@ export default async function ordersCreate(topic, shop, body) {
     _logger.notice(`${_filename(import.meta)} Create order webhook received but not a boxes order`, { meta });
     return;
   };
+  meta.shopify.box = box.name;
+
   // check for open and fulfillment and paid??
   // check if tag already stored
   // for webhooks the body is a raw string

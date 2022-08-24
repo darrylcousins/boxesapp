@@ -10,22 +10,32 @@ import { exec } from "child_process";
 import colors from "colors";
 import inquirer from "inquirer";
 import ora from "ora";
+import { writeFileSync } from "fs";
 import "isomorphic-fetch";
 
 import path from "path";
 import dotenv from "dotenv";    
 
-const _logger = console;
-const _filename = (_meta) => _meta.url.split("/").pop();
+import { makeShopQuery } from "../src/lib/shopify/helpers.js";
+import { Shopify } from "../src/lib/shopify/index.js";
+import { getMongoConnection, MongoStore } from "../src/lib/mongo/mongo.js";
 
-// necessary path resolution for running as cron job
-dotenv.config({ path: path.resolve(_filename(import.meta), "../.env") });
+global._filename = (_meta) => _meta.url.split("/").pop();
+dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
+global._logger = console;
+global._mongodb;
+_logger.notice = (e) => console.log(e);
+
+/**
+ * Simple template for node script
+ */
 
 const paths = [
   'products',
   'variants',
   'customers',
   'webhooks',
+  'orders',
 ];
 
 const methods = [
@@ -65,27 +75,29 @@ const run = async () => {
       };
       path = `${path}.json`;
 
-      const url = `https://${process.env.SHOP_NAME}.myshopify.com/admin/api/${process.env.SHOPIFY_API_VERSION}/${path}`;
-      console.log(url);
-
-      const queryResults = await fetch(encodeURI(url), {
-        method: result.method,
-        headers: {
-          'X-Shopify-Access-Token': process.env.SHOPIFY_API_PASSWORD 
-        }
-      })
-        .then(response => response.json())
-
-      console.log(queryResults);
+      const fields = [];
+      const queryResult = await makeShopQuery({path, fields})
+      console.log(path);
+      console.log(queryResult);
       //console.log(JSON.stringify(queryResults, null, 2));
+      writeFileSync("shopify.order.json", JSON.stringify(queryResult, null, 2));
+
     })
 };
 
-try {
-  run();
-} catch(e) {
-  console.log(e.toString().red);
+
+
+const main = async () => {
+  try {
+    global._mongodb = await getMongoConnection(); // if mongo connection required
+    await Shopify.initialize(); // if shopify query required
+    await run();
+  } catch(e) {
+    console.log(e.toString().red);
+    //} finally { // failed to get this to work
+    //process.emit('SIGINT'); // will close mongo connection
+  };
 };
 
-
+main().catch(console.error);
 

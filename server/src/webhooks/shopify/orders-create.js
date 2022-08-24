@@ -55,7 +55,7 @@ export default async function ordersCreate(topic, shop, body) {
     _logger.notice(`${_filename(import.meta)} Create order webhook received but not a boxes order`, { meta });
     return;
   };
-  meta.shopify.box = box.name;
+  meta.order.box = box.name;
 
   // check for open and fulfillment and paid??
   // check if tag already stored

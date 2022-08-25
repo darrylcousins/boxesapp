@@ -28,7 +28,11 @@ manually. Some clicking around the recharge admin managed to sort through the
 
 Recharge admin -> Storefront -> Customer Portal
 
-These **Subscription Details** settings must be **off** to work with the [Boxes App](http://boxesapp.nz). The notes refer briefly to how the boxesapp "could" be enhanced to allow these settings.
+These **Subscription Details** settings must be **off** to work with the [Boxes
+App](http://boxesapp.nz). The notes refer briefly to how the boxesapp "could"
+be enhanced to allow these settings. It will be necessary however to add that
+functionality to the `BoxesApp Customer Portal` so as to successfully keep
+included products in sync with the box.
 
 1. *Edit upcoming order date*:
   Could allow this by marking a change in `next_charge_schedule_at` and update properties and all subscriptions.
@@ -40,3 +44,21 @@ These **Subscription Details** settings must be **off** to work with the [Boxes 
   Definitely doable, this relates to a change of delivery date and `order_day_of_week`
 5. *Swap product*:
   Also doable, again the difficulties will be when more than one `Container Box` is in the charge.
+
+<img src="/assets/CustomerPortal.png" width="960" />
+
+## Pausing and Cancelling Subscriptions
+
+Because each subscribed box contains products that are registered with Recharge
+as subscriptions in their own right we must disable the ability to cancel,
+pause, or skip subscriptions in the Recharge customer portal. This can be done
+in `Recharge Admin -> Storefront -> Customer Portal`. However there is an
+obligation to provide these actions to the customer so it can be done in the
+BoxesApp customer portal.
+
+However, the `Cancel Subscription` link **cannot** be removed from the Recharge
+customer portal. To get around that problem we can update the text shown to
+provide information that points the customer to the BoxesApp customer portal
+where pausing and cancelling can be done.
+
+<img src="/assets/Translations.png" width="960" />

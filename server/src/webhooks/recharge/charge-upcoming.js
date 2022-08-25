@@ -40,6 +40,7 @@ export default async function chargeUpcoming(topic, shop, body) {
   let result = [];
   try {
     result = await gatherData({ grouped, result });
+    // XXX TODO This does not reflect the updates made in the email
     await chargeUpcomingMail({ subscriptions: result });
     for (const data of result) {
       if (data.updates && data.updates.length) {

@@ -103,23 +103,6 @@ async function* SkipCharge(props) {
       variant: subscription.attributes.variant,
     };
 
-    /*
-     * Perform an action prior to the form save
-     */
-    const doSkip = () => {
-      doSave();
-      setTimeout(() => {
-        // then finally send up the skipped subscription - listened for by Customer.jsx
-        // and updates chargeGroups and reloads
-        this.dispatchEvent(
-          new CustomEvent("subscription.skipped", {
-            bubbles: true,
-            detail: { id: subscription.attributes.subscription_id },
-          })
-        );
-      }, 2000);
-    };
-
     const deliveredObj = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
     deliveredObj.setDate(deliveredObj.getDate() + subscription.attributes.days);
     const updatedDelivery = deliveredObj.toDateString();
@@ -172,7 +155,7 @@ async function* SkipCharge(props) {
           meta={toastTemplate}
         />
         <div class="tr">
-          <Button type="primary" onclick={doSkip}>
+          <Button type="primary" onclick={doSave}>
             Yes, Skip Charge
           </Button>
           <Button type="secondary" onclick={closeModal}>

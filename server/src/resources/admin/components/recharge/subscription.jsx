@@ -35,7 +35,6 @@ import {
  */
 async function *Subscription({ subscription, idx, allowEdits }) {
 
-  console.log(subscription.attributes);
   const CollapsibleProducts = CollapseWrapper(EditProducts);
   /**
    * Hold changed items
@@ -308,6 +307,34 @@ async function *Subscription({ subscription, idx, allowEdits }) {
   const cancelEdits = () => {
     this.dispatchEvent(reloadSubscriptionEvent());
   };
+
+  /*
+   * Tidy display of subscriptions after skip and cancel
+   */
+  const reLoad = (ev) => {
+    const subdiv = document.querySelector(`#subscription-${subscription.attributes.subscription_id}`);
+    // and updates chargeGroups
+    let event;
+    if (ev.detail.src.includes("skip")) {
+      event = "subscription.skipped";
+    } else if (ev.detail.src.includes("cancel")) {
+      event = "subscription.cancelled";
+    };
+    if (event) {
+      setTimeout(() => {
+        animateFadeForAction(subdiv, () => {
+          this.dispatchEvent(
+            new CustomEvent(event, {
+              bubbles: true,
+              detail: { id: subscription.attributes.subscription_id },
+            })
+          );
+        });
+      }, 100);
+    };
+  };
+
+  this.addEventListener("listing.reload", reLoad);
 
   /*
    * @function AttributeRow

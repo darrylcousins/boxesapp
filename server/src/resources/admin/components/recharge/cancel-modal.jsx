@@ -11,6 +11,7 @@ import { createElement, Fragment } from "@b9g/crank";
 import Button from "../lib/button";
 import FormModalWrapper from "../form/form-modal";
 import Form from "../form";
+import { animateFadeForAction } from "../helpers";
 
 /**
  * Icon component for link to expand modal
@@ -117,23 +118,6 @@ async function* CancelSubscription(props) {
       variant: subscription.attributes.variant,
     };
 
-    /*
-     * Perform an action prior to the form save
-     */
-    const doCancel = () => {
-      doSave();
-      setTimeout(() => {
-        // then finally send up the cancelled subscription - listened for by Customer.jsx
-        // and updates chargeGroups and reloads
-        this.dispatchEvent(
-          new CustomEvent("subscription.cancelled", {
-            bubbles: true,
-            detail: { id: subscription.attributes.subscription_id },
-          })
-        );
-      }, 2000);
-    };
-
     yield (
       <Fragment>
         <p class="lh-copy tl">
@@ -148,7 +132,7 @@ async function* CancelSubscription(props) {
           meta={toastTemplate}
         />
         <div class="tr">
-          <Button type="primary" onclick={doCancel}>
+          <Button type="primary" onclick={doSave}>
             Yes, Remove Subscription
           </Button>
           <Button type="secondary" onclick={closeModal}>

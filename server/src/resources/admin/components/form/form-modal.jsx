@@ -144,14 +144,6 @@ function FormModalWrapper(Component, options) {
         data = formData;
       };
 
-      /*
-      console.log(src);
-      console.log(data);
-      console.warn('Posting saved successfully but disabled for development');
-      //closeModal();
-      return;
-      */
-
       const resetFields = () => {
         loading = false;
         saving = false;
@@ -163,16 +155,44 @@ function FormModalWrapper(Component, options) {
 
       const toastData = { ...dataSet };
 
+      /*
+      console.log(src);
+      console.log(data);
+      console.warn('Posting saved successfully but disabled for development');
+      setTimeout(() => {
+        this.dispatchEvent(
+          new CustomEvent("listing.reload", {
+            bubbles: true,
+          })
+        );
+        closeModal();
+        if (Object.keys(toastData).length) {
+          // string notice via form data-* html attributes passed to Form as 'meta'
+          const templateString = toastData.template;
+          delete toastData.template;
+          const notice = parseStringTemplate(templateString, toastData);
+          this.dispatchEvent(toastEvent({
+            notice,
+            bgColour: "black",
+            borderColour: "black"
+          }));
+        };
+      }, 1000);
+      return;
+      */
+
       PostFetch({ src, data, headers })
         .then((result) => {
           //console.log('Submit result:', JSON.stringify(result, null, 2));
           const { formError, error, json } = result;
           if (error !== null) {
             fetchError = error;
+            console.log("FETCH ERROR", fetchError);
             resetFields();
             this.refresh();
           } else if (formError !== null) {
             saveError = formError;
+            console.log("SAVE ERROR", saveError);
             resetFields();
             this.refresh();
           } else {

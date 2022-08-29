@@ -1,30 +1,7 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
-import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
-
-const delay = (t) => {
-  return new Promise(resolve => setTimeout(resolve, t));
-};
-
-const getSubscription = async (id, t) => {
-  await delay(t);
-  const { subscription } = await makeRechargeQuery({
-    method: "GET",
-    path: `subscriptions/${id}`,
-  });
-  return subscription;
-};
-
-const updateSubscription = async (id, body, t) => {
-  await delay(t);
-  const result = await makeRechargeQuery({
-    method: "PUT",
-    path: `subscriptions/${id}`,
-    body: JSON.stringify(body)
-  });
-  return result;
-};
+import { makeRechargeQuery, getSubscription, updateSubscription } from "../../lib/recharge/helpers.js";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
@@ -63,10 +40,11 @@ export default async function orderProcessed(topic, shop, body) {
     const meta = {
       recharge: {
         topic: topicLower,
-        charge_id: order.charge_id,
+        charge_id: order.charge.id,
         address_id: order.address_id,
-        customer_id: order.customer_id,
-        email: order.email,
+        customer_id: order.customer.id,
+        email: order.customer.email,
+        shopify_order_id: order.external_order_id.ecommerce,
         type: order.type,
       }
     };

@@ -28,11 +28,6 @@ crossroads.addRoute("/orders", () => import(`/src/resources/admin/components/rou
 crossroads.addRoute("/recharge", () => import(`/src/resources/admin/components/routes/recharge`).then(({ default: Recharge }) => {
   return renderer.render(<Recharge />, document.getElementById("app"));
 }));
-/*
-crossroads.addRoute("/trial", () => import(`/src/resources/admin/components/routes/trial2`).then(({ default: Box }) => {
-  return renderer.render(<Box />, document.getElementById("app"));
-}));
-*/
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Initialized app");

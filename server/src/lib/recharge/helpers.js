@@ -41,6 +41,37 @@ export const makeRechargeQuery = async ({method, path, limit, query, body}) => {
     });
 };
 
+const delay = (t) => {
+  return new Promise(resolve => setTimeout(resolve, t));
+};
+
+/*
+ * @function getSubscription
+ * @return { subscription } 
+ */
+export const getSubscription = async (id, t) => {
+  if (t) await delay(t);
+  const { subscription } = await makeRechargeQuery({
+    method: "GET",
+    path: `subscriptions/${id}`,
+  });
+  return subscription;
+};
+
+/*
+ * @function updateSubscription
+ * @return { subscription } 
+ */
+export const updateSubscription = async (id, body, t) => {
+  if (t) await delay(t);
+  const result = await makeRechargeQuery({
+    method: "PUT",
+    path: `subscriptions/${id}`,
+    body: JSON.stringify(body)
+  });
+  return result;
+};
+
 /*
  * @function updateSubscriptions
  * @param { updates }
@@ -56,7 +87,6 @@ export const updateSubscriptions = async ({ updates }) => {
       options.path = `subscriptions/${update.subscription_id}`;
       if (update.quantity === 0) {
         options.method = "DELETE";
-        console.log("Deleting", update.title, update.subscription_id);
       } else {
         options.method = "PUT";
         const body = {

@@ -144,8 +144,11 @@ router.post(
   "/recharge-update", 
   await import("./recharge/recharge-update.js").then(({ default: fn }) => fn));
 router.post(
-  "/recharge-skip-subscriptions", 
-  await import("./recharge/recharge-skip-subscriptions.js").then(({ default: fn }) => fn));
+  "/recharge-skip-charge", 
+  await import("./recharge/recharge-skip-charge.js").then(({ default: fn }) => fn));
+router.post(
+  "/recharge-cancel-subscription", 
+  await import("./recharge/recharge-cancel-subscription.js").then(({ default: fn }) => fn));
 router.post(
   "/recharge-subscription-update", 
   await import("./recharge/recharge-subscription-update.js").then(({ default: fn }) => fn));

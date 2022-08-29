@@ -1,9 +1,8 @@
 /**
- * Creates element to render a modal display in {@link
- * module:app/components/packing-modal~PackingList|PackingList}
+ * Creates element to render a modal for selection of products
  *
- * @module app/components/packing-modal
- * @exports PackingModal
+ * @module app/products/select-modal
+ * @exports SelectModal
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment, Portal} from "@b9g/crank";
@@ -16,8 +15,6 @@ import { selectProductEvent } from "../lib/events";
 import { sortObjectByKeys, toPrice } from "../helpers";
 
 /**
- * Display a modal containing {@link
- * module:app/components/packing-modal~PackingList|PackingList}
  *
  * @generator
  * @yields {Element} DOM element displaying modal

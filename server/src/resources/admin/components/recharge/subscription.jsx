@@ -15,10 +15,10 @@ import { toastEvent, reloadSubscriptionEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
 import BarLoader from "../lib/bar-loader";
 import Button from "../lib/button";
+import SkipChargeModal from "./skip-modal";
+import CancelSubscriptionModal from "./cancel-modal";
 import {
-  titleCase,
   animateFadeForAction,
-  animationOptions,
   LABELKEYS
 } from "../helpers";
 
@@ -33,8 +33,9 @@ import {
  * import {renderer} from '@b9g/crank/dom';
  * renderer.render(<Subscription subscription={subscription} />, document.querySelector('#app'))
  */
-async function *Subscription({ subscription, idx }) {
+async function *Subscription({ subscription, idx, allowEdits }) {
 
+  console.log(subscription.attributes);
   const CollapsibleProducts = CollapseWrapper(EditProducts);
   /**
    * Hold changed items
@@ -100,6 +101,7 @@ async function *Subscription({ subscription, idx }) {
   /*
    * When the reconciled box shows changes with messages then the user must
    * save these changes before continuing
+   * Also used by saveEdits to save changes made by the user.
    * @function saveChanges
    */
   const saveChanges = (key) => {
@@ -281,6 +283,10 @@ async function *Subscription({ subscription, idx }) {
    */
   this.addEventListener("productsChangeEvent", productsChanged);
 
+  /**
+   * @function saveEdits
+   * Save the changes made
+   */
   const saveEdits = () => {
     const box_id = subscription.box.shopify_product_id;
     // update the values for the subscription box
@@ -295,23 +301,35 @@ async function *Subscription({ subscription, idx }) {
     saveChanges("includes");
   };
 
+  /**
+   * @function cancelEdits
+   * Cancel changes made
+   */
   const cancelEdits = () => {
     this.dispatchEvent(reloadSubscriptionEvent());
   };
 
+  /*
+   * @function AttributeRow
+   * Layout helper
+   */
   const AttributeRow = ({ title, value }) => {
     return (
       <Fragment>
-        <div class="fl w-50 gray tr pr3 pv1">
+        <div class={`fl w-50 gray tr pr3 pv1${title.startsWith("Next") && " b"}`}>
           { title }:
         </div>
-        <div class="fr w-50 pv1">
+        <div class={`fl w-50 pv1${title.startsWith("Next") && " b"}`}>
           <span>{ value }</span>
         </div>
       </Fragment>
     );
   };
 
+  /*
+   * @function AttributeColumn
+   * Layout helper
+   */
   const AttributeColumn = ({ data }) => {
     return (
       data.map(([title, value]) => (
@@ -322,6 +340,10 @@ async function *Subscription({ subscription, idx }) {
     );
   };
 
+  /*
+   * @member idData
+   * Layout helper
+   */
   const idData = [
       ["Subscription ID", subscription.attributes.subscription_id],
       ["Charge Id", subscription.attributes.charge_id],
@@ -329,15 +351,11 @@ async function *Subscription({ subscription, idx }) {
       ["Recharge Customer Id", subscription.attributes.customer.id],
       ["Shopify Customer Id", subscription.attributes.customer.external_customer_id.ecommerce],
   ];
-  const chargeData = [
-      ["Next Charge Date", subscription.attributes.nextChargeDate],
-    //["Next Scheduled Delivery", subscription.properties["Delivery Date"]],
-      ["Next Scheduled Delivery", subscription.attributes.nextDeliveryDate],
-      ["Frequency", subscription.attributes.frequency],
-      ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
-      ["Order Delivered", subscription.attributes.lastOrder.delivered],
-  ];
 
+  /*
+   * @function AddressColumn
+   * Layout helper
+   */
   const AddressColumn = ({ data }) => {
     return (
       data.map((value) => (
@@ -348,6 +366,10 @@ async function *Subscription({ subscription, idx }) {
     );
   };
 
+  /*
+   * @member addressData
+   * Layout helper
+   */
   const addressData = [
     `${subscription.address.first_name} ${subscription.address.last_name}`,
     subscription.address.email,
@@ -359,17 +381,30 @@ async function *Subscription({ subscription, idx }) {
     subscription.address.email,
   ];
 
-  for await ({ subscription, idx } of this) { // eslint-disable-line no-unused-vars
+  for await ({ subscription, idx, allowEdits } of this) { // eslint-disable-line no-unused-vars
+
+    /*
+     * @member chargeData
+     * Layout helper
+     */
+    const chargeData = [
+        ["Next Charge Date", subscription.attributes.nextChargeDate],
+        ["Next Scheduled Delivery", subscription.attributes.nextDeliveryDate],
+        ["Frequency", subscription.attributes.frequency],
+        ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
+        ["Order Delivered", subscription.attributes.lastOrder.delivered],
+    ];
+
     yield (
       <Fragment>
-            <h6 class="tl mb0 w-100 fg-streamside-maroon">
-              {subscription.box.shopify_title} - {subscription.attributes.variant}
-            </h6>
-            { !subscription.attributes.hasNextBox && (
-              <div class="pv2 orange">Box not yet loaded for <span class="b">
-                  { subscription.properties["Delivery Date"] }
-              </span></div>
-            )}
+        <h6 class="tl mb0 w-100 fg-streamside-maroon">
+          {subscription.box.shopify_title} - {subscription.attributes.variant}
+        </h6>
+        { !subscription.attributes.hasNextBox && (
+          <div class="pv2 orange">Box not yet loaded for <span class="b">
+              { subscription.attributes.nextDeliveryDate }
+          </span></div>
+        )}
         <div class="flex-container-reverse w-100 pt2 relative" id={ `title-${idx}` }>
           <div class="dt">
             <AttributeColumn data={ idData } />
@@ -383,15 +418,25 @@ async function *Subscription({ subscription, idx }) {
             <AddressColumn data={ addressData } />
           </div>
         </div>
-        <div class="w-100 tr pr2 pb2">
-          { subscription.messages.length === 0 && (
-            <Button type="success" onclick={toggleCollapse}>
+        { subscription.messages.length === 0 && allowEdits && (
+          <div class="w-100 pb2 tr">
+            <Button type="success"
+              onclick={toggleCollapse}
+              title={ collapsed ? (subscription.attributes.hasNextBox ? "Edit products" : "Show products") : "Hide products" }
+            >
               <span class="b">
                 { collapsed ? (subscription.attributes.hasNextBox ? "Edit products" : "Show products") : "Hide products" }
               </span>
             </Button>
-          )}
-        </div>
+            <SkipChargeModal subscription={ subscription } />
+            <CancelSubscriptionModal subscription={ subscription } />
+          </div>
+        )}
+        { !subscription.attributes.hasNextBox && !collapsed && (
+          <div class="dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+            <p class="pl5">You will be able to edit your box products when the next box has been loaded.</p>
+          </div>
+        )}
         { subscription.messages.length > 0 && (
             <div class="dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
                 <Fragment>
@@ -438,18 +483,20 @@ async function *Subscription({ subscription, idx }) {
             </div>
           </div>
         </div>
-        <div id={ `products-${idx}` } class="mb2 bb b--black-80">
-          <CollapsibleProducts
-            collapsed={ collapsed }
-            properties={ subscription.properties }
-            box={ subscription.box }
-            images={ subscription.attributes.images }
-            nextChargeDate={ subscription.attributes.nextChargeDate }
-            isEditable={ subscription.attributes.hasNextBox }
-            key={ idx }
-            id={ `subscription-${idx}` }
-          />
-        </div>
+        { allowEdits && (
+          <div id={ `products-${idx}` } class="mb2 bb b--black-80">
+            <CollapsibleProducts
+              collapsed={ collapsed }
+              properties={ subscription.properties }
+              box={ subscription.box }
+              images={ subscription.attributes.images }
+              nextChargeDate={ subscription.attributes.nextChargeDate }
+              isEditable={ subscription.attributes.hasNextBox }
+              key={ idx }
+              id={ `subscription-${idx}` }
+            />
+          </div>
+        )}
       </Fragment>
     )
   };

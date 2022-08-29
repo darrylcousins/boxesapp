@@ -10,6 +10,8 @@ import { createElement, Fragment } from "@b9g/crank";
 import BarLoader from "../lib/bar-loader";
 import Error from "../lib/error";
 import { Fetch } from "../lib/fetch";
+import IconButton from "../lib/icon-button";
+import PushMenu from "../lib/push-menu";
 import Customer from "./customer";
 
 /**
@@ -135,17 +137,39 @@ function* Subscriptions() {
     }
   };
 
+  const proxy_path = localStorage.getItem("proxy-path");
+  const qs = localStorage.getItem("qs"); // query string to maintain access
+  const boxRulesPath = `${proxy_path}/admin-portal/boxes/box-rules${ qs }`;
+
+  /**
+   * Side navigation menu
+   *
+   * @member sideMenu
+   * @type {array}
+   */
+  const sideMenu = [
+    <div onclick={() => window.location = boxRulesPath}>
+      <IconButton
+         title="Box Rules">
+        <span style="width: 250px" class="db tl link white pv1 pl3 pr2">Box rules</span>
+      </IconButton>
+    </div>
+  ];
+
   for (const props of this) { // eslint-disable-line no-unused-vars
     yield (
       <div class="w-100 pa2 center" id="subscriptions">
-        <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
-          Recharge Subscriptions {""}
-          { fetchCustomer && (
-            <span style="font-size: smaller;" class="ml4">
-              {fetchCustomer.first_name} {fetchCustomer.last_name} &lt;{fetchCustomer.email}&gt;
-            </span>
-          )}
-        </h4>
+        <PushMenu children={sideMenu} />
+        <div class="pl5" style="margin-top: -35px">
+          <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
+            Recharge Subscriptions {""}
+            { fetchCustomer && (
+              <span style="font-size: smaller;" class="ml4">
+                {fetchCustomer.first_name} {fetchCustomer.last_name} &lt;{fetchCustomer.email}&gt;
+              </span>
+            )}
+          </h4>
+        </div>
         { loading && <BarLoader /> }
         { loading && <div>Loading customer ...</div> }
         { fetchError && <Error msg={fetchError} /> }

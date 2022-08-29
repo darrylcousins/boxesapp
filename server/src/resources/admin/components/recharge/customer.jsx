@@ -14,6 +14,7 @@ import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
 import BarLoader from "../lib/bar-loader";
 import { loadAnotherCustomer } from "./events";
+import { animateFadeForAction } from "../helpers";
 
 import EditProducts from "../products/edit-products";
 /**
@@ -47,6 +48,12 @@ async function *Customer({ customer, admin }) {
    * @member {object} charge groups for the customer
    */
   let chargeGroups = null;
+  /**
+   * Disallow edits to groups in this list
+   *
+   * @member {object} charge groups for the customer
+   */
+  let noEdits = [];
 
   /**
    * Return to customer search
@@ -100,6 +107,56 @@ async function *Customer({ customer, admin }) {
    */
   this.addEventListener("reloadSubscriptionEvent", reloadSubscription);
 
+  /**
+   * Update charge groups and remove the cancelled subscription
+   * We need to do it this way because of time delay from recharge api
+   * @function subscriptionCancelled
+   * @listen subscription.cancelled event
+   */
+  const removeSubscription = (ev) => {
+    const subscription = chargeGroups.find(el => el.attributes.subscription_id === ev.detail.id);
+    const idx = chargeGroups.indexOf(subscription);
+    chargeGroups.splice(idx, 1);
+    this.refresh();
+  };
+
+  this.addEventListener("subscription.cancelled", removeSubscription);
+
+  /**
+   * Update the skipped subscription in chargeGroups
+   * We need to do it this way because of time delay from recharge api
+   * @function subscriptionSkipped
+   * @listen subscription.skipped event
+   */
+  const skipCharge = async (ev) => {
+
+    const subscription = chargeGroups.find(el => el.attributes.subscription_id === ev.detail.id);
+    const idx = chargeGroups.indexOf(subscription);
+
+    const deliveredObj = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
+    deliveredObj.setDate(deliveredObj.getDate() + subscription.attributes.days);
+    subscription.attributes.nextDeliveryDate = deliveredObj.toDateString();
+
+    const chargeObj = new Date(Date.parse(subscription.attributes.nextChargeDate));
+    chargeObj.setDate(chargeObj.getDate() + subscription.attributes.days);
+    subscription.attributes.nextChargeDate = chargeObj.toDateString();
+
+    // simply disable edits - when customer comes back to the page then the recharge data will be saved 
+    subscription.attributes.hasNextBox = false;
+    chargeGroups[idx] = subscription;
+
+    noEdits.push(idx);
+
+    const subdiv = document.querySelector(`#subscription-${ev.detail.id}`);
+    if (subdiv) {
+      animateFadeForAction(subdiv, () => this.refresh());
+    } else {
+      this.refresh();
+    };
+  };
+
+  this.addEventListener("subscription.skipped", skipCharge);
+
   for await ({ customer } of this) { // eslint-disable-line no-unused-vars
     yield (
       <div id="customer" class="pr3 pl3 w-100">
@@ -117,9 +174,9 @@ async function *Customer({ customer, admin }) {
           chargeGroups.length > 0 ? (
             <Fragment>
             { chargeGroups.map((group, idx) => (
-              <Fragment>
-                <Subscription subscription={ group } idx={ idx } />
-              </Fragment>
+              <div id={`subscription-${group.attributes.subscription_id}`}>
+                <Subscription subscription={ group } idx={ idx } allowEdits={ !noEdits.includes(idx) } />
+              </div>
             ))}
             </Fragment>
           ) : (

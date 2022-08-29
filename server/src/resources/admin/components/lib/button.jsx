@@ -35,6 +35,10 @@ const Button = (props) => {
     classList = "bg-green white relative";
     classList += border ? ` b--${border}` : " b--dark-green";
     classList += hover ? ` ${hover}` : " hover-bg-dark-green";
+  } else if (type === "warning") {
+    classList = "bg-red white relative";
+    classList += border ? ` b--${border}` : " b--dark-red";
+    classList += hover ? ` ${hover}` : " hover-bg-dark-red";
   } else if (type.startsWith("transparent")) {
     const [trans, bg] = type.split('/');
     classList = "bg-transparent relative";

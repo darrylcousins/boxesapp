@@ -40,7 +40,7 @@ const run = async () => {
     console.log('\nQuery Test customer charges'.magenta);
     console.log(`\n${'-'.padEnd(70, '-')}`);
 
-    inquirer
+    await inquirer
       .prompt([
       {
         type: 'list',
@@ -72,12 +72,13 @@ const run = async () => {
           // run through each of these groups
           result = await gatherData({ grouped, result });
         };
-        /*
-        console.log(JSON.stringify(result[0].updates, null, 2));
-        console.log(JSON.stringify(result[0].includes, null, 2));
-        */
-        console.log(result[0].attributes.nowAvailableAsAddOns);
-        console.log(result[0].messages);
+        const subscription = result[0];
+        //const charge_id = subscription.attributes.charge_id;
+        const purchase_item_ids = subscription.includes.map(el => el.subscription_id);
+
+        const charge_id = 636721786;
+        console.log(charge_id);
+        console.log(purchase_item_ids);
 
       });
   } catch(e) {

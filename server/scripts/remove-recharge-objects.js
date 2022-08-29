@@ -27,8 +27,8 @@ dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
 const paths = [
   'subscriptions',
   'webhooks',
-  /*
   'addresses',
+  /*
   'customers',
   'plans',
   'products',

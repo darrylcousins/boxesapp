@@ -160,11 +160,6 @@ function FormModalWrapper(Component, options) {
       console.log(data);
       console.warn('Posting saved successfully but disabled for development');
       setTimeout(() => {
-        this.dispatchEvent(
-          new CustomEvent("listing.reload", {
-            bubbles: true,
-          })
-        );
         closeModal();
         if (Object.keys(toastData).length) {
           // string notice via form data-* html attributes passed to Form as 'meta'
@@ -177,6 +172,12 @@ function FormModalWrapper(Component, options) {
             borderColour: "black"
           }));
         };
+        this.dispatchEvent(
+          new CustomEvent("listing.reload", {
+            bubbles: true,
+            detail: { src },
+          })
+        );
       }, 1000);
       return;
       */
@@ -200,11 +201,6 @@ function FormModalWrapper(Component, options) {
             success = true;
             this.refresh();
             setTimeout(() => {
-              this.dispatchEvent(
-                new CustomEvent("listing.reload", {
-                  bubbles: true,
-                })
-              );
               closeModal();
               if (success) {
                 if (Object.keys(toastData).length) {
@@ -219,6 +215,12 @@ function FormModalWrapper(Component, options) {
                   }));
                 };
               };
+              this.dispatchEvent(
+                new CustomEvent("listing.reload", {
+                  bubbles: true,
+                  detail: { src },
+                })
+              );
               success = false;
             }, 1000);
           }

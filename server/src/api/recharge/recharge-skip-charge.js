@@ -18,7 +18,7 @@ export default async (req, res, next) => {
   const meta = {
     recharge: {
       customer_id: attributes.customer.id,
-      shopify_customer: attributes.external_customer_id.ecommerce,
+      shopify_customer_id: attributes.customer.external_customer_id.ecommerce,
       email: attributes.customer.email,
       charge_id: attributes.charge_id,
       address_id: attributes.address_id,

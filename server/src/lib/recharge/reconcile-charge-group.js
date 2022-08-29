@@ -545,6 +545,13 @@ export const gatherData = async ({ grouped, result }) => {
     }${
       subscription.order_interval_frequency > 1 ? "s" : ""}`;
 
+    let days;
+    if (subscription.order_interval_unit === "week") {
+      days = subscription.order_interval_frequency * 7;
+    } else if (subscription.order_interval_unit === "day") {
+      days = subscription.order_interval_frequency;
+    };
+
     const address = charge.shipping_address;
     address.name = `${charge.billing_address.first_name} ${charge.billing_address.last_name}`;
 
@@ -594,6 +601,7 @@ export const gatherData = async ({ grouped, result }) => {
       hasNextBox,
       variant: subscription.variant_title,
       frequency,
+      days,
       images,
       subscription_id: subscription.id,
       templateSubscription,

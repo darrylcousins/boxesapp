@@ -99,7 +99,6 @@ async function *Subscription({ subscription, idx, allowEdits }) {
     };
   };
 
-  console.log(subscription);
   /*
    * When the reconciled box shows changes with messages then the user must
    * save these changes before continuing
@@ -479,7 +478,7 @@ async function *Subscription({ subscription, idx, allowEdits }) {
             <p class="">You will be able to edit your box products when the next box has been loaded.</p>
           </div>
         )}
-        { subscription.messages.length > 0 && (
+        { subscription.messages.length > 0 && subscription.attributes.hasNextBox && (
             <div class="dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
                 <Fragment>
                   <ul class="">

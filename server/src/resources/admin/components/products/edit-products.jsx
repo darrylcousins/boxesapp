@@ -694,6 +694,12 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     return false;
   };
 
+  const getLeftBorder = (name, idx) => {
+    if (box.shopify_title === "Custom Box") return "";
+    if (idx > 0) return "bl-0";
+    return "";
+  };
+
   for (const { box, properties, nextChargeDate, images, isEditable, key } of this) { // eslint-disable-line no-unused-vars
 
     yield (
@@ -796,7 +802,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
             { sortedListNames.map((name, idx) => (
               <Fragment>
                 { Array.isArray(name) && testVisibility(name) ? (
-                  <div class={`flex flex-column w-100 ba b--silver ${ idx > 0 && "bl-0" }`}>
+                  <div class={`flex flex-column w-100 ba b--silver ${ getLeftBorder(name, idx) }`}>
                     { name.map((item, index) => (
                       <div class={`w-100 h-100 flex flex-column b--silver ${ index > 0 && "bt" }`}>
                         <Title name={ item } idx={ idx } />
@@ -808,7 +814,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                   </div>
                 ) : (
                   testVisibility(name) && (
-                    <div id={ name } class={`w-100 flex flex-column ba b--silver ${ idx > 0 && "bl-0" }`}>
+                    <div id={ name } class={`w-100 flex flex-column ba b--silver ${ getLeftBorder(name, idx) }`}>
                       <Title name={ name } idx={ idx } />
                       <div class="w-100 pb2">
                         <Body properties={ boxLists } name={ name } idx={ idx } />

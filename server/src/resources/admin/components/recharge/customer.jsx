@@ -7,6 +7,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
+import cloneDeep from "lodash.clonedeep";
 import Subscription from "./subscription";
 import Error from "../lib/error";
 import { Fetch } from "../lib/fetch";
@@ -49,6 +50,12 @@ async function *Customer({ customer, admin }) {
    */
   let chargeGroups = null;
   /**
+   * charge groups fetched from api
+   *
+   * @member {object} charge groups for the customer
+   */
+  let originalChargeGroups = null;
+  /**
    * Disallow edits to groups in this list
    *
    * @member {object} charge groups for the customer
@@ -81,6 +88,7 @@ async function *Customer({ customer, admin }) {
           return null;
         };
         chargeGroups = json;
+        originalChargeGroups = cloneDeep(json);
         loading = false;
         this.refresh();
       })
@@ -93,11 +101,22 @@ async function *Customer({ customer, admin }) {
 
   getChargeGroups();
 
-  const reloadSubscription = () => {
+  const reloadSubscription = (ev) => {
+    const subscription = chargeGroups.find(el => el.attributes.subscription_id === ev.detail.id);
+    const idx = chargeGroups.indexOf(subscription);
+    console.log(subscription);
     loading = true;
     chargeGroups = null;
     this.refresh();
-    getChargeGroups();
+
+    setTimeout(() => {
+      loading = false;
+      chargeGroups = cloneDeep(originalChargeGroups);
+      this.refresh();
+      }, 
+      1000);
+
+    //getChargeGroups();
   };
 
   /**
@@ -105,7 +124,7 @@ async function *Customer({ customer, admin }) {
    *
    * @listens reloadSubscriptionEvent From Subscription
    */
-  this.addEventListener("reloadSubscriptionEvent", reloadSubscription);
+  this.addEventListener("subscription.reload", reloadSubscription);
 
   /**
    * Update charge groups and remove the cancelled subscription

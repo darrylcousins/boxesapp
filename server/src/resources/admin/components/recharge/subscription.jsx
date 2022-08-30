@@ -11,7 +11,7 @@ import CollapseWrapper from "../lib/collapse-animator";
 import EditProducts from "../products/edit-products";
 import Error from "../lib/error";
 import { PostFetch } from "../lib/fetch";
-import { toastEvent, reloadSubscriptionEvent } from "../lib/events";
+import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
 import BarLoader from "../lib/bar-loader";
 import Button from "../lib/button";
@@ -90,13 +90,16 @@ async function *Subscription({ subscription, idx, allowEdits }) {
     };
     if (changed.length > 0) {
       setTimeout(() => {
-          const el = document.querySelector("#saveBar");
-          el.classList.add("open");
+          const bar = document.querySelector(`#saveBar-${subscription.attributes.subscription_id}`);
+          bat.classList.add("open");
+          const el = document.querySelector(`#skip_cancel-${subscription.attributes.subscription_id}`);
+          el.classList.add("dn");
         }, 
         1000);
     };
   };
 
+  console.log(subscription);
   /*
    * When the reconciled box shows changes with messages then the user must
    * save these changes before continuing
@@ -127,6 +130,7 @@ async function *Subscription({ subscription, idx, allowEdits }) {
       };
     } else {
       updates = subscription.updates;
+      // XXX TODO and fix the includes?
     };
     setTimeout(() => {
       const el = document.querySelector(`#overlay-${idx}`);
@@ -270,8 +274,10 @@ async function *Subscription({ subscription, idx, allowEdits }) {
       });
     };
 
-    const el = document.querySelector("#saveBar");
-    el.classList.add("open");
+    const bar = document.querySelector(`#saveBar-${subscription.attributes.subscription_id}`);
+    bar.classList.add("open");
+    const el = document.querySelector(`#skip_cancel-${subscription.attributes.subscription_id}`);
+    el.classList.add("dn");
 
   };
 
@@ -305,7 +311,12 @@ async function *Subscription({ subscription, idx, allowEdits }) {
    * Cancel changes made
    */
   const cancelEdits = () => {
-    this.dispatchEvent(reloadSubscriptionEvent());
+    this.dispatchEvent(
+      new CustomEvent("subscription.reload", {
+        bubbles: true,
+        detail: { id: subscription.attributes.subscription_id },
+      })
+    );
   };
 
   /*
@@ -445,8 +456,8 @@ async function *Subscription({ subscription, idx, allowEdits }) {
             <AddressColumn data={ addressData } />
           </div>
         </div>
-        { subscription.messages.length === 0 && allowEdits && (
-          <div class="w-100 pb2 tr">
+        { subscription.messages.length === 0 && (
+          <div id={`skip_cancel-${subscription.attributes.subscription_id}`} class="w-100 pb2 tr">
             <Button type="success"
               onclick={toggleCollapse}
               title={ collapsed ? (subscription.attributes.hasNextBox ? "Edit products" : "Show products") : "Hide products" }
@@ -455,13 +466,17 @@ async function *Subscription({ subscription, idx, allowEdits }) {
                 { collapsed ? (subscription.attributes.hasNextBox ? "Edit products" : "Show products") : "Hide products" }
               </span>
             </Button>
-            <SkipChargeModal subscription={ subscription } />
-            <CancelSubscriptionModal subscription={ subscription } />
+            { allowEdits && collapsed && (
+              <Fragment>
+                <SkipChargeModal subscription={ subscription } />
+                <CancelSubscriptionModal subscription={ subscription } />
+              </Fragment>
+            )}
           </div>
         )}
         { !subscription.attributes.hasNextBox && !collapsed && (
           <div class="dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
-            <p class="pl5">You will be able to edit your box products when the next box has been loaded.</p>
+            <p class="">You will be able to edit your box products when the next box has been loaded.</p>
           </div>
         )}
         { subscription.messages.length > 0 && (
@@ -485,10 +500,12 @@ async function *Subscription({ subscription, idx, allowEdits }) {
         )}
         { loading && <div id={ `loader-${idx}` }><BarLoader /></div> }
         { fetchError && <Error msg={fetchError} /> }
-        <div id="saveBar" class="white mv1 br2">
+        <div id={`saveBar-${subscription.attributes.subscription_id}`} class="save_bar white mv1 br2">
           <div class="flex-container w-100 pa2">
-            <div class="w-100 pl4 bold">
-              Unsaved changes
+            <div class="w-100 pl4" style="line-height: 2em">
+              <span class="bold v-mid">
+                Unsaved changes
+              </span>
             </div>
             <div class="w-100 tr">
               <div class="dib pr2 nowrap">
@@ -510,20 +527,22 @@ async function *Subscription({ subscription, idx, allowEdits }) {
             </div>
           </div>
         </div>
-        { allowEdits && (
-          <div id={ `products-${idx}` } class="mb2 bb b--black-80">
-            <CollapsibleProducts
-              collapsed={ collapsed }
-              properties={ subscription.properties }
-              box={ subscription.box }
-              images={ subscription.attributes.images }
-              nextChargeDate={ subscription.attributes.nextChargeDate }
-              isEditable={ subscription.attributes.hasNextBox }
-              key={ idx }
-              id={ `subscription-${idx}` }
-            />
-          </div>
-        )}
+        <div class="mb2 bb b--black-80">
+          { allowEdits && (
+            <div id={ `products-${idx}` }>
+              <CollapsibleProducts
+                collapsed={ collapsed }
+                properties={ subscription.properties }
+                box={ subscription.box }
+                images={ subscription.attributes.images }
+                nextChargeDate={ subscription.attributes.nextChargeDate }
+                isEditable={ subscription.attributes.hasNextBox }
+                key={ idx }
+                id={ `subscription-${idx}` }
+              />
+            </div>
+          )}
+        </div>
       </Fragment>
     )
   };

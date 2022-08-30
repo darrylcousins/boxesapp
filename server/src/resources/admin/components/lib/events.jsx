@@ -30,12 +30,3 @@ export const selectProductEvent = (id) =>
     bubbles: true,
     detail: { id },
   });
-
-/**
- * @function selectProductEvent
- * @param {string} id The id
- */
-export const reloadSubscriptionEvent = (id) =>
-  new CustomEvent("reloadSubscriptionEvent", {
-    bubbles: true,
-  });

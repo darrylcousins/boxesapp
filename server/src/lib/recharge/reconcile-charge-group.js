@@ -138,6 +138,13 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     if (box) previousBox = { ...box };
   };
 
+  // for fucks sake how do I handle not finding a box???
+  if (!fetchBox) {
+    delivered.setDate(delivered.getDate() - days);
+    query.delivered = delivered.toDateString();
+    fetchBox = await _mongodb.collection("boxes").findOne(query);
+  };
+
   if (fetchBox.delivered === boxProperties["Delivery Date"]) {
     hasNextBox = true;
   };

@@ -27,6 +27,8 @@ export default async (req, res, next) => {
       },
     };
 
+    // not happy with this, I need to sync things better on the front end
+    // when we update ("continue") the box then includes can be out of sync it seems
     for (const id of includes.map(el => el.subscription_id)) {
       const body = {
         cancellation_reason: "BoxesApp cancel subscription",

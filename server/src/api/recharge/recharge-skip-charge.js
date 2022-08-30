@@ -41,12 +41,14 @@ export default async (req, res, next) => {
 
     for (const id of purchase_item_ids) {
       const subn = await getSubscription(id, 100); // delay each to avoid pushing too many calls
-      const props = [ ...subn.properties ];
-      const dateItem = props.find(el => el.name === "Delivery Date");
-      const dateIdx = props.indexOf(dateItem);
-      dateItem.value = updatedDelivery;
-      props[dateIdx] = dateItem;
-      const res = await updateSubscription(id, { properties: props }, 500);
+      if (subn) { // not happy with this, I need to sync things better on the front end
+        const props = [ ...subn.properties ];
+        const dateItem = props.find(el => el.name === "Delivery Date");
+        const dateIdx = props.indexOf(dateItem);
+        dateItem.value = updatedDelivery;
+        props[dateIdx] = dateItem;
+        const res = await updateSubscription(id, { properties: props }, 500);
+      };
     };
 
     const result = await makeRechargeQuery({

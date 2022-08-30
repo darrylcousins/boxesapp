@@ -15,6 +15,7 @@ import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
 import BarLoader from "../lib/bar-loader";
 import Button from "../lib/button";
+import TextButton from "../lib/text-button";
 import SkipChargeModal from "./skip-modal";
 import CancelSubscriptionModal from "./cancel-modal";
 import {
@@ -456,8 +457,8 @@ async function *Subscription({ subscription, idx, allowEdits }) {
           </div>
         </div>
         { subscription.messages.length === 0 && (
-          <div id={`skip_cancel-${subscription.attributes.subscription_id}`} class="w-100 pb2 tr">
-            <Button type="success"
+          <div id={`skip_cancel-${subscription.attributes.subscription_id}`} class="w-100 pv2 tr">
+            <Button type="success-reverse"
               onclick={toggleCollapse}
               title={ collapsed ? (subscription.attributes.hasNextBox ? "Edit products" : "Show products") : "Hide products" }
             >
@@ -488,7 +489,9 @@ async function *Subscription({ subscription, idx, allowEdits }) {
                     <p class="pl5">New available this week: { subscription.attributes.nowAvailableAsAddOns.join(", ") }</p>
                   )}
                   <div class="tr mv2 mr3">
-                    <Button type="primary" onclick={() => saveChanges("updates")}>
+                    <Button type="primary-reverse"
+                      title="Continue"
+                      onclick={() => saveChanges("updates")}>
                       <span class="b">
                         Continue
                       </span>

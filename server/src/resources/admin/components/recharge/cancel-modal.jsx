@@ -26,7 +26,7 @@ import { animateFadeForAction } from "../helpers";
 const ShowLink = (opts) => {
   const { name, title, color } = opts;
   return (
-    <Button type="warning" title="Cancel Box Subscription" name={name}>
+    <Button type="warning-reverse" title="Cancel Box Subscription" name={name}>
       <span class="b">
         Cancel Box Subscription
       </span>

@@ -25,7 +25,7 @@ import Form from "../form";
 const ShowLink = (opts) => {
   const { name, title, color } = opts;
   return (
-    <Button type="primary" title="Skip Upcoming Charge" name={name}>
+    <Button type="primary-reverse" title="Skip Upcoming Charge" name={name}>
       <span class="b">
         Skip Charge
       </span>

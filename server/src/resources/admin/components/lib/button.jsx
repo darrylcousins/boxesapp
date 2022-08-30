@@ -31,14 +31,26 @@ const Button = (props) => {
     classList = "bg-dark-blue white relative";
     classList += border ? ` b--${border}` : " b--navy";
     classList += hover ? ` ${hover}` : " hover-bg-navy";
+  } else if (type === "primary-reverse") {
+    classList = "bg-transparent navy relative";
+    classList += border ? ` b--${border}` : " b--navy";
+    classList += hover ? ` ${hover}` : " hover-bg-navy hover-white";
   } else if (type === "success") {
     classList = "bg-green white relative";
     classList += border ? ` b--${border}` : " b--dark-green";
     classList += hover ? ` ${hover}` : " hover-bg-dark-green";
+  } else if (type === "success-reverse") {
+    classList = "bg-transparent dark-green relative";
+    classList += border ? ` b--${border}` : " b--dark-green";
+    classList += hover ? ` ${hover}` : " hover-bg-dark-green hover-white";
   } else if (type === "warning") {
     classList = "bg-red white relative";
     classList += border ? ` b--${border}` : " b--dark-red";
     classList += hover ? ` ${hover}` : " hover-bg-dark-red";
+  } else if (type === "warning-reverse") {
+    classList = "bg-transparent dark-red relative";
+    classList += border ? ` b--${border}` : " b--dark-red";
+    classList += hover ? ` ${hover}` : " hover-bg-dark-red hover-white";
   } else if (type.startsWith("transparent")) {
     const [trans, bg] = type.split('/');
     classList = "bg-transparent relative";

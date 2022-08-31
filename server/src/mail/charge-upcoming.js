@@ -14,10 +14,11 @@ import subscriptionTemplate from "./templates/subscription.js";
  * @function mail/charge-upcoming.js
  * @param (object) data
  */
-export default async ({ subscriptions }) => {
+export default async ({ subscriptions, admin_email }) => {
   const email = subscriptions[0].attributes.customer.email;
   const charge_id = subscriptions[0].attributes.charge_id;
   const customer_id = subscriptions[0].attributes.customer.id;
+  const admin = admin_email ? admin_email : process.env.ADMIN_EMAIL;
 
   const engine = new Liquid();
   const options = {};
@@ -27,6 +28,7 @@ export default async ({ subscriptions }) => {
       .parseAndRender(subscriptionTemplate, {
         subscriptions,
         env: process.env,
+        admin_email: admin,
         last_delivery: "Last Delivered",
         type: "upcoming",
       })
@@ -46,7 +48,7 @@ export default async ({ subscriptions }) => {
 </mjml>
 `);
         sendmail({
-          to: email,
+          to: [email, 'darryljcousins@gmail.com'],
           subject: "Charge upcoming",
           html: htmlOutput.html
         });

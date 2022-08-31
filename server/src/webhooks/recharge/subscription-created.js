@@ -190,7 +190,10 @@ export default async function subscriptionCreated(topic, shop, body) {
     let result = [];
     result = await gatherData({ grouped, result });
     result[0].attributes.charge_id = null;
-    await subscriptionCreatedMail({ subscriptions: result });
+
+    let admin_email = _mongodb.collection("settings").findOne({handle: "admin-email"});
+    if (admin_email) admin_email = admin_email.value;
+    await subscriptionCreatedMail({ subscriptions: result, admin_email });
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

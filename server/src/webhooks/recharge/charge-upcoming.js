@@ -77,7 +77,9 @@ export default async function chargeUpcoming(topic, shop, body) {
 
     };
     
-    await chargeUpcomingMail({ subscriptions: result });
+    let admin_email = _mongodb.collection("settings").findOne({handle: "admin-email"});
+    if (admin_email) admin_email = admin_email.value;
+    await chargeUpcomingMail({ subscriptions: result, admin_email });
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

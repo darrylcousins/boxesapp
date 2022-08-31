@@ -9,7 +9,7 @@ export default `
                 You are receiving this email because you have a box subscription with <a href="https://{{ env.SHOP }}">{{ env.SHOP_TITLE }}</a>.
               </p>
               <p style="color:#666;padding:5px 0;margin:0">
-                If you have any queries about this email please contact <a href="mailto:{{ env.ADMIN_EMAIL }}">{{ env.ADMIN_EMAIL }}</a>.
+                If you have any queries about this email please contact <a href="mailto:{{ admin_email }}">{{ admin_email }}</a>.
               </p>
               <p style="color:#666;padding:5px 0;margin:0">
                 You can view your subscriptions from your <a href="https://{{ env.SHOP }}/account">account page</a>.

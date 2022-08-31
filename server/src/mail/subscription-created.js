@@ -14,11 +14,12 @@ import subscriptionTemplate from "./templates/subscription.js";
  * @function mail/subscription-created.js
  * @param (object) data
  */
-export default async ({ subscriptions }) => {
+export default async ({ subscriptions, admin_email }) => {
   const email = subscriptions[0].attributes.customer.email;
   const address_id = subscriptions[0].attributes.address_id;
   const subscription_id = subscriptions[0].attributes.subscription_id;
   const customer_id = subscriptions[0].attributes.customer.id;
+  const admin = admin_email ? admin_email : process.env.ADMIN_EMAIL;
 
   const engine = new Liquid();
   const options = {};
@@ -28,6 +29,7 @@ export default async ({ subscriptions }) => {
       .parseAndRender(subscriptionTemplate, {
         subscriptions,
         env: process.env,
+        admin_email: admin,
         last_delivery: "Delivery Date",
         type: "created",
       })
@@ -47,7 +49,7 @@ export default async ({ subscriptions }) => {
 </mjml>
 `);
         sendmail({
-          to: email,
+          to: [email, 'darryljcousins@gmail.com'],
           subject: "Subscription created",
           html: htmlOutput.html
         });

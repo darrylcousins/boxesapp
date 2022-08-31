@@ -16,12 +16,27 @@
       Boxes App</h1>
     </div>
     <div id="navigation">
-      <div class="dtc v-mid">
-        <a class="link dim dark-gray f6 f5-ns dib mr3 mr4-ns" href="/" title="Home">Home</a>
-        <a class="link dim dark-gray f6 f5-ns dib mr3 mr4-ns" href="/customer" title="Customer">Store Customer</a>
-        <a class="link dim dark-gray f6 f5-ns dib mr3 mr4-ns" href="/owner" title="Administrator">Store Owner</a>
-        <a class="link dim dark-gray f6 f5-ns dib mr3 mr4-ns" href="/sysadmin" title="System Administrator">System Administrator</a>
-      </div>
+      <ul>
+        <li><a class="link dim" href="/">Home</a></li>
+        <li class="dropdown">
+          <a href="javascript:void(0)" class="dropbtn link dim" title="Store Customer">Store Customer</a>
+          <div class="dropdown-content">
+            <a class="link dim" href="/customer" title="Summary">Summary</a>
+          </div>
+        </li>
+        <li class="dropdown">
+          <a href="javascript:void(0)" class="dropbtn link dim" title="Store Owner">Store Owner</a>
+          <div class="dropdown-content">
+            <a class="link dim" href="/owner" title="Summary">Summary</a>
+          </div>
+        </li>
+        <li class="dropdown">
+          <a href="javascript:void(0)" class="dropbtn link dim" title="System Administrator">System Administrator</a>
+          <div class="dropdown-content">
+            <a class="link dim" href="/sysadmin" title="Summary">Summary</a>
+          </div>
+        </li>
+      </ul>
     </div>
     <div id="app"></div>
     <script type="module" src="/main.jsx"></script>

@@ -139,7 +139,7 @@ export default `
                   </td>
                 </tr>
                 <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                  <td valign="top" width="100px" style="color:#777;text-align:left;padding:10px 0px 10px 0px;">
+                  <td valign="top" width="100px" style="color:#777;text-align:left;">
                     Add on items:
                   </td>
                   <td valign="top">
@@ -147,7 +147,7 @@ export default `
                   </td>
                 </tr>
                 <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                  <td valign="top" width="100px" style="color:#777;text-align:left;padding:10px 0px 10px 0px;">
+                  <td valign="top" width="100px" style="color:#777;text-align:left;">
                     Swapped items:
                   </td>
                   <td valign="top">
@@ -155,7 +155,7 @@ export default `
                   </td>
                 </tr>
                 <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                  <td valign="top" width="100px" style="color:#777;text-align:left;padding:10px 0px 10px 0px;">
+                  <td valign="top" width="100px" style="color:#777;text-align:left;">
                     Removed items:
                   </td>
                   <td valign="top">

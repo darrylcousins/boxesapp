@@ -20,6 +20,8 @@ export default async (req, res, next) => {
     const { includes } = await updateSubscriptions({ updates });
     const response = { includes };
 
+    // only return items that have been added, i.e. a POST
+
     res.status(200).json(response);
 
   } catch(err) {

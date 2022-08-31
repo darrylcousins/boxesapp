@@ -147,7 +147,6 @@ function* PickingModal({ delivered }) {
           const { data, tags } = await buildRows(json);
           pickingList = data;
           productTags = tags;
-          console.log(pickingList);
           this.refresh();
         }
       })

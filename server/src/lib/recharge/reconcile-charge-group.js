@@ -252,8 +252,9 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
               subscriptionUpdates.push(itemInner); // can later read the zero an remove subscription
             };
           } else {
-            // there will be a subscription for this item we can leave as is
+            // there will be a subscription for this item we can leave as is but remove from swap list
             if (titledSubscribedExtras.includes(itemInner.title)) {
+              boxSwappedExtras = boxSwappedExtras.filter(el => el.title !== itemInner.title);
               messages.push(`Extra swapped item ${itemInner.title} included as an add on this week.`);
               boxAddOnExtras.push(itemInner);
             } else {

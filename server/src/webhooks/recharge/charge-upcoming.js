@@ -48,13 +48,29 @@ export default async function chargeUpcoming(topic, shop, body) {
         await updateSubscriptions({ updates: subscription.updates });
 
         // update the includes to give the email the updated box items
-        // remove the zerod items
-        subscription.includes = subscription.updates.filter(el => el.quantity > 0);
+        // flatten lists for easy filtering
+        const includes = subscription.includes.map(el => el.subscription_id);
+        const updates = subscription.updates.map(el => el.subscription_id);
+
+        // filter out the zero'd items
+        let keepers = subscription.updates.filter(el => el.quantity > 0).map(el => el.subscription_id);
+        // get the unchanged items from original includes
+        let stayers = includes.filter(el => !updates.includes(el));
+
+        keepers = subscription.updates.filter(el => keepers.includes(el.subscription_id));
+        stayers = subscription.includes.filter(el => stayers.includes(el.subscription_id));
+
+        subscription.includes = stayers.concat(keepers);
+
         // add in the total price for each
         for (const included of subscription.includes) {
           const price = parseFloat(included.price) * included.quantity;
           included.total_price = `${price.toFixed(2)}`;
         };
+        const totalPrice = subscription.includes
+          .map(el => parseFloat(el.price) * el.quantity)
+          .reduce((sum, el) => sum + el, 0);
+        subscription.attributes.totalPrice = `${totalPrice.toFixed(2)}`;
 
         result[idx] = subscription;
       };

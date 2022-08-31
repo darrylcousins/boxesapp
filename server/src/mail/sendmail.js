@@ -47,7 +47,7 @@ export default async ({to, subject, text, html, attachments}) => {
   });
   const options = {
     to,
-    from: `"BoxesAppMailer" <donotreply@boxesapp.nz>`,
+    from: `"${process.env.SHOP_TITLE}" <donotreply@boxesapp.nz>`,
     subject,
     text,
     html,

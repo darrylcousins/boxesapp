@@ -42,16 +42,23 @@ export default async function chargeUpcoming(topic, shop, body) {
     result = await gatherData({ grouped, result });
 
     // fix the subscriptions with the updated box
-    for (const subscription of result) {
+    for (const [idx, subscription] of result.entries()) {
       if (subscription.updates && subscription.updates.length) {
-        const { includes } = await updateSubscriptions({ updates: subscription.updates });
-        for (const included of includes) {
-          const includedIdx = subscription.includes.findIndex(el => el.shopify_product_id === included.shopify_product_id);
-          subscription.includes[includedIdx] = included;
-        };
+
+        await updateSubscriptions({ updates: subscription.updates });
+
+        // update the includes to give the email the updated box items
         // remove the zerod items
-        subscription.includes = subscription.includes.filter(el => el.quantity > 0);
+        subscription.includes = subscription.updates.filter(el => el.quantity > 0);
+        // add in the total price for each
+        for (const included of subscription.includes) {
+          const price = parseFloat(included.price) * included.quantity;
+          included.total_price = `${price.toFixed(2)}`;
+        };
+
+        result[idx] = subscription;
       };
+
     };
     
     await chargeUpcomingMail({ subscriptions: result });

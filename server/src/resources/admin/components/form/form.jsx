@@ -174,7 +174,7 @@ function* Form({ id, data, fields, title, hideLabel, meta }) {
     yield (
       <form id={id} { ...getDataProps(meta) } >
         {formError && (
-          <Error msg="Input validation failed, please correct the errors." />
+          <Error msg="Input required, please correct the errors." />
         )}
         <fieldset class="w-100 center dark-gray tl ba b--transparent pa0 ma0">
           <legend class="f4 fw6 ph0 mh0 dn">{title}</legend>

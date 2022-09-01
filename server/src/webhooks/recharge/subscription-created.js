@@ -191,6 +191,10 @@ export default async function subscriptionCreated(topic, shop, body) {
     result = await gatherData({ grouped, result });
     result[0].attributes.charge_id = null;
 
+    // should be able to do for picking up non-subcription products
+    // will this also pick quantity incremented? What of swaps etc?
+    //await updateSubscriptions({ updates: result[0].updates });
+
     let admin_email = _mongodb.collection("settings").findOne({handle: "admin-email"});
     if (admin_email) admin_email = admin_email.value;
     await subscriptionCreatedMail({ subscriptions: result, admin_email });

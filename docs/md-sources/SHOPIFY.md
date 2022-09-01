@@ -114,3 +114,16 @@ other subscription products in the shop.
     {% include 'product-form' %}
   {% endif %}
 ```
+
+It may be that the store owner will not want *Box Produce* items to be added
+individually to a cart nor to be subscribed for individually. To disable the
+product form the following 3 lines can replace the above.
+
+```php
+  {% if product.type == 'Container Box' %}
+    ...
+  {% elif product.type != 'Box Produce' %}
+    {% include 'product-form' %}
+  {% endif %}
+```
+

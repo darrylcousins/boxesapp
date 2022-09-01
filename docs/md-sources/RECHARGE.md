@@ -24,9 +24,11 @@ Had some grief 'auto' installing the widget. Ended up installing liquid script
 manually. Some clicking around the recharge admin managed to sort through the
 "confirm installation" procedure.
 
-## Settings
+## Customer Portal
 
+```
 Recharge admin -> Storefront -> Customer Portal
+```
 
 These **Subscription Details** settings must be **off** to work with the [Boxes
 App](http://boxesapp.nz). The notes refer briefly to how the boxesapp "could"
@@ -62,3 +64,21 @@ provide information that points the customer to the BoxesApp customer portal
 where pausing and cancelling can be done.
 
 <img src="/assets/Translations.png" width="960" />
+
+## Customer Notifications
+
+Because the Boxes App sends out an email on *subscription creation* and on
+*charge upcoming* (3 days prior to charge date) then these 2 email
+notifications can be disabled.
+
+The *subscription cancellation* notification should however be enabled, because
+Boxes App handles the cancellation of subscriptions a single email is sent for
+the container box only and not the other included items.
+
+<img src="/assets/CustomerNotifications.png" width="660" />
+
+## Owner Notifications
+
+The *cancellation alert* notification should be enabled.
+
+<img src="/assets/StoreOwnerNotifications.png" width="660" />

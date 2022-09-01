@@ -29,11 +29,10 @@ export default async (req, res, next) => {
 
     for (const id of includes.map(el => el.subscription_id)) {
       const body = {
-        cancellation_reason: "BoxesApp cancel subscription",
-        cancellation_reason_comments: cancellation_reason,
+        cancellation_reason_comments: "BoxesApp cancel subscription",
+        cancellation_reason: cancellation_reason,
       };
       if (id !== subscription_id) body.send_email = false;
-      console.log(body);
       const result = await makeRechargeQuery({
         method: "POST",
         path: `subscriptions/${id}/cancel`,

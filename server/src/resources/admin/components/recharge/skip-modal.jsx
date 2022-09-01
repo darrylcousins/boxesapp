@@ -24,10 +24,11 @@ import Form from "../form";
  */
 const ShowLink = (opts) => {
   const { name, title, color } = opts;
+  console.log(opts);
   return (
-    <Button type="primary-reverse" title="Skip Upcoming Charge" name={name}>
+    <Button type="primary-reverse" title="Pause Subscription" name={name}>
       <span class="b">
-        Skip Charge
+        Pause Subscription
       </span>
     </Button>
   );
@@ -39,13 +40,13 @@ const ShowLink = (opts) => {
  * @member {object} options
  */
 const options = {
-  id: "skip-charge", // form id
-  title: "Skip Charge",
+  id: "pause-subscription", // form id - matches name in ShowLink which is title.toHandle
+  title: "Pause Subscription",
   color: "dark-red",
   src: "/api/recharge-skip-charge",
   ShowLink,
-  saveMsg: "Skipping charge ...",
-  successMsg: "Successfully skipped charge, reloading page.",
+  saveMsg: "Pausing subscription ...",
+  successMsg: "Successfully paused subscription, reloading page.",
 };
 
 /**
@@ -114,7 +115,7 @@ async function* SkipCharge(props) {
     yield (
       <Fragment>
         <p class="lh-copy tl">
-          Are you sure you want to skip this charge?<br />
+          Are you sure you want to pause the subscription?<br />
           <b class="pt3">This cannot be undone.</b>
           <div class="cf">
             <div class="fl w-50 gray tr pr3 pv1 b">
@@ -156,7 +157,7 @@ async function* SkipCharge(props) {
         />
         <div class="tr">
           <Button type="primary" onclick={doSave}>
-            Yes, Skip Charge
+            Yes, Pause Subscription
           </Button>
           <Button type="secondary" onclick={closeModal}>
             Cancel

@@ -24,7 +24,6 @@ import Form from "../form";
  */
 const ShowLink = (opts) => {
   const { name, title, color } = opts;
-  console.log(opts);
   return (
     <Button type="primary-reverse" title="Pause Subscription" name={name}>
       <span class="b">

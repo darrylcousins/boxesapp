@@ -50,7 +50,7 @@ export default async ({ subscriptions, admin_email }) => {
 `);
         sendmail({
           to: [email, 'darryljcousins@gmail.com'],
-          subject: `[${process.env.SHOP_NAME}] Subscription created`,
+          subject: `\[${process.env.SHOP_NAME}\] Subscription created`,
           html: htmlOutput.html
         });
         const meta = {

@@ -14,6 +14,11 @@ export default `
               <p style="color:#666;padding:5px 0;margin:0">
                 You can view your subscriptions from your <a href="https://{{ env.SHOP }}/account">account page</a>.
               </p>
+              {% if type == "upcoming" %}
+                <p style="color:#4e1018;padding:5px 0;padding-top:15px;margin:0">
+                  You still have a couple of days before the order is created in which to add items or otherwise update you box.
+                </p>
+              {% endif %}
             </mj-text>
           </mj-column>
         </mj-section>

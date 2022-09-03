@@ -4,9 +4,9 @@
 
 Purchase options in Recharge must be in `weeks` and **not** `days`. The reason
 for this is that by using weeks we can define a specific weekday to make the charge
-(i.e. when the shopify order is created). The default (not configurabel) is the charge 3 days
-prior to the delivery day and to advise the customer a further 3 days before
-that.
+(i.e. when the shopify order is created). The default (not configurable) is
+that the charge is made 3 days prior to the delivery day and to advise the
+customer a further 3 days before that.
 
 **Every** item with product type of `Container Box` or `Box Produce` must have
 matching available options. I.e. if boxes have both weekly (``every 1 week``) and fornightly
@@ -14,15 +14,15 @@ matching available options. I.e. if boxes have both weekly (``every 1 week``) an
 
 ## Tokens
 
-`RECHARGE_ACCESS_TOKEN` - From recharge - the store owner will need to grant
-access to the tokens or supply them from the recharge admin
-`RECHARGE_CLIENT_SECRET` - From recharge, as above
+`RECHARGE_ACCESS_TOKEN` and `RECHARGE_CLIENT_SECRET` - From recharge - the store owner will need to grant
+access to the tokens or supply them from the recharge admin.
 
 ## Installing Recharge
 
-Had some grief 'auto' installing the widget. Ended up installing liquid script
-manually. Some clicking around the recharge admin managed to sort through the
-"confirm installation" procedure.
+Had some grief 'auto' installing the widget, worked fine on one theme and
+didn't on another. Ended up installing liquid script manually ([instructions](https://support.rechargepayments.com/hc/en-us/articles/360008830653-Installing-the-Recharge-Checkout-on-Shopify-integration-manually)). Some clicking
+around the recharge admin managed to sort through the "confirm installation"
+procedure.
 
 ## Customer Portal
 
@@ -30,8 +30,8 @@ manually. Some clicking around the recharge admin managed to sort through the
 Recharge admin -> Storefront -> Customer Portal
 ```
 
-These **Subscription Details** settings must be **off** to work with the [Boxes
-App](http://boxesapp.nz). The notes refer briefly to how the boxesapp "could"
+The following **Subscription Details** settings must be **off** to work with the [Boxes
+App](http://boxesapp.nz). The numbered points below refer briefly to how the Boxes App *could*
 be enhanced to allow these settings. It will be necessary however to add that
 functionality to the `BoxesApp Customer Portal` so as to successfully keep
 included products in sync with the box.
@@ -47,7 +47,7 @@ included products in sync with the box.
 5. *Swap product*:
   Also doable, again the difficulties will be when more than one `Container Box` is in the charge.
 
-<img src="/assets/CustomerPortal.png" width="960" />
+<img src="/assets/CustomerPortal.png" width="660" />
 
 ## Pausing and Cancelling Subscriptions
 
@@ -82,3 +82,26 @@ the container box only and not the other included items.
 The *cancellation alert* notification should be enabled.
 
 <img src="/assets/StoreOwnerNotifications.png" width="660" />
+
+## Customer Portal
+
+The Boxes App must take care of skipping charges and cancelling subscriptions.
+This is because Recharge does not know about the products in a box.
+
+At `Storefront -> Customer Portal` additional html can be added to the header
+and footer. The following could be suggested adding to the header:
+
+
+```html
+<section class="rct_content"
+  style="background-color:khaki; padding: 10px;border:1px;margin-bottom:1em">
+    <p><img 
+    style="width:50px;float:left;margin-right:1em;" src="https://boxesapp.nz/assets/boxes.svg" />
+    To skip an order, or cancel a subscription, or change the products in your
+    box subscription please return to your
+    <a href="/account" style="font-weight: bold;color:#333">account</a> page and select
+    the link to <i style="font-weight: bold">Manage Subscribed Boxes</i>.</p>
+</section>
+``` 
+
+<img src="/assets/CustomerPortalHeader.png" width="660" />

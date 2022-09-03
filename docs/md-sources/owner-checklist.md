@@ -4,7 +4,7 @@ This is a shorter version of the information found [here](/owner).
 
 ## Recharge
 
-Installing Recharge is not part of this documentation.
+Installing Recharge is not part of this documentation. More about Recharge integration with Boxes App [here](/RECHARGE).
 
 ## Box Containers
 

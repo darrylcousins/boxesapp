@@ -71,9 +71,16 @@ Because the Boxes App sends out an email on *subscription creation* and on
 *charge upcoming* (3 days prior to charge date) then these 2 email
 notifications can be disabled.
 
+It could also be argued that because Shopify sends out an *order confirmed*
+email when the charge is created the Recharge notification *recurring charge
+confirmation* may also be disabled.
+
 The *subscription cancellation* notification should however be enabled, because
 Boxes App handles the cancellation of subscriptions a single email is sent for
-the container box only and not the other included items.
+the container box only and not the other included items. Note: Currently it
+seems that this email is not sent when cancelling a single box subscription
+through the api. Awaiting confirmation from Recharge about this before creating
+an email from Boxes App confirming the cancellation.
 
 <img src="/assets/CustomerNotifications.png" width="660" />
 

@@ -55,7 +55,7 @@ const main = async () => {
       };
       sendmail({
         to: process.env.SERVER_EMAIL,
-        subject: `${titleCase(db)} DB nightly backup report`,
+        subject: `\[${process.env.DB_NAME}-db\] Nightly backup report`,
         text: report.join("\n"),
         attachments,
       });
@@ -68,7 +68,7 @@ const main = async () => {
 
 main()
   .catch((err) => {
-    console.log(`${titleCase(process.env.DB_NAME)} Nightly backup errors`);
+    console.log(`\[${process.env.DB_NAME}-db\] Nightly backup report`);
     console.log(err.toString());
     process.exit(1);
 });

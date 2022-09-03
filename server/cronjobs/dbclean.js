@@ -74,7 +74,7 @@ const main = async () => {
       };
       sendmail({
         to: process.env.SERVER_EMAIL,
-        subject: `${titleCase(db)} DB clean report`,
+        subject: `\[${process.env.DB_NAME}-db\] Data clean report`,
         text: report.join("\n"),
         attachments,
       });
@@ -87,7 +87,7 @@ const main = async () => {
 
 main()
   .catch((err) => {
-    console.log(`${titleCase(process.env.DB_NAME)} DB clean errors`);
+    console.log(`\[${process.env.DB_NAME}-db\] Data clean errors`);
     console.log(err.toString());
     process.exit(1);
 });

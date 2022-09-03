@@ -154,9 +154,9 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   let nowAvailableAsAddOns = [];
 
   if (previousBox) {
-    notIncludedInThisBox = fetchBox.includedProducts.map(el => el.shopify_title)
+    newIncludedInThisBox = fetchBox.includedProducts.map(el => el.shopify_title)
       .filter(x => !previousBox.includedProducts.map(el => el.shopify_title).includes(x));
-    newIncludedInThisBox = previousBox.includedProducts.map(el => el.shopify_title)
+    notIncludedInThisBox = previousBox.includedProducts.map(el => el.shopify_title)
       .filter(x => !fetchBox.includedProducts.map(el => el.shopify_title).includes(x));
     nowAvailableAsAddOns = fetchBox.addOnProducts.map(el => el.shopify_title)
       .filter(x => !previousBox.addOnProducts.map(el => el.shopify_title).includes(x));

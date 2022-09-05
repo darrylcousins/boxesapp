@@ -12,11 +12,18 @@ export default `
                 If you have any queries about this email please contact <a href="mailto:{{ admin_email }}">{{ admin_email }}</a>.
               </p>
               <p style="color:#666;padding:5px 0;margin:0">
-                You can view your subscriptions from your <a href="https://{{ env.SHOP }}/account">account page</a>.
+                You can view your subscriptions from your <a
+                  href="https://{{ env.SHOP }}/account"
+                >account page</a> and edit, pause or cancel 
+                    your subscribed box{% if subscriptions.size > 1 %}es{% endif %}
+                <a
+                    href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{subscriptions[0].attributes.customer.external_customer_id.ecommerce}}">here</a>.
               </p>
               {% if type == "upcoming" %}
                 <p style="color:#4e1018;padding:5px 0;padding-top:15px;margin:0">
-                  You still have a couple of days before the order is created in which to add items or otherwise update you box.
+                  You still have a couple of days before the order is created in which to add items or otherwise
+                <a style="color:#4e1018;"
+                    href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{subscriptions[0].attributes.customer.external_customer_id.ecommerce}}">update your box</a>.
                 </p>
               {% endif %}
             </mj-text>
@@ -52,10 +59,12 @@ export default `
                   <td><span>$</span>{{ subscription.attributes.totalPrice | money }}</td>
                 </tr>
                 {% if type == "upcoming" %}
-                  <tr>
-                    <td style="color:#777;text-align:right;padding-right:20px;">Last Order</td>
-                    <td>#{{ subscription.attributes.lastOrder.order_number }}</td>
-                  </tr>
+                  {% if subscription.attributes.lastOrder %}
+                    <tr>
+                      <td style="color:#777;text-align:right;padding-right:20px;">Last Order</td>
+                      <td>#{{ subscription.attributes.lastOrder.order_number }}</td>
+                    </tr>
+                  {% endif %}
                 {% else %}
                   <tr>
                     <td style="color:#777;text-align:right;padding-right:20px;">Current Order</td>

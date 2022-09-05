@@ -4,6 +4,7 @@
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import { updateSubscriptions } from "../../lib/recharge/helpers.js";
 import chargeUpcomingMail from "../../mail/charge-upcoming.js";
+//import fs from 'fs';
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * This will trigger X days before the upcoming charge is scheduled. The default
@@ -41,13 +42,14 @@ export default async function chargeUpcoming(topic, shop, body) {
   try {
     result = await gatherData({ grouped, result });
 
-    // fix the subscriptions with the updated box
     for (const [idx, subscription] of result.entries()) {
       if (subscription.updates && subscription.updates.length) {
 
+        // Reconcile the items in the subscription with the new box
         await updateSubscriptions({ updates: subscription.updates });
 
-        // update the includes to give the email the updated box items
+        // Fix up the lists for the charge upcoming email
+
         // flatten lists for easy filtering
         const includes = subscription.includes.map(el => el.subscription_id);
         const updates = subscription.updates.map(el => el.subscription_id);
@@ -76,6 +78,7 @@ export default async function chargeUpcoming(topic, shop, body) {
       };
 
     };
+    //fs.writeFileSync("recharge.upcoming.json", JSON.stringify(result, null, 2));
     
     let admin_email = _mongodb.collection("settings").findOne({handle: "admin-email"});
     if (admin_email) admin_email = admin_email.value;

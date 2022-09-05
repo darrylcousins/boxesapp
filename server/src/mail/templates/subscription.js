@@ -185,7 +185,7 @@ export default `
                     <td>
                       {{ product.quantity }}
                     </td>
-                    <td style="text-align:right">
+                    <td width="45px" style="text-align:right">
                       <span>$</span>{{ product.total_price | money }}
                     </td>
                   </tr>
@@ -194,7 +194,7 @@ export default `
                   <td colspan="3" style="text-align:left;border-top:1px solid #333">
                     Total, excluding shipping.
                   </td>
-                  <td style="text-align:right;border-top:1px solid #333">
+                  <td width="45px" style="text-align:right;border-top:1px solid #333">
                     <span>$</span>{{ subscription.attributes.totalPrice | money }}
                   </td>
                 </tr>

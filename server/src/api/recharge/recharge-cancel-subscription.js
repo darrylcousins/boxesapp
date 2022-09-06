@@ -3,6 +3,8 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
+//import fs from "fs";
+import subscriptionCancelledMail from "../../mail/subscription-cancelled.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 /*
  * @function recharge/recharge-cancel-subscription.js
@@ -11,6 +13,16 @@ import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
  * @param (function) next
  */
 export default async (req, res, next) => {
+
+  /* for creating mail - can be deleted
+  const mail = {};
+  mail.subscription_id = parseInt(req.body.subscription_id);
+  mail.includes = JSON.parse(req.body.includes);
+  mail.attributes = JSON.parse(req.body.attributes);
+  fs.writeFileSync("recharge.cancel.json", JSON.stringify(mail, null, 2));
+  res.status(200).json({ success: true });
+  return;
+  */
 
   try {
     const cancellation_reason = req.body.cancellation_reason;
@@ -41,6 +53,9 @@ export default async (req, res, next) => {
     };
     _logger.notice(`Recharge cancel subscription.`, { meta });
     res.status(200).json({ success: true });
+
+    const data = { subscription_id, attributes, includes };
+    await subscriptionCancelledMail(data);
 
   } catch(err) {
     res.status(400).json({ error: err.toString() });

@@ -383,11 +383,11 @@ async function *Subscription({ subscription, idx, allowEdits }) {
    * Layout helper
    */
   const idData = [
-      ["Subscription ID", subscription.attributes.subscription_id],
-      ["Charge Id", subscription.attributes.charge_id],
-      ["Address Id", subscription.attributes.address_id],
-      ["Recharge Customer Id", subscription.attributes.customer.id],
-      ["Shopify Customer Id", subscription.attributes.customer.external_customer_id.ecommerce],
+    ["Subscription ID", subscription.attributes.subscription_id],
+    ["Charge Id", subscription.attributes.charge_id],
+    ["Address Id", subscription.attributes.address_id],
+    ["Recharge Customer Id", subscription.attributes.customer.id],
+    ["Shopify Customer Id", subscription.attributes.customer.external_customer_id.ecommerce],
   ];
 
   /*
@@ -426,11 +426,11 @@ async function *Subscription({ subscription, idx, allowEdits }) {
      * Layout helper
      */
     const chargeData = [
-        ["Next Charge Date", subscription.attributes.nextChargeDate],
-        ["Next Scheduled Delivery", subscription.attributes.nextDeliveryDate],
-        ["Frequency", subscription.attributes.frequency],
-        ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
-        ["Order Delivered", subscription.attributes.lastOrder.delivered],
+      ["Next Order Date", subscription.attributes.nextChargeDate],
+      ["Next Scheduled Delivery", subscription.attributes.nextDeliveryDate],
+      ["Frequency", subscription.attributes.frequency],
+      ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
+      ["Order Delivered", subscription.attributes.lastOrder.delivered],
     ];
 
     yield (

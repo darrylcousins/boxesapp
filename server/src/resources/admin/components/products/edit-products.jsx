@@ -672,7 +672,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
         ? boxProperties["Dislikes"] : "None"],
     ];
     return [
-      ["Next Charge Date", nextChargeDate ? nextChargeDate : "Unscheduled"],
+      ["Next Order Date", nextChargeDate ? nextChargeDate : "Unscheduled"],
       ["Total Price", toPrice(totalPrice())],
       ["Delivery Date", properties["Delivery Date"]],
     ];

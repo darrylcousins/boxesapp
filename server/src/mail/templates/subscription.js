@@ -42,7 +42,7 @@ export default `
               <mj-table align="center" width="300px">
                 {% if type == "upcoming" %}
                   <tr>
-                    <td style="color:#777;text-align:right;padding-right:20px;">Next Charge Date</td>
+                    <td style="color:#777;text-align:right;padding-right:20px;">Next Order Date</td>
                     <td>{{ subscription.attributes.nextChargeDate }}</td>
                   </tr>
                   <tr>

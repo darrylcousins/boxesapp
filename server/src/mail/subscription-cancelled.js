@@ -17,7 +17,9 @@ export default async ({ subscription_id, attributes, includes, admin_email }) =>
   const admin = admin_email ? admin_email : process.env.ADMIN_EMAIL;
 
   const engine = new Liquid();
-  const options = {};
+  const options = {
+    keepComments: false,
+  };
   
   try {
     engine
@@ -42,7 +44,7 @@ export default async ({ subscription_id, attributes, includes, admin_email }) =>
     ${sections}
   </mj-body>
 </mjml>
-`);
+`, options);
         sendmail({
           to: [attributes.customer.email, 'darryljcousins@gmail.com'],
           subject: `\[${process.env.SHOP_NAME}\] Subscription cancelled`,

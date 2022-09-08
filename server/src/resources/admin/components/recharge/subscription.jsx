@@ -431,6 +431,7 @@ async function *Subscription({ subscription, idx, allowEdits }) {
       ["Frequency", subscription.attributes.frequency],
       ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
       ["Order Delivered", subscription.attributes.lastOrder.delivered],
+      ["Subscription ID", subscription.attributes.subscription_id],
     ];
 
     yield (
@@ -444,9 +445,11 @@ async function *Subscription({ subscription, idx, allowEdits }) {
           </span></div>
         )}
         <div class="flex-container-reverse w-100 pt2 relative" id={ `title-${idx}` }>
-          <div class="dt">
-            <AttributeColumn data={ idData } />
-          </div>
+          { false && (
+            <div class="dt">
+              <AttributeColumn data={ idData } />
+            </div>
+          )}
           <div class="dt">
             <div class="">
               <AttributeColumn data={ chargeData } />

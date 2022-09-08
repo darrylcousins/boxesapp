@@ -71,6 +71,10 @@ export default `
                     <td>#{{ subscription.attributes.lastOrder.order_number }}</td>
                   </tr>
                 {% endif %}
+                <tr>
+                  <td style="color:#777;text-align:right;padding-right:20px;">Subscription ID</td>
+                  <td>{{ subscription.attributes.subscription_id }}</td>
+                </tr>
               </mj-table>
             </mj-column>
           </mj-section>
@@ -99,10 +103,11 @@ export default `
                 </tr>
               </mj-table>
             </mj-column>
+            <!--
             <mj-column>
               <mj-table>
                 <tr>
-                  <td style="color:#777;text-align:right;padding-right:20px;">Subscription ID</td>
+                  <td style="color:#777;text-align:right;padding-right:20px;">subscription id</td>
                   <td>{{ subscription.attributes.subscription_id }}</td>
                 </tr>
                 {% if subscription.attributes.charge_id %}
@@ -125,6 +130,7 @@ export default `
                 </tr>
               </mj-table>
             </mj-column>
+            -->
           </mj-section>
           <mj-section padding-top="0px">
             <mj-column>

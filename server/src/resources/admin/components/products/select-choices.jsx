@@ -27,19 +27,29 @@ export const getSelectModalOptions = ({boxLists, from_list_name, shopify_product
               return false;
             };
           });
-        modalNote = (
-          <Fragment>
-            <h6 class="fw4 tl fg-streamside-maroon">
-              Removing &lsquo;{product.shopify_title}&rsquo;.
-            </h6>
-            { product.quantity > 1 && (
-              <p class="bold">{ product.quantity } items will be removed, change the quantity if this is not your intention.</p>
-            )}
-            <p class="bold">To continue please select a replacement as a
-              swapped item from this list of available and similarly priced
-          items.</p>
-          </Fragment>
-        );
+        if (modalSelectList.length === 0) {
+          modalNote = (
+            <Fragment>
+              <h6 class="fw4 tl fg-streamside-maroon">
+                Unable to remove &lsquo;{product.shopify_title}&rsquo; due to availability.
+              </h6>
+            </Fragment>
+          );
+        } else {
+          modalNote = (
+            <Fragment>
+              <h6 class="fw4 tl fg-streamside-maroon">
+                Removing &lsquo;{product.shopify_title}&rsquo;.
+              </h6>
+              { product.quantity > 1 && (
+                <p class="bold">{ product.quantity } items will be removed, change the quantity if this is not your intention.</p>
+              )}
+              <p class="bold">To continue please select a replacement as a
+                swapped item from this list of available and similarly priced
+            items.</p>
+            </Fragment>
+          );
+        };
         break;
       case "Add on Items":
         modalStore = {id: shopify_product_id, from: from_list_name, to: "possibleAddons"};

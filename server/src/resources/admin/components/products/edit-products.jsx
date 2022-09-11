@@ -68,7 +68,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
    * @member {object} sortedListNames
    */
   //let sortedListNames = [ "Including", "Add on Items", [ "Removed Items", "Swapped Items" ] ];
-  let sortedListNames = [ "Including", "Add on Items", [ "Removed Items", "Swapped Items" ] ];
+  let sortedListNames = [ "Including", [ "Removed Items", "Swapped Items" ], "Add on Items" ];
   /**
    * The priced items collected for display
    * Updated by updatePricedItems

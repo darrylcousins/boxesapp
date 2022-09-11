@@ -559,7 +559,13 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     return (
       <div class="w-100 bold pt1 dt bg-streamside-blue white" style="height: 2em">
         <div class="dtc pa2">
-          { name } <span class="fw3">{ name === "Removed Items" && "(2 only)" }</span>
+          { name === "Including" ? (
+            <span>Included</span>
+          ) : (
+            <Fragment>
+              <span>{ name }</span> <span class="fw3">{ name === "Removed Items" && "(2 only)" }</span>
+            </Fragment>
+          )}
         </div>
         { name === "Add on Items" && isEditable && (
           <div class="dtc tr hover-dark-blue pointer w-10"

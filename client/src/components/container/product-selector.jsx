@@ -141,28 +141,32 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
                 return false;
               };
             });
-          if (swaps.length) {
-            // need to pause things here to allow user to select one of the possible swaps
-            // in the move above a product has moved from selectedIncludes to selectedExcludes
-            // now we ask the use to move a similarly priced product from possibleAddons to selectedSwaps
-            removedItem = { ...product };
-            possibleSwaps = [...swaps];
-            swapSelector = true;
+          if (swaps.length === 0) {
+            possibleSwaps = [];
 
-            const overlay = document.querySelector("#productSelectorOverlay");
-            overlay.style.visibility = "visible";
-            const animation = overlay.animate({
-              opacity: 0.9,
-            }, animationOptions);
-            this.refresh();
-
-          } else {
-            // no swapsfollow original script
+            /* First version allowed remove without swap
             this.dispatchEvent(selectorOpenEvent(null));
             animateFadeForAction(ev.target, async () => {
               await this.dispatchEvent(moveProductEvent(id, "selectedIncludes", "selectedExcludes"));
             });
+            */
+          } else {
+            // need to pause things here to allow user to select one of the possible swaps
+            // in the move above a product has moved from selectedIncludes to selectedExcludes
+            // now we ask the use to move a similarly priced product from possibleAddons to selectedSwaps
+            possibleSwaps = [...swaps];
           };
+
+          removedItem = { ...product };
+          swapSelector = true;
+
+          const overlay = document.querySelector("#productSelectorOverlay");
+          overlay.style.visibility = "visible";
+          const animation = overlay.animate({
+            opacity: 0.9,
+          }, animationOptions);
+          this.refresh();
+
           break;
         case "possibleAddons":
           id = ev.target.getAttribute("data-item");
@@ -256,31 +260,39 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
         <div id="productSelectorOverlay" class="overlay"></div>
         <div>
 
-          { (selectedIncludes.length > 0) && (
+          { selectedIncludes.length > 0 && (
             <Fragment>
               { swapSelector && (
                 <div class="relative">
                   <div id="swapSelectorModal">
-                    <div style="font-size:1em;font-weight:bold;padding:0.3em 0.5em;color:dark-grey;">
-                      <div>Removing <span style="color: black">{ removedItem.shopify_title }</span>.</div>
-                      <div class="tr">To continue please select a replacement.</div>
-                    </div>
-                    <div class="pill-wrapper">
-                      {possibleSwaps.map(el =>
-                        <div
-                          class="pill"
-                          style={{
-                            "color": getSetting("Colour", "excluded-product-fg"),
-                            "background-color": getSetting("Colour", "excluded-product-bg"),
-                            "border-color": getSetting("Colour", "excluded-product-bg"),
-                            "cursor": "pointer",
-                          }}
-                          onclick={ () => confirmSwap(el) }
-                        >
-                          {el.shopify_title}
+                    { possibleSwaps.length > 0 ? (
+                      <Fragment>
+                        <div style="font-size:1em;font-weight:bold;padding:0.3em 0.5em;color:dark-grey;">
+                          <div>Removing <span style="color: black">{ removedItem.shopify_title }</span>.</div>
+                          <div class="tr">To continue please select a replacement.</div>
                         </div>
-                      )}
-                    </div>
+                        <div class="pill-wrapper">
+                          {possibleSwaps.map(el =>
+                            <div
+                              class="pill"
+                              style={{
+                                "color": getSetting("Colour", "excluded-product-fg"),
+                                "background-color": getSetting("Colour", "excluded-product-bg"),
+                                "border-color": getSetting("Colour", "excluded-product-bg"),
+                                "cursor": "pointer",
+                              }}
+                              onclick={ () => confirmSwap(el) }
+                            >
+                              {el.shopify_title}
+                            </div>
+                          )}
+                        </div>
+                      </Fragment>
+                    ) : (
+                      <div style="font-size:1em;font-weight:bold;padding:0.3em 0.5em;color:dark-grey;">
+                        <div>Unable to swap <span style="color: black">{ removedItem.shopify_title }</span>.</div>
+                      </div>
+                    )}
                     <div class="tc button-wrapper">
                       <button
                         name="close"
@@ -295,7 +307,7 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
                           "font-size": "0.9em"
                           }}
                         >
-                          Cancel
+                          { possibleSwaps.length === 0 ? "Continue" : "Cancel" }
                         </button>
                     </div>
                   </div>

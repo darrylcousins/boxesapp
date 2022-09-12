@@ -40,7 +40,7 @@ async function *Subscription({ subscription, idx, allowEdits }) {
   /**
    * Hold changed items
    *
-   * @member {boolean} changed
+   * @member {array} changed
    */
   let changed = [];
   /**
@@ -326,9 +326,10 @@ async function *Subscription({ subscription, idx, allowEdits }) {
     const subdiv = document.querySelector(`#subscription-${subscription.attributes.subscription_id}`);
     // and updates chargeGroups
     let event;
-    if (ev.detail.src.includes("skip")) {
+    console.log(ev.detail.json);
+    if (ev.detail.src.includes("update-charge")) {
       event = "subscription.skipped";
-    } else if (ev.detail.src.includes("cancel")) {
+    } else if (ev.detail.src.includes("cancel-subscription")) {
       event = "subscription.cancelled";
     };
     if (event) {
@@ -337,7 +338,7 @@ async function *Subscription({ subscription, idx, allowEdits }) {
           this.dispatchEvent(
             new CustomEvent(event, {
               bubbles: true,
-              detail: { id: subscription.attributes.subscription_id },
+              detail: { id: subscription.attributes.subscription_id, result: ev.detail.json },
             })
           );
         });
@@ -405,6 +406,17 @@ async function *Subscription({ subscription, idx, allowEdits }) {
   };
 
   /*
+   * Determine if pausable
+   */
+  const isSkippable = (subscription) => {
+    const now = new Date();
+    const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
+    const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
+    console.log(diffDays);
+    return diffDays < 8;
+  };
+
+  /*
    * @member addressData
    * Layout helper
    */
@@ -430,7 +442,7 @@ async function *Subscription({ subscription, idx, allowEdits }) {
       ["Next Scheduled Delivery", subscription.attributes.nextDeliveryDate],
       ["Frequency", subscription.attributes.frequency],
       ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
-      ["Order Delivered", subscription.attributes.lastOrder.delivered],
+      //["Order Delivered", subscription.attributes.lastOrder.delivered],
       ["Subscription ID", subscription.attributes.subscription_id],
     ];
 
@@ -471,7 +483,9 @@ async function *Subscription({ subscription, idx, allowEdits }) {
             </Button>
             { allowEdits && collapsed && (
               <Fragment>
-                <SkipChargeModal subscription={ subscription } />
+                { isSkippable(subscription) === true && (
+                  <SkipChargeModal subscription={ subscription } />
+                )}
                 <CancelSubscriptionModal subscription={ subscription } />
               </Fragment>
             )}

@@ -185,6 +185,7 @@ async function* UpsertOrderModal(props) {
       formData.pickup = currentDelivered.toDateString();
     };
   };
+
   /*
    * Updates on box selection
    * Load dates available for the selected box

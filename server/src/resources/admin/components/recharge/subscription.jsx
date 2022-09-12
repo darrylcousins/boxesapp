@@ -354,10 +354,10 @@ async function *Subscription({ subscription, idx, allowEdits }) {
   const AttributeRow = ({ title, value }) => {
     return (
       <Fragment>
-        <div class={`fl w-50 gray tr pr3 pv1${title.startsWith("Next") && " b"}`}>
+        <div class={`fl w-50 gray tr pr3 pv1${title.startsWith("Next") ? " b" : ""}`}>
           { title }:
         </div>
-        <div class={`fl w-50 pv1${title.startsWith("Next") && " b"}`}>
+        <div class={`fl w-50 pv1${title.startsWith("Next") ? " b" : ""}`}>
           <span>{ value }</span>
         </div>
       </Fragment>
@@ -445,7 +445,7 @@ async function *Subscription({ subscription, idx, allowEdits }) {
           </span></div>
         )}
         <div class="flex-container-reverse w-100 pt2 relative" id={ `title-${idx}` }>
-          { false && (
+          { true && (
             <div class="dt">
               <AttributeColumn data={ idData } />
             </div>

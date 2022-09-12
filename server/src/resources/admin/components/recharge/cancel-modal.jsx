@@ -122,6 +122,7 @@ async function* CancelSubscription(props) {
       <Fragment>
         <p class="lh-copy tl">
           Are you sure you want to cancel this box subscription?<br />
+          Perhaps you would prefer to pause the subscription instead?<br />
           <b class="pt3">This cannot be undone.</b>
         </p>
         <Form

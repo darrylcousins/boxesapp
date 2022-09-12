@@ -218,7 +218,7 @@ function FormModalWrapper(Component, options) {
               this.dispatchEvent(
                 new CustomEvent("listing.reload", {
                   bubbles: true,
-                  detail: { src },
+                  detail: { src, json },
                 })
               );
               success = false;

@@ -144,6 +144,9 @@ router.post(
   "/recharge-update", 
   await import("./recharge/recharge-update.js").then(({ default: fn }) => fn));
 router.post(
+  "/recharge-update-charge-date", 
+  await import("./recharge/recharge-update-charge-date.js").then(({ default: fn }) => fn));
+router.post(
   "/recharge-skip-charge", 
   await import("./recharge/recharge-skip-charge.js").then(({ default: fn }) => fn));
 router.post(

@@ -87,8 +87,13 @@ async function *Customer({ customer, admin }) {
           this.refresh();
           return null;
         };
-        chargeGroups = json;
-        originalChargeGroups = cloneDeep(json);
+        if (json.reload) {
+          // charge is too new so reload - hopefully getting all
+          window.location.reload();
+          return;
+        };
+        chargeGroups = json.result;
+        originalChargeGroups = cloneDeep(json.result);
         loading = false;
         this.refresh();
       })

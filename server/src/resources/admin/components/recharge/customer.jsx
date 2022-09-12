@@ -154,16 +154,12 @@ async function *Customer({ customer, admin }) {
    */
   const skipCharge = async (ev) => {
 
+    const result = ev.detail.result;
     const subscription = chargeGroups.find(el => el.attributes.subscription_id === ev.detail.id);
     const idx = chargeGroups.indexOf(subscription);
 
-    const deliveredObj = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
-    deliveredObj.setDate(deliveredObj.getDate() + subscription.attributes.days);
-    subscription.attributes.nextDeliveryDate = deliveredObj.toDateString();
-
-    const chargeObj = new Date(Date.parse(subscription.attributes.nextChargeDate));
-    chargeObj.setDate(chargeObj.getDate() + subscription.attributes.days);
-    subscription.attributes.nextChargeDate = chargeObj.toDateString();
+    subscription.attributes.nextDeliveryDate = ev.detail.result.nextdeliverydate;
+    subscription.attributes.nextChargeDate = ev.detail.result.nextchargedate;
 
     // simply disable edits - when customer comes back to the page then the recharge data will be saved 
     subscription.attributes.hasNextBox = false;

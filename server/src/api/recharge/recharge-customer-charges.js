@@ -63,9 +63,9 @@ export default async (req, res, next) => {
       const created_at = new Date(Date.parse(charge.created_at));
       const now = new Date();
       const createdSince = Math.ceil(Math.abs(now - created_at) / (1000 * 60)); // in minutes
-      console.log(createdSince, "minutes");
-      if (createdSince < 3) reload = true;
-      // if this is less than say 3 minutes then wait and try again
+      console.log(createdSince);
+      if (createdSince < 2) reload = true;
+      // if this is less than say 2 minutes then wait and try again
       // this because it can take a few minutes to load all subscriptions into the charge via webhooks
     };
 

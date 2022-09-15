@@ -109,7 +109,9 @@ export const floatToString = fToString; // is this how it should be done?
  * @param {number} num The integer number to use
  * @returns {string} Price string
  */
-export const toPrice = (num) => `$${fToString(num)}`;
+export const toPrice = (num) => {
+  return `$${fToString(num)}`;
+};
 
 /**
  * Sort an object by it's keys.
@@ -189,12 +191,15 @@ export const dateStringSort = (a, b) => {
  * @param {number} day Integer day of week, Monday -> 0
  * @returns {object} Date object
  */
-export const findNextWeekday = (day) => {
+export const findNextWeekday = (day, now) => {
   // return the date of next Thursday as 14/01/2021 for example
   // Thursday day is 4, Saturday is 6
-  const now = new Date();
-  now.setDate(now.getDate() + ((day + (7 - now.getDay())) % 7));
-  return now;
+  let current = now;
+  if (typeof now === "undefined") {
+    current = new Date();
+  };
+  current.setDate(current.getDate() + ((day + (7 - current.getDay())) % 7));
+  return current;
 };
 
 /**

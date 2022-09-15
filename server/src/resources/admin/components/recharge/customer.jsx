@@ -8,6 +8,7 @@
  */
 import { createElement, Fragment } from "@b9g/crank";
 import cloneDeep from "lodash.clonedeep";
+import Cancelled from "./cancelled";
 import Subscription from "./subscription";
 import Error from "../lib/error";
 import { Fetch } from "../lib/fetch";
@@ -44,11 +45,23 @@ async function *Customer({ customer, admin }) {
    */
   let fetchError = false;
   /**
+   * recharge customer fetched from api
+   *
+   * @member {object} recharge customer
+   */
+  let rechargeCustomer = null;
+  /**
    * charge groups fetched from api
    *
    * @member {object} charge groups for the customer
    */
   let chargeGroups = null;
+  /**
+   * cancelled groups fetched from api
+   *
+   * @member {object} cancelled subscriptions for the customer
+   */
+  let cancelledGroups = null;
   /**
    * charge groups fetched from api
    *
@@ -74,10 +87,11 @@ async function *Customer({ customer, admin }) {
   /**
    *
    * @function getChargeGroups
+   * Get charges for customer
    *
    */
-  const getChargeGroups = async () => {
-    const uri = `/api/recharge-customer-charges/${customer.id}`;
+  const getChargeGroups = async (customer_id) => {
+    const uri = `/api/recharge-customer-charges/${customer_id}`;
     return Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
@@ -88,12 +102,42 @@ async function *Customer({ customer, admin }) {
           return null;
         };
         if (json.reload) {
-          // charge is too new so reload - hopefully getting all
+          // charge is too new so reload
           window.location.reload();
-          return;
+          return null;
         };
         chargeGroups = json.result;
         originalChargeGroups = cloneDeep(json.result);
+        loading = false;
+        this.refresh();
+        return true;
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+        return null;
+      });
+  };
+
+  /**
+   *
+   * @function getCancelledGroups
+   * Get cancelled subscriptions for customer grouped as for charges
+   *
+   */
+  const getCancelledGroups = async (customer_id) => {
+    const uri = `/api/recharge-cancelled-subscriptions/${customer_id}`;
+    return Fetch(encodeURI(uri))
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          this.refresh();
+          return null;
+        };
+        cancelledGroups = json;
         loading = false;
         this.refresh();
       })
@@ -104,12 +148,48 @@ async function *Customer({ customer, admin }) {
       });
   };
 
-  getChargeGroups();
+  /**
+   *
+   * @function getRechargeCustomer
+   * Get the recharge customer using shopify customer id
+   *
+   */
+  const getRechargeCustomer = async () => {
+    const uri = `/api/recharge-customer/${customer.id}`;
+    return Fetch(encodeURI(uri))
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          this.refresh();
+          return null;
+        };
+        rechargeCustomer = json;
+        return rechargeCustomer
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+        return null;
+      });
+  };
+
+  getRechargeCustomer().then(res => {
+    const customer_id = res.id;
+    if (res) {
+      getChargeGroups(customer_id).then(result => {
+        loading = true;
+        this.refresh();
+        getCancelledGroups(customer_id);
+      });
+    };
+  });
 
   const reloadSubscription = (ev) => {
     const subscription = chargeGroups.find(el => el.attributes.subscription_id === ev.detail.id);
     const idx = chargeGroups.indexOf(subscription);
-    console.log(subscription);
     loading = true;
     chargeGroups = null;
     this.refresh();
@@ -203,6 +283,26 @@ async function *Customer({ customer, admin }) {
             <div class="w-100">
               <div class="mw6 center pt3">
                 No subscriptions found.
+              </div>
+            </div>
+          )
+        )}
+        { cancelledGroups && (
+          cancelledGroups.length > 0 ? (
+            <Fragment>
+              <h6 class="tl mb2 w-100 navy">
+                Cancelled Subscriptions
+              </h6>
+              { cancelledGroups.map((group, idx) => (
+                <div id={`cancelled-${group.subscription_id}`}>
+                  <Cancelled subscription={ group } idx={ idx } />
+                </div>
+              ))}
+            </Fragment>
+          ) : (
+            <div class="w-100">
+              <div class="mw6 center pt3">
+                &nbsp;
               </div>
             </div>
           )

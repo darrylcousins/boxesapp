@@ -10,11 +10,6 @@ const delay = (t) => {
   return new Promise(resolve => setTimeout(resolve, t));
 };
 
-const getCharges = async (customer_id) => {
-
-  return charges;
-};
-
 /*
  * @function recharge/recharge-customer-charges.js
  * @param (Http request object) req
@@ -22,22 +17,12 @@ const getCharges = async (customer_id) => {
  * @param (function) next
  */
 export default async (req, res, next) => {
-  const shopify_customer_id = req.params.shopify_customer_id;
-  //const customer_id = "3895947395222";
+  const customer_id = req.params.customer_id;
   try {
-    const { customers } = await makeRechargeQuery({
-      path: `customers`,
-      query: [ ["external_customer_id", shopify_customer_id ] ]
-    });
-    if (!customers || !customers.length) {
-      res.status(200).json([]);
-      return;
-    };
-
     const { charges } = await makeRechargeQuery({
       path: `charges`,
       query: [
-        ["customer_id", customers[0].id ],
+        ["customer_id", customer_id ],
         ["status", "queued" ],
         ["sort_by", "scheduled_at-asc" ]
       ]

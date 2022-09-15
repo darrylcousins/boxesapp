@@ -12,12 +12,18 @@ import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
  * @param (function) next
  */
 export default async (req, res, next) => {
-  const customer_id = req.params.customer_id;
+  // get recharge customer using shopify customer id
+  const shopify_customer_id = req.params.shopify_customer_id;
   try {
-    const result = await makeRechargeQuery({
-      path: `customers/${customer_id}`
+    const { customers } = await makeRechargeQuery({
+      path: `customers`,
+      query: [ ["external_customer_id", shopify_customer_id ] ]
     });
-    res.status(200).json(result);
+    if (!customers || !customers.length) {
+      res.status(200).json([]);
+      return;
+    };
+    res.status(200).json(customers[0]);
   } catch(err) {
     res.status(400).json({ error: err.toString() });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

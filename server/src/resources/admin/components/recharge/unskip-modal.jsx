@@ -1,7 +1,7 @@
 /**
- * Creates element to render modal form to skip a subscription
+ * Creates element to render modal form to unskip a subscription
  *
- * @module app/components/recharge/skip-modal
+ * @module app/components/recharge/unskip-modal
  * @requires module:app/form/form-modal-wrapper~FormModalWrapper
  * @requires module:app/lib/icon-button~IconButton
  * @exports SkipChargeModal
@@ -26,9 +26,9 @@ import { animateFadeForAction } from "../helpers";
 const ShowLink = (opts) => {
   const { name, title, color } = opts;
   return (
-    <Button type="primary-reverse" title="Pause Subscription" name={name}>
+    <Button type="primary-reverse" title="Reschedule Subscription" name={name}>
       <span class="b">
-        Pause Subscription
+        Reschedule Subscription
       </span>
     </Button>
   );
@@ -40,17 +40,17 @@ const ShowLink = (opts) => {
  * @member {object} options
  */
 const options = {
-  id: "pause-subscription", // form id - matches name in ShowLink which is title.toHandle
-  title: "Pause Subscription",
-  color: "dark-red",
+  id: "reschedule-subscription", // form id - matches name in ShowLink which is title.toHandle
+  title: "Reschedule Subscription",
+  color: "navy",
   src: "/api/recharge-update-charge-date",
   ShowLink,
-  saveMsg: "Pausing subscription ...",
-  successMsg: "Successfully paused subscription, reloading page.",
+  saveMsg: "Changing dates ...",
+  successMsg: "Successfully reschedules subscription, reloading page.",
 };
 
 /**
- * Create a modal to skip a charge.
+ * Create a modal to reschedules a charge.
  *
  * @generator
  * @yields {Element} A form and remove/cancel buttons.
@@ -61,38 +61,53 @@ const options = {
  * @param {object} props.subscription - The subscription to be paused
  * @param {string} props.formId - The unique form indentifier
  */
-async function* SkipCharge(props) {
+async function* UnSkipCharge(props) {
   const { doSave, closeModal, title, subscription, formId } = props;
 
-  const deliveryDays = [];
-  const chargeDays = [];
-  const intervalDays = [];
-  const interval = subscription.attributes.days === 7 ? "week" : "fortnigt";
-  const multiplier = subscription.attributes.days === 7 ? 1 : 2;
-  let delivered = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
-  let charge = new Date(Date.parse(subscription.attributes.nextChargeDate));
-  for (let i=0; i<3; i++) {
-    intervalDays.push(`${multiplier * (i + 1)} week${i > 0 ? "s" : ""}`);
-    delivered.setDate(delivered.getDate() + subscription.attributes.days);
-    deliveryDays.push(delivered.toDateString());
-    charge.setDate(charge.getDate() + subscription.attributes.days);
-    chargeDays.push(charge.toDateString());
+  /*
+   * Determine if pausable
+   */
+  const getDiffDays = (subscription) => {
+    const now = new Date();
+    const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
+    const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
+    // so this modal only shows if diffDays in greater than 8 days
+    return diffDays;
   };
 
-  let intervalIndex = 0;
+  // these need to count backwards
+  const deliveryDays = [];
+  const chargeDays = [];
+  const multiplier = subscription.attributes.days === 7 ? 1 : 2;
+
+  let delivered = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
+  let charge = new Date(Date.parse(subscription.attributes.nextChargeDate));
+  // instead of counting up for 3, we count back until diffDays < 7?
+  let diffDays = getDiffDays(subscription);
+  for (diffDays; diffDays > subscription.attributes.days; diffDays -= subscription.attributes.days) {
+    delivered.setDate(delivered.getDate() - subscription.attributes.days);
+    deliveryDays.push(delivered.toDateString());
+    charge.setDate(charge.getDate() - subscription.attributes.days);
+    chargeDays.push(charge.toDateString());
+  };
+  deliveryDays.reverse();
+  chargeDays.reverse();
+
+  //let daysIndex = deliveryDays.length - 1;
+  let daysIndex = 0;
 
   /*
    * Updates on box selection
    * Load dates available for the selected box
    */
-  const onIntervalChange = async (ev) => {
-    intervalIndex = intervalDays.indexOf(ev.target.value);
+  const onDayChange = async (ev) => {
+    daysIndex = deliveryDays.indexOf(ev.target.value);
     const chargeEl = document.getElementById("charge-date");
     const deliveryEl = document.getElementById("delivery-date");
-    animateFadeForAction(chargeEl, () => chargeEl.innerHTML = chargeDays[intervalIndex]);
-    animateFadeForAction(deliveryEl, () => deliveryEl.innerHTML = deliveryDays[intervalIndex]);
-    document.getElementById("nextchargedate").value = chargeDays[intervalIndex];
-    document.getElementById("nextdeliverydate").value = deliveryDays[intervalIndex];
+    animateFadeForAction(chargeEl, () => chargeEl.innerHTML = chargeDays[daysIndex]);
+    animateFadeForAction(deliveryEl, () => deliveryEl.innerHTML = deliveryDays[daysIndex]);
+    document.getElementById("nextchargedate").value = chargeDays[daysIndex];
+    document.getElementById("nextdeliverydate").value = deliveryDays[daysIndex];
   };
 
   /*
@@ -114,9 +129,8 @@ async function* SkipCharge(props) {
     const data = {
       attributes: JSON.stringify(subscription.attributes),
       includes: JSON.stringify(subscription.includes),
-      pauseinterval: intervalDays[intervalIndex],
-      nextchargedate: chargeDays[intervalIndex],
-      nextdeliverydate: deliveryDays[intervalIndex],
+      nextchargedate: chargeDays[daysIndex],
+      nextdeliverydate: deliveryDays[daysIndex],
     };
     return data;
   };
@@ -141,18 +155,18 @@ async function* SkipCharge(props) {
         type: "hidden",
         datatype: "string",
       },
-      nextDeliveryDate: {
+      nextDeliveryDate: { // selector on this date
         type: "hidden",
         datatype: "string",
       },
-      pauseInterval: {
-        label: "Select Pause Interval",
+      deliveryDays: {
+        label: "Select Delivery Date",
         type: "input-select",
         size: "50",
         datatype: "string",
-        datalist: intervalDays,
+        datalist: deliveryDays,
         required: true,
-        onchange: onIntervalChange,
+        onchange: onDayChange,
         onclick: onSelect,
       },
     };
@@ -165,7 +179,7 @@ async function* SkipCharge(props) {
      * These values can be arbitary provided that match the template string
      */
     const toastTemplate = {
-      template: "${title} - ${variant} subscription paused successfully.",
+      template: "${title} - ${variant} subscription rescheduled successfully.",
       title: subscription.box.shopify_title,
       variant: subscription.attributes.variant,
     };
@@ -181,8 +195,7 @@ async function* SkipCharge(props) {
     yield (
       <div class="w-80 center">
         <p class="lh-copy tl mb3">
-          Are you sure you want to pause the subscription?<br />
-          <b class="pt3">This cannot be undone.</b>
+          Are you sure you want to reschedule the subscription?<br />
           <div class="cf">
             <div class="fl w-50 gray tr pr3 pv1 b">
               Scheduled delivery date:
@@ -204,13 +217,13 @@ async function* SkipCharge(props) {
               New delivery date will be:
             </div>
             <div class="fl w-50 pv1 b" id="delivery-date">
-              { deliveryDays[intervalIndex] }
+              { deliveryDays[daysIndex] }
             </div>
             <div class="fl w-50 gray tr pr3 pv1 b">
               New charge date will be:
             </div>
             <div class="fl w-50 pv1 b" id="charge-date">
-              { chargeDays[intervalIndex] }
+              { chargeDays[daysIndex] }
             </div>
           </div>
         </p>
@@ -225,7 +238,7 @@ async function* SkipCharge(props) {
         </div>
         <div class="cf tr">
           <Button type="primary" onclick={doSave}>
-            Yes, Pause Subscription
+            Yes, Change Date
           </Button>
           <Button type="secondary" onclick={closeModal}>
             Cancel
@@ -239,7 +252,8 @@ async function* SkipCharge(props) {
 /**
  * Wrapped component
  *
- * @member {object} SkipChargeModal
+ * @member {object} UnSkipChargeModal
  */
-export default FormModalWrapper(SkipCharge, options);
+export default FormModalWrapper(UnSkipCharge, options);
+
 

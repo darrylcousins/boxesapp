@@ -135,10 +135,10 @@ router.post(
   "/remove-orders", 
   await import("./order/remove-orders.js").then(({ default: fn }) => fn));
 router.get(
-  "/recharge-customer-charges/:shopify_customer_id", 
+  "/recharge-customer-charges/:customer_id", 
   await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
 router.get(
-  "/recharge-customer/:customer_id", 
+  "/recharge-customer/:shopify_customer_id", 
   await import("./recharge/recharge-customer.js").then(({ default: fn }) => fn));
 router.post(
   "/recharge-update", 
@@ -147,11 +147,14 @@ router.post(
   "/recharge-update-charge-date", 
   await import("./recharge/recharge-update-charge-date.js").then(({ default: fn }) => fn));
 router.post(
-  "/recharge-skip-charge", 
-  await import("./recharge/recharge-skip-charge.js").then(({ default: fn }) => fn));
-router.post(
   "/recharge-cancel-subscription", 
   await import("./recharge/recharge-cancel-subscription.js").then(({ default: fn }) => fn));
+router.post(
+  "/recharge-delete-subscription", 
+  await import("./recharge/recharge-delete-subscription.js").then(({ default: fn }) => fn));
+router.post(
+  "/recharge-reactivate-subscription", 
+  await import("./recharge/recharge-reactivate-subscription.js").then(({ default: fn }) => fn));
 router.post(
   "/recharge-subscription-update", 
   await import("./recharge/recharge-subscription-update.js").then(({ default: fn }) => fn));
@@ -161,6 +164,9 @@ router.get(
 router.get(
   "/recharge-subscriptions/:customer_id", 
   await import("./recharge/recharge-subscriptions.js").then(({ default: fn }) => fn));
+router.get(
+  "/recharge-cancelled-subscriptions/:customer_id", 
+  await import("./recharge/recharge-cancelled-subscriptions.js").then(({ default: fn }) => fn));
 router.get(
   "/recharge-subscriptions/:customer_id/:next_charge_scheduled_at/:address_id", 
   await import("./recharge/recharge-subscriptions.js").then(({ default: fn }) => fn));

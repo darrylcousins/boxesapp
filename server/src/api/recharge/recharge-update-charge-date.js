@@ -3,6 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
+import subscriptionUpdatedMail from "../../mail/subscription-updated.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 
 const delay = (t) => {
@@ -44,46 +45,46 @@ export default async (req, res, next) => {
 
   try {
 
-    res.status(200).json({ success: true, nextchargedate: data.nextchargedate, nextdeliverydate: data.nextdeliverydate });
-  } catch(err) {
-    res.status(400).json({ error: err.toString() });
-    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-  };
-
-  try {
-
     let chargeDate = new Date(Date.parse(data.nextchargedate));
     const offset = chargeDate.getTimezoneOffset()
     chargeDate = new Date(chargeDate.getTime() - (offset*60*1000))
     const nextChargeDate = chargeDate.toISOString().split('T')[0];
 
-    const subscription_ids = updates.map(el => el.id);
-
     let body;
-    for (const update of updates) {
-      const id = update.id;
-      body = { properties: update.properties };
-      const result = await makeRechargeQuery({
-        method: "PUT",
-        path: `subscriptions/${id}`,
-        body: JSON.stringify(body),
-      });
-      console.log(result);
-      await delay(3000);
-    };
-
-    body = { date: nextChargeDate };
-    for (const id of subscription_ids) {
+    for (const [idx, update] of updates.entries()) {
+      body = { date: nextChargeDate };
       const result = await makeRechargeQuery({
         method: "POST",
-        path: `subscriptions/${id}/set_next_charge_date`,
+        path: `subscriptions/${update.id}/set_next_charge_date`,
         body: JSON.stringify(body),
+      }).then(async (res) => {
+        body = { properties: update.properties };
+        if (idx === updates.length - 1) {
+          body.commit = true;
+        };
+        console.log(body)
+        return await makeRechargeQuery({
+          method: "PUT",
+          path: `subscriptions/${res.subscription.id}`,
+          body: JSON.stringify(body),
+        });
       });
       console.log(result);
-      await delay(3000);
     };
 
     _logger.notice(`Recharge update charge date.`, { meta });
+
+    const mail = {
+      subscription_id: attributes.subscription_id,
+      attributes,
+      includes,
+      nextChargeDate: data.nextchargedate,
+      nextDeliveryDate: data.nextdeliverydate,
+    };
+    await subscriptionUpdatedMail(mail);
+
+    res.status(200).json({ success: true, nextchargedate: data.nextchargedate, nextdeliverydate: data.nextdeliverydate });
+
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };

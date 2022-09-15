@@ -6,18 +6,38 @@ export default `
     </mj-text>
     <mj-text align="left">
       <p style="color:#666;padding:5px 0;margin:0">
-        You are receiving this email because you cancelled a box subscription with <a href="https://{{ env.SHOP }}">{{ env.SHOP_TITLE }}</a>.
+        You are receiving this email because you paused or rescheduled a box subscription with <a href="https://{{ env.SHOP }}">{{ env.SHOP_TITLE }}</a>.
       </p>
       <p style="color:#666;padding:5px 0;margin:0">
         If you have any queries about this email please contact <a href="mailto:{{ admin_email }}">{{ admin_email }}</a>.
       </p>
       <p style="color:#666;padding:5px 0;margin:0">
-        If you have any other subscriptions they can be viewed
+        Your subscription can be further edited and updated
         <a
             href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{attributes.customer.external_customer_id.ecommerce}}">here</a>.
       </p>
+    </mj-text>
+  </mj-column>
+</mj-section>
+<mj-section padding="0px">
+  <mj-column>
+    <mj-table align="center" width="300px">
+      <tr>
+        <td style="color:#777;text-align:right;padding-right:20px;">Next Order Date</td>
+        <td>{{ nextChargeDate }}</td>
+      </tr>
+      <tr>
+        <td style="color:#777;text-align:right;padding-right:20px;">Next Scheduled Delivery</td>
+        <td>{{ nextDeliveryDate }}</td>
+      </tr>
+    </mj-table>
+  </mj-column>
+</mj-section>
+<mj-section padding-bottom="0px">
+  <mj-column>
+    <mj-text>
       <p style="color:#666;padding:5px 0;margin:0">
-        The cancelled subscription included:
+        The updated subscription includes:
         <ul>
           {% for item in includes %}
             <li>
@@ -26,9 +46,6 @@ export default `
             </li>
           {% endfor %}
         </ul>
-      </p>
-      <p style="color:#666;padding:5px 0;margin:0">
-        Your last order, <strong>#{{ attributes.lastOrder.order_number }}</strong>, was delivered on {{ attributes.lastOrder.delivered }}.
       </p>
     </mj-text>
   </mj-column>

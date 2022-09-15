@@ -37,7 +37,7 @@ export default async ({ subscription_id, attributes, includes, admin_email }) =>
         <mj-section padding-bottom="0px">
           <mj-column>
             <mj-text align="center" font-size="20px" font-style="bold">
-            Subscription Cancelled
+            Box Subscription Cancelled
             </mj-text>
           </mj-column>
         </mj-section>
@@ -47,7 +47,7 @@ export default async ({ subscription_id, attributes, includes, admin_email }) =>
 `, options);
         sendmail({
           to: [attributes.customer.email, 'darryljcousins@gmail.com'],
-          subject: `\[${process.env.SHOP_NAME}\] Subscription cancelled`,
+          subject: `\[${process.env.SHOP_NAME}\] Box subscription cancelled`,
           html: htmlOutput.html
         });
         const meta = {

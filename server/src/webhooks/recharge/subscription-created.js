@@ -76,12 +76,17 @@ export default async function subscriptionCreated(topic, shop, body) {
   // "normal" weekdays in javascript are numbered Sunday = 0 but recharges uses Monday = 0
   // This is because recharge uses python in the backend
   // So to get our 3 days before we'll subtract 4 days
-  // Thursday delivery => Sunday charge
+  // Thursday delivery => Monday charge
+  // Tuesday delivery => Saturday charge
   let deliveryDate = new Date(Date.parse(attributes["Delivery Date"]));
   let currentIdx = deliveryDate.getDay() - 4; // 0 = Sunday, javascript style
   if (currentIdx < 0) currentIdx = currentIdx + 7;
 
   // changing this on the subscription will update the "next_charge_scheduled_at"
+  // XXX found that next charge may be wrong for a delivery day more than a week out!!!
+  // XXX because recharge will pick the next date matching order_day_of_week!!!
+  // therefore should probable also set next_charge_scheduled_at
+  // note this needs the api call to subscription/{id}/set_next_charge_date
   const orderDayOfWeek = currentIdx % 7;
 
   // Step 2 Now update the Delivery Date using
@@ -104,7 +109,8 @@ export default async function subscriptionCreated(topic, shop, body) {
   const line_items = charge.line_items.filter(el => el.purchase_item_id !== subscription.id);
 
   const first = charge.line_items.find(el => el.purchase_item_id === subscription.id);
-  line_items.unshift(first); // make sure its the first
+  //line_items.unshift(first); // make sure its the first
+  line_items.push(first); // make sure its the last because we will commit to charge
 
   const updatedLineItems = []; // updated with new properties
 
@@ -132,6 +138,8 @@ export default async function subscriptionCreated(topic, shop, body) {
       if (el.value === null) el.value = "";
       return el;
     });
+
+    // thinking of removing likes and dislikes
     likes = likes.split(",").sort().join(",");
     dislikes = dislikes.split(",").sort().join(",");
     if (push) { // i.e. only on the Box subscription
@@ -149,6 +157,7 @@ export default async function subscriptionCreated(topic, shop, body) {
       order_day_of_week: orderDayOfWeek, // assign orderDay
       properties,
     };
+    if (push) updateData.commit = true; // on the final call commit 
 
     lineItem.properties = properties;
     updatedLineItems.push(lineItem);

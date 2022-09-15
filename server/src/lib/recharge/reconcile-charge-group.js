@@ -561,7 +561,8 @@ export const gatherData = async ({ grouped, result }) => {
     };
 
     const address = charge.shipping_address;
-    address.name = `${charge.billing_address.first_name} ${charge.billing_address.last_name}`;
+    address.name = `${charge.shipping_address.first_name} ${charge.shipping_address.last_name}`;
+    //address.name = `${charge.billing_address.first_name} ${charge.billing_address.last_name}`;
 
     const isEditable = chargeDate > new Date();
 

@@ -51,11 +51,12 @@ export default async (req, res, next) => {
         body: JSON.stringify(body),
       });
     };
-    _logger.notice(`Recharge cancel subscription.`, { meta });
-    res.status(200).json({ success: true });
 
     const data = { subscription_id, attributes, includes };
     await subscriptionCancelledMail(data);
+
+    res.status(200).json({ success: true });
+    _logger.notice(`Recharge cancel subscription.`, { meta });
 
   } catch(err) {
     res.status(400).json({ error: err.toString() });

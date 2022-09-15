@@ -51,6 +51,10 @@ const Button = (props) => {
     classList = "bg-transparent dark-red relative";
     classList += border ? ` b--${border}` : " b--dark-red";
     classList += hover ? ` ${hover}` : " hover-bg-dark-red hover-white";
+  } else if (type === "alt-warning-reverse") {
+    classList = "bg-transparent purple relative";
+    classList += border ? ` b--${border}` : " b--purple";
+    classList += hover ? ` ${hover}` : " hover-bg-purple hover-white";
   } else if (type.startsWith("transparent")) {
     const [trans, bg] = type.split('/');
     classList = "bg-transparent relative";

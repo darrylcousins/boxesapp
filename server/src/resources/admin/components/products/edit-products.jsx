@@ -679,7 +679,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     ];
     return [
       ["Next Order Date", nextChargeDate ? nextChargeDate : "Unscheduled"],
-      ["Total Price", toPrice(totalPrice())],
+      ["Price (excl. shipping)", toPrice(totalPrice())],
       ["Delivery Date", properties["Delivery Date"]],
     ];
   };
@@ -793,7 +793,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                 </div>
               ))}
               <div class="ml2 mb1 pt1 flex bt">
-                <div class="w-80 bold">Total</div>
+                <div class="w-80 bold">Total (excl. shipping)</div>
                 <div class="pricing w-20 tr bold">
                   { loading ? (
                     <div class="skeleton mr1" />

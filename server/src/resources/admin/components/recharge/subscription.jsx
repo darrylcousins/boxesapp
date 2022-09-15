@@ -17,6 +17,7 @@ import BarLoader from "../lib/bar-loader";
 import Button from "../lib/button";
 import TextButton from "../lib/text-button";
 import SkipChargeModal from "./skip-modal";
+import UnSkipChargeModal from "./unskip-modal";
 import CancelSubscriptionModal from "./cancel-modal";
 import {
   animateFadeForAction,
@@ -412,8 +413,7 @@ async function *Subscription({ subscription, idx, allowEdits }) {
     const now = new Date();
     const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
     const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
-    console.log(diffDays);
-    return diffDays < 8;
+    return diffDays <= subscription.attributes.days; //i.e. 7 or 14
   };
 
   /*
@@ -483,8 +483,10 @@ async function *Subscription({ subscription, idx, allowEdits }) {
             </Button>
             { allowEdits && collapsed && (
               <Fragment>
-                { isSkippable(subscription) === true && (
+                { isSkippable(subscription) === true ? (
                   <SkipChargeModal subscription={ subscription } />
+                ) : (
+                  <UnSkipChargeModal subscription={ subscription } />
                 )}
                 <CancelSubscriptionModal subscription={ subscription } />
               </Fragment>

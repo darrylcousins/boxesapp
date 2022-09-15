@@ -1,0 +1,102 @@
+/*
+ * @module api/recharge/recharge-reactivate-subscription.js
+ * @author Darryl Cousins <darryljcousins@gmail.com>
+ */
+
+import subscriptionReactivatedMail from "../../mail/subscription-reactivated.js";
+import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+
+/*
+ * @function recharge/recharge-reactivate-subscription.js
+ * @param (Http request object) req
+ * @param (Http response object) res
+ * @param (function) next
+ */
+export default async (req, res, next) => {
+
+  const data = req.body;
+  const box = JSON.parse(data.box);
+  const included = JSON.parse(data.included);
+  const attributes = box.properties.reduce(
+    (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value }),
+    {});
+  delete data.included;
+  delete data.box;
+  const includes = included.map(el => `${el.id}`);
+  includes.push(box.id);
+  attributes["Delivery Date"] = data.nextdeliverydate;
+
+  const meta = {
+    recharge: {
+      customer_id: box.customer_id,
+      address_id: box.address_id,
+      subscription_id: box.id,
+    },
+  };
+
+  try {
+    let properties;
+    let update;
+    const status = "active";
+    let chargeDate = new Date(Date.parse(data.nextchargedate));
+    const offset = chargeDate.getTimezoneOffset()
+    chargeDate = new Date(chargeDate.getTime() - (offset*60*1000))
+    const nextChargeDate = chargeDate.toISOString().split('T')[0];
+
+    for (const id of includes) {
+      if (id === box.id) {
+        properties = Object.entries(attributes).map(([name, value]) => {
+          if (value === null) value = "";
+          return { name, value };
+        });
+      } else {
+        properties = [
+          { name: "Delivery Date", value: data.nextdeliverydate },
+          { name: "Add on product to", value: box.product_title },
+          { name: "box_subscription_id", value: `${box.id}` },
+        ];
+      };
+      update = {
+        properties,
+        status,
+      };
+      const result = await makeRechargeQuery({
+        method: "POST",
+        path: `subscriptions/${id}/activate`
+      }).then(async (res) => {
+        return await makeRechargeQuery({
+          method: "POST",
+          path: `subscriptions/${res.subscription.id}/set_next_charge_date`,
+          body: JSON.stringify({ date: nextChargeDate }),
+        }).then(async (res) => {
+          if (res.subscription.id === box.id) {
+            update.commit = true;
+          };
+          return await makeRechargeQuery({
+            method: "PUT",
+            path: `subscriptions/${id}`,
+            body: JSON.stringify(update),
+          });
+        });
+      });
+    };
+
+    const mail = {
+      subscription_id,
+      box,
+      included,
+      nextChargeDate: data.nextchargedate,
+      nextDeliveryDate: data.nextchargedate,
+    };
+    await subscriptionReactivatedMail(mail);
+
+    res.status(200).json({ success: true });
+    _logger.notice(`Recharge reactivate subscription.`, { meta });
+
+  } catch(err) {
+    res.status(400).json({ error: err.toString() });
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
+};
+
+

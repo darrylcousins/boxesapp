@@ -6,6 +6,7 @@
 //import fs from "fs";
 import subscriptionCancelledMail from "../../mail/subscription-cancelled.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import { delay } from "../../lib/helpers.js";
 /*
  * @function recharge/recharge-cancel-subscription.js
  * @param (Http request object) req
@@ -50,12 +51,13 @@ export default async (req, res, next) => {
         path: `subscriptions/${id}/cancel`,
         body: JSON.stringify(body),
       });
+      await delay(200);
     };
 
     const data = { subscription_id, attributes, includes };
     await subscriptionCancelledMail(data);
 
-    res.status(200).json({ success: true });
+    res.status(200).json({ success: true, action: "cancelled", subscription_id });
     _logger.notice(`Recharge cancel subscription.`, { meta });
 
   } catch(err) {

@@ -23,9 +23,9 @@ import Error from "../lib/error";
 
         style={`left: 0; top: 0px; background: rgba(0, 0, 0, 0.9); overflow: scroll; top: ${Math.round(window.scrollY).toString()}px;`}
  */
-function* ModalTemplate({ children, closeModal, error, loading, withClose, maxWidth }) {
+function* ModalTemplate({ children, closeModal, error, loading, withClose, withCloseButton, maxWidth }) {
 
-  for ({ children, closeModal, error, loading, withClose, maxWidth } of this) { // eslint-disable-line no-unused-vars
+  for ({ children, closeModal, error, loading, withClose, withCloseButton, maxWidth } of this) { // eslint-disable-line no-unused-vars
     const mw = (typeof maxWidth === "string") ? maxWidth : "mw9";
     yield (
       <div
@@ -35,16 +35,18 @@ function* ModalTemplate({ children, closeModal, error, loading, withClose, maxWi
         <div class="fixed absolute-fill h-100 w-100 pv4 flex items-center"
           style="left: 0; top: 0px; background: rgba(0, 0, 0, 0.9); overflow: scroll">
           <div class={ `w-100 w-80-ns bg-white pa4 br3 ${ mw } mt5 mb8 relative center` }>
-            <button
-              class="bn bg-transparent outline-0 mid-gray dim o-70 absolute top-1 right-1 pointer"
-              name="close"
-              onclick={closeModal}
-              title="Close info"
-              type="button"
-            >
-              <CloseIcon />
-              <span class="dn">Close modal</span>
-            </button>
+            { (typeof withCloseButton === "undefined" || withCloseButton) && (
+              <button
+                class="bn bg-transparent outline-0 mid-gray dim o-70 absolute top-1 right-1 pointer"
+                name="close"
+                onclick={closeModal}
+                title="Close info"
+                type="button"
+              >
+                <CloseIcon />
+                <span class="dn">Close modal</span>
+              </button>
+            )}
             { children }
             {(error && error !== null) && <Error msg={error} />}
             {loading && <BarLoader />}

@@ -159,27 +159,6 @@ function FormModalWrapper(Component, options) {
       console.log(src);
       console.log(data);
       console.warn('Posting saved successfully but disabled for development');
-      setTimeout(() => {
-        closeModal();
-        if (Object.keys(toastData).length) {
-          // string notice via form data-* html attributes passed to Form as 'meta'
-          const templateString = toastData.template;
-          delete toastData.template;
-          const notice = parseStringTemplate(templateString, toastData);
-          this.dispatchEvent(toastEvent({
-            notice,
-            bgColour: "black",
-            borderColour: "black"
-          }));
-        };
-        this.dispatchEvent(
-          new CustomEvent("listing.reload", {
-            bubbles: true,
-            detail: { src },
-          })
-        );
-      }, 1000);
-      return;
       */
 
       PostFetch({ src, data, headers })
@@ -222,7 +201,7 @@ function FormModalWrapper(Component, options) {
                 })
               );
               success = false;
-            }, 1000);
+            }, 2000);
           }
         })
         .catch((err) => {
@@ -350,6 +329,7 @@ function FormModalWrapper(Component, options) {
                 loading={ loading }
                 error={ fetchError }
                 maxWidth={ maxWidth }
+                withCloseButton={ false }
                 withClose={ false }>
                 {saveError && <Error msg={saveError} />}
                 <div class="tc center">

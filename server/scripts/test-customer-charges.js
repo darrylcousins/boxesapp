@@ -55,7 +55,8 @@ const run = async () => {
           path: `charges`,
           query: [
             ["customer_id", customer_id ],
-            ["status", "queued" ],
+            ["address_id", "102438357"],
+            //["status", "queued" ],
             ["sort_by", "scheduled_at-asc" ]
           ]
         });

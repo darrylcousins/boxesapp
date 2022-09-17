@@ -46,6 +46,7 @@ function CollapseWrapper(Component) {
           class={`collapsible ${startCollapsed ? "collapsed" : ""}`}
         >
           <Component
+            id={ id }
             {...props}
           />
         </div>

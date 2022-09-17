@@ -8,14 +8,14 @@ import { createElement, Fragment } from "@b9g/crank";
 import { Fetch } from "../lib/fetch";
 import { animateFadeForAction } from "../helpers";
 
-async function *ShopifyProductImage({ shopify_title }) {
+async function *ShopifyProductImage({ shopify_title, shopify_product_id }) {
 
   let loading = true;
   let src = null;
   const id = `image-${shopify_title.replace(/ /g, "-")}`;
 
   const getImage = async () => {
-    const res = await Fetch(`/api/shopify-product-image/${shopify_title}`)
+    const res = await Fetch(`/api/shopify-product-image/${shopify_product_id}`)
       .then(({error, json}) => json ? json : error);
     if (res) {
       const get = (res.image_src) ? await fetch(res.image_src) : null;

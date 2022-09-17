@@ -240,18 +240,20 @@ export const animationOptions = {
  *
  * @function animateFadeForAction
  */
-export const animateFadeForAction = (id, action) => {
+export const animateFadeForAction = (id, action, duration) => {
   let target;
   if (typeof id === "string") {
     target = document.getElementById(id);
   } else {
     target = id;
-  }
+  };
+  const options = { ...animationOptions };
+  if (duration) options.duration = duration;
   const animate = target.animate(
     {
       opacity: 0.1,
     },
-    animationOptions
+    options
   );
   animate.addEventListener("finish", async () => {
     if (action) {
@@ -261,7 +263,7 @@ export const animateFadeForAction = (id, action) => {
       {
         opacity: 1,
       },
-      animationOptions
+      options
     );
   });
 };
@@ -315,15 +317,24 @@ export const collapseElement = (element) => {
  * }
  *
  */
-export const transitionElementHeight = (element) => {
+export const transitionElementHeight = (element, start) => {
   if (!element) return;
-  let calculatedHeight = 5;
+  let calculatedHeight = start ? start : 5;
   // simply using el.scrollHeight can give some odd results when element is shrinking
   element.childNodes.forEach(el => {
     calculatedHeight += el.scrollHeight;
   });
   element.style.height = calculatedHeight + "px";
 }
+
+/*
+ * @function delay
+ * Wait for a time
+ *
+ */
+export const delay = (t) => {
+  return new Promise(resolve => setTimeout(resolve, t));
+};
 
 /*
  * @function sleepUntil

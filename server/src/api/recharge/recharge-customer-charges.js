@@ -5,6 +5,7 @@
 
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import { gatherData, reconcileChargeGroup, reconcileGetGroups } from "../../lib/recharge/reconcile-charge-group.js";
+import fs from "fs";
 
 const delay = (t) => {
   return new Promise(resolve => setTimeout(resolve, t));
@@ -18,14 +19,20 @@ const delay = (t) => {
  */
 export default async (req, res, next) => {
   const customer_id = req.params.customer_id;
+  const query = [
+    ["customer_id", customer_id ],
+    ["status", "queued" ],
+    ["sort_by", "scheduled_at-asc" ],
+  ];
+  if (Object.hasOwnProperty.call(req.params, "address_id")) {
+    query.push(["address_id", req.params.address_id]); // match address id
+    query.push(["scheduled_at", req.params.scheduled_at]); // match scheduled
+  };
+
   try {
     const { charges } = await makeRechargeQuery({
       path: `charges`,
-      query: [
-        ["customer_id", customer_id ],
-        ["status", "queued" ],
-        ["sort_by", "scheduled_at-asc" ]
-      ]
+      query
     });
 
     if (!charges || !charges.length) {
@@ -54,6 +61,7 @@ export default async (req, res, next) => {
       // this because it can take a few minutes to load all subscriptions into the charge via webhooks
     };
 
+    //fs.writeFileSync("recharge.subscription.json", JSON.stringify(result[0], null, 2));
     res.status(200).json({ result, reload });
   } catch(err) {
     res.status(400).json({ error: err.toString() });

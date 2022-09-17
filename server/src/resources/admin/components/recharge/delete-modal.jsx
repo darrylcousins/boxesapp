@@ -24,7 +24,7 @@ import Form from "../form";
 const ShowLink = (opts) => {
   const { name, title, color } = opts;
   return (
-    <Button type="alt-warning-reverse" title="Delete Subscription" name={name}>
+    <Button type="warning-reverse" title="Delete Subscription" name={name}>
       <span class="b">
         Delete Subscription
       </span>
@@ -43,7 +43,7 @@ const options = {
   color: "purple",
   src: "/api/recharge-delete-subscription",
   ShowLink,
-  saveMsg: "Permanently deleting box subscription ...",
+  saveMsg: "Permanently deleting box subscription ... please be patient it will takes some seconds.",
   successMsg: "Successfully deleted box subscription, reloading page.",
 };
 

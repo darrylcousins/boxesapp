@@ -17,6 +17,10 @@ export const matchNumberedString = (str) => {
   return { title: str, quantity: count };
 };
 
+export const delay = (t) => {
+  return new Promise(resolve => setTimeout(resolve, t));
+};
+
 /* 
  * rename me to titleCase 
  */

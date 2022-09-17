@@ -26,6 +26,7 @@ export const reconcileGetGrouped = ({ charge }) => {
       const box_subscription_property = line_item.properties.find(el => el.name === "box_subscription_id");
       if (!box_subscription_property) {
         // should never happen! But what to do if it does? Maybe run the subscription-create webhook script?
+        console.log("NO BOX_SUBSCRIPTION_PROPERTY");
       };
       const box_subscription_id = parseInt(box_subscription_property.value);
       if (!grouped.hasOwnProperty(box_subscription_id)) {

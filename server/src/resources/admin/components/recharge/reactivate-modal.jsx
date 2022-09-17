@@ -25,7 +25,7 @@ import { animateFadeForAction, findNextWeekday } from "../helpers";
 const ShowLink = (opts) => {
   const { name, title, color } = opts;
   return (
-    <Button type="warning-reverse" title="Reactivate Box Subscription" name={name}>
+    <Button type="alt-warning-reverse" title="Reactivate Box Subscription" name={name}>
       <span class="b">
         Reactivate Box Subscription
       </span>
@@ -44,7 +44,7 @@ const options = {
   color: "dark-red",
   src: "/api/recharge-reactivate-subscription",
   ShowLink,
-  saveMsg: "Reactivating box subscription ...",
+  saveMsg: "Reactivating box subscription ... please be patient it will takes some seconds.",
   successMsg: "Successfully reactivated box subscription, reloading page.",
 };
 
@@ -104,10 +104,6 @@ async function* ReactivateSubscription(props) {
     nextCharge = new Date(current.getTime());
 
     nextDelivery = findNextWeekday(delivered.getDay(), current);
-    console.log(nextCharge.toDateString());
-    console.log(nextDelivery.toDateString());
-
-    console.log(subscription.box);
   };
 
   init();

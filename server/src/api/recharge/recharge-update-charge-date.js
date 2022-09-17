@@ -5,11 +5,7 @@
 
 import subscriptionUpdatedMail from "../../mail/subscription-updated.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
-
-const delay = (t) => {
-  return new Promise(resolve => setTimeout(resolve, t));
-};
-
+import { delay } from "../../lib/helpers.js";
 
 /*
  * @function recharge/recharge-update-charge-date.js
@@ -35,9 +31,10 @@ export default async (req, res, next) => {
     },
   };
 
+  let delivered;
   const updates = includes.map(el => {
     const properties = [ ...el.properties ];
-    const delivered = properties.find(el => el.name === "Delivery Date");
+    delivered = properties.find(el => el.name === "Delivery Date");
     delivered.value = data.nextdeliverydate;
     const id = el.subscription_id;
     return { id, properties };
@@ -50,6 +47,27 @@ export default async (req, res, next) => {
     chargeDate = new Date(chargeDate.getTime() - (offset*60*1000))
     const nextChargeDate = chargeDate.toISOString().split('T')[0];
 
+    // get the charge to pass back to page to refresh the subscription display
+    const chargeQuery = await makeRechargeQuery({
+      method: "GET",
+      path: `charges/${attributes.charge_id}`,
+    });
+
+    let charge;
+    if (Object.hasOwnProperty.call(chargeQuery, "charge")) {
+      charge = chargeQuery.charge;
+      for (const line_item of charge.line_items) {
+        delivered = line_item.properties.find(el => el.name === "Delivery Date");
+        delivered.value = data.nextdeliverydate;
+      };
+    } else {
+      // need to manufacture the charge
+      charge = {};
+      charge.line_items = [];
+    };
+    charge.scheduled_at = data.nextchargedate;
+    charge.id = null;
+
     let body;
     for (const [idx, update] of updates.entries()) {
       body = { date: nextChargeDate };
@@ -58,18 +76,23 @@ export default async (req, res, next) => {
         path: `subscriptions/${update.id}/set_next_charge_date`,
         body: JSON.stringify(body),
       }).then(async (res) => {
+        console.log("UPDATE CHARGE", res); // if error can we retry??
         body = { properties: update.properties };
         if (idx === updates.length - 1) {
           body.commit = true;
         };
-        console.log(body)
         return await makeRechargeQuery({
           method: "PUT",
           path: `subscriptions/${res.subscription.id}`,
           body: JSON.stringify(body),
         });
       });
-      console.log(result);
+      if (!Object.hasOwnProperty.call(charge, "created_at")) {
+        // need to populate manufactured charge
+        result.subscription.purchase_item_id = result.id;
+        charge.line_items.push(result.subscription);
+      };
+      await delay(800); // or use PromiseThrottle?
     };
 
     _logger.notice(`Recharge update charge date.`, { meta });
@@ -83,7 +106,13 @@ export default async (req, res, next) => {
     };
     await subscriptionUpdatedMail(mail);
 
-    res.status(200).json({ success: true, nextchargedate: data.nextchargedate, nextdeliverydate: data.nextdeliverydate });
+    // res.status(200).json({ success: true, nextchargedate: data.nextchargedate, nextdeliverydate: data.nextdeliverydate });
+    res.status(200).json({
+      success: true,
+      action: "updated",
+      subscription_id: attributes.subscription_id,
+      charge,
+    });
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

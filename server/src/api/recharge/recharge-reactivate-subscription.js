@@ -5,6 +5,7 @@
 
 import subscriptionReactivatedMail from "../../mail/subscription-reactivated.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import { delay } from "../../lib/helpers.js";
 
 /*
  * @function recharge/recharge-reactivate-subscription.js
@@ -43,7 +44,8 @@ export default async (req, res, next) => {
     chargeDate = new Date(chargeDate.getTime() - (offset*60*1000))
     const nextChargeDate = chargeDate.toISOString().split('T')[0];
 
-    for (const id of includes) {
+    let final;
+    for (const [idx, id] of includes.entries()) {
       if (id === box.id) {
         properties = Object.entries(attributes).map(([name, value]) => {
           if (value === null) value = "";
@@ -60,37 +62,41 @@ export default async (req, res, next) => {
         properties,
         status,
       };
+      if (idx === includes.length - 1) {
+        update.commit = true;
+      };
       const result = await makeRechargeQuery({
         method: "POST",
-        path: `subscriptions/${id}/activate`
+        path: `subscriptions/${id}/set_next_charge_date`,
+        body: JSON.stringify({ date: nextChargeDate }),
       }).then(async (res) => {
         return await makeRechargeQuery({
-          method: "POST",
-          path: `subscriptions/${res.subscription.id}/set_next_charge_date`,
-          body: JSON.stringify({ date: nextChargeDate }),
-        }).then(async (res) => {
-          if (res.subscription.id === box.id) {
-            update.commit = true;
-          };
-          return await makeRechargeQuery({
-            method: "PUT",
-            path: `subscriptions/${id}`,
-            body: JSON.stringify(update),
-          });
+          method: "PUT",
+          path: `subscriptions/${res.subscription.id}`,
+          body: JSON.stringify(update),
         });
       });
+      if (result.subscription.id === box.id) {
+        final = { ...result.subscription };
+      };
+      await delay(800);
     };
 
     const mail = {
-      subscription_id,
+      subscription_id: box.id,
       box,
       included,
       nextChargeDate: data.nextchargedate,
-      nextDeliveryDate: data.nextchargedate,
+      nextDeliveryDate: data.nextdeliverydate,
     };
     await subscriptionReactivatedMail(mail);
 
-    res.status(200).json({ success: true });
+    res.status(200).json({
+      success: true,
+      action: "reactivated",
+      subscription_id: box.id,
+      scheduled_at: final.next_charge_scheduled_at,
+    });
     _logger.notice(`Recharge reactivate subscription.`, { meta });
 
   } catch(err) {

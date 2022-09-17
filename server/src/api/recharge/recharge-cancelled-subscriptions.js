@@ -14,19 +14,30 @@ import fs from "fs";
  * @param (function) next
  */
 export default async (req, res, next) => {
-  const customer_id = req.params.customer_id;
+  let query;
+
+  if (Object.hasOwnProperty.call(req.params, "customer_id")) {
+    query = [
+      ["customer_id", req.params.customer_id ],
+      ["status", "cancelled" ]
+    ];
+  } else if (Object.hasOwnProperty.call(req.body, "ids")) {
+    query = [
+      ["ids", req.body.ids ],
+    ];
+  };
+
+  console.log(query);
+
   try {
     const { subscriptions } = await makeRechargeQuery({
       path: `subscriptions`,
-      query: [
-        ["customer_id", customer_id ],
-        ["status", "cancelled" ]
-      ]
+      query,
     });
 
     if (!subscriptions || !subscriptions.length) {
       // return a result of none
-      res.status(200).json({});
+      res.status(200).json([]);
       return;
     };
 
@@ -47,6 +58,13 @@ export default async (req, res, next) => {
         box: group.box,
         included: group.included,
       });
+      /*
+      fs.writeFileSync(`recharge.${subscription_id}.json`, JSON.stringify({
+        subscription_id,
+        box: group.box,
+        included: group.included,
+      }, null, 2));
+      */
     };
 
     res.status(200).json(result);

@@ -6,7 +6,8 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
-import { toPrice } from "../helpers";
+import { toPrice, animateFadeForAction, animateFade } from "../helpers";
+import Toaster from "../lib/toaster";
 import ReactivateSubscriptionModal from "./reactivate-modal";
 import DeleteSubscriptionModal from "./delete-modal";
 
@@ -34,6 +35,37 @@ async function* Cancelled({ subscription }) {
     };
     return result;
   };
+
+  /*
+   * Same copied to Subscription
+   * Tidy display of subscriptions after delete and reactivate
+   * Possible actions are cancelled, deleted, reactivated, and updated (dates)
+   */
+  const reLoad = (ev) => {
+    const result = ev.detail.json; // success, action, subscription_id
+    const subscription_id = result.subscription_id;
+
+    const event = `subscription.${result.action}`;
+    const subdiv = document.querySelector(`#subscription-${result.subscription_id}`);
+    const div = document.querySelector(`#customer`);
+    animateFade(div, 0.1);
+    if (event) { // passes up to Customer object
+      setTimeout(() => {
+        animateFadeForAction(subdiv, () => {
+          this.dispatchEvent(
+            new CustomEvent(event, {
+              bubbles: true,
+              detail: { result },
+            })
+          );
+        });
+      }, 100);
+    };
+  };
+
+  this.addEventListener("listing.reload", reLoad);
+
+  this.addEventListener("toastEvent", Toaster);
 
   for await ({ subscription } of this) { // eslint-disable-line no-unused-vars
 

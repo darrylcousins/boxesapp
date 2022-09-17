@@ -21,6 +21,7 @@ import UnSkipChargeModal from "./unskip-modal";
 import CancelSubscriptionModal from "./cancel-modal";
 import {
   animateFadeForAction,
+  animateFade,
   LABELKEYS
 } from "../helpers";
 
@@ -315,31 +316,31 @@ async function *Subscription({ subscription, idx, allowEdits }) {
     this.dispatchEvent(
       new CustomEvent("subscription.reload", {
         bubbles: true,
-        detail: { id: subscription.attributes.subscription_id },
+        detail: { subscription_id: subscription.attributes.subscription_id },
       })
     );
   };
 
   /*
+   * Same copied to Cancelled
    * Tidy display of subscriptions after skip and cancel
+   * Possible actions are cancelled, deleted, reactivated, and updated (dates)
    */
   const reLoad = (ev) => {
-    const subdiv = document.querySelector(`#subscription-${subscription.attributes.subscription_id}`);
-    // and updates chargeGroups
-    let event;
-    console.log(ev.detail.json);
-    if (ev.detail.src.includes("update-charge")) {
-      event = "subscription.skipped";
-    } else if (ev.detail.src.includes("cancel-subscription")) {
-      event = "subscription.cancelled";
-    };
-    if (event) {
+    const result = ev.detail.json; // success, action, subscription_id
+    const subscription_id = result.subscription_id;
+
+    const event = `subscription.${result.action}`;
+    const subdiv = document.querySelector(`#subscription-${result.subscription_id}`);
+    const div = document.querySelector(`#customer`);
+    animateFade(div, 0.1);
+    if (event) { // passes up to Customer object
       setTimeout(() => {
         animateFadeForAction(subdiv, () => {
           this.dispatchEvent(
             new CustomEvent(event, {
               bubbles: true,
-              detail: { id: subscription.attributes.subscription_id, result: ev.detail.json },
+              detail: { result },
             })
           );
         });
@@ -431,20 +432,20 @@ async function *Subscription({ subscription, idx, allowEdits }) {
     subscription.address.email,
   ];
 
-  for await ({ subscription, idx, allowEdits } of this) { // eslint-disable-line no-unused-vars
+  /*
+   * @member chargeData
+   * Layout helper
+   */
+  const chargeData = [
+    ["Next Order Date", subscription.attributes.nextChargeDate],
+    ["Next Scheduled Delivery", subscription.attributes.nextDeliveryDate],
+    ["Frequency", subscription.attributes.frequency],
+    ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
+    //["Order Delivered", subscription.attributes.lastOrder.delivered],
+    ["Subscription ID", subscription.attributes.subscription_id],
+  ];
 
-    /*
-     * @member chargeData
-     * Layout helper
-     */
-    const chargeData = [
-      ["Next Order Date", subscription.attributes.nextChargeDate],
-      ["Next Scheduled Delivery", subscription.attributes.nextDeliveryDate],
-      ["Frequency", subscription.attributes.frequency],
-      ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
-      //["Order Delivered", subscription.attributes.lastOrder.delivered],
-      ["Subscription ID", subscription.attributes.subscription_id],
-    ];
+  for await ({ subscription, idx, allowEdits } of this) { // eslint-disable-line no-unused-vars
 
     yield (
       <Fragment>

@@ -21,6 +21,7 @@ import {
   sortObjectByKey,
   toPrice,
   LABELKEYS,
+  transitionElementHeight,
 } from "../helpers";
 
 /**
@@ -35,7 +36,7 @@ import {
  * import {renderer} from '@b9g/crank/dom';
  * renderer.render(<EditProducts box={box} />, document.querySelector('#app'))
  */
-function *EditProducts({ box, properties, nextChargeDate, images, isEditable, key }) {
+function *EditProducts({ box, properties, nextChargeDate, images, isEditable, key, id }) {
 
   /**
    * True while loading data from api // box price
@@ -335,6 +336,10 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     };
     pricedItems = sortObjectByKey(pricedItems, "name");
     boxPrice = totalPrice() * 0.01;
+    setTimeout(() => {
+      const el= document.querySelector(`#${id}`);
+      transitionElementHeight(el, 30);
+    }, 100);
   };
 
   /**
@@ -741,10 +746,18 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
             <div id="pricedItems" class="mr2 w-100">
               <div class="ml2 mb1 pt1 flex bt">
                 <div class="w-10">
-                  { loading || !box.image ? (
+                  { loading && (
                     <div class="skeleton mr1 w-100 h-100" style="width: 40px; height: 40px" />
-                  ) : (
+                  )}
+                  { !loading && box.image && (
                     <Image src={ box.image } id={`image-${key}`} />
+                  )}
+                  { !loading && !box.image && (
+                    <ShopifyProductImage
+                      shopify_title={ box.shopify_title }
+                      shopify_product_id={ box.shopify_product_id }
+                      crank-key={`image-${key}}`}
+                    />
                   )}
                 </div>
                 <div class="w-70 bold" style="height: 40px; line-height: 40px;">
@@ -770,6 +783,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                     { !loading && !el.image && (
                       <ShopifyProductImage
                         shopify_title={ el.name }
+                        shopify_product_id={ el.shopify_product_id }
                         crank-key={`image-${key}-${el.name.toLowerCase().replace(/ /g, "-")}`}
                       />
                     )}

@@ -11,12 +11,12 @@ import cloneDeep from "lodash.clonedeep";
 import Cancelled from "./cancelled";
 import Subscription from "./subscription";
 import Error from "../lib/error";
-import { Fetch } from "../lib/fetch";
+import { PostFetch, Fetch } from "../lib/fetch";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
 import BarLoader from "../lib/bar-loader";
 import { loadAnotherCustomer } from "./events";
-import { animateFadeForAction } from "../helpers";
+import { animateFadeForAction, delay } from "../helpers";
 
 import EditProducts from "../products/edit-products";
 /**
@@ -61,13 +61,13 @@ async function *Customer({ customer, admin }) {
    *
    * @member {object} cancelled subscriptions for the customer
    */
-  let cancelledGroups = null;
+  let cancelledGroups = [];
   /**
    * charge groups fetched from api
    *
    * @member {object} charge groups for the customer
    */
-  let originalChargeGroups = null;
+  let originalChargeGroups = [];
   /**
    * Disallow edits to groups in this list
    *
@@ -82,6 +82,21 @@ async function *Customer({ customer, admin }) {
    */
   const getNewCustomer = () => {
     this.dispatchEvent(loadAnotherCustomer());
+  };
+
+  /**
+   * @function sortChargeGroups
+   * Sort groups by next_scheduled_at
+   *
+   */
+  const sortChargeGroups = () => {
+    chargeGroups.sort((a, b) => {
+      let dateA = new Date(Date.parse(a.attributes.nextChargeDate));
+      let dateB = new Date(Date.parse(b.attributes.nextChargeDate));
+      if (dateA < dateB) return -1;
+      if (dateA > dateB) return 1;
+      return 0;
+    });
   };
 
   /**
@@ -187,11 +202,14 @@ async function *Customer({ customer, admin }) {
     };
   });
 
+  /**
+   * For reloading and cancelling changes
+   *
+   * @listens reloadSubscriptionEvent From Subscription
+   */
   const reloadSubscription = (ev) => {
-    const subscription = chargeGroups.find(el => el.attributes.subscription_id === ev.detail.id);
-    const idx = chargeGroups.indexOf(subscription);
     loading = true;
-    chargeGroups = null;
+    chargeGroups = [];
     this.refresh();
 
     setTimeout(() => {
@@ -205,108 +223,213 @@ async function *Customer({ customer, admin }) {
   };
 
   /**
-   * For reloading and cancelling changes
+   * For reloading cancelled changes
    *
    * @listens reloadSubscriptionEvent From Subscription
    */
   this.addEventListener("subscription.reload", reloadSubscription);
 
   /**
-   * Update charge groups and remove the cancelled subscription
+   * Update charge groups and remove the deleted subscription
    * We need to do it this way because of time delay from recharge api
-   * @function subscriptionCancelled
-   * @listen subscription.cancelled event
+   * @function removeSubscription
+   * @listen subscription.deleted event
    */
   const removeSubscription = (ev) => {
-    const subscription = chargeGroups.find(el => el.attributes.subscription_id === ev.detail.id);
-    const idx = chargeGroups.indexOf(subscription);
-    chargeGroups.splice(idx, 1);
-    this.refresh();
+    const result = ev.detail.result;
+    const subscription = cancelledGroups.find(el => el.subscription_id === result.subscription_id);
+    const idx = cancelledGroups.indexOf(subscription);
+    cancelledGroups.splice(idx, 1);
+    const div = document.querySelector(`#customer`);
+    animateFadeForAction(div, () => this.refresh(), 800);
   };
 
-  this.addEventListener("subscription.cancelled", removeSubscription);
+  this.addEventListener("subscription.deleted", removeSubscription);
 
   /**
-   * Update the skipped subscription in chargeGroups
+   * Update charge groups and remove the deleted subscription
    * We need to do it this way because of time delay from recharge api
-   * @function subscriptionSkipped
-   * @listen subscription.skipped event
+   * @function removeSubscription
+   * @listen subscription.deleted event
    */
-  const skipCharge = async (ev) => {
-
+  const reactivateSubscription = async (ev) => {
     const result = ev.detail.result;
-    const subscription = chargeGroups.find(el => el.attributes.subscription_id === ev.detail.id);
-    const idx = chargeGroups.indexOf(subscription);
-
-    subscription.attributes.nextDeliveryDate = ev.detail.result.nextdeliverydate;
-    subscription.attributes.nextChargeDate = ev.detail.result.nextchargedate;
-
-    // simply disable edits - when customer comes back to the page then the recharge data will be saved 
-    subscription.attributes.hasNextBox = false;
-    chargeGroups[idx] = subscription;
-
-    noEdits.push(idx);
-
-    const subdiv = document.querySelector(`#subscription-${ev.detail.id}`);
-    if (subdiv) {
-      animateFadeForAction(subdiv, () => this.refresh());
-    } else {
-      this.refresh();
-    };
+    const subscription = cancelledGroups.find(el => el.subscription_id === `${result.subscription_id}`);
+    const idx = cancelledGroups.indexOf(subscription);
+    cancelledGroups.splice(idx, 1);
+    console.log(cancelledGroups);
+    loading = true;
+    this.refresh();
+    let headers = { "Content-Type": "application/json" };
+    const src = `/api/recharge-reactivated-subscription`;
+    const data = subscription;
+    data.scheduled_at = result.scheduled_at;
+    await PostFetch({ src, data, headers })
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          this.refresh();
+        };
+        chargeGroups.push(json); // needs to be ordered
+        sortChargeGroups();
+        originalChargeGroups = cloneDeep(chargeGroups);
+        loading = false;
+        const div = document.querySelector(`#customer`);
+        animateFadeForAction(div, () => this.refresh(), 800);
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+      });
   };
 
-  this.addEventListener("subscription.skipped", skipCharge);
+  this.addEventListener("subscription.reactivated", reactivateSubscription);
+
+  /**
+   * Update charge groups and remove the deleted subscription
+   * Then load into cancelledGroups
+   * @function cancelSubscription
+   * @listen subscription.cancelled event
+   */
+  const cancelSubscription = async (ev) => {
+    const result = ev.detail.result;
+    const subscription = chargeGroups.find(el => el.attributes.subscription_id === result.subscription_id);
+    const idx = chargeGroups.indexOf(subscription);
+    const ids = subscription.includes.map(el => el.subscription_id).join(",");
+    chargeGroups.splice(idx, 1);
+    originalChargeGroups = cloneDeep(chargeGroups);
+    loading = true;
+    this.refresh();
+    let headers = { "Content-Type": "application/json" };
+    const src = "/api/recharge-cancelled-subscriptions";
+    const data = { ids };
+    await PostFetch({ src, data, headers })
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          this.refresh();
+        } else {
+          cancelledGroups.push(json[0]);
+          loading = false;
+          const subdiv = document.querySelector(`#customer`);
+          animateFadeForAction(subdiv, () => this.refresh(), 800);
+        }
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+      });
+  };
+
+  this.addEventListener("subscription.cancelled", cancelSubscription);
+
+  /**
+   * When subscription dates have been changed
+   * Update the updated subscription in chargeGroups
+   * We need to do it this way because of time delay from recharge api
+   * @function chargeUpdated
+   * @listen subscription.updated event
+   */
+  const chargeUpdated = async (ev) => {
+
+    const result = ev.detail.result;
+    const { charge } = result;
+    loading = true;
+    this.refresh();
+    let headers = { "Content-Type": "application/json" };
+    const src = "/api/recharge-updated-charge-date";
+    const data = { charge };
+    await PostFetch({ src, data, headers })
+      .then((res) => {
+        const { error, json } = res;
+        if (error !== null) {
+          fetchError = error;
+          chargeGroups = [];
+          loading = false;
+          this.refresh();
+        } else {
+          const subscription = chargeGroups.find(el => el.attributes.subscription_id === result.subscription_id);
+          const idx = chargeGroups.indexOf(subscription);
+          chargeGroups[idx] = json.subscription;
+          sortChargeGroups();
+          //console.log(chargeGroups);
+          originalChargeGroups = cloneDeep(chargeGroups);
+          loading = false;
+          const subdiv = document.querySelector(`#customer`);
+          animateFadeForAction(subdiv, () => this.refresh(), 800);
+        }
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+      });
+  };
+
+  this.addEventListener("subscription.updated", chargeUpdated);
 
   for await ({ customer } of this) { // eslint-disable-line no-unused-vars
     yield (
-      <div id="customer" class="pr3 pl3 w-100">
+      <div id="customer-wrapper" class="pr3 pl3 w-100">
         { loading && <BarLoader /> }
         { loading && <div>Loading subscriptions ...</div> }
         { fetchError && <Error msg={fetchError} /> }
-        { admin && (
-          <div 
-            class="w-100 tr ml2 mr2 link bold pointer blue" 
-            onclick={ getNewCustomer }>
-            Load another customer
-          </div>
-        )}
-        { chargeGroups && (
-          chargeGroups.length > 0 ? (
-            <Fragment>
-            { chargeGroups.map((group, idx) => (
-              <div id={`subscription-${group.attributes.subscription_id}`}>
-                <Subscription subscription={ group } idx={ idx } allowEdits={ !noEdits.includes(idx) } />
+        <div id="customer">
+          <Fragment>
+            { admin && (
+              <div 
+                class="w-100 tr ml2 mr2 link bold pointer blue" 
+                onclick={ getNewCustomer }>
+                Load another customer
               </div>
-            ))}
-            </Fragment>
-          ) : (
-            <div class="w-100">
-              <div class="mw6 center pt3">
-                No subscriptions found.
-              </div>
-            </div>
-          )
-        )}
-        { cancelledGroups && (
-          cancelledGroups.length > 0 ? (
-            <Fragment>
-              <h6 class="tl mb2 w-100 navy">
-                Cancelled Subscriptions
-              </h6>
-              { cancelledGroups.map((group, idx) => (
-                <div id={`cancelled-${group.subscription_id}`}>
-                  <Cancelled subscription={ group } idx={ idx } />
+            )}
+            { chargeGroups && (
+              chargeGroups.length > 0 ? (
+                <Fragment>
+                { chargeGroups.map((group, idx) => (
+                  <div id={`subscription-${group.attributes.subscription_id}`}>
+                    <Subscription subscription={ group } idx={ idx }
+                      crank-key={ group.attributes.subscription_id + idx }
+                      allowEdits={ !noEdits.includes(idx) } />
+                  </div>
+                ))}
+                </Fragment>
+              ) : (
+                <div class="w-100">
+                  <div class="mw6 center pt3">
+                    No subscriptions found.
+                  </div>
                 </div>
-              ))}
-            </Fragment>
-          ) : (
-            <div class="w-100">
-              <div class="mw6 center pt3">
-                &nbsp;
-              </div>
-            </div>
-          )
-        )}
+              )
+            )}
+            { cancelledGroups && (
+              cancelledGroups.length > 0 ? (
+                <Fragment>
+                  <h6 class="tc mv4 w-100 navy b">
+                    Cancelled Subscriptions
+                  </h6>
+                  { cancelledGroups.map((group, idx) => (
+                    <div id={`subscription-${group.subscription_id}`}>
+                      <Cancelled subscription={ group } idx={ idx } />
+                    </div>
+                  ))}
+                </Fragment>
+              ) : (
+                <div class="w-100">
+                  <div class="mw6 center pt3">
+                    &nbsp;
+                  </div>
+                </div>
+              )
+            )}
+          </Fragment>
+        </div>
       </div>
     )
   };

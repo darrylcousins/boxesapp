@@ -69,9 +69,10 @@ async function* SkipCharge(props) {
   const intervalDays = [];
   const interval = subscription.attributes.days === 7 ? "week" : "fortnigt";
   const multiplier = subscription.attributes.days === 7 ? 1 : 2;
+  const count = subscription.attributes.days === 7 ? 3 : 2;
   let delivered = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
   let charge = new Date(Date.parse(subscription.attributes.nextChargeDate));
-  for (let i=0; i<multiplier; i++) {
+  for (let i=0; i<count; i++) {
     intervalDays.push(`${multiplier * (i + 1)} week${i > 0 ? "s" : ""}`);
     delivered.setDate(delivered.getDate() + subscription.attributes.days);
     deliveryDays.push(delivered.toDateString());

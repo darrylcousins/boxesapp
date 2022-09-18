@@ -118,6 +118,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     shopify_product_id: parseInt(subscription.external_product_id.ecommerce),
     active: true
   };
+  console.log(days, query.delivered);
   let box = await _mongodb.collection("boxes").findOne(query);
   if (box) { // do we have the next box created?
     hasNextBox = true;
@@ -144,6 +145,12 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     delivered.setDate(delivered.getDate() - days);
     query.delivered = delivered.toDateString();
     fetchBox = await _mongodb.collection("boxes").findOne(query);
+  };
+
+  // if still no current box then fudge it this can happen for two week deliveries
+  if (!fetchBox && previousBox) {
+    fetchBox = { ...previousBox };
+    previousBox = null;
   };
 
   if (fetchBox.delivered === boxProperties["Delivery Date"]) {

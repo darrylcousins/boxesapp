@@ -12,7 +12,7 @@ async function *ShopifyProductImage({ shopify_title, shopify_product_id }) {
 
   let loading = true;
   let src = null;
-  const id = `image-${shopify_title.replace(/ /g, "-")}`;
+  const id = `image-${shopify_title.replace(/ |\(|\)/g, "-")}`;
 
   const getImage = async () => {
     const res = await Fetch(`/api/shopify-product-image/${shopify_product_id}`)

@@ -38,6 +38,8 @@ import {
  */
 async function *Subscription({ subscription, idx, allowEdits }) {
 
+  console.log(subscription);
+
   const CollapsibleProducts = CollapseWrapper(EditProducts);
   /**
    * Hold changed items
@@ -333,7 +335,7 @@ async function *Subscription({ subscription, idx, allowEdits }) {
     const event = `subscription.${result.action}`;
     const subdiv = document.querySelector(`#subscription-${result.subscription_id}`);
     const div = document.querySelector(`#customer`);
-    animateFade(div, 0.1);
+    animateFade(div, 0.3);
     if (event) { // passes up to Customer object
       setTimeout(() => {
         animateFadeForAction(subdiv, () => {

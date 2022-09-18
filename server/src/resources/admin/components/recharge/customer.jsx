@@ -55,7 +55,7 @@ async function *Customer({ customer, admin }) {
    *
    * @member {object} charge groups for the customer
    */
-  let chargeGroups = null;
+  let chargeGroups = [];
   /**
    * cancelled groups fetched from api
    *
@@ -257,7 +257,6 @@ async function *Customer({ customer, admin }) {
     const subscription = cancelledGroups.find(el => el.subscription_id === `${result.subscription_id}`);
     const idx = cancelledGroups.indexOf(subscription);
     cancelledGroups.splice(idx, 1);
-    console.log(cancelledGroups);
     loading = true;
     this.refresh();
     let headers = { "Content-Type": "application/json" };
@@ -272,6 +271,7 @@ async function *Customer({ customer, admin }) {
           loading = false;
           this.refresh();
         };
+        console.log(chargeGroups);
         chargeGroups.push(json); // needs to be ordered
         sortChargeGroups();
         originalChargeGroups = cloneDeep(chargeGroups);
@@ -314,6 +314,7 @@ async function *Customer({ customer, admin }) {
           loading = false;
           this.refresh();
         } else {
+          console.log(cancelledGroups);
           cancelledGroups.push(json[0]);
           loading = false;
           const subdiv = document.querySelector(`#customer`);
@@ -389,18 +390,21 @@ async function *Customer({ customer, admin }) {
                 Load another customer
               </div>
             )}
-            { chargeGroups && (
-              chargeGroups.length > 0 ? (
-                <Fragment>
+            { chargeGroups && chargeGroups.length > 0 ? (
+              <Fragment>
+                <h6 class="tc mv4 w-100 navy b">
+                  Active Subscriptions
+                </h6>
                 { chargeGroups.map((group, idx) => (
                   <div id={`subscription-${group.attributes.subscription_id}`}>
                     <Subscription subscription={ group } idx={ idx }
-                      crank-key={ group.attributes.subscription_id + idx }
+                      crank-key={ `${group.attributes.nextChargeDate.replace(/ /g, "_")}-${idx}` }
                       allowEdits={ !noEdits.includes(idx) } />
                   </div>
                 ))}
-                </Fragment>
-              ) : (
+              </Fragment>
+            ) : (
+              !loading && cancelledGroups && cancelledGroups.length === 0 && (
                 <div class="w-100">
                   <div class="mw6 center pt3">
                     No subscriptions found.

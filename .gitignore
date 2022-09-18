@@ -11,6 +11,8 @@
 # testing files
 recharge.*.json
 shopify.*.json
+*.bak.js
+*.bak.jsx
 
 # a configuration file
 base-url.js

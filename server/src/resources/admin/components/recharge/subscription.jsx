@@ -411,12 +411,27 @@ async function *Subscription({ subscription, idx, allowEdits }) {
 
   /*
    * Determine if pausable
+   * Cannot pause if within timeframe of frequency
    */
   const isSkippable = (subscription) => {
     const now = new Date();
     const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
     const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
     return diffDays <= subscription.attributes.days; //i.e. 7 or 14
+  };
+
+  /*
+   * Determine if can be rescheduled
+   * Cannot reschedule if it means going back to scheduled delivery date
+   * which can happen on two week subscriptions and original order out in the future
+   */
+  const isUnSkippable = (subscription) => {
+    const ts = Date.parse(subscription.attributes.lastOrder.delivered);
+    if (isNaN(ts)) return false; // should never happen, could return true perhaps
+    const lastDeliveryDate = new Date(ts);
+    const delivered = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
+    const diffDays = Math.ceil(Math.abs(delivered - lastDeliveryDate) / (1000 * 60 * 60 * 24));
+    return diffDays > subscription.attributes.days; //i.e. 7 or 14
   };
 
   /*
@@ -489,7 +504,9 @@ async function *Subscription({ subscription, idx, allowEdits }) {
                 { isSkippable(subscription) === true ? (
                   <SkipChargeModal subscription={ subscription } />
                 ) : (
-                  <UnSkipChargeModal subscription={ subscription } />
+                  isUnSkippable(subscription) === true && (
+                    <UnSkipChargeModal subscription={ subscription } />
+                  )
                 )}
                 <CancelSubscriptionModal subscription={ subscription } />
               </Fragment>

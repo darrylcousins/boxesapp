@@ -4,6 +4,7 @@
  */
 
 import { gatherData, reconcileChargeGroup, reconcileGetGroups } from "../../lib/recharge/reconcile-charge-group.js";
+import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 
 /*
  * @function recharge/recharge-delete-subscription.js
@@ -16,6 +17,18 @@ export default async (req, res, next) => {
   console.log(charge);
 
   // this is a dumb charge with the updated scheduled delivery
+  if (!Object.hasOwnProperty.call(charge, "shipping_address")) {
+    const { address } = await makeRechargeQuery({
+      method: "GET",
+      path: `addresses/${charge.line_items[0].address_id}`,
+    });
+    charge.shipping_address = address;
+    const { customer } = await makeRechargeQuery({
+      method: "GET",
+      path: `customers/${charge.line_items[0].customer_id}`,
+    });
+    charge.customer = customer;
+  };
 
   const meta = {
     recharge: {
@@ -31,6 +44,8 @@ export default async (req, res, next) => {
     for (const grouped of groups) {
       result = await gatherData({ grouped, result });
     };
+
+    console.log(result);
 
     // always only one - should be
     res.status(200).json({ subscription: result[0] });

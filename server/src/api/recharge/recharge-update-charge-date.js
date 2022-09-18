@@ -48,6 +48,7 @@ export default async (req, res, next) => {
     const nextChargeDate = chargeDate.toISOString().split('T')[0];
 
     // get the charge to pass back to page to refresh the subscription display
+    /*
     const chargeQuery = await makeRechargeQuery({
       method: "GET",
       path: `charges/${attributes.charge_id}`,
@@ -56,15 +57,13 @@ export default async (req, res, next) => {
     let charge;
     if (Object.hasOwnProperty.call(chargeQuery, "charge")) {
       charge = chargeQuery.charge;
-      for (const line_item of charge.line_items) {
-        delivered = line_item.properties.find(el => el.name === "Delivery Date");
-        delivered.value = data.nextdeliverydate;
-      };
     } else {
       // need to manufacture the charge
       charge = {};
-      charge.line_items = [];
     };
+    */
+    let charge = {};
+    charge.line_items = [];
     charge.scheduled_at = data.nextchargedate;
     charge.id = null;
 
@@ -76,7 +75,6 @@ export default async (req, res, next) => {
         path: `subscriptions/${update.id}/set_next_charge_date`,
         body: JSON.stringify(body),
       }).then(async (res) => {
-        console.log("UPDATE CHARGE", res); // if error can we retry??
         body = { properties: update.properties };
         if (idx === updates.length - 1) {
           body.commit = true;
@@ -87,11 +85,10 @@ export default async (req, res, next) => {
           body: JSON.stringify(body),
         });
       });
-      if (!Object.hasOwnProperty.call(charge, "created_at")) {
-        // need to populate manufactured charge
-        result.subscription.purchase_item_id = result.id;
-        charge.line_items.push(result.subscription);
-      };
+      result.subscription.purchase_item_id = result.subscription.id;
+      result.subscription.images = { small: null };
+      result.subscription.unit_price = result.subscription.price;
+      charge.line_items.push(result.subscription);
       await delay(800); // or use PromiseThrottle?
     };
 

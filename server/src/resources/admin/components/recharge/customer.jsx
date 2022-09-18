@@ -271,7 +271,6 @@ async function *Customer({ customer, admin }) {
           loading = false;
           this.refresh();
         };
-        console.log(chargeGroups);
         chargeGroups.push(json); // needs to be ordered
         sortChargeGroups();
         originalChargeGroups = cloneDeep(chargeGroups);
@@ -314,7 +313,6 @@ async function *Customer({ customer, admin }) {
           loading = false;
           this.refresh();
         } else {
-          console.log(cancelledGroups);
           cancelledGroups.push(json[0]);
           loading = false;
           const subdiv = document.querySelector(`#customer`);
@@ -359,7 +357,6 @@ async function *Customer({ customer, admin }) {
           const idx = chargeGroups.indexOf(subscription);
           chargeGroups[idx] = json.subscription;
           sortChargeGroups();
-          //console.log(chargeGroups);
           originalChargeGroups = cloneDeep(chargeGroups);
           loading = false;
           const subdiv = document.querySelector(`#customer`);

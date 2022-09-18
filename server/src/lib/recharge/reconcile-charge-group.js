@@ -276,13 +276,14 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
 
   const tempBoxRemovedItems = [ ...boxRemovedItems ];
 
-  /* SWAPPED ITEMS one only is allowed with the matching swap */
+  /* SWAPPED ITEMS two only is allowed with the matching swap */
   for (item of [ ...boxSwappedExtras ]) {
     if (addOnProducts.indexOf(item.title) === -1) { // not included this week
       boxSwappedExtras = boxSwappedExtras.filter(el => el.title !== item.title);
       if (includedProducts.indexOf(item.title) === -1) {
         // drop the subscription altogether
         messages.push(`Swapped item ${item.title} not available this week.`);
+        // need to fix the removed items then
         if (item.quantity > 0) { // has a subscribed item extra
           item.quantity = 0;
           if (titledSubscribedExtras.includes(item.title)) {
@@ -395,6 +396,37 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
         messages.push(`Add on ${item.title} removed because has no matching subscription.`);
       };
     };
+  };
+
+  // Kinda wierd but some edge cases leave these out of sync e.g. if both are not in addons
+  // Fingers crossed that any quantity increment is already taken care of
+  if (boxSwappedExtras.length !== boxRemovedItems.length) {
+    if (boxRemovedItems.length === 0) boxSwappedExtras = []; // just remove them
+    const diff = Math.abs(boxRemovedItems.length - boxSwappedExtras.length);
+    if (boxSwappedExtras.length > boxRemovedItems.length) {
+      // the ones removed
+      const extras = boxSwappedExtras.slice(boxSwappedExtras.length - diff);
+      boxSwappedExtras = boxSwappedExtras.slice(0, boxSwappedExtras.length - diff); // trim to correct length
+      // get the others out and check for incremented value and move to add on items!!
+      for (const item of extras) {
+        if (item.quantity > 1) {
+          if (titledSubscribedExtras.includes(item.title)) {
+            if (includedProducts.indexOf(item.title) === -1) { // not included this week
+              messages.push(`Extra swapped item ${item.title} included as an add on this week.`);
+              boxAddOnExtras.push(item);
+            } else {
+              messages.push(`Extra swapped item ${item.title} moved to included extra this week.`);
+              boxIncludedExtras.push(item);
+            };
+          } else {
+            messages.push(`Extra ${item.title} removed because has no matching subscription.`);
+          };
+        };
+      };
+    } else {
+      // this just works - see below collecting included items
+      boxRemovedItems = boxRemovedItems.slice(0, boxRemovedItems.length - diff); // trim to correct length
+    }
   };
 
   const priceMap = Object.assign({}, ...([ ...fetchBox.addOnProducts, ...fetchBox.includedProducts ]

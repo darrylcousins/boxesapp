@@ -88,6 +88,9 @@ export default async (req, res, next) => {
       result.subscription.purchase_item_id = result.subscription.id;
       result.subscription.images = { small: null };
       result.subscription.unit_price = result.subscription.price;
+      result.subscription.title = result.subscription.product_title;
+      const price = parseFloat(result.subscription.price) * result.subscription.quantity;
+      result.subscription.total_price = `${price.toFixed(2)}`;
       charge.line_items.push(result.subscription);
       await delay(800); // or use PromiseThrottle?
     };

@@ -1,19 +1,13 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
-import { matchNumberedString } from "../../lib/helpers.js";
+import { matchNumberedString, delay } from "../../lib/helpers.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import subscriptionCreatedMail from "../../mail/subscription-created.js";
 
-const delay = (t) => {
-  return new Promise(resolve => setTimeout(resolve, t));
-};
-
-// wait to ensure that the charge has been created
-const getCharge = async (subscription, t) => {
-  await delay(t);
-  const { charges } = await makeRechargeQuery({
+const getCharge = async (subscription) => {
+  const result = await makeRechargeQuery({
     path: `charges`,
     query: [
       ["customer_id", subscription.customer_id ],
@@ -22,20 +16,36 @@ const getCharge = async (subscription, t) => {
       ["status", "queued" ]
     ]
   });
-  const charge = (charges.length) ? charges[0] : null;
+  let charge = null;
+  if (Object.hasOwnProperty.call(result, "charges")) {
+    charge = (result.charges.length) ? result.charges[0] : null;
+  }
   return charge;
 };
 
-// wait to ensure that the charge has been created
-const getSubscription = async (id, t) => {
-  await delay(t);
-  const { subscription } = await makeRechargeQuery({
-    method: "GET",
-    path: `subscriptions/${id}`,
+const sleepUntil = async (subscription, timeoutMs) => {
+  return new Promise((resolve, reject) => {
+    let timeWas = new Date();
+    let wait = setInterval(async function() {
+      let charge = await getCharge(subscription);
+      if (charge) {
+        try {
+          clearInterval(wait);
+        } catch(e) {
+          console.log("Failed to clear interval on resolve");
+        };
+        resolve(charge.id);
+      } else if (new Date() - timeWas > timeoutMs) { // Timeout
+        try {
+          clearInterval(wait);
+        } catch(e) {
+          console.log("Failed to clear interval on reject");
+        };
+        reject(0); // no charge found
+      }
+    }, 5000); // repeat the attempt every 5 sec until timeout at timeoutMs
   });
-  return subscription;
-};
-
+}
 export default async function subscriptionCreated(topic, shop, body) {
 
   const mytopic = "SUBSCRIPTION_CREATED";
@@ -80,13 +90,14 @@ export default async function subscriptionCreated(topic, shop, body) {
   // Tuesday delivery => Saturday charge
   let deliveryDate = new Date(Date.parse(attributes["Delivery Date"]));
   let currentIdx = deliveryDate.getDay() - 4; // 0 = Sunday, javascript style
-  if (currentIdx < 0) currentIdx = currentIdx + 7;
+  if (currentIdx < 0) currentIdx = currentIdx + 7; // fix to ensure the future
 
   // changing this on the subscription will update the "next_charge_scheduled_at"
   // XXX found that next charge may be wrong for a delivery day more than a week out!!!
   // XXX because recharge will pick the next date matching order_day_of_week!!!
   // therefore should probable also set next_charge_scheduled_at
   // note this needs the api call to subscription/{id}/set_next_charge_date
+  // see api/recharge-update-charge-date.js for example
   const orderDayOfWeek = currentIdx % 7;
 
   // Step 2 Now update the Delivery Date using
@@ -97,9 +108,31 @@ export default async function subscriptionCreated(topic, shop, body) {
   const daysToNextDelivery = parseInt(subscription.order_interval_frequency) * 7;
   deliveryDate.setDate(deliveryDate.getDate() + daysToNextDelivery);
 
+  // with the delivery date we fix the next_charge_scheduled_at to 3 days prior
+  const offset = deliveryDate.getTimezoneOffset()
+  let nextChargeDate = new Date(deliveryDate.getTime() - (offset*60*1000));
+  nextChargeDate.setDate(nextChargeDate.getDate() - 3);
+  // Put to the required yyyy-mm-dd format
+  let nextChargeScheduledAt = nextChargeDate.toISOString().substring(0,10);
+
+  console.log(nextChargeDate.toDateString(), orderDayOfWeek);
+  console.log(deliveryDate.toDateString());
+
   // Step 3 for created: find the other items using charge api, add metada to connect them together
   // Wait here to be sure the charge object has been created in the recharge backend
-  const charge = await getCharge(subscription, 20000);
+  await delay(10000); // wait 10 seconds
+  const charge_id = await sleepUntil(subscription, 60000); // tries every 5 secs for 1 min
+
+  let charge; 
+  let chargeResult;
+  if (parseInt(charge_id) > 0) {
+    chargeResult = await makeRechargeQuery({
+      path: `charges/${charge_id}`,
+    });
+    if (Object.hasOwnProperty.call(chargeResult, "charge")) {
+      charge = chargeResult.charge;
+    };
+  };
 
   if (!charge) {
     _logger.notice(`Recharge ${topicLower} no charge found.`, { meta });
@@ -113,6 +146,8 @@ export default async function subscriptionCreated(topic, shop, body) {
   line_items.push(first); // make sure its the last because we will commit to charge
 
   const updatedLineItems = []; // updated with new properties
+
+  let updatedSubscription; // updated box subscription
 
   // now update the properties for all of these
   for (const lineItem of line_items) {
@@ -143,8 +178,10 @@ export default async function subscriptionCreated(topic, shop, body) {
     likes = likes.split(",").sort().join(",");
     dislikes = dislikes.split(",").sort().join(",");
     if (push) { // i.e. only on the Box subscription
-      properties.push({ name: "Likes", value: likes });
-      properties.push({ name: "Dislikes", value: dislikes });
+      if (!properties.find(el => el.name === "Likes")) {
+        properties.push({ name: "Likes", value: likes });
+        properties.push({ name: "Dislikes", value: dislikes });
+      };
     };
     // One property to bind them within the charge
     properties.push({ name: "box_subscription_id", value: subscription.id.toString() });
@@ -152,6 +189,9 @@ export default async function subscriptionCreated(topic, shop, body) {
     if (lineItem.item_purchase_id === subscription.id) {
       subscription.properties = properties;
     };
+
+    // absolutely must set the next_charge_scheduled_at because if the delivery
+    // date may be a week or 2 out
 
     const updateData = {
       order_day_of_week: orderDayOfWeek, // assign orderDay
@@ -166,25 +206,27 @@ export default async function subscriptionCreated(topic, shop, body) {
       method: "PUT",
       path: `subscriptions/${lineItem.purchase_item_id}`,
       body: JSON.stringify(updateData)
+    }).then(async (res) => {
+      if (res.subscription.next_charge_scheduled_at !== nextChargeScheduledAt) {
+        console.log('updateing schedule');
+        body = { date: nextChargeScheduledAt };
+        return await makeRechargeQuery({
+          method: "POST",
+          path: `subscriptions/${res.subscription.id}/set_next_charge_date`,
+          body: JSON.stringify(body),
+        });
+      } else {
+        return res;
+      };
     });
+    if (push) updatedSubscription = updateResult.subscription;
 
-    await delay(2000); // give time between requests
+    await delay(500); // give time between requests
   };
 
   meta.recharge.next_delivery = deliveryDate.toDateString();
   _logger.notice(`Recharge ${topicLower} completed and subscription updated.`, { meta });
 
-  //const updatedSubscription = await getSubscription(subscription.id, 30000);
-
-  let nextChargeScheduledAt = subscription.next_charge_scheduled_at;
-  const currentSchedule = new Date(Date.parse(nextChargeScheduledAt));
-  const currentDayOfWeek = currentSchedule.getDay() - 1;
-
-  if (currentDayOfWeek !== orderDayOfWeek) {
-    const diff = orderDayOfWeek - currentDayOfWeek;
-    currentSchedule.setDate(currentSchedule.getDate() + diff);
-    nextChargeScheduledAt = currentSchedule.toISOString().substring(0,10);
-  };
 
   try {
     // doing this to avoid a further call to api for the updated charge

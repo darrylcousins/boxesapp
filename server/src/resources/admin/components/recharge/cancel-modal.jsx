@@ -45,7 +45,7 @@ const options = {
   color: "dark-red",
   src: "/api/recharge-cancel-subscription",
   ShowLink,
-  saveMsg: "Cancelling box subscription ... please be patient it will takes some seconds.",
+  saveMsg: "Cancelling box subscription ... please be patient, it will take some seconds.",
   successMsg: "Successfully cancelled box subscription, reloading page.",
 };
 

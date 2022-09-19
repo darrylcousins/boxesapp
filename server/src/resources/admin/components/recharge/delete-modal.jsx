@@ -43,7 +43,7 @@ const options = {
   color: "purple",
   src: "/api/recharge-delete-subscription",
   ShowLink,
-  saveMsg: "Permanently deleting box subscription ... please be patient it will takes some seconds.",
+  saveMsg: "Permanently deleting box subscription ... please be patient, it will take some seconds.",
   successMsg: "Successfully deleted box subscription, reloading page.",
 };
 

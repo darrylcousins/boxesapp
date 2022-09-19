@@ -44,7 +44,7 @@ const options = {
   color: "dark-red",
   src: "/api/recharge-reactivate-subscription",
   ShowLink,
-  saveMsg: "Reactivating box subscription ... please be patient it will takes some seconds.",
+  saveMsg: "Reactivating box subscription ... please be patient, it will take some seconds.",
   successMsg: "Successfully reactivated box subscription, reloading page.",
 };
 

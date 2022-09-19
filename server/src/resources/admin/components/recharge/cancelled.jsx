@@ -44,7 +44,6 @@ async function* Cancelled({ subscription }) {
   const reLoad = (ev) => {
     const result = ev.detail.json; // success, action, subscription_id
     const subscription_id = result.subscription_id;
-
     const event = `subscription.${result.action}`;
     const subdiv = document.querySelector(`#subscription-${result.subscription_id}`);
     const div = document.querySelector(`#customer`);

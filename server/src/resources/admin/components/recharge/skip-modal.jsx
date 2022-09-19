@@ -45,7 +45,7 @@ const options = {
   color: "dark-red",
   src: "/api/recharge-update-charge-date",
   ShowLink,
-  saveMsg: "Pausing subscription ... please be patient it will takes some seconds.",
+  saveMsg: "Pausing subscription ... please be patient, it will take some seconds.",
   successMsg: "Successfully paused subscription, reloading page.",
 };
 

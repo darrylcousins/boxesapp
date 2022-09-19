@@ -271,6 +271,7 @@ async function *Customer({ customer, admin }) {
           loading = false;
           this.refresh();
         };
+        console.log(chargeGroups); // how is this sometimes not an array?
         chargeGroups.push(json); // needs to be ordered
         sortChargeGroups();
         originalChargeGroups = cloneDeep(chargeGroups);
@@ -313,6 +314,7 @@ async function *Customer({ customer, admin }) {
           loading = false;
           this.refresh();
         } else {
+          console.log(cancelledGroups); // how is this sometimes not an array?
           cancelledGroups.push(json[0]);
           loading = false;
           const subdiv = document.querySelector(`#customer`);

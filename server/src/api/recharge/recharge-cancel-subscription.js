@@ -51,7 +51,7 @@ export default async (req, res, next) => {
         path: `subscriptions/${id}/cancel`,
         body: JSON.stringify(body),
       });
-      await delay(200);
+      await delay(500);
     };
 
     const data = { subscription_id, attributes, includes };

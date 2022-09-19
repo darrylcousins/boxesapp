@@ -77,14 +77,16 @@ export default async (req, res, next) => {
       }).then(async (res) => {
         body = { properties: update.properties };
         if (idx === updates.length - 1) {
-          body.commit = true;
+          //body.commit = true; // ??
         };
+        await delay(500);
         return await makeRechargeQuery({
           method: "PUT",
           path: `subscriptions/${res.subscription.id}`,
           body: JSON.stringify(body),
         });
       });
+      console.log(result);
       result.subscription.purchase_item_id = result.subscription.id;
       result.subscription.images = { small: null };
       result.subscription.unit_price = result.subscription.price;

@@ -27,8 +27,6 @@ export default async (req, res, next) => {
     ];
   };
 
-  console.log(query);
-
   try {
     const { subscriptions } = await makeRechargeQuery({
       path: `subscriptions`,

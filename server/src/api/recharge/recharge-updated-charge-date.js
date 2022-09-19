@@ -14,7 +14,6 @@ import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
  */
 export default async (req, res, next) => {
   const charge = req.body.charge;
-  console.log(charge);
 
   // this is a dumb charge with the updated scheduled delivery
   if (!Object.hasOwnProperty.call(charge, "shipping_address")) {
@@ -44,8 +43,6 @@ export default async (req, res, next) => {
     for (const grouped of groups) {
       result = await gatherData({ grouped, result });
     };
-
-    console.log(result);
 
     // always only one - should be
     res.status(200).json({ subscription: result[0] });

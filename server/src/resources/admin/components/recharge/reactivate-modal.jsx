@@ -99,7 +99,9 @@ async function* ReactivateSubscription(props) {
     // need to figure out some dates
     const delivered = new Date(Date.parse(subscription.box.properties.find(el => el.name === "Delivery Date").value));
     // get the next available day for the order (later than today)
-    const current = findNextWeekday(subscription.box.order_day_of_week + 1);
+    const now = new Date();
+    now.setDate(now.getDate() + 1);
+    const current = findNextWeekday(subscription.box.order_day_of_week + 1, now);
 
     nextCharge = new Date(current.getTime());
 

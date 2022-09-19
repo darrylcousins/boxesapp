@@ -118,7 +118,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     shopify_product_id: parseInt(subscription.external_product_id.ecommerce),
     active: true
   };
-  console.log(days, query.delivered);
   let box = await _mongodb.collection("boxes").findOne(query);
   if (box) { // do we have the next box created?
     hasNextBox = true;
@@ -576,12 +575,16 @@ export const gatherData = async ({ grouped, result }) => {
     let subscription;
     // XXX in order to get the frequency I need to get the actual subscription
     if (!Object.hasOwnProperty.call(group, "subscription")) {
+      const item_id = Object.hasOwnProperty.call(group.box, "purchase_item_id")
+        ? group.box.purchase_item_id : group.box.id;
       const result = await makeRechargeQuery({
-        path: `subscriptions/${group.box.purchase_item_id}`,
+        path: `subscriptions/${item_id}`,
       });
       subscription = result.subscription;
     } else {
       subscription = group.subscription;
+      /// unsure if this is ever true?
+      console.log("HAS SUBSCIPTIONY");
     };
 
     // subscription.purchase_item_id === actual subscription.id

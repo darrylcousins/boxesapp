@@ -20,7 +20,6 @@ export default async (req, res, next) => {
 
   try {
     const result = await queryStoreProducts(search, "Box Produce");
-    console.log(result);
     res.status(200).json(result);
   } catch(err) {
     res.status(400).json({ error: err.toString() });

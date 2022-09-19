@@ -36,7 +36,30 @@ export const makeRechargeQuery = async ({method, path, limit, query, body}) => {
       if (http_method === "DELETE") {
         return response;
       } else {
-        return response.json();
+        // I don't recall if they come in "errors" or "error"
+        // XXX Fix me when you remember - same too for shopify api query
+        const json = response.json();
+        if (Object.hasOwnProperty.call(json, "errors")) {
+          const meta = {
+            recharge: {
+              uri: url,
+              method: http_method,
+              errors: json.errors,
+            },
+          };
+          _logger.notice(`Recharge fetch errors.`, { meta });
+        };
+        if (Object.hasOwnProperty.call(json, "error")) {
+          const meta = {
+            recharge: {
+              uri: url,
+              method: http_method,
+              error: json.errors,
+            },
+          };
+          _logger.notice(`Recharge fetch error.`, { meta });
+        };
+        return json;
       };
     });
 };

@@ -25,8 +25,32 @@ export const makeShopQuery = async ({path, limit, query, fields}) => {
     headers: {
       'X-Shopify-Access-Token': Shopify.Context.ACCESS_TOKEN 
     }
+  }).then(response => {
+    // I don't recall if they come in "errors" or "error"
+    // XXX Fix me when you remember - same too for recharge api query
+    const json = response.json();
+    if (Object.hasOwnProperty.call(json, "errors")) {
+      const meta = {
+        shopify: {
+          uri: url,
+          method: "GET",
+          errors: json.errors,
+        },
+      };
+      _logger.notice(`Shopify fetch errors.`, { meta });
+    };
+    if (Object.hasOwnProperty.call(json, "error")) {
+      const meta = {
+        shopify: {
+          uri: url,
+          method: "GET",
+          error: json.errors,
+        },
+      };
+      _logger.notice(`Shopify fetch error.`, { meta });
+    };
+    return json;
   })
-    .then(response => response.json())
 };
 
 /*

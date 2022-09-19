@@ -58,26 +58,25 @@ export default async (req, res, next) => {
           { name: "box_subscription_id", value: `${box.id}` },
         ];
       };
-      update = {
-        properties,
-        //status,
-      };
-      /*
-      if (idx === includes.length - 1) {
-        update.commit = true;
-      };
-      */
       const result = await makeRechargeQuery({
         method: "POST",
         path: `subscriptions/${id}/activate`,
       }).then(async (res1) => {
-        await delay(200);
+        await delay(500);
         return await makeRechargeQuery({
           method: "POST",
           path: `subscriptions/${res1.subscription.id}/set_next_charge_date`,
           body: JSON.stringify({ date: nextChargeDate }),
         }).then(async (res2) => {
           await delay(500);
+          update = {
+            properties,
+            //status,
+          };
+          if (idx === includes.length - 1) {
+            update.commit = true;
+          };
+          console.log(update);
           return await makeRechargeQuery({
             method: "PUT",
             path: `subscriptions/${res2.subscription.id}`,

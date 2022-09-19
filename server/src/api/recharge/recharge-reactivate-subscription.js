@@ -60,22 +60,36 @@ export default async (req, res, next) => {
       };
       update = {
         properties,
-        status,
+        //status,
       };
+      /*
       if (idx === includes.length - 1) {
         update.commit = true;
       };
+      */
       const result = await makeRechargeQuery({
         method: "POST",
-        path: `subscriptions/${id}/set_next_charge_date`,
-        body: JSON.stringify({ date: nextChargeDate }),
-      }).then(async (res) => {
+        path: `subscriptions/${id}/activate`,
+      }).then(async (res1) => {
+        await delay(200);
         return await makeRechargeQuery({
-          method: "PUT",
-          path: `subscriptions/${res.subscription.id}`,
-          body: JSON.stringify(update),
+          method: "POST",
+          path: `subscriptions/${res1.subscription.id}/set_next_charge_date`,
+          body: JSON.stringify({ date: nextChargeDate }),
+        }).then(async (res2) => {
+          await delay(500);
+          return await makeRechargeQuery({
+            method: "PUT",
+            path: `subscriptions/${res2.subscription.id}`,
+            body: JSON.stringify(update),
+          });
         });
       });
+      /*
+      console.log(result.subscription.status)
+      console.log(result.subscription.properties)
+      console.log(result.subscription.next_charge_scheduled_at)
+      */
       if (result.subscription.id === box.id) {
         final = { ...result.subscription };
       };

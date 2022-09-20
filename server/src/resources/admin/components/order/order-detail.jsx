@@ -66,6 +66,7 @@ function OrderDetail({ order }) {
                 <li>{ order.shipping.title }</li>
                 <li>{ capWords(order.shipping.code.split(" ")).join(" ") }</li>
                 <li>{ capWords(order.shipping.source.split(" ")).join(" ") }</li>
+                <li>{ order.shipping.price }</li>
               </ul>
             ) : (
               <div>&nbsp;</div>

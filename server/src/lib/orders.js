@@ -318,10 +318,6 @@ export const processOrderJson = async (json) => {
     name,
     first_name,
     last_name,
-    address1,
-    address2,
-    city,
-    zip,
     phone,
     note,
     including,
@@ -332,14 +328,28 @@ export const processOrderJson = async (json) => {
 
   // collect shipping and source
   const shipping_line = json.shipping_lines[0];
-  const {carrier_identifier, code, source, title} = shipping_line;
+  const {carrier_identifier, code, source, title, price} = shipping_line;
   order.source = {
     name: "Shopify",
     source,
     identifier: json.source_identifier,
     type: json.source_name,
   };
-  order.shipping = {carrier_identifier, code, source, title};
+  order.shipping = {carrier_identifier, code, source, title, price};
+
+  console.log("SHIPPING PRICE", price, parseFloat(price));
+
+  if (parseFloat(price) === 0) {
+    order.address1 = "Farm Pickup";
+    order.address2 = "";
+    order.city = "";
+    order.zip = "";
+  } else {
+    order.address1 = address1;
+    order.address2 = address2;
+    order.city = city;
+    order.zip = zip;
+  };
 
   // first order has source of 'web' and therefore correct delivered will be recordedi
   order.variant_title = boxProduct.variant_title;

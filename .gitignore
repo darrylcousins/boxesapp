@@ -8,11 +8,13 @@
 # dkimKey for mail
 .dkimKey
 
-# testing files
+# testing files and broken tests
 recharge.*.json
 shopify.*.json
+streamside.*.json
 *.bak.js
 *.bak.jsx
+get-streamside*
 
 # a configuration file
 base-url.js

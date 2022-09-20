@@ -21,7 +21,7 @@ export default `
       </p>
       {% if type == "upcoming" %}
         <p style="color:#4e1018;padding:5px 0;padding-top:15px;margin:0">
-          You still have a couple of days before the order is created in which to add items or otherwise
+          You have until the order is created in which to add items or otherwise
         <a style="color:#4e1018;"
             href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{subscriptions[0].attributes.customer.external_customer_id.ecommerce}}">update your box</a>.
         </p>
@@ -223,7 +223,7 @@ export default `
           {% if subscription.attributes.newIncludedInThisBox.size > 0 %}
             <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
               <td valign="top" width="120px">
-                New in box:
+                New in box in this weeks box:
               </td>
               <td valign="top" style="padding: 5px 0px 5px 20px">
                 {{ subscription.attributes.newIncludedInThisBox | join: ", " }}
@@ -233,7 +233,7 @@ export default `
           {% if subscription.attributes.notIncludedInThisBox.size > 0 %}
             <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
               <td valign="top" width="120px">
-                Not in box:
+                Not currently available:
               </td>
               <td valign="top" style="padding: 5px 0px 5px 20px">
                 {{ subscription.attributes.notIncludedInThisBox | join: ", " }}
@@ -243,7 +243,7 @@ export default `
           {% if subscription.attributes.nowAvailableAsAddOns.size > 0 %}
             <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
               <td valign="top" width="120px">
-                New add ons:
+                New add ons in this weeks box:
               </td>
               <td valign="top" style="padding: 5px 0px 5px 20px">
                 {{ subscription.attributes.nowAvailableAsAddOns | join: ", " }}

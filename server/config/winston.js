@@ -53,6 +53,8 @@ if (process.env.NODE_ENV !== 'production') {
       )
     })
   );
+};
+/*
 } else {
   logger.add(
     new winston.transports.File({
@@ -60,7 +62,7 @@ if (process.env.NODE_ENV !== 'production') {
       format: fileFormat,
     })
   );
-};
+*/
 
 // create a stream object with a 'write' function that will be used by `morgan`
 logger.stream = {

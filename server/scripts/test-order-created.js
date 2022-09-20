@@ -13,13 +13,12 @@ _logger.notice = (e) => console.log(e);
 import ordersCreate from "../src/webhooks/shopify/orders-create.js";
 import order from "../shopify.order.json" assert { type: "json" };
 
-
 const run = async () => {
   global._mongodb = await getMongoConnection();
   try {
     console.log('this ran');
     const mytopic = "ORDERS_CREATE";
-    await ordersCreate("ORDERS_CREATE", "shop", JSON.stringify(order));
+    await ordersCreate("ORDERS_CREATE", "shop", JSON.stringify(order.order));
 
   } catch(e) {
     console.error(e);

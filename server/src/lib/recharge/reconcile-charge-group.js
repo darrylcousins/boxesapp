@@ -194,6 +194,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   let boxSwappedExtras = boxListArrays["Swapped Items"]
     .map(el => matchNumberedString(el))
     .map(el => ({ title: el.title, quantity: el.quantity - 1 }));
+  // XXX Saw a single case where an included subscription did not appear here
   let boxAddOnExtras = boxListArrays["Add on Items"]
     .map(el => matchNumberedString(el));
   let boxRemovedItems = boxListArrays["Removed Items"]
@@ -583,8 +584,6 @@ export const gatherData = async ({ grouped, result }) => {
       subscription = result.subscription;
     } else {
       subscription = group.subscription;
-      /// unsure if this is ever true?
-      console.log("HAS SUBSCIPTIONY");
     };
 
     // subscription.purchase_item_id === actual subscription.id

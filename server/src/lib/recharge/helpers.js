@@ -136,6 +136,7 @@ export const updateSubscriptions = async ({ updates }) => {
         properties: subscription.properties,
       });
     };
+    await delay(500);
     if (options.method === "DELETE") {
       //console.log(result);
     };

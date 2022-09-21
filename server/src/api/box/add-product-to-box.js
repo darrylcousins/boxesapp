@@ -48,7 +48,12 @@ export default async (req, res, next) => {
   };
 
   const productDoc = await makeShopQuery({path, limit, query, fields})
-    .then(async ({products}) => {
+    .then(async (res) => {
+      if (!Object.hasOwnProperty.call(res, "products")) {
+        _logger.info('product query failed', JSON.stringify(res));
+        return null;
+      };
+      const products = res.products;
       if (products.length === 0) {
         _logger.info('no product found on shop');
         return null;

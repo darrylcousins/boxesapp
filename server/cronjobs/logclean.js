@@ -53,7 +53,6 @@ const main = async () => {
       report.push(`Exporting logs older than ${since.toString()}`);
       report.push(`Exported ${errors.length} error records`);
       report.push(`Exported ${notices.length} notice records`);
-      console.log(report);
 
       const attachments = [];
       if (notices.length) {

@@ -204,7 +204,7 @@ async function* UnSkipCharge(props) {
               { subscription.attributes.nextDeliveryDate }
             </div>
             <div class="fl w-50 gray tr pr3 pv1 b">
-              This charge date:
+              This payment date:
             </div>
             <div class="fl w-50 pv1 b">
               { subscription.attributes.nextChargeDate }
@@ -220,7 +220,7 @@ async function* UnSkipCharge(props) {
               { deliveryDays[daysIndex] }
             </div>
             <div class="fl w-50 gray tr pr3 pv1 b">
-              New charge date will be:
+              New payment date will be:
             </div>
             <div class="fl w-50 pv1 b" id="charge-date">
               { chargeDays[daysIndex] }

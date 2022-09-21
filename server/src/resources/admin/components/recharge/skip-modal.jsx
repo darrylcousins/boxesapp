@@ -183,7 +183,6 @@ async function* SkipCharge(props) {
       <div class="w-80 center">
         <p class="lh-copy tl mb3">
           Are you sure you want to pause the subscription?<br />
-          <b class="pt3">This cannot be undone.</b>
           <div class="cf">
             <div class="fl w-50 gray tr pr3 pv1 b">
               Scheduled delivery date:
@@ -192,7 +191,7 @@ async function* SkipCharge(props) {
               { subscription.attributes.nextDeliveryDate }
             </div>
             <div class="fl w-50 gray tr pr3 pv1 b">
-              This charge date:
+              This payment date:
             </div>
             <div class="fl w-50 pv1 b">
               { subscription.attributes.nextChargeDate }
@@ -208,7 +207,7 @@ async function* SkipCharge(props) {
               { deliveryDays[intervalIndex] }
             </div>
             <div class="fl w-50 gray tr pr3 pv1 b">
-              New charge date will be:
+              New payment date will be:
             </div>
             <div class="fl w-50 pv1 b" id="charge-date">
               { chargeDays[intervalIndex] }

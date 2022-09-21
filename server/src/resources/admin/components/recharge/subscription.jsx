@@ -470,7 +470,7 @@ async function *Subscription({ subscription, idx, allowEdits }) {
           {subscription.box.shopify_title} - {subscription.attributes.variant}
         </h6>
         { !subscription.attributes.hasNextBox && (
-          <div class="pv2 orange">Box not yet loaded for <span class="b">
+          <div class="pv2 orange">Box items not yet loaded for <span class="b">
               { subscription.attributes.nextDeliveryDate }
           </span></div>
         )}

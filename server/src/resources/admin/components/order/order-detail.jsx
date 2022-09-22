@@ -64,7 +64,7 @@ function OrderDetail({ order }) {
             { (typeof order.shipping === "object") ? (
               <ul class="list pl0 mt0">
                 <li>{ order.shipping.title }</li>
-                <li>{ capWords(order.shipping.code.split(" ")).join(" ") }</li>
+                <li>{ order.shipping.code && capWords(order.shipping.code.split(" ")).join(" ") }</li>
                 <li>{ capWords(order.shipping.source.split(" ")).join(" ") }</li>
                 <li>{ order.shipping.price }</li>
               </ul>

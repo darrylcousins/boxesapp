@@ -56,7 +56,7 @@ function* TableRow({ order, index, selected }) {
           <span class="db">{order.zip}</span>
         </td>
         <td data-title="Source" class="pv1 bb b--black-20 v-top">
-          { (typeof order.source === "string") ? (
+          { false && (typeof order.source === "string") ? (
             <ul class="list pl0 mt0">
               { order.source.split(",").map(el => el.trim()).map(name => (
                 <Fragment>

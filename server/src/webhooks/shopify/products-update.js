@@ -10,11 +10,39 @@ export default async function productsUpdate(topic, shop, body) {
   };
 
   const productJson = JSON.parse(body);
-  if (productJson.product_type === 'Box Produce') {
-    const shopify_product_id = parseInt(productJson.id);
+  const shopify_title = productJson.title;
+  const shopify_product_id = parseInt(productJson.id);
+  const collection = _mongodb.collection("boxes");
+  // XXX handle as well??
+  // need similar for "Container Box" -  fix title only
+  if (productJson.product_type === 'Container Box') {
+    const boxQuery = {
+      shopify_product_id,
+      shopify_title: { "$ne": shopify_title }
+    };
+    const boxUpdate = { $set: {
+      shopify_title,
+    }};
+    try {
+      const boxResult = await collection.updateMany(boxQuery, boxUpdate);
+      console.log(boxQuery);
+      console.log(boxUpdate);
+      console.log(boxResult);
+      if (Boolean(boxResult.modifiedCount)) { // only log if an update performed
+        const boxMeta = {
+          product: {
+            shopify_title,
+            shopify_product_id,
+            modified: boxResult.modifiedCount,
+          }
+        };
+        _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta: boxMeta });
+      };
+    } catch(err) {
+      _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    };
+  } else if (productJson.product_type === 'Box Produce') {
     const shopify_price = parseInt(parseFloat(productJson.variants[0].price) * 100);
-    const shopify_title = productJson.title;
-    const collection = _mongodb.collection("boxes");
     let possible_tags;
     // get possible tags from settings
     try {
@@ -83,6 +111,7 @@ export default async function productsUpdate(topic, shop, body) {
             shopify_title,
             shopify_product_id,
             shopify_price,
+            modified: resultCount,
           }
         };
         _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });

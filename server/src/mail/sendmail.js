@@ -32,10 +32,23 @@ export default async ({to, subject, text, html, attachments}) => {
           subject,
         }
       };
-      _logger.notice(`Recharge email - missing dkim key file.`, { meta });
+      if (_logger) {
+        _logger.notice(`Recharge email - missing dkim key file.`, { meta });
+      } else {
+        console.log(`Recharge email - missing dkim key file.`, JSON.stringify(meta, null, 2));
+      };
     };
   } catch(err) {
-    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    if (_logger) {
+      _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    } else {
+      console.log(JSON.stringify(
+        { message: err.message,
+          level: err.level,
+          stack: err.stack,
+          meta: err
+        }, null, 2));
+    };
   };
 
   let transporter = Mailer.createTransport({

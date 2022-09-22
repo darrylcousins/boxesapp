@@ -23,7 +23,25 @@
         <div id="front-modal-window" style="top: 0px"></div>
 
         <div id="app" class="mw9 center"><!-- app-html --></div>
-        <script type="module" src="{{ host }}/src/resources/customer/initialize.jsx"></script>
+        <script id="initialize" type="module" cid="{{ customer_id }}"
+          src="{{ host }}/src/resources/customer/initialize.jsx"></script>
+        <script type="text/javascript">
+          let time = new Date().getTime();
+          const setActivityTime = (e) => {
+              time = new Date().getTime();
+          };
+          document.body.addEventListener("mousemove", setActivityTime);
+          document.body.addEventListener("keypress", setActivityTime);
+          const refresh = () => {
+            if (new Date().getTime() - time >= 5 * 60 * 1000) {  // 5 minutes
+              //window.location.reload(true);
+              window.location.assign(window.location.href.split('?')[0]);
+            } else {
+              setTimeout(refresh, 10000);
+            };
+          };
+          setTimeout(refresh, 10000);
+        </script>
     {% raw %}
 
       {% else %}

@@ -25,9 +25,6 @@ export default async function productsUpdate(topic, shop, body) {
     }};
     try {
       const boxResult = await collection.updateMany(boxQuery, boxUpdate);
-      console.log(boxQuery);
-      console.log(boxUpdate);
-      console.log(boxResult);
       if (Boolean(boxResult.modifiedCount)) { // only log if an update performed
         const boxMeta = {
           product: {

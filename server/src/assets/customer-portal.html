@@ -34,7 +34,6 @@
           document.body.addEventListener("keypress", setActivityTime);
           const refresh = () => {
             if (new Date().getTime() - time >= 5 * 60 * 1000) {  // 5 minutes
-              //window.location.reload(true);
               window.location.assign(window.location.href.split('?')[0]);
             } else {
               setTimeout(refresh, 10000);

@@ -36,7 +36,7 @@ import {
  * import {renderer} from '@b9g/crank/dom';
  * renderer.render(<Subscription subscription={subscription} />, document.querySelector('#app'))
  */
-async function *Subscription({ subscription, idx, allowEdits }) {
+async function *Subscription({ subscription, idx, allowEdits, admin }) {
 
   console.log(subscription);
 
@@ -475,7 +475,7 @@ async function *Subscription({ subscription, idx, allowEdits }) {
           </span></div>
         )}
         <div class="flex-container-reverse w-100 pt2 relative" id={ `title-${idx}` }>
-          { true && (
+          { admin && (
             <div class="dt">
               <AttributeColumn data={ idData } />
             </div>

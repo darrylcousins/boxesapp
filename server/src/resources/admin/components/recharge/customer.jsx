@@ -397,6 +397,7 @@ async function *Customer({ customer, admin }) {
                 { chargeGroups.map((group, idx) => (
                   <div id={`subscription-${group.attributes.subscription_id}`}>
                     <Subscription subscription={ group } idx={ idx }
+                      admin={ admin }
                       crank-key={ `${group.attributes.nextChargeDate.replace(/ /g, "_")}-${idx}` }
                       allowEdits={ !noEdits.includes(idx) } />
                   </div>

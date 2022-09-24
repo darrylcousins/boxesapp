@@ -32,22 +32,22 @@ export default async ({to, subject, text, html, attachments}) => {
           subject,
         }
       };
-      if (_logger) {
-        _logger.notice(`Recharge email - missing dkim key file.`, { meta });
-      } else {
+      if (typeof _logger === "undefined") {
         console.log(`Recharge email - missing dkim key file.`, JSON.stringify(meta, null, 2));
+      } else {
+        _logger.notice(`Recharge email - missing dkim key file.`, { meta });
       };
     };
   } catch(err) {
-    if (_logger) {
-      _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-    } else {
+    if (typeof _logger === "undefined") {
       console.log(JSON.stringify(
         { message: err.message,
           level: err.level,
           stack: err.stack,
           meta: err
         }, null, 2));
+    } else {
+      _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
     };
   };
 

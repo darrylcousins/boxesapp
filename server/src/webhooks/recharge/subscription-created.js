@@ -115,9 +115,6 @@ export default async function subscriptionCreated(topic, shop, body) {
   // Put to the required yyyy-mm-dd format
   let nextChargeScheduledAt = nextChargeDate.toISOString().substring(0,10);
 
-  console.log(nextChargeDate.toDateString(), orderDayOfWeek);
-  console.log(deliveryDate.toDateString());
-
   // Step 3 for created: find the other items using charge api, add metada to connect them together
   // Wait here to be sure the charge object has been created in the recharge backend
   await delay(10000); // wait 10 seconds

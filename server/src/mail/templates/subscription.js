@@ -19,6 +19,12 @@ export default `
         <a
             href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{subscriptions[0].attributes.customer.external_customer_id.ecommerce}}">here</a>.
       </p>
+      {% if type == "created" %}
+        <p style="color:#666;padding:5px 0;padding-top:15px;margin:0">
+          Please follow this link to
+        <a href="https://{{env.SHOP}}/tools/recurring/get-subscription-access">complete your account setup.</a>.
+        </p>
+      {% endif %}
       {% if type == "upcoming" %}
         <p style="color:#4e1018;padding:5px 0;padding-top:15px;margin:0">
           You have until the order is created in which to add items or otherwise

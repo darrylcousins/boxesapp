@@ -126,12 +126,18 @@ export async function createServer(
     try {
       buffer = readFileSync(`${path}/${url}.html`);
     } catch(e) {
-      buffer = readFileSync(`${path}/notfound.html`);
+      buffer = null;
     };
-    res
-      .status(200)
-      .set("content-type", "text/html")
-      .send(buffer);
+    if (buffer) {
+      res
+        .status(200)
+        .set("content-type", "text/html")
+        .send(buffer);
+    } else {
+      res
+        .status(400)
+        .send("Not found");
+    };
   });
 
   return { app, vite }; // vite can used in tests which don't exist

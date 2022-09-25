@@ -18,7 +18,6 @@ import BarLoader from "../lib/bar-loader";
 import { loadAnotherCustomer } from "./events";
 import { animateFadeForAction, delay } from "../helpers";
 
-import EditProducts from "../products/edit-products";
 /**
  * Customer
  *

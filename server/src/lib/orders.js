@@ -337,8 +337,6 @@ export const processOrderJson = async (json) => {
   };
   order.shipping = {carrier_identifier, code, source, title, price};
 
-  console.log("SHIPPING PRICE", price, parseFloat(price));
-
   if (parseFloat(price) === 0) {
     order.address1 = "Farm Pickup";
     order.address2 = "";

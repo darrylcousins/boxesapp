@@ -30,7 +30,7 @@ export default async (req, res, next) => {
       if (err) throw err;
 
       // order by box title
-      response.orders = sortObjectArrayByKey(result, 'title');
+      response.orders = sortObjectArrayByKey(result, 'product_title');
       response.headers = headersPartial;
       res.set('Content-Type', 'application/json');
       res.write(JSON.stringify(response));

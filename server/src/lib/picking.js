@@ -21,7 +21,6 @@ export const getPackingData = async (query) => {
     ],
   };
   if (pickup) {
-    delete query.pickup;
     match["$and"].push(
       {"$eq": ["$pickup", pickup]}, 
     );
@@ -29,7 +28,7 @@ export const getPackingData = async (query) => {
 
   const pipeline = [
     // match orders to query
-    { "$match": query },
+    { "$match": { "delivered": query.delivered } },
     { "$project": {
       "products": "$includedProducts",
       "title": "$shopify_title",

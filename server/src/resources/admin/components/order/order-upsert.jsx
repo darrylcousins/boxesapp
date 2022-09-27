@@ -377,7 +377,7 @@ async function* UpsertOrderModal(props) {
     const timestamp = new Date(Date.parse(options.delivered)).getTime();
     const order_id = options._id;
     const product_title = encodeURIComponent(options.product_title);
-    let uri = `/api/get-reconciled-box/${timestamp}/${product_title}`;
+    let uri = `/api/get-reconciled-box/${timestamp}/${options.product_id}`;
     if (order_id) {
       uri += `/${order_id}`;
     };

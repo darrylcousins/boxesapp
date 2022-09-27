@@ -90,10 +90,10 @@ router.get(
   "/current-logs/:level/:object", 
   await import("./log/current-logs.js").then(({ default: fn }) => fn));
 router.get(
-  "/get-reconciled-box/:timestamp/:product_title", 
+  "/get-reconciled-box/:timestamp/:product_id", 
   await import("./order/get-reconciled-box.js").then(({ default: fn }) => fn));
 router.get(
-  "/get-reconciled-box/:timestamp/:product_title/:order_id", 
+  "/get-reconciled-box/:timestamp/:product_id/:order_id", 
   await import("./order/get-reconciled-box.js").then(({ default: fn }) => fn));
 router.post(
   "/add-order", 

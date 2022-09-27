@@ -19,10 +19,12 @@ export default async (req, res, next) => {
   const collection = _mongodb.collection("boxes");
   const response = Array();
   const deliveryDay = getNZDeliveryDay(req.params.timestamp);
-  const product_title = req.params.product_title;
+  const product_id = parseInt(req.params.product_id);
   const order_id = req.params.order_id ? ObjectID(req.params.order_id) : null;
+  console.log(product_id);
+  console.log(deliveryDay);
   try {
-    const box = await _mongodb.collection("boxes").findOne({ delivered: deliveryDay, shopify_title: product_title });
+    const box = await _mongodb.collection("boxes").findOne({ delivered: deliveryDay, shopify_product_id: product_id });
 
     let order;
     let boxLists;
@@ -54,7 +56,7 @@ export default async (req, res, next) => {
         const src = product.images[0].src;
         return {
           variant: product.variants.find(el => el.title === title),
-          images: { [product_title]: src }
+          images: { [box.shopify_title]: src }
         };
       });
     box.variant_id = variant.id;

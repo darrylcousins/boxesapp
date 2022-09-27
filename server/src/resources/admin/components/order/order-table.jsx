@@ -73,7 +73,7 @@ function* TableRow({ order, index, selected }) {
         </td>
         <td data-title="Actions" class="pv1 bb b--black-20 v-top tr">
           <Fragment>
-            {new Date(order.delivered) >= new Date() && (
+            {(new Date(order.delivered) >= new Date() || true) && (
               <EditOrderModal order={order} delivered={order.delivered} />
             )}
             <OrderModal crank-key={index} order={order} />

@@ -39,7 +39,7 @@
 input:valid {
   border-color: green;
 }
-input.invalid {
+input.invalid, input[required] {
   border-color: #b55103;
 }
 textarea:valid {

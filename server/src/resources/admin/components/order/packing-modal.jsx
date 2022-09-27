@@ -152,7 +152,7 @@ function* PackingModal({ delivered, getUriFilters }) {
             <ModalTemplate closeModal={ closeModal } loading={ loading } error={ fetchError }>
               <h6 class="fw4 tl fg-streamside-maroon">Packing List Preview { delivered }</h6>
                 { packingData.boxes && (
-                  <div class="ph4 pb4">
+                  <div class="ph4 pb4 overflow-x-scroll">
                     <div class="fw6 bb b--black-20 mb3">
                       <div class="flex pr3">
                         <div>

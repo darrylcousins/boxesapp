@@ -65,8 +65,6 @@ export const hasOwnProp = Object.prototype.hasOwnProperty;
  * Capitalize an array of words and return
  */
 export const capWords = (arr) => {
-  console.log(arr.length);
-  console.log(arr);
   if (arr[0] === "CSA") return arr; // old style subscriptions
   return arr.map(el => el.charAt(0).toUpperCase() + el.substring(1).toLowerCase());
 };

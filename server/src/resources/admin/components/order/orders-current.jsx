@@ -473,8 +473,8 @@ function* CurrentOrders() {
                 {new Date(selectedDate).toString() !== "Invalid Date" && (
                   <div class="flex w-70 tr v-bottom relative">
                     <FilterOrders updateFilter={updateFilter} />
-                    <PickingModal delivered={selectedDate} />
-                    <PackingModal delivered={selectedDate} />
+                    <PickingModal delivered={selectedDate} getUriFilters={getUriFilters}/>
+                    <PackingModal delivered={selectedDate} getUriFilters={getUriFilters}/>
                     <button
                       class={`dib w-20 outline-0 green b--dark-green bt bb br bl-0 bg-transparent mv1 pointer`}
                       title="Download packing list"

@@ -20,7 +20,7 @@ import ModalTemplate from "../lib/modal-template";
  * @param {object} props Property object
  * @param {object} props.order The order to be displayed
  */
-function* PickingModal({ delivered }) {
+function* PickingModal({ delivered, getUriFilters }) {
   /**
    * Hold visibility state.
    *
@@ -134,7 +134,7 @@ function* PickingModal({ delivered }) {
    * @function getPickingList
    */
   const getPickingList = () => {
-    let uri = `/api/picking-list/${new Date(delivered).getTime()}`;
+    let uri = getUriFilters(`/api/picking-list/${new Date(delivered).getTime()}`, false);
     Fetch(uri)
       .then(async (result) => {
         const { error, json } = result;
@@ -159,7 +159,7 @@ function* PickingModal({ delivered }) {
 
   const main = document.getElementById("modal-window");
 
-  for ({ delivered } of this) { // eslint-disable-line no-unused-vars
+  for ({ delivered, getUriFilters } of this) { // eslint-disable-line no-unused-vars
     yield (
       <Fragment>
         <button

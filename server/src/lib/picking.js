@@ -11,6 +11,22 @@
  */
 export const getPackingData = async (query) => {
 
+  // XXX order query filters currently only allow "pickup"
+  // Add here if any additional are required
+  const pickup = query.pickup;
+  const match = {
+    "$and": [
+      {"$eq": ["$product_id", "$$product_id"]}, 
+      {"$eq": ["$delivered", "$$delivered"]}, 
+    ],
+  };
+  if (pickup) {
+    delete query.pickup;
+    match["$and"].push(
+      {"$eq": ["$pickup", pickup]}, 
+    );
+  };
+
   const pipeline = [
     // match orders to query
     { "$match": query },
@@ -56,12 +72,7 @@ export const getPackingData = async (query) => {
       "pipeline": [
         // join by two fields each side
         {"$match": 
-          {"$expr":
-            {"$and": [
-              {"$eq": ["$product_id", "$$product_id"]}, 
-              {"$eq": ["$delivered", "$$delivered"]}, 
-            ]},
-          },
+          {"$expr": match },
         },
         { "$group": { 
           "_id": "$product_id",
@@ -82,7 +93,8 @@ export const getPackingData = async (query) => {
     { "$unset": "orderCount" },
   ];
   try {
-    return await _mongodb.collection("boxes").aggregate(pipeline).toArray();
+    const boxes = await _mongodb.collection("boxes").aggregate(pipeline).toArray();
+    return boxes;
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
@@ -154,7 +166,8 @@ export const getPickingData = async (query) => {
   ];
 
   try {
-    return await _mongodb.collection("orders").aggregate(pipeline).toArray();
+    const boxes = await _mongodb.collection("orders").aggregate(pipeline).toArray();
+    return boxes;
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };

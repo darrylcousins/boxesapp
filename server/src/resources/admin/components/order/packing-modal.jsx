@@ -22,7 +22,7 @@ import ModalTemplate from "../lib/modal-template";
  * @param {object} props Property object
  * @param {object} props.order The order to be displayed
  */
-function* PackingModal({ delivered }) {
+function* PackingModal({ delivered, getUriFilters }) {
   /**
    * Hold visibility state.
    *
@@ -109,7 +109,7 @@ function* PackingModal({ delivered }) {
    * @function getBoxesGroupedByDate
    */
   const getPackingList = async () => {
-    let uri = `/api/packing-list/${new Date(delivered).getTime()}`;
+    let uri = getUriFilters(`/api/packing-list/${new Date(delivered).getTime()}`, false);
     await Fetch(uri)
       .then(async (result) => {
         const { error, json } = result;
@@ -121,7 +121,6 @@ function* PackingModal({ delivered }) {
           loading = false;
           const { data, tags } = await buildRows(json);
           packingData = data;
-          console.log(packingData);
           this.refresh();
         }
       })
@@ -134,7 +133,7 @@ function* PackingModal({ delivered }) {
 
   const main = document.getElementById("modal-window");
 
-  for ({ delivered } of this) { // eslint-disable-line no-unused-vars
+  for ({ delivered, getUriFilters } of this) { // eslint-disable-line no-unused-vars
     yield (
       <Fragment>
         <button

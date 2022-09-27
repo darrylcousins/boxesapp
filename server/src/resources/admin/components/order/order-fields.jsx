@@ -17,7 +17,7 @@ import { dateStringForInput } from "../helpers";
  * @param {string} delivered The delivery date
  * @returns {object} The form fields keyed by field title string and error (null if no error)
  */
-const getOrderFields = async (delivered, onBoxChange, onDeliveredChange) => {
+const getOrderFields = async (delivered, onBoxChange, onDeliveredChange, onChange) => {
 
   const { error, json } = await Fetch("/api/current-box-dates?current")
     .then(result => result)
@@ -94,6 +94,7 @@ const getOrderFields = async (delivered, onBoxChange, onDeliveredChange) => {
         size: "25",
         datatype: "string",
         required: true,
+        onchange: onChange,
       },
       "Last Name": {
         id: "last_name",
@@ -101,6 +102,7 @@ const getOrderFields = async (delivered, onBoxChange, onDeliveredChange) => {
         size: "25",
         datatype: "string",
         required: true,
+        onchange: onChange,
       },
       Telephone: {
         id: "phone",
@@ -108,6 +110,7 @@ const getOrderFields = async (delivered, onBoxChange, onDeliveredChange) => {
         size: "25",
         datatype: "string",
         required: false,
+        onchange: onChange,
       },
       "Street Address": {
         id: "address1",
@@ -115,6 +118,7 @@ const getOrderFields = async (delivered, onBoxChange, onDeliveredChange) => {
         size: "25",
         datatype: "string",
         required: true,
+        onchange: onChange,
       },
       Suburb: {
         id: "address2",
@@ -122,6 +126,7 @@ const getOrderFields = async (delivered, onBoxChange, onDeliveredChange) => {
         size: "25",
         datatype: "string",
         required: false,
+        onchange: onChange,
       },
       City: {
         id: "city",
@@ -129,6 +134,7 @@ const getOrderFields = async (delivered, onBoxChange, onDeliveredChange) => {
         size: "25",
         datatype: "string",
         required: true,
+        onchange: onChange,
       },
       Postcode: {
         id: "zip",
@@ -136,6 +142,7 @@ const getOrderFields = async (delivered, onBoxChange, onDeliveredChange) => {
         size: "20",
         datatype: "string",
         required: true,
+        onchange: onChange,
       },
       Email: {
         id: "contact_email",
@@ -143,6 +150,7 @@ const getOrderFields = async (delivered, onBoxChange, onDeliveredChange) => {
         size: "30",
         datatype: "string",
         required: false,
+        onchange: onChange,
       },
       /*
       Box: {
@@ -214,6 +222,7 @@ const getOrderFields = async (delivered, onBoxChange, onDeliveredChange) => {
         datatype: "string",
         required: false,
         rows: 2,
+        onchange: onChange,
       },
     },
   };

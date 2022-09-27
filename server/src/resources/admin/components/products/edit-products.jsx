@@ -675,18 +675,23 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
   };
 
   const getListData = () => {
-    const not = [
+    const oldIdea = [
       ["Box Price", toPrice(box.shopify_price * 100)],
       ["Likes", (boxProperties["Likes"] && boxProperties["Likes"].length > 0)
         ? boxProperties["Likes"] : "None"],
       ["Dislikes", (boxProperties["Dislikes"] && boxProperties["Dislikes"].length > 0)
         ? boxProperties["Dislikes"] : "None"],
     ];
-    return [
-      ["Next Order Date", nextChargeDate ? nextChargeDate : "Unscheduled"],
+    const list = [
       ["Price (excl. shipping)", toPrice(totalPrice())],
       ["Delivery Date", properties["Delivery Date"]],
     ];
+    if (nextChargeDate) {
+      list.unshift(
+        ["Next Order Date", nextChargeDate ? nextChargeDate : "Unscheduled"],
+      );
+    };
+    return list;
   };
 
   init();

@@ -38,7 +38,7 @@ export default async (req, res, next) => {
     };
     const meta = {
       order: {
-        order_number: order.order_number,
+        order_number: Boolean(order.order_number) ? order.order_number : "None",
         box: order.variant_name,
         email: order.contact_email,
         delivered: data.delivered,

@@ -35,9 +35,10 @@ export default async (req, res, next) => {
       box: data.variant_name,
       email: data.contact_email,
       delivered: data.delivered,
+      inserted: data.inserted,
     }
   };
-  _logger.notice(`Order edited through admin api.`, { meta });
+  _logger.notice(`Order created through admin api.`, { meta });
 
   try {
     const result = await mongoInsert(_mongodb.collection("orders"), data);

@@ -39,7 +39,7 @@ import { capWords, dateStringForInput, animateFadeForAction } from "../helpers";
 async function* UpsertOrderModal(props) {
   const { doSave, closeModal, title, order, delivered, formId } = props;
 
-  const CollapsibleProducts = CollapseWrapper(EditProducts);
+  //const CollapsibleProducts = CollapseWrapper(EditProducts);
   /**
    * Hold collapsed state of product edit business
    *
@@ -270,6 +270,23 @@ async function* UpsertOrderModal(props) {
   };
 
   /**
+   * Pick up all changes to form inputs, update formData object and refresh
+   * component after refetching fields
+   *
+   * @function onChange
+   * @returns {null}
+   */
+  const onChange = (ev) => {
+    if (ev.target) {
+      formData[ev.target.id] = ev.target.value.toString();
+      //getFields();
+    } else if (hasOwnProp.call(ev, 'value')) {
+      formData[ev.id] = ev.value;
+      //getFields();
+    };
+  };
+
+  /**
    * The order form fields keyed by field title string - required by {@link
    * module:app/form/form~Form|Form}. The `delivered` field depends on list
    * of upcoming box dates fetched from api and therefore is asynchronous and
@@ -280,7 +297,7 @@ async function* UpsertOrderModal(props) {
    * @member {object} fields
    */
   const getFields = async (delivered) => {
-    return await getOrderFields(delivered, onBoxChange, onDeliveredChange)
+    return await getOrderFields(delivered, onBoxChange, onDeliveredChange, onChange)
       .then(({error, json}) => {
         loading = false;
         if (!error) {
@@ -361,23 +378,23 @@ async function* UpsertOrderModal(props) {
       // on adding an order
       return;
     };
-    const target = document.querySelector("#edit-products");
-    const oldCollapsed = collapsed;
+    const target = document.querySelector("#edit-products-order");
     const fix = () => {
-      collapsed = true;
       boxLoading = true;
       box = null;
       properties = null;
       messages = null;
       this.refresh()
     };
+    console.log(target);
     if (target) {
-      animateFadeForAction("edit-products", fix);
+      animateFadeForAction(target, fix);
     };
     const timestamp = new Date(Date.parse(options.delivered)).getTime();
     const order_id = options._id;
     const product_title = encodeURIComponent(options.product_title);
-    let uri = `/api/get-reconciled-box/${timestamp}/${options.product_id}`;
+    const product_identifier = Boolean(options.product_id) ? options.product_id : product_title;
+    let uri = `/api/get-reconciled-box/${timestamp}/${product_identifier}`;
     if (order_id) {
       uri += `/${order_id}`;
     };
@@ -389,13 +406,18 @@ async function* UpsertOrderModal(props) {
           properties = json.properties;
           messages = json.messages;
           attributes = json.attributes;
-          collapsed = oldCollapsed;
+          console.log(properties);
+          formData.including = properties["Including"].split(",").filter(el => Boolean(el));
+          formData.addons = properties["Add on Items"].split(",").filter(el => Boolean(el));
+          formData.swaps = properties["Swapped Items"].split(",").filter(el => Boolean(el));
+          formData.removed = properties["Removed Items"].split(",").filter(el => Boolean(el));
           boxLoading = false;
           formData.product_title = box.shopify_title;
           formData.product_id = box.shopify_product_id;
           formData.variant_id = box.variant_id;
           formData.variant_name = box.variant_name;
           formData.variant_title = box.variant_title;
+          console.log(formData);
           this.refresh();
         } else {
           fetchError = error;
@@ -405,8 +427,8 @@ async function* UpsertOrderModal(props) {
   };
 
   await getFields(delivered);
-  await getBox(order);
   formData = getInitialData();
+  await getBox(order);
   // console.log(JSON.stringify(formData, null, 2));
 
   /**
@@ -464,7 +486,7 @@ async function* UpsertOrderModal(props) {
               </div>
             )}
             <div class="tr pr2 pb2">
-              { !loading && box && (
+              { !loading && box && false && (
                 <Button type="secondary" onclick={toggleCollapse}>
                   { collapsed ? "Edit products" : "Hide products" }
                 </Button>
@@ -478,12 +500,12 @@ async function* UpsertOrderModal(props) {
             </div>
             { !loading && box && !boxLoading && (
               <Fragment>
-                <CollapsibleProducts
-                  collapsed={ collapsed }
+                <EditProducts
                   properties={ properties }
                   box={box}
                   images={attributes.images}
                   id="edit-products"
+                  key="order"
                   isEditable={ true }
                 />
               </Fragment>
@@ -492,7 +514,17 @@ async function* UpsertOrderModal(props) {
         )}
       </Fragment>
     );
-  }
-}
+  };
+};
+/*
+<CollapsibleProducts
+collapsed={ collapsed }
+properties={ properties }
+box={box}
+images={attributes.images}
+id="edit-products"
+isEditable={ true }
+/>
+*/
 
 export default UpsertOrderModal;

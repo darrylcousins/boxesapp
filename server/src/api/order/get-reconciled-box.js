@@ -19,10 +19,19 @@ export default async (req, res, next) => {
   const collection = _mongodb.collection("boxes");
   const response = Array();
   const deliveryDay = getNZDeliveryDay(req.params.timestamp);
-  const product_id = parseInt(req.params.product_id);
+  // product_id(entifier) can be shopify_title or shopify_product_id
+  const product_identifier = parseInt(req.params.product_id);
   const order_id = req.params.order_id ? ObjectID(req.params.order_id) : null;
+  const query = {
+    delivered: deliveryDay
+  };
+  if (isNaN(product_identifier)) {
+    query.shopify_title = req.params.product_id;
+  } else {
+    query.shopify_product_id = product_identifier;
+  };
   try {
-    const box = await _mongodb.collection("boxes").findOne({ delivered: deliveryDay, shopify_product_id: product_id });
+    const box = await _mongodb.collection("boxes").findOne(query);
 
     let order;
     let boxLists;
@@ -37,7 +46,8 @@ export default async (req, res, next) => {
       };
     } else {
       boxLists = {
-        "Including": [], 
+        //"Including": [], 
+        "Including": box.includedProducts.map(el => el.shopify_title), 
         "Add on Items": [],
         "Removed Items": [],
         "Swapped Items": [],
@@ -79,12 +89,13 @@ export default async (req, res, next) => {
     const boxRemovedItems = boxListArrays["Removed Items"]
       .map(el => matchNumberedString(el));
 
+    /* Not using these now
     const setOfLikes = new Set();
     const setOfDislikes = new Set();
 
-    // update likes and dislikes
     for (const el of boxAddOnExtras) setOfLikes.add(el.title);
     for (const el of boxRemovedItems) setOfDislikes.add(el.title);
+    */
     
     const addOnProducts = box.addOnProducts.map(el => el.shopify_title);
     const includedProducts = box.includedProducts.map(el => el.shopify_title);
@@ -167,7 +178,6 @@ export default async (req, res, next) => {
     /* ADD ON ITEMS */
     for ([idx, item] of boxAddOnExtras.entries()) {
       if (addOnProducts.indexOf(item.title) === -1) { // not included this week
-        boxAddOnExtras.splice(idx, 1);
         if (includedProducts.indexOf(item.title) === -1) {
           messages.push(`Add on item ${item.title} unavailable in this box.`);
           item.quantity = 0;
@@ -181,6 +191,7 @@ export default async (req, res, next) => {
             messages.push(`Add on item ${item.title} already included so removed as an add on.`);
           };
         };
+        boxAddOnExtras.splice(idx, 1);
       };
     };
 
@@ -248,8 +259,8 @@ export default async (req, res, next) => {
       "Add on Items": makeItemString(boxAddOnExtras, ","),
       "Swapped Items": makeItemString(boxSwappedExtras, ","),
       "Removed Items": makeItemString(boxRemovedItems, ","),
-      "Likes": Array.from(setOfLikes).sort().join(","),
-      "Dislikes": Array.from(setOfDislikes).sort().join(","),
+      //"Likes": Array.from(setOfLikes).sort().join(","),
+      //"Dislikes": Array.from(setOfDislikes).sort().join(","),
     };
     res.status(200).json({ box, properties, messages, attributes });
   } catch(err) {

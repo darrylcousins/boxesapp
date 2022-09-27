@@ -74,8 +74,8 @@ export default async (req, res, next) => {
     res.status(200).json(result);
   } catch(err) {
     const meta = err;
-    meta.product_title: product_title;
-    meta.product_id: product_id;
+    meta.product_title = product_title;
+    meta.product_id = product_id;
     res.status(400).json({ error: err.toString() });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta});
   };

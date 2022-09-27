@@ -21,8 +21,6 @@ export default async (req, res, next) => {
   const deliveryDay = getNZDeliveryDay(req.params.timestamp);
   const product_id = parseInt(req.params.product_id);
   const order_id = req.params.order_id ? ObjectID(req.params.order_id) : null;
-  console.log(product_id);
-  console.log(deliveryDay);
   try {
     const box = await _mongodb.collection("boxes").findOne({ delivered: deliveryDay, shopify_product_id: product_id });
 

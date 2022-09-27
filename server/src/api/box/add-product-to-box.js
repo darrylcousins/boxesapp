@@ -38,7 +38,7 @@ export default async (req, res, next) => {
     const tag = product.tags.split(',').map(el => el.trim()).find(el => tags.includes(el));
     return {
       _id: new ObjectID(),
-      shopify_title: product.title,
+      shopify_title: product.title.replace(/,/g, ""),
       shopify_handle: product.handle,
       shopify_product_id: product.id,
       shopify_variant_id: product.variants[0].id,

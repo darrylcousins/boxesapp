@@ -10,7 +10,7 @@ export default async function productsUpdate(topic, shop, body) {
   };
 
   const productJson = JSON.parse(body);
-  const shopify_title = productJson.title;
+  const shopify_title = productJson.title.replace(/,/g, ""); // cannot allow commas in titles
   const shopify_product_id = parseInt(productJson.id);
   const collection = _mongodb.collection("boxes");
   // XXX handle as well??

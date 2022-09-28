@@ -39,13 +39,16 @@
 input:valid {
   border-color: green;
 }
+input[required]:valid {
+  border-color: green;
+}
 input.invalid, input[required] {
   border-color: #b55103;
 }
 textarea:valid {
   border-color: green;
 }
-textarea.invalid {
+textarea.invalid, textarea[required] {
   border-color: #b55103;
 }
 .hidden {

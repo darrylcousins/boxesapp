@@ -63,6 +63,12 @@ async function* UpsertOrderModal(props) {
    */
   let formData = {};
   /**
+   * If form not complete
+   *
+   * @member {object|string} formError
+   */
+  let formError = null;
+  /**
    * If fetch returns an error
    *
    * @member {object|string} fetchError
@@ -120,7 +126,7 @@ async function* UpsertOrderModal(props) {
    * Get the boxes for the selected date
    */
   const titlesForDate = async (delivered) => {
-    const timestamp = new Date(Date.parse(formData.delivered)).getTime();
+    const timestamp = new Date(Date.parse(delivered)).getTime();
     const uri = `/api/titles-for-date/${timestamp}`;
     return await Fetch(uri)
       .then(({error, json}) => {
@@ -167,13 +173,16 @@ async function* UpsertOrderModal(props) {
     const currentDelivered = new Date(Date.parse(newDate));
     const delivered = new Date(Date.parse(newDate));
 
+    const dateString = delivered.toDateString();
     // make select list to include 3 days prior to delivery day
-    fields["Pickup Date"].datalist = [delivered.toDateString()];
+    fields["Pickup Date"].datalist = [dateString];
+    formData.pickup = dateString;
     for (const i of [1, 2]) {
       delivered.setDate(delivered.getDate() - 1);
       fields["Pickup Date"].datalist.unshift(delivered.toDateString());
     };
 
+    /*
     if (order) {
       const orderPickup = new Date(Date.parse(order.pickup));
       const orderDelivered = new Date(Date.parse(order.delivered));
@@ -184,6 +193,7 @@ async function* UpsertOrderModal(props) {
     } else {
       formData.pickup = currentDelivered.toDateString();
     };
+    */
   };
 
   /*
@@ -240,7 +250,7 @@ async function* UpsertOrderModal(props) {
     label.innerHTML = getLoader();
     updatePickup(ev.target.value);
     await titlesForDate(ev.target.value)
-      .then(({ boxes }) => {
+      .then((boxes) => {
         label.innerHTML = inputTitle;
         fields.Box.datalist = boxes.map(el => el.shopify_title);
         let notice;
@@ -265,6 +275,9 @@ async function* UpsertOrderModal(props) {
             product_title: input.value,
             _id: order ? order._id : null,
           });
+        } else {
+          fields.Box.datalist.unshift("Select a box");
+          this.refresh(); // otherwise called after fetching box
         };
       });
   };
@@ -297,20 +310,19 @@ async function* UpsertOrderModal(props) {
    * @member {object} fields
    */
   const getFields = async (delivered) => {
-    return await getOrderFields(delivered, onBoxChange, onDeliveredChange, onChange)
-      .then(({error, json}) => {
-        loading = false;
-        if (!error) {
-          fields = json;
-          if (!order) {
-            fields.Box.datalist.unshift("Select a box");
-          };
-          this.refresh();
-        } else {
-          fetchError = error;
-          this.refresh();
-        };
-    });
+    const { error, json } =  await getOrderFields(order, delivered, onBoxChange, onDeliveredChange, onChange)
+    loading = false;
+    if (!error) {
+      fields = json;
+      if (!order) {
+        fields.Box.datalist.unshift("Select a box");
+      };
+      formData = getInitialData();
+      await getBox(order);
+    } else {
+      fetchError = error;
+      this.refresh();
+    };
   };
 
   /**
@@ -415,6 +427,7 @@ async function* UpsertOrderModal(props) {
           formData.variant_id = box.variant_id;
           formData.variant_name = box.variant_name;
           formData.variant_title = box.variant_title;
+          formError = null;
           this.refresh();
         } else {
           fetchError = error;
@@ -422,10 +435,6 @@ async function* UpsertOrderModal(props) {
         };
     });
   };
-
-  await getFields(delivered);
-  formData = getInitialData();
-  await getBox(order);
 
   /**
    * For messaging user
@@ -460,6 +469,17 @@ async function* UpsertOrderModal(props) {
    */
   this.addEventListener("productsChangeEvent", productsChanged);
 
+  const saveData = (ev) => {
+    if (!Boolean(formData.product_id)) {
+      formError = "A box must be selected";
+      this.refresh();
+      return;
+    };
+    doSave(ev);
+  };
+
+  await getFields(delivered);
+
   for await (const _ of this) { // eslint-disable-line no-unused-vars
     yield (
       <Fragment>
@@ -467,6 +487,7 @@ async function* UpsertOrderModal(props) {
         {fetchError && <Error msg={fetchError} />}
         {!loading && !fetchError && fields && (
           <div class="w-90 center ph1">
+            {formError && <Error msg={formError} />}
             <Form
               data={formData}
               fields={fields}
@@ -487,7 +508,7 @@ async function* UpsertOrderModal(props) {
                   { collapsed ? "Edit products" : "Hide products" }
                 </Button>
               )}
-              <Button type="primary" onclick={doSave}>
+              <Button type="primary" onclick={saveData}>
                 Save Order
               </Button>
               <Button type="secondary" onclick={closeModal}>

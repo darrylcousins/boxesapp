@@ -17,24 +17,62 @@ import { dateStringForInput } from "../helpers";
  * @param {string} delivered The delivery date
  * @returns {object} The form fields keyed by field title string and error (null if no error)
  */
-const getOrderFields = async (delivered, onBoxChange, onDeliveredChange, onChange) => {
+const getOrderFields = async (order, delivered, onBoxChange, onDeliveredChange, onChange) => {
 
-  const { error, json } = await Fetch("/api/current-box-dates?current")
-    .then(result => result)
-    .catch(e => ({
-      error: e, json: null
-    }));
+  // TODO XXX need some error handling for these fetch calls
+  let fetchError = null;
 
-  // should maybe through an error here
-  // or validation error on box field?
   /*
-  if (!json.includes(delivered)) {
-    json.unshift(delivered);
+   * Get the available dates without a chosen box
+   */
+  const getDates = async (delivered) => {
+    const timestamp = new Date(Date.parse(delivered)).getTime();
+    const { error, json } = await Fetch("/api/current-box-dates?current")
+      .then(result => result)
+      .catch(e => ({
+        error: e, json: null
+      }));
+    if (error) fetchError = error;
+    return json.fetchDates.map(el => el.delivered);
   };
-  */
+
+
+  /*
+   * Get the boxes for the selected date
+   */
+  const getBoxTitles = async (delivered) => {
+    const timestamp = new Date(Date.parse(delivered)).getTime();
+    const { error, json } = await Fetch(`/api/titles-for-date/${timestamp}`)
+      .then(result => result)
+      .catch(e => ({
+        error: e, json: null
+      }));
+    if (error) fetchError = error;
+    return json;
+  };
+
+  // regardless of the order
+  const boxTitles = await getBoxTitles(delivered);
+
+  /*
+   * Get the dates for the order box
+   */
+  const datesForTitle = async (product_id) => {
+    const { error, json } = await Fetch(`/api/dates-for-title/${product_id}`)
+      .then(result => result)
+      .catch(e => ({
+        error: e, json: null
+      }));
+    if (error) fetchError = error;
+    return json;
+  };
+
+  const boxDates = Boolean(order) ? await datesForTitle(order.product_id) : await getDates(delivered);
+
+  if (fetchError) return { error: fetchError, json: null };
 
   return {
-    error,
+    error: fetchError,
     json: {
       _id: {
         id: "_id",
@@ -166,7 +204,8 @@ const getOrderFields = async (delivered, onBoxChange, onDeliveredChange, onChang
         type: "input-select",
         size: "50",
         datatype: "string",
-        datalist: json.boxes,
+        //datalist: json.boxes,
+        datalist: boxTitles.map(el => el.shopify_title),
         required: true,
         onchange: onBoxChange,
       },
@@ -176,7 +215,7 @@ const getOrderFields = async (delivered, onBoxChange, onDeliveredChange, onChang
         required: true,
         type: "input-select",
         datatype: "string",
-        datalist: json.dates,
+        datalist: boxDates,
         onchange: onDeliveredChange,
         /*
         datatype: "date",

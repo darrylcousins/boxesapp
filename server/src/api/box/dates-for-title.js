@@ -12,11 +12,19 @@
 export default async (req, res, next) => {
   // get current box by selected date and shopify product id
   const collection = _mongodb.collection("boxes");
+  // can also be the shopify_product_id
   const product_title = req.params.product_title;
+  const product_id = parseInt(product_title);
   const now = new Date();
+  const query = { active: true };
+  if (isNaN(product_id)) {
+    query.shopify_title = product_title;
+  } else {
+    query.shopify_product_id = product_id;
+  };
   try {
     let boxes = await collection
-      .find({ shopify_title: product_title, active: true })
+      .find(query)
       .project({delivered: 1}).toArray();
 
     boxes = boxes.map(el => new Date(Date.parse(el.delivered))).sort((d1, d2) => {

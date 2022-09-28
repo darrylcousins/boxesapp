@@ -386,7 +386,6 @@ async function* UpsertOrderModal(props) {
       messages = null;
       this.refresh()
     };
-    console.log(target);
     if (target) {
       animateFadeForAction(target, fix);
     };
@@ -406,7 +405,6 @@ async function* UpsertOrderModal(props) {
           properties = json.properties;
           messages = json.messages;
           attributes = json.attributes;
-          console.log(properties);
           formData.including = properties["Including"].split(",").filter(el => Boolean(el));
           formData.addons = properties["Add on Items"].split(",").filter(el => Boolean(el));
           formData.swaps = properties["Swapped Items"].split(",").filter(el => Boolean(el));
@@ -417,7 +415,6 @@ async function* UpsertOrderModal(props) {
           formData.variant_id = box.variant_id;
           formData.variant_name = box.variant_name;
           formData.variant_title = box.variant_title;
-          console.log(formData);
           this.refresh();
         } else {
           fetchError = error;
@@ -429,7 +426,6 @@ async function* UpsertOrderModal(props) {
   await getFields(delivered);
   formData = getInitialData();
   await getBox(order);
-  // console.log(JSON.stringify(formData, null, 2));
 
   /**
    * For messaging user

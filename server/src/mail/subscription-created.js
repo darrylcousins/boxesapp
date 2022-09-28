@@ -51,7 +51,7 @@ export default async ({ subscriptions, admin_email }) => {
 </mjml>
 `, options);
         sendmail({
-          to: [email, 'darryljcousins@gmail.com'],
+          to: email,
           subject: `\[${process.env.SHOP_NAME}\] Box subscription created`,
           html: htmlOutput.html
         });

@@ -50,7 +50,7 @@ export default async ({ subscriptions, admin_email }) => {
 </mjml>
 `, options);
         sendmail({
-          to: [email, 'darryljcousins@gmail.com'],
+          to: email,
           subject: `\[${process.env.SHOP_NAME}\] Charge upcoming`,
           html: htmlOutput.html
         });

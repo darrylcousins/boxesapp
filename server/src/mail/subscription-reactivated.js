@@ -55,7 +55,7 @@ export default async ({ subscription_id, box, included, nextChargeDate, nextDeli
 </mjml>
 `, options);
         sendmail({
-          to: [customer.email, 'darryljcousins@gmail.com'],
+          to: customer.email,
           subject: `\[${process.env.SHOP_NAME}\] Box subscription reactivated`,
           html: htmlOutput.html
         });

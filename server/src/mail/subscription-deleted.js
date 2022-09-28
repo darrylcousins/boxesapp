@@ -53,7 +53,7 @@ export default async ({ subscription_id, box, included, admin_email }) => {
 </mjml>
 `, options);
         sendmail({
-          to: [customer.email, 'darryljcousins@gmail.com'],
+          to: customer.email,
           subject: `\[${process.env.SHOP_NAME}\] Box subscription deleted`,
           html: htmlOutput.html
         });

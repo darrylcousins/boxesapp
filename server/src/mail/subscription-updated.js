@@ -48,7 +48,7 @@ export default async ({ subscription_id, attributes, includes, nextChargeDate, n
 </mjml>
 `, options);
         sendmail({
-          to: [attributes.customer.email, 'darryljcousins@gmail.com'],
+          to: attributes.customer.email,
           subject: `\[${process.env.SHOP_NAME}\] Box subscription updated`,
           html: htmlOutput.html
         });

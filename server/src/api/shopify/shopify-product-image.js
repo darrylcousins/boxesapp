@@ -68,13 +68,17 @@ export default async (req, res, next) => {
   try {
     const result = await makeShopQuery({path, fields})
       .then(async ({product}) => {
+        if (!Boolean(product)) return { image_src: "" };
         const image = product.images.find(el => Boolean(el.src));
-        return { image_src: image.src };
+        if (Boolean(image)) {
+          return { image_src: image.src };
+        } else {
+          return { image_src: "" };
+        };
       });
     res.status(200).json(result);
   } catch(err) {
     const meta = err;
-    meta.product_title = product_title;
     meta.product_id = product_id;
     res.status(400).json({ error: err.toString() });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta});

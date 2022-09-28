@@ -155,7 +155,6 @@ function* CurrentBoxes({ timestamp }) {
           loading = false;
           this.refresh();
         } else {
-          console.log(json);
           const dates = json.dates.filter(el => el.toUpperCase() !== "INVALID DATE");
           if (timestamp) selectedDate = new Date(parseInt(timestamp)).toDateString();
           if (!selectedDate) {

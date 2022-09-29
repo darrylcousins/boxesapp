@@ -38,8 +38,6 @@ import {
  */
 async function *Subscription({ subscription, idx, allowEdits, admin }) {
 
-  console.log(subscription);
-
   const CollapsibleProducts = CollapseWrapper(EditProducts);
   /**
    * Hold changed items
@@ -457,12 +455,18 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
     ["Next Order Date", subscription.attributes.nextChargeDate],
     ["Next Scheduled Delivery", subscription.attributes.nextDeliveryDate],
     ["Frequency", subscription.attributes.frequency],
-    ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
     //["Order Delivered", subscription.attributes.lastOrder.delivered],
     ["Subscription ID", subscription.attributes.subscription_id],
   ];
+  if (Boolean(subscription.attributes.lastOrder)) {
+    chargeData.push(
+      ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
+    );
+  };
 
-  for await ({ subscription, idx, allowEdits } of this) { // eslint-disable-line no-unused-vars
+  console.log(subscription);
+
+  for await ({ subscription, idx, allowEdits, admin } of this) { // eslint-disable-line no-unused-vars
 
     yield (
       <Fragment>

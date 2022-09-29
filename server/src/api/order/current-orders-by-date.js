@@ -26,11 +26,11 @@ export default async (req, res, next) => {
   });
 
   try {
-    collection.find(query).toArray((err, result) => {
+    collection.find(query).sort({ "product_title": 1, "last_name": 1 }).toArray((err, result) => {
       if (err) throw err;
 
       // order by box title
-      response.orders = sortObjectArrayByKey(result, 'product_title');
+      response.orders = result;
       response.headers = headersPartial;
       res.set('Content-Type', 'application/json');
       res.write(JSON.stringify(response));

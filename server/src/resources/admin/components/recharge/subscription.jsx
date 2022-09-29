@@ -425,7 +425,7 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
    */
   const isUnSkippable = (subscription) => {
     const ts = Date.parse(subscription.attributes.lastOrder.delivered);
-    if (isNaN(ts)) return false; // should never happen, could return true perhaps
+    if (isNaN(ts)) return false; // can happen if the order is not completed
     const lastDeliveryDate = new Date(ts);
     const delivered = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
     const diffDays = Math.ceil(Math.abs(delivered - lastDeliveryDate) / (1000 * 60 * 60 * 24));
@@ -458,7 +458,8 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
     //["Order Delivered", subscription.attributes.lastOrder.delivered],
     ["Subscription ID", subscription.attributes.subscription_id],
   ];
-  if (Boolean(subscription.attributes.lastOrder)) {
+  if (Boolean(subscription.attributes.lastOrder)
+    && Object.hasOwnProperty.call(subscription.attributes.lastOrder, "order_number")) {
     chargeData.push(
       ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
     );

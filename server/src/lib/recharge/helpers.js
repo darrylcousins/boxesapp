@@ -164,8 +164,15 @@ export const getLastOrder = async ({ customer_id, address_id, subscription_id, p
       path: `orders/${charge.external_order_id.ecommerce}.json`,
       fields: ["current_total_price", "order_number", "tags", "line_items"]
     });
-    if (!order) return null;
-    order.delivered = order.tags;
+    if (!order) return {};
+    order.delivered = null;
+    for (const tag of order.tags.split(",")) {
+      const parsed = Date.parse(tag.trim()); // ensure we get a date
+      if (!isNaN(parsed)) {
+        order.delivered = tag;
+        break;
+      };
+    };
     delete order.tags;
     order.line_items = order.line_items
       .filter(el => el.product_id === product_id)
@@ -179,5 +186,5 @@ export const getLastOrder = async ({ customer_id, address_id, subscription_id, p
     });
     return order;
   };
-  return null;
+  return {}; // always return an object
 };

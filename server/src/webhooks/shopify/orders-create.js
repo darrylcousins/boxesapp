@@ -71,14 +71,4 @@ export default async function ordersCreate(topic, shop, body) {
     id, tags: order.delivered
   });
   updateProductInventory(order);
-  /*
-  fs.writeFile(`${orderJson.name.slice(1)}.store.json`, JSON.stringify(orderJson, null, 2), err => {
-    if (err) console.log(err);
-    return;
-  });
-  fs.writeFile(`${orderJson.name.slice(1)}.order.json`, JSON.stringify(order, null, 2), err => {
-    if (err) console.log(err);
-    return;
-  });
-  */
 };

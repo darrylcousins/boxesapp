@@ -11,6 +11,11 @@ const storeUrl = `https://${process.env.SHOP_NAME}.myshopify.com/admin/api/${pro
 
 export default async function updateProductInventory(order) {
 
+  // No longer doing this for Streamside because they do not track inventory
+  if (process.env.SHOP_NAME === "streamsideorganics") {
+    return;
+  };
+
   // get from req when running from webhook, or pass to this method
   const collection = _mongodb.collection("boxes");
 

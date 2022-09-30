@@ -190,17 +190,6 @@ async function *Customer({ customer, admin }) {
       });
   };
 
-  getRechargeCustomer().then(res => {
-    const customer_id = res.id;
-    if (res) {
-      getChargeGroups(customer_id).then(result => {
-        loading = true;
-        this.refresh();
-        getCancelledGroups(customer_id);
-      });
-    };
-  });
-
   /**
    * For reloading and cancelling changes
    *
@@ -370,6 +359,25 @@ async function *Customer({ customer, admin }) {
   };
 
   this.addEventListener("subscription.updated", chargeUpdated);
+
+  if (!Object.hasOwnProperty.call(customer, "external_customer_id")) {
+    await getRechargeCustomer().then(res => {
+      if (res) {
+        getChargeGroups(res.id).then(result => {
+          loading = true;
+          this.refresh();
+          getCancelledGroups(res.id);
+        });
+      };
+    });
+  } else {
+    rechargeCustomer = customer;
+    getChargeGroups(customer.id).then(result => {
+      loading = true;
+      this.refresh();
+      getCancelledGroups(customer.id);
+    });
+  };;
 
   for await ({ customer } of this) { // eslint-disable-line no-unused-vars
     yield (

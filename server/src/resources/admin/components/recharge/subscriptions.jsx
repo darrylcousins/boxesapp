@@ -20,7 +20,7 @@ import Customer from "./customer";
  * @generator
  * @yields {Element} - a html table display of the boxes
  */
-function* Subscriptions() {
+async function* Subscriptions() {
 
   /**
    * True while loading data from api
@@ -28,7 +28,7 @@ function* Subscriptions() {
    *
    * @member {boolean} loading
    */
-  let loading = false;
+  let loading = true;
   /**
    * The search term entered
    *
@@ -53,6 +53,12 @@ function* Subscriptions() {
    * @member {object|string} fetchCustomer
    */
   let fetchCustomer = null;
+  /**
+   * The loaded customers from api
+   *
+   * @member {object|string} rechargeCustomers
+   */
+  let rechargeCustomers = null;
 
   /**
    * Handle the event calling to load another customer
@@ -69,6 +75,68 @@ function* Subscriptions() {
     document.querySelector("#searchTerm").focus();
   };
   this.addEventListener("loadAnotherCustomer", getNewCustomer);
+
+  /**
+   * Fetch all customers on start
+   *
+   * @param {string} id The shopify customer id
+   * @function fetchCustomers
+   */
+  const fetchCustomers = async () => {
+    const uri = `/api/recharge-customers`;
+    await Fetch(encodeURI(uri))
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          this.refresh();
+          return null;
+        };
+        rechargeCustomers = json.customers;
+        console.log(rechargeCustomers);
+        console.log(json.next_cursor);
+        console.log(json.previous_cursor);
+        loading = false;
+        this.refresh();
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+        return null;
+      });
+  };
+
+  /**
+   * Fetch recharge customer
+   *
+   * @param {string} id The shopify customer id
+   * @function fetchRechargeCustomer
+   */
+  const fetchRechargeCustomer = async (customer_id) => {
+    const uri = `/api/recharge-customers/${customer_id}`;
+    await Fetch(encodeURI(uri))
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          this.refresh();
+          return null;
+        };
+        fetchCustomer = json;
+        console.log(fetchCustomer);
+        loading = false;
+        this.refresh();
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+        return null;
+      });
+  };
 
   /**
    * Fetch customer on search
@@ -137,7 +205,9 @@ function* Subscriptions() {
     }
   };
 
-  for (const props of this) { // eslint-disable-line no-unused-vars
+  await fetchCustomers();
+
+  for await (const props of this) { // eslint-disable-line no-unused-vars
     yield (
       <div class="w-100 pa2 center" id="subscriptions">
         <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
@@ -154,33 +224,69 @@ function* Subscriptions() {
         { fetchCustomer ? (
             <Customer customer={ fetchCustomer } admin={ true } /> 
         ) : (
-          <div class="w-60 center mt3">
-            <label style="font-size: 1em">
-              Search customers with the shopify customer id.
-                <a 
-                  class="link ml2" 
-                  target="_blank"
-                  href={`https://${localStorage.getItem("shop")}/admin/customers`}>
-                  (View a list in Shopify admin)
-                </a>
-              <input 
-                class="mt2 pa2 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
-                type="text"
-                valid={ !searchError }
-                id="searchTerm"
-                onkeydown={ (ev) => handleSearchTerm(ev) }
-                value={ searchTerm && searchTerm }
-                name="searchTerm" />
-            </label>
-            { searchError && (
-              <div class="dark-blue ma2 br3 ba b--dark-blue bg-washed-blue">
-                <p class="tc">{ searchError }</p>
+          <Fragment>
+            { false && (
+              <div class="w-60 center mt3">
+                <label style="font-size: 1em">
+                  Search customers with the shopify customer id.
+                    <a 
+                      class="link ml2" 
+                      target="_blank"
+                      href={`https://${localStorage.getItem("shop")}/admin/customers`}>
+                      (View a list in Shopify admin)
+                    </a>
+                  <input 
+                    class="mt2 pa2 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
+                    type="text"
+                    valid={ !searchError }
+                    id="searchTerm"
+                    onkeydown={ (ev) => handleSearchTerm(ev) }
+                    value={ searchTerm && searchTerm }
+                    name="searchTerm" />
+                </label>
+                { searchError && (
+                  <div class="dark-blue ma2 br3 ba b--dark-blue bg-washed-blue">
+                    <p class="tc">{ searchError }</p>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+            { rechargeCustomers && (
+              <Fragment>
+                <table class="mt4 w-100 mw9 center" cellspacing="10">
+                  <thead>
+                    <tr>
+                      <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Customer</th>
+                      <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Email</th>
+                      <th class="fw6 bb b--black-20 tc pb3 pr3 bg-white">Active</th>
+                      <th class="fw6 bb b--black-20 tc pb3 pr3 bg-white">Payment status</th>
+                    </tr>
+                  </thead>
+                { rechargeCustomers.map((customer, idx) => (
+                  <tr crank-key={ `${ customer.last_name }-${ idx }` }>
+                    <td class="pv3 pr3 bb b--black-20">
+                      <div class="pointer fg-streamside-blue b" onclick={ () => fetchRechargeCustomer(customer.id) }>
+                        { customer.first_name } { customer.last_name }
+                      </div>
+                    </td>
+                    <td class="pv3 pr3 bb b--black-20">
+                      { customer.email }
+                    </td>
+                    <td class="pv3 pr3 bb b--black-20 tc">
+                      { customer.subscriptions_active_count ? "Yes" : "No" }
+                    </td>
+                    <td class="pv3 pr3 bb b--black-20 tc">
+                      { customer.has_valid_payment_method ? "Valid" : "Pending" }
+                    </td>
+                  </tr>
+                ))}
+                </table>
+              </Fragment>
+            )}
+          </Fragment>
         )}
         <script type="text/javascript">
-          document.getElementById("searchTerm").focus();
+          if (document.getElementById("searchTerm")) document.getElementById("searchTerm").focus();
         </script>
       </div>
     )

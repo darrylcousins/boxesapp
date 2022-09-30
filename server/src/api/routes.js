@@ -141,6 +141,12 @@ router.get(
   "/recharge-customer-charges/:customer_id/:address_id/:scheduled_at", 
   await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
 router.get(
+  "/recharge-customers",  // gets all customers
+  await import("./recharge/recharge-customer.js").then(({ default: fn }) => fn));
+router.get(
+  "/recharge-customers/:recharge_customer_id",  // gets all customers
+  await import("./recharge/recharge-customer.js").then(({ default: fn }) => fn));
+router.get(
   "/recharge-customer/:shopify_customer_id", 
   await import("./recharge/recharge-customer.js").then(({ default: fn }) => fn));
 router.post(

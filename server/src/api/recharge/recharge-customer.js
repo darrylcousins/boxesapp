@@ -13,17 +13,36 @@ import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
  */
 export default async (req, res, next) => {
   // get recharge customer using shopify customer id
-  const shopify_customer_id = req.params.shopify_customer_id;
+  let shopify_customer_id
+  let recharge_customer_id
+  let query;
+  let path = "customers";
+  if (Object.hasOwnProperty.call(req.params, "shopify_customer_id")) {
+    shopify_customer_id = req.params.shopify_customer_id;
+    query = [ ["external_customer_id", shopify_customer_id ] ]
+  };
+  if (Object.hasOwnProperty.call(req.params, "recharge_customer_id")) {
+    path = `${path}/${req.params.recharge_customer_id}`;
+  };
+
   try {
-    const { customers } = await makeRechargeQuery({
-      path: `customers`,
-      query: [ ["external_customer_id", shopify_customer_id ] ]
+    const result = await makeRechargeQuery({
+      path,
+      query
     });
-    if (!customers || !customers.length) {
+    if (result.customer) {
+      res.status(200).json(result.customer);
+      return;
+    };
+    if (!result.customers || !result.customers.length) {
       res.status(200).json([]);
       return;
     };
-    res.status(200).json(customers[0]);
+    if (typeof shopify_customer_id !== "undefined") {
+      res.status(200).json(result.customers[0]);
+    } else {
+      res.status(200).json(result); // includes next_cursor and previous_cursor
+    };
   } catch(err) {
     res.status(400).json({ error: err.toString() });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

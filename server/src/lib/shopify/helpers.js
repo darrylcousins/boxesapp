@@ -90,7 +90,7 @@ export const updateStoreObject = async (id, objName, data) => {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': Shopify.Context.ACCESS_TOKEN 
+      'X-Shopify-Access-Token': Shopify.Context.ACCESS_TOKEN 
     },
     body: JSON.stringify(body),
   })
@@ -98,6 +98,48 @@ export const updateStoreObject = async (id, objName, data) => {
       //_logger.info(`${_filename(import.meta)} Updated store ${objName} with id ${id} with data ${JSON.stringify(data, null, 2)}`);
       return response.status;
     });
+};
+
+/*
+ * function queryShopGraphQL
+ * body shall be a graphql query string
+ */
+export const queryStoreGraphQL = async ({ body }) => {
+  const url = `https://${process.env.SHOP_NAME}.myshopify.com/admin/api/${process.env.SHOPIFY_API_VERSION}/graphql.json`;
+  
+  return await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/graphql',
+      'X-Shopify-Access-Token': Shopify.Context.ACCESS_TOKEN 
+    },
+    body,
+  }).then(response => {
+    // I don't recall if they come in "errors" or "error"
+    // XXX Fix me when you remember - same too for recharge api query
+    const json = response.json();
+    if (Object.hasOwnProperty.call(json, "errors")) {
+      const meta = {
+        shopify: {
+          uri: "graphql.json",
+          method: "POST",
+          errors: json.errors,
+        },
+      };
+      _logger.notice(`Shopify graphql errors.`, { meta });
+    };
+    if (Object.hasOwnProperty.call(json, "error")) {
+      const meta = {
+        shopify: {
+          uri: "graphql.json",
+          method: "POST",
+          errors: json.errors,
+        },
+      };
+      _logger.notice(`Shopify graphql error.`, { meta });
+    };
+    return json;
+  })
 };
 
 

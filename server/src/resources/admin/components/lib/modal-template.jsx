@@ -47,9 +47,9 @@ function* ModalTemplate({ children, closeModal, error, loading, withClose, withC
                 <span class="dn">Close modal</span>
               </button>
             )}
-            { children }
-            {(error && error !== null) && <Error msg={error} />}
             {loading && <BarLoader />}
+            {(error && error !== null) && <Error msg={error} />}
+            { children }
             { (typeof withClose === "undefined" || withClose) && (
               <div class="w-100 tr">
                 <Button

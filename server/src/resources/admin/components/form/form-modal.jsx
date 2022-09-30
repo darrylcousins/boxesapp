@@ -116,6 +116,8 @@ function FormModalWrapper(Component, options) {
     const saveData = (formData) => {
       loading = true;
       saving = true;
+      fetchError = false;
+      saveError = false;
       this.refresh();
 
       let hasFile = false;
@@ -327,11 +329,10 @@ function FormModalWrapper(Component, options) {
               <ModalTemplate
                 closeModal={ closeModal }
                 loading={ loading }
-                error={ fetchError }
+                error={ null }
                 maxWidth={ maxWidth }
                 withCloseButton={ false }
                 withClose={ false }>
-                {saveError && <Error msg={saveError} />}
                 <div class="tc center">
                   <h6 class="fw4 tl fg-streamside-maroon">{title}</h6>
                 </div>
@@ -345,7 +346,9 @@ function FormModalWrapper(Component, options) {
                     <p class="tc">{successMsg}</p>
                   </div>
                 )}
-                {!loading && !success && !fetchError && (
+                {saveError && <Error msg={saveError} />}
+                {fetchError && <Error msg={fetchError} />}
+                {!loading && !success && (
                   <Component
                     {...props}
                     title={title}

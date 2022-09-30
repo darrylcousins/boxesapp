@@ -12,7 +12,7 @@ import { queryStoreProducts } from "../../lib/shopify/helpers.js";
  * @param (function) next
  */
 export default async (req, res, next) => {
-  _logger.info(JSON.stringify(req.body, null, 2));
+  //_logger.info(JSON.stringify(req.body, null, 2));
 
   let search = "";
   if (req.body.search) search = req.body.search;

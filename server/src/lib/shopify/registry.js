@@ -73,6 +73,7 @@ export default class Registry {
           webhookHandler = this.getHandler(webhookTopic);
           if (webhookHandler) {
             try {
+              _logger.info(`Webhook ${webhookTopic} received`);
               // don't wait for the handler to return
               webhookHandler(webhookTopic, domain, reqBody);
               statusCode = 200;

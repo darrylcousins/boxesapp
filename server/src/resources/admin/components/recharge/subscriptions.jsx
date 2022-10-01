@@ -72,7 +72,9 @@ async function* Subscriptions() {
     searchTerm = null;
     fetchCustomer = null;
     await this.refresh();
-    document.querySelector("#searchTerm").focus();
+    if (document.getElementById("searchTerm")) {
+      document.querySelector("#searchTerm").focus();
+    };
   };
   this.addEventListener("loadAnotherCustomer", getNewCustomer);
 

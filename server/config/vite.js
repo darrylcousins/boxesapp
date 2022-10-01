@@ -22,9 +22,12 @@ export default {
   // used in App.jsx
   define: {
     PROXY_PATH: JSON.stringify(process.env.PROXY_PATH),
+    /*
+    SHOP: JSON.stringify(process.env.SHOP),
     "process.env.PROXY_PATH": JSON.stringify(process.env.PROXY_PATH),
     "process.env.SHOP": JSON.stringify(process.env.SHOP),
     "process.env.SHOPIFY_API_KEY": JSON.stringify(process.env.SHOPIFY_API_KEY),
+    */
   },
   // make all links to assets absolute urls
   base: `${process.env.HOST}/`,

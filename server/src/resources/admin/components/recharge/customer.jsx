@@ -377,7 +377,9 @@ async function *Customer({ customer, admin }) {
       this.refresh();
       getCancelledGroups(customer.id);
     });
-  };;
+  };
+
+  const adminUrl = `https://${window.location.hostname}/admin/customers`;
 
   for await ({ customer } of this) { // eslint-disable-line no-unused-vars
     yield (
@@ -388,11 +390,20 @@ async function *Customer({ customer, admin }) {
         <div id="customer">
           <Fragment>
             { admin && (
-              <div 
-                class="w-100 tr ml2 mr2 link bold pointer blue" 
-                onclick={ getNewCustomer }>
-                Load another customer
-              </div>
+              <Fragment>
+                <div
+                  class="w-100 tr ml2 mr2 link bold pointer fg-streamside-blue"
+                  title="Load another customer"
+                  onclick={ getNewCustomer }>
+                  Load another customer
+                </div>
+                <a
+                  class="db w-100 tr ml2 mr2 link bold pointer fg-streamside-blue"
+                  target="_blank"
+                  href={ `${adminUrl}/${customer.external_customer_id.ecommerce}` }>
+                  View customer in Shopify
+                </a>
+              </Fragment>
             )}
             { chargeGroups && chargeGroups.length > 0 ? (
               <Fragment>

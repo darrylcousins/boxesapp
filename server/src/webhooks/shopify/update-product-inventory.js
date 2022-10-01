@@ -11,6 +11,7 @@ const storeUrl = `https://${process.env.SHOP_NAME}.myshopify.com/admin/api/${pro
 
 export default async function updateProductInventory(order) {
 
+  return;
   // No longer doing this for Streamside because they do not track inventory
   if (process.env.SHOP_NAME === "streamsideorganics") {
     return;

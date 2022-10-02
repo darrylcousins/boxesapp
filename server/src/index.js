@@ -61,7 +61,8 @@ export async function createServer(
   morgan.token('host', function(req, res) {
     return req.hostname;
   });
-  const morganTokens = ':method :host :url :status :res[content-length] - :response-time ms';
+  //const morganTokens = ':method :host :url :status :res[content-length] - :response-time ms';
+  const morganTokens = ':method :url :status :res[content-length] - :response-time ms';
   if (!isTest) app.use(morgan(morganTokens, { stream: morganLogger.stream })); // simple
 
   // set headers

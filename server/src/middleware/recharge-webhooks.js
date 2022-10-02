@@ -13,7 +13,7 @@ export default function applyRechargeWebhooks({ app }) {
     try {
       Recharge.Registry.process(req, res)
         .catch(err => console.error("error", err));
-        _logger.info(`${_filename(import.meta)} Webhook ${topic} processed, returned status code 200`);
+      _logger.info(`${_filename(import.meta)} Webhook ${topic} processed, returned status code 200`);
     } catch (err) {
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
       if (!res.headersSent) {

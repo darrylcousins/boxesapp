@@ -77,10 +77,12 @@ export default class Registry {
               // don't wait for the handler to return
               webhookHandler(webhookTopic, domain, reqBody);
               statusCode = 200;
-            } catch(e) {
+            } catch(err) {
+              _logger.info(`Webhook ${webhookTopic} failed`);
+              _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
               //statusCode = 500;
               statusCode = 200; // XXX Change me back once it's all working
-              responseError = e;
+              responseError = err;
             };
           };
         } else {

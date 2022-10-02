@@ -3,13 +3,29 @@
  * Middleware for recharge webhooks
  *
  */
+import colors from "colors";
 import { Recharge } from "../lib/recharge/index.js";
 
 export default function applyRechargeWebhooks({ app }) {
 
   app.post("/recharge", async (req, res) => {
-    // Hmac/hash check takes place in registry.process!!
     const topic = req.get("x-recharge-topic");
+
+    // hard for me to understand why this doesn't show in server log
+    //_logger.info(`Shopify webhook ${topic} received.`);
+
+    // so I make my own to use with console.log
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, "0");
+    const minutes = now.getMinutes().toString().padStart(2, "0");
+    const seconds = now.getSeconds().toString().padStart(2, "0");
+    const nowString = `${hours}:${minutes}:${seconds}`;
+    const message = `Shopify webhook ${topic} received.`;
+    const logString = `${nowString} - ${"info".yellow}: ${message}`;
+    console.log(logString);
+
+    // The following info messages are not logged to console in production
+    // But the error message is logged
     try {
       Recharge.Registry.process(req, res)
         .then(
@@ -22,6 +38,7 @@ export default function applyRechargeWebhooks({ app }) {
           }
         );
     } catch (err) {
+      _logger.info(`Recharge webhook ${topic} failed and logged.`);
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
       if (!res.headersSent) {
         res.status(500).send(err.message);

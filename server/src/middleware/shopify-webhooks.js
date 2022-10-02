@@ -12,8 +12,15 @@ export default function applyShopifyWebhooks({ app }) {
     const topic = req.get("x-shopify-topic");
     try {
       Shopify.Registry.process(req, res)
-        .catch(err => console.error("error", err));
-      _logger.info(`${_filename(import.meta)} Webhook ${topic} processed, returned status code 200`);
+        .then(
+          (res) => {
+            _logger.info(`Shopify webhook ${topic} processed, returned 200.`);
+          },
+          (err) => {
+            _logger.info(`Shopify webhook ${topic} failed and logged.`);
+            _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+          }
+        );
     } catch (err) {
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
       if (!res.headersSent) {

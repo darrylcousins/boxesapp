@@ -12,8 +12,15 @@ export default function applyRechargeWebhooks({ app }) {
     const topic = req.get("x-recharge-topic");
     try {
       Recharge.Registry.process(req, res)
-        .catch(err => console.error("error", err));
-      _logger.info(`${_filename(import.meta)} Webhook ${topic} processed, returned status code 200`);
+        .then(
+          (res) => {
+            _logger.info(`Recharge webhook ${topic} processed, returned 200.`);
+          },
+          (err) => {
+            _logger.info(`Recharge webhook ${topic} failed and logged.`);
+            _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+          }
+        );
     } catch (err) {
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
       if (!res.headersSent) {

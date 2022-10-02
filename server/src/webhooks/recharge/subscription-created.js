@@ -205,7 +205,6 @@ export default async function subscriptionCreated(topic, shop, body) {
       body: JSON.stringify(updateData)
     }).then(async (res) => {
       if (res.subscription.next_charge_scheduled_at !== nextChargeScheduledAt) {
-        console.log('updateing schedule');
         body = { date: nextChargeScheduledAt };
         return await makeRechargeQuery({
           method: "POST",

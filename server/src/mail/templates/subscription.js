@@ -98,7 +98,7 @@ export default `
         </tr>
         {% if subscription.address.address2 %}
           <tr>
-            <td>{{ subscription.address.address1 }}</td>
+            <td>{{ subscription.address.address2 }}</td>
           </tr>
         {% endif %}
         <tr>

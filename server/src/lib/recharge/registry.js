@@ -85,6 +85,8 @@ export default class Registry {
               statusCode = 200; // XXX Change me back once it's all working
               responseError = err;
             };
+          } else {
+            _logger.info(`Webhook ${webhookTopic} unknown handler`);
           };
         } else {
           statusCode = 403;

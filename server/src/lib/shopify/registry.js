@@ -21,7 +21,7 @@ export default class Registry {
 
   async process(req, res) {
     let reqBody = "";
-    const promise = new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       req.on("data", (chunk) => {
         reqBody += chunk;
       });
@@ -70,34 +70,29 @@ export default class Registry {
           webhookTopic = topic
             .toUpperCase()
             .replace(/\//g, '_');
-          webhookHandler = this.getHandler(webhookTopic);
-          if (webhookHandler) {
-            try {
-              _logger.info(`Webhook ${webhookTopic} received`);
-              // don't wait for the handler to return
-              webhookHandler(webhookTopic, domain, reqBody);
-              statusCode = 200;
-            } catch(err) {
-              _logger.info(`Webhook ${webhookTopic} failed`);
-              _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-              //statusCode = 500;
-              statusCode = 200; // XXX Change me back once it's all working
-              responseError = err;
-            };
-          } else {
-            _logger.info(`Webhook ${webhookTopic} unknown handler`);
-          };
+          statusCode = 200;
         } else {
           statusCode = 403;
-          responseError = new Error(`Could not validate request for topic ${topic}`);
+          responseError = new Error(`Shopify webhook failed hmac validation for topic ${topic}`);
         };
         res.writeHead(statusCode, headers);
         res.end();
+
         if (responseError) {
           return reject(responseError);
         } else {
+          webhookHandler = this.getHandler(webhookTopic);
+          if (webhookHandler) {
+            try {
+              await webhookHandler(webhookTopic, domain, reqBody);
+            } catch(err) {
+              return reject(err);
+            };
+          } else {
+            return reject(new Error(`Shopify webhook ${webhookTopic} unknown handler.`));
+          };
           return resolve();
-        }
+        };
       });
     });
   };

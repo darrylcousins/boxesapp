@@ -136,27 +136,54 @@ export const collatePickingData = async (options) => {
         const { title: name, quantity: count} = matchNumberedString(product);
         if (name === "None") continue;
         const key = (order.product_id === custom_box_id) ? "custom" : column;
-        const label = `${order.products[name]}`;
-        if (!Object.hasOwnProperty.call(final, label)) {
-          final[label] = {}; // allowing incorrect tags e.g. null 
+        const tag = `${order.products[name]}`;
+
+        if (!Object.hasOwnProperty.call(final, tag)) {
+          final[tag] = {}; // allowing incorrect tags e.g. null 
         };
-        if (!Object.hasOwnProperty.call(final[label], name)) {
-          final[label][name] = {...column_data};
+        if (!Object.hasOwnProperty.call(final[tag], name)) {
+          final[tag][name] = {...column_data};
         };
-        final[label][name][key] += count;
-        final[label][name]["total"] += count;
+        final[tag][name][key] += count;
+        final[tag][name]["total"] += count;
       };
     };
     count++;
   };
+
+  // collect keys to do the fixing for old subscription orders
+  const fixKeys = {};
   // sort the products
-  for (const [key, value] of Object.entries(final)) {
-    final[key] = Object.keys(value)
+  for (const [tag, value] of Object.entries(final)) {
+    // fix old subscriptions
+    if (tag !== "undefined"){
+      fixKeys[tag] = Object.keys(value);
+    };
+    final[tag] = Object.keys(value)
       .sort()
-      .reduce((accumulator, key) => {
-        accumulator[key] = value[key];
+      .reduce((accumulator, tag) => {
+        accumulator[tag] = value[tag];
         return accumulator;
       }, {});
+  };
+
+  // Damn the old subscriptions not matched to boxes and so ending up
+  // with an defined tag which needs to be fixed
+  if (Object.hasOwnProperty.call(final, "undefined")) {
+    const untaggedItems = { ...final.undefined };
+    delete final.undefined;
+
+    for (const [key, value] of Object.entries(untaggedItems)) {
+      for (const [tag, list] of Object.entries(final)) {
+        const group = Object.entries(list).find(([k, v]) => k === key);
+        if (group) {
+          console.log(Object.keys(list).filter(el => el === key));
+          console.log(key);
+          console.log(Object.keys(list));
+          console.log(group, tag);
+        };
+      };
+    };
   };
 
   return final;

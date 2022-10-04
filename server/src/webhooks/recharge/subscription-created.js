@@ -221,6 +221,7 @@ export default async function subscriptionCreated(topic, shop, body) {
   };
 
   meta.recharge.next_delivery = deliveryDate.toDateString();
+  meta.recharge.email = charge.customer.email;
   _logger.notice(`Recharge ${topicLower} completed and subscription updated.`, { meta });
 
 

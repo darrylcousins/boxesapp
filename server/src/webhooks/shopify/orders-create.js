@@ -62,6 +62,7 @@ export default async function ordersCreate(topic, shop, body) {
   // for webhooks the body is a raw string
   const order = await processOrderJson(orderJson);
   meta.order.delivered = order.delivered;
+  meta.order.email = order.contact_email;
   const result = await mongoInsert(collection, order);
   if (result.upsertedCount === 1) {
     _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });

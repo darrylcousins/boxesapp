@@ -168,21 +168,25 @@ export const collatePickingData = async (options) => {
   };
 
   // Damn the old subscriptions not matched to boxes and so ending up
-  // with an defined tag which needs to be fixed
+  // with an undefined tag with items that we try to match here
   if (Object.hasOwnProperty.call(final, "undefined")) {
     const untaggedItems = { ...final.undefined };
 
+    delete final.undefined;
+
     for (const [key, value] of Object.entries(untaggedItems)) {
-      for (const [tag, list] of Object.entries(final)) {
-        const group = Object.entries(list).find(([k, v]) => k === key);
-        if (group) {
-          console.log(Object.keys(list).filter(el => el === key));
-          console.log(key);
-          console.log(Object.keys(list));
-          console.log(group, tag);
+      for (const [tag, values] of Object.entries(final)) {
+        const found = Object.entries(values).find(([k, v]) => k === key);
+        //const found = Object.keys(list).find(k => k === key);
+        if (found) {
+          for (const group of ["including", "addons", "swaps", "custom", "total"]) {
+            final[tag][key][group] += untaggedItems[key][group];
+          };
+          delete untaggedItems[key];
         };
       };
     };
+    final.Untagged = { ...untaggedItems };
   };
 
   return final;

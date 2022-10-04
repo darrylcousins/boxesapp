@@ -875,6 +875,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
 
       // in both the following circumstances we should present entire edit box
       if (cartJson.items.length) {
+        const custom_box_id = getSetting("General", "custom-box-id");
         // find the selected date from the items
         const cartAddons = {};
         let cartRemovedItems = [];
@@ -884,28 +885,34 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
             // get the delivery date regardless of which box and use if available
             selectedDate = item.properties["Delivery Date"];
 
-            // XXX do something clever for old carts and mismatched days/variants
-            // remembering that selected date is already set
+            // Get the box if it exists
             if (hasOwnProp.call(fetchJson, selectedDate)) selectedBox = fetchJson[selectedDate];
 
-            // can assume same removed items for a different box
-            if (hasOwnProp.call(item.properties, "Removed Items")) {
-              cartRemovedItems = item.properties["Removed Items"].split(",");
-            };
-            // can assume same removed items for a different box
-            if (hasOwnProp.call(item.properties, "Swapped Items")) {
-              // get proper title
-              cartSwappedItems = item.properties["Swapped Items"]
-                .split(",")
-                .map(el => (matchNumberedString(el).str));
-            };
+            // XXX Beware of custom box, move swaps to addons and elimiate removed items
+
             cartBoxId = item.product_id;
+
+            if (cartBoxId !== "custom_box_id") {
+              // can assume same removed items for a different box
+              if (hasOwnProp.call(item.properties, "Removed Items")) {
+                cartRemovedItems = item.properties["Removed Items"].split(",");
+              };
+              // can assume same removed items for a different box
+              if (hasOwnProp.call(item.properties, "Swapped Items")) {
+                // get proper title
+                cartSwappedItems = item.properties["Swapped Items"]
+                  .split(",")
+                  .map(el => (matchNumberedString(el).str));
+              };
+            };
 
             if (item.product_id === productJson.id) {
               // only now are we sure that this is the same box
               loadedFromCart = true;
             };
           };
+
+          // XXX Again watch for custom box and any swaps coming through the cart
           if (item.product_type === "Box Produce") {
             // these are included in the box as addons or may be as swapped items with extra quantity
             cartAddons[item.variant_id] = item.quantity;

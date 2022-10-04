@@ -171,7 +171,6 @@ export const collatePickingData = async (options) => {
   // with an defined tag which needs to be fixed
   if (Object.hasOwnProperty.call(final, "undefined")) {
     const untaggedItems = { ...final.undefined };
-    delete final.undefined;
 
     for (const [key, value] of Object.entries(untaggedItems)) {
       for (const [tag, list] of Object.entries(final)) {

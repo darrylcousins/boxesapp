@@ -185,7 +185,6 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
    * @function confirmSwap
    */
   const confirmSwap = async (product) => {
-    console.log('swapping in: ', product);
     const removed = { ...removedItem };
     removedItem = null;
     possibleSwaps = [];

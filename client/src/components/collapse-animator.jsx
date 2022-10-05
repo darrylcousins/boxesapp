@@ -52,6 +52,7 @@ function CollapseWrapper(Component) {
    *   height:auto;
    * }
    *
+   * Important to check and clear floats in child elements
    */
   const transitionElementHeight = (element) => {
     if (!element) return;
@@ -64,15 +65,15 @@ function CollapseWrapper(Component) {
     };
     tempEl.childNodes.forEach(el => {
       if (el.getAttribute("name") === "hasChildren") {
-        // and again to pick up correct sizing for IOS (floated elements I think)
         el.childNodes.forEach(child => {
           calculatedHeight += child.offsetHeight;
         });
       } else {
         calculatedHeight += el.offsetHeight;
-      }
+      };
     });
-    element.style.height = calculatedHeight + "px";
+    calculatedHeight += 10;
+    element.style.height = `${calculatedHeight}px`;
   }
   
   /*
@@ -133,7 +134,7 @@ function CollapseWrapper(Component) {
       };
 
       const element = document.querySelector(`#${el.id}`);
-      //window.alert(`${el.id} ${element.style.height}`);
+      //console.log(`${el.id} ${element.style.height}`);
       if (element) {
         //console.log(id, "old", collapsed, "new", newCollapsed, "start", startCollapsed);
         if (newCollapsed) {

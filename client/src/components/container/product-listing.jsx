@@ -50,8 +50,8 @@ function* ProductListing({possibleProducts, name, title, type}) {
     yield (
       <Fragment>
         { Object.entries(groupAddons(possibleProducts)).map(([tag, products]) => (
-          <Fragment>
-            <div class="listing-title" style="font-size: smaller">{ tag }</div>
+          <div name="hasChildren">
+            <div class="listing-title" style="font-size: smaller; clear: both;">{ tag }</div>
 
             <div class="pill-wrapper">
               {products.map(el =>
@@ -71,7 +71,7 @@ function* ProductListing({possibleProducts, name, title, type}) {
                 </div>
               )}
             </div>
-          </Fragment>
+          </div>
         ))}
       </Fragment>
     )

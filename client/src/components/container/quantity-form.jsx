@@ -29,29 +29,37 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
     />
   );
 
-  const QuantityInput = ({ el, id }) => (
-    <input
-      class="input-quantity"
-      type="number"
-      steps="1"
-      min={ id === "selectedIncludes" ? 1 : 0 }
-      name="quantity"
-      data-id={id}
-      id={el.shopify_product_id}
-      value={el.quantity}
-      autocomplete="off"
-    />
-  );
+  const QuantityInput = ({ el, id }) => {
+    // Should look in moveProduct to find where the quantity is not set
+    if (!Object.hasOwnProperty.call(el, "quantity")) el.quantity = 1;
+    return (
+      <input
+        class="input-quantity"
+        type="number"
+        steps="1"
+        min={ id === "selectedIncludes" ? 1 : 0 }
+        name="quantity"
+        data-id={id}
+        id={el.shopify_product_id}
+        value={el.quantity}
+        autocomplete="off"
+      />
+    );
+  };
 
-  const PriceInput = ({ el, includes }) => (
-    <input
-      class="input-price"
-      type="text"
-      readonly
-      name="title"
-      value={getPrice(el, includes)}
-    />
-  );
+  const PriceInput = ({ el, includes }) => {
+    // Should look in moveProduct to find where the quantity is not set
+    if (!Object.hasOwnProperty.call(el, "quantity")) el.quantity = 1; 
+    return (
+      <input
+        class="input-price"
+        type="text"
+        readonly
+        name="title"
+        value={getPrice(el, includes)}
+      />
+    );
+  };
 
   /** 
    * Map strings to the lists

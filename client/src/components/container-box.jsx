@@ -762,6 +762,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     if (ev.detail.from === "selectedSwaps" && ev.detail.to === "possibleAddons") {
       const swapIdx = swapMap["selectedSwaps"].indexOf(id);
       const excludedId = swapMap["selectedIncludes"][swapIdx];
+
       // in this case we don't care about the swappedItem's quantity - the user is removing it
       // restore excluded item
       moveItem({
@@ -875,7 +876,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
 
       // in both the following circumstances we should present entire edit box
       if (cartJson.items.length) {
-        const custom_box_id = getSetting("General", "custom-box-id");
+        const custom_box_id = parseInt(getSetting("General", "custom-box-id"));
         // find the selected date from the items
         const cartAddons = {};
         let cartRemovedItems = [];
@@ -892,18 +893,20 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
 
             cartBoxId = item.product_id;
 
-            if (cartBoxId !== "custom_box_id") {
+            if (productJson.id !== custom_box_id) {
               // can assume same removed items for a different box
               if (hasOwnProp.call(item.properties, "Removed Items")) {
                 cartRemovedItems = item.properties["Removed Items"].split(",");
               };
-              // can assume same removed items for a different box
-              if (hasOwnProp.call(item.properties, "Swapped Items")) {
-                // get proper title
-                cartSwappedItems = item.properties["Swapped Items"]
-                  .split(",")
-                  .map(el => (matchNumberedString(el).str));
-              };
+            };
+
+            // can assume same removed items for a different box
+            if (hasOwnProp.call(item.properties, "Swapped Items")) {
+              // get proper title
+              // can I move these to addons if this is custom box
+              cartSwappedItems = item.properties["Swapped Items"]
+                .split(",")
+                .map(el => (matchNumberedString(el).str));
             };
 
             if (item.product_id === productJson.id) {
@@ -937,6 +940,22 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               delete cartAddons[el.shopify_variant_id];
             };
           });
+          // use swapped items to make a smaller loop
+          selectedBox.addOnProducts.forEach(el => {
+            if (cartSwappedItems.includes(el.shopify_title)) {
+              if (productJson.id === custom_box_id) {
+                let qty;
+                if (Object.keys(cartAddons).includes(el.shopify_variant_id.toString())) {
+                  qty = cartAddons[el.shopify_variant_id] + 1;
+                } else {
+                  qty = 1;
+                };
+                cartAddons[el.shopify_variant_id] = qty; // move swap into addons
+                cartSwappedItems.splice(cartSwappedItems.indexOf(el.shopify_variant_id), 1);
+              };
+            };
+          });
+
           selectedBox.addOnProducts.forEach(el => {
             const item = { ...el };
             if (cartSwappedItems.includes(el.shopify_title)) {
@@ -946,7 +965,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               } else {
                 item.quantity = 1;
               };
-              selectedSwaps.push(item)
+              if (productJson.id !== custom_box_id) {
+                selectedSwaps.push(item); // maintain the swaps
+              };
             } else {
               if (hasOwnProp.call(cartAddons, el.shopify_variant_id)) {
                 item.quantity = cartAddons[el.shopify_variant_id]; // cart is {variant: quantity}
@@ -956,6 +977,10 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
             };
           });
           selectedExcludes = selectedBox.includedProducts.filter(el => cartRemovedItems.includes(el.shopify_title));
+
+          // build swapMap
+          swapMap["selectedIncludes"] = selectedExcludes.map(el => el.shopify_product_id);
+          swapMap["selectedSwaps"] = selectedSwaps.map(el => el.shopify_product_id);
           // and remove swaps from the addOnProducts
           //selectedBox.addOnProducts.sort((a, b) => (a.shopify_title > b.shopify_title) ? 1 : -1)
         };

@@ -10,29 +10,17 @@
 import { createElement, Fragment } from "@b9g/crank";
 import { renderer } from "@b9g/crank/dom";
 import ContainerBoxApp from "./components/container-box";
-import { Fetch } from "./components/fetch";
+import ProductBoxApp from "./components/product-box";
+import { Fetch } from "./components/lib/fetch";
 import baseUrl from "./base-url";
 
-const init = async () => {
-  /**
-   * Each of the collected boxes as presented by theme/snippets/box-product-snippet
-   */
-  const productJson = await JSON.parse(document.getElementById("product-json").textContent);
-  // same if/else used in liquid template but here we are sure
-  if (productJson.type !== "Container Box") {
-    return;
-  };
+const Error = () => (
+  <div style="color: red">Failed to load boxes, please try again later</div>
+);
 
+const init = async ({ productJson, cartJson }) => {
   /**
-   * Contains cart data collected from html template json data
-   * This will then also contain a selected date
-   */
-  const cartData = document.querySelector("#cart-json");
-  const cartJson = await JSON.parse(cartData.textContent);
-  //console.log(JSON.stringify(cartJson.items, null, 2));
-
-  /**
-   * Populate script tag with boxes settings
+   * Populate script tag in template with box settings
    */
   const settingsData = document.querySelector("#box-settings-json");
   const settingsJson = await Fetch(
@@ -48,7 +36,7 @@ const init = async () => {
   if (!settingsJson) {
     // assume that server is inaccessible and abort loading
     await renderer.render(
-      <div style="color: red">Failed to load boxes, please try again later</div>,
+      <Error />,
       document.querySelector("div[class='product__content-main']")
     );
     return;
@@ -56,6 +44,9 @@ const init = async () => {
 
   settingsData.textContent = JSON.stringify(settingsJson, null, 2);
 
+  /**
+   * Populate script tag in template with box rules
+   */
   const rulesData = document.querySelector("#box-rules-json");
   const rulesJson = await Fetch(
       `${baseUrl}box-rules-for-app`
@@ -65,9 +56,15 @@ const init = async () => {
     });
   rulesData.textContent = JSON.stringify(rulesJson, null, 2);
 
-  await renderer.render(
-    <ContainerBoxApp productJson={productJson} cartJson={cartJson} />, document.querySelector("#app")
-  );
+  if (productJson.type === "Container Box") {
+    await renderer.render(
+      <ContainerBoxApp productJson={productJson} cartJson={cartJson} />, document.querySelector("#app")
+    );
+  } else if (productJson.type === "Box Produce") {
+    await renderer.render(
+      <ProductBoxApp productJson={productJson} cartJson={cartJson} />, document.querySelector("#app")
+    );
+  };
   return;
 };
 

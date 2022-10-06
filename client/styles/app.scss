@@ -11,6 +11,20 @@
 .bold { font-weight: bold }
 .b { font-weight: bold }
 .list { list-style-type: none }
+.pill.link {
+  text-decoration: none;
+}
+.pill.pointer, .pill.link {
+  text-decoration: none;
+  transition: opacity .15s ease-in;
+  -webkit-transition: opacity .15s ease-in;
+  -moz-transition: opacity .15s ease-in;
+  -ms-transition: opacity .15s ease-in;
+  -o-transition: opacity .15s ease-in;
+}
+.pill.pointer:hover, .pill.link:hover {
+  opacity: 0.8;
+}
 .fl { float: left }
 .fr { float: right }
 .cf:before,
@@ -180,7 +194,12 @@
 div.button-wrapper {
   margin-top: 0.5em;
 }
-div.button-wrapper > button {
+div.button-wrapper > .button-wrap {
+  margin: 0 0.1em;
+  flex-grow: 1;
+}
+div.button-wrapper > button,
+div.button-wrapper > .button-wrap > button {
   font-family: inherit;
   font-size: 90%;
   font-weight: 700;
@@ -207,8 +226,12 @@ div.button-wrapper > button {
   -o-transition: opacity .15s ease-in;
   cursor: pointer;
 }
+div.button-wrapper > .button-wrap > button {
+  font-size: 80%;
+}
+div.button-wrapper > .button-wrap > button:hover,
 div.button-wrapper > button:hover {
-  opacity: 0.7;
+  opacity: 0.8;
 }
 .notice {
   font-weight: 400;

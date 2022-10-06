@@ -5,8 +5,8 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
-import { selectVariantEvent } from "../events";
-import SelectMenu from "../select-menu";
+import { selectVariantEvent } from "../lib/events";
+import SelectMenu from "../lib/select-menu";
 import { getSetting } from "../../helpers";
 
 /**

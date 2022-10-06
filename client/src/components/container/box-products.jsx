@@ -7,8 +7,8 @@
  */
 import { createElement, Fragment } from "@b9g/crank";
 
-import CollapseWrapper from "../collapse-animator";
-import { moveProductEvent } from "../events";
+import CollapseWrapper from "../lib/collapse-animator";
+import { moveProductEvent } from "../lib/events";
 import { getPrice, animateFadeForAction, hasOwnProp, getSetting } from "./../../helpers";
 
 /**

@@ -5,9 +5,9 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
-import { selectDateEvent } from "../events";
-import SelectMenu from "../select-menu";
-import { getSetting } from "../../helpers";
+import { selectDateEvent } from "./events";
+import SelectMenu from "./select-menu";
+import { getSetting, wrapperStyle } from "../../helpers";
 
 /**
  * Date selector component
@@ -74,11 +74,6 @@ function* DateSelector({fetchDates, selectedDate}) {
     }
   };
   this.addEventListener("mouseup", handleMouseUp);
-
-  const wrapperStyle = {
-    border: "1px solid #ccc",
-    "margin-bottom": "3px"
-  };
 
   for ({fetchDates, selectedDate} of this) {
     yield (

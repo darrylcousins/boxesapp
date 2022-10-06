@@ -6,9 +6,13 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
-import { moveProductEvent, quantityUpdateEvent } from "../events";
-import { toPrice, getPrice } from "../../helpers";
-import { getSetting, animateFadeForAction } from "./../../helpers";
+import { moveProductEvent, quantityUpdateEvent } from "../lib/events";
+import {
+  toPrice,
+  getPrice,
+  getSetting,
+  animateFadeForAction
+} from "../../helpers";
 
 /**
  * Component to update quantities in box

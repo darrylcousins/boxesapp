@@ -1,8 +1,8 @@
 /**
  * Component
  *
- * @module app/product-description
- * @exports {Element} SelectDeliveryDate
+ * @module app/select-menu
+ * @exports {Element} SelectMenu
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";

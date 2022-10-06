@@ -115,7 +115,7 @@ export const animateFadeForAction = (id, action) => {
     target = document.getElementById(id);
   } else {
     target = id;
-  }
+  };
   const animate = target.animate({
     opacity: 0.1
   }, animationOptions);
@@ -234,5 +234,10 @@ export const matchNumberedString = (str) => {
     str = str.slice(0, match.index).trim();
   }
   return { str, count };
+};
+
+export const wrapperStyle = {
+  border: "1px solid #ccc",
+  "margin-bottom": "3px"
 };
 

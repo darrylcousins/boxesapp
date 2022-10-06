@@ -8,21 +8,21 @@
  * @requires @bikeshaving/crank
  * @listens DOMContentLoaded
  */
-//import "regenerator-runtime/runtime"; // regeneratorRuntime error
 import { createElement, Fragment } from "@b9g/crank";
 import { renderer } from "@b9g/crank/dom";
 
-import Error from "./error";
-import BarLoader from "./bar-loader";
-import SelectMenu from "./select-menu";
-import { Fetch, PostFetch } from "./fetch";
+import Error from "./lib/error";
+import BarLoader from "./lib/bar-loader";
+import SelectMenu from "./lib/select-menu";
+import { Fetch, PostFetch } from "./lib/fetch";
 import { selectVariantEvent,
   selectSellingPlanEvent,
   selectDateEvent,
   moveProductEvent,
-  quantityUpdateEvent } from "./events";
-import Popup from "./popup";
-import DateSelector from "./container/date-selector";
+  quantityUpdateEvent } from "./lib/events";
+import Popup from "./lib/popup";
+
+import DateSelector from "./lib/date-selector";
 import VariantSelector from "./container/variant-selector";
 import BoxProducts from "./container/box-products";
 import QuantityForm from "./container/quantity-form";
@@ -923,6 +923,8 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
           };
         };
 
+        console.log(cartAddons);
+
         if (!selectedBox) {
           selectedDate = null;
         } else {
@@ -931,7 +933,10 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
 
           showBox = true;
           // setup selectedAddons and selectedExcludes from the cart - only do this on init
+          //
           selectedBox.includedProducts.forEach(el => {
+            console.log(el);
+            console.log(cartAddons[el.shopify_variant_id]);
             if (hasOwnProp.call(cartAddons, el.shopify_variant_id)) {
               const item = { ...el };
               item.quantity = 1 + cartAddons[el.shopify_variant_id];
@@ -992,6 +997,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
 
       /* XXX this was part of the app build for arriving from adding product
        * from an individual box product, e.g. see product-box.js
+       */
       if (window.location.search) {
         const ts = findGetParameter("ts");
         if (ts) {
@@ -1017,7 +1023,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
           showBox = true;
         }
       }
-      */
 
       // either a single delivery date, or selected date
       // or box in cart XXX which needs a fix for bad matching dates

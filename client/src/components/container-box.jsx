@@ -191,6 +191,14 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    */
   let customizingBox = false;
   /**
+   * Register that a change has occurred
+   * This is done on updatePriceElement
+   *
+   * @member boxHasChanged 
+   * @type {boolean}
+   */
+  let boxHasChanged = false; 
+  /**
    * Display edit quantities form modal
    *
    * @member modalQtyForm
@@ -236,23 +244,36 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    */
   const loadBox = () => {
 
-    const checkLoadPresence = (el) => {
-      const found = selectedIncludes.find(ob => ob.shopify_title === el.shopify_title);
+    const oldSelectedIncludes = [ ...selectedIncludes ];
+    const oldSelectedAddons = [ ...selectedAddons ];
+
+    const checkPresence = (list, el) => {
+      const found = list.find(ob => ob.shopify_title === el.shopify_title);
       if (typeof found === "undefined") return false;
       return found;
-    }
+    };
+
+    const checkIncludePresence = (el) => {
+      return checkPresence(oldSelectedIncludes, el);
+    };
+
+    const checkAddonPresence = (el) => {
+      return checkPresence(oldSelectedAddons, el);
+    };
 
     const findOnFilter = (list, el) => {
       if (list) {
         return list.find(ob => ob.shopify_title === el.shopify_title);
-      }
+      };
       return false;
-    }
+    };
 
     selectedIncludes = selectedBox.includedProducts.map(el => {
         const item = {...el};
-        const found = checkLoadPresence(el);
-        item.quantity = found ? found.quantity : 1;
+        const included = checkIncludePresence(el);
+        item.quantity = included ? included.quantity : 1;
+        const addon = checkAddonPresence(el); // if was in addons keep extra in the includes
+        item.quantity = addon ? addon.quantity + 1 : item.quantity;
         return item;
       })
       .filter(el => !findOnFilter(selectedExcludes, el));
@@ -260,17 +281,38 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     possibleAddons = selectedBox.addOnProducts.map(el => {
         const item = {...el};
         item.quantity = 1;
+        const found = checkIncludePresence(el);
+        if (found) {
+          // locate any incremented items that were in includes and now in addons
+          item.quantity = found.quantity - 1;
+          selectedAddons.push(item);
+        };
         return item;
       })
       .filter(el => !findOnFilter(selectedBox.includedProducts, el)) // these are addons on increased quantity
       .filter(el => !findOnFilter(selectedAddons, el));
 
     // date has changed possibly so I must filter selectedExcludes and
-    // selectedAddons because selectedBox.inlcudedProducts and
+    // selectedAddons and selectedSwaps because selectedBox.inlcudedProducts and
     // selectedBox.addOnProducts may be different
     selectedExcludes = selectedExcludes.filter(el => findOnFilter(selectedBox.includedProducts, el));
     selectedAddons = selectedAddons.filter(el => findOnFilter(selectedBox.addOnProducts, el));
+    selectedSwaps = selectedSwaps.filter(el => findOnFilter(selectedBox.addOnProducts, el));
 
+    // need to check for swaps because the removed item may no longer be in box.includedProducts
+    // simply check lengths for now - any unavailable will have been filtered out
+    const diff = Math.abs(selectedSwaps.length - selectedExcludes.length);
+    if (diff > 0) {
+      const currentList = selectedSwaps.length > selectedExcludes.length ? selectedSwaps : selectedExcludes;
+      for (var idx=0; idx<diff; idx++) {
+        const el = currentList[idx];
+        currentList.splice(idx, 1); // remove it
+        if (el.quantity > 1) { // will only be the case if a swap
+          el.quantity = el.quantity - 1;
+        };
+        selectedAddons.push(el); // include in addons regardless
+      };
+    };
     /*
      * XXX updated to allow customisation
     if (selectedVariant.requires_selling_plan) {
@@ -371,6 +413,12 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    */
   const submitCart = async () => {
 
+    if (!boxHasChanged && loadedFromCart) {
+      // redirect to cart if loaded from cart and no changes made
+      const url = "/cart";
+      window.location = url;
+    };
+
     let selling_plans;
     let selling_plan_name = null;
 
@@ -455,7 +503,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     };
 
     // redirect to cart
-    const url = "/cart";
     window.location = url;
 
   };
@@ -626,7 +673,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    *
    * @function updatePriceElement
    */
-  const updatePriceElement = () => {
+  const updatePriceElement = (onInit) => {
     let start = 0;
     selectedIncludes.forEach(el => {
       if (el.quantity > 1) start += el.shopify_price * (el.quantity - 1);
@@ -686,6 +733,10 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       });
     };
 
+    if (typeof onInit === "undefined") {
+      // register the fact that a change has been made
+      boxHasChanged = true;
+    };
   };
 
   /**
@@ -923,7 +974,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
           };
         };
 
-        console.log(cartAddons);
 
         if (!selectedBox) {
           selectedDate = null;
@@ -935,8 +985,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
           // setup selectedAddons and selectedExcludes from the cart - only do this on init
           //
           selectedBox.includedProducts.forEach(el => {
-            console.log(el);
-            console.log(cartAddons[el.shopify_variant_id]);
             if (hasOwnProp.call(cartAddons, el.shopify_variant_id)) {
               const item = { ...el };
               item.quantity = 1 + cartAddons[el.shopify_variant_id];
@@ -995,8 +1043,8 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       //console.log('date', selectedDate);
       //console.log('box', selectedBox);
 
-      /* XXX this was part of the app build for arriving from adding product
-       * from an individual box product, e.g. see product-box.js
+      /* For arriving from adding product from an individual box product, e.g.
+       * see product-box.jsx
        */
       if (window.location.search) {
         const ts = findGetParameter("ts");
@@ -1014,15 +1062,10 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               const product = { ...item };
               product.quantity = 1;
               selectedAddons.push(product);
-            }
-          }
-        }
-        const edit = findGetParameter("edit");
-        if (ts || edit) {
-          customizingBox = true;
-          showBox = true;
-        }
-      }
+            };
+          };
+        };
+      };
 
       // either a single delivery date, or selected date
       // or box in cart XXX which needs a fix for bad matching dates
@@ -1040,7 +1083,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 this.refresh();
               }, 1500);
             };
-            updatePriceElement();
+            updatePriceElement(true);
           }, 500);
         });
       }
@@ -1063,6 +1106,16 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       // map directly as required for SelectMenu
       return {item: `${el.id}`, text: el.title};
     });
+  };
+
+  const getButtonText = () => {
+    if (!loadedFromCart) {
+      return getSetting("Translation", "add-to-cart");
+    } else if (boxHasChanged) {
+      return getSetting("Translation", "update-selection");
+    } else {
+      return "View cart";
+    };
   };
 
   await init();  // set up script
@@ -1189,12 +1242,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                       "border-color": getSetting("Colour", "button-background"),
                       }}
                   >
-                    <span data-add-to-cart-text="">{ loadedFromCart
-                        ?
-                        getSetting("Translation", "update-selection")
-                        :
-                        getSetting("Translation", "add-to-cart")
-                    }</span>{" "}
+                    <span data-add-to-cart-text="">{ getButtonText() }</span>{" "}
                     <span style="display:none" data-loader="">
                       <svg
                         aria-hidden="true"

@@ -15,7 +15,9 @@ import { Fetch } from "./components/lib/fetch";
 import baseUrl from "./base-url";
 
 const Error = () => (
-  <div style="color: red">Failed to load boxes, please try again later</div>
+  <div  style="background-color:khaki; padding: 10px;border:1px;margin-bottom:1em">
+    We are unable to load the boxes at the moment, please try again later.
+  </div>
 );
 
 const init = async ({ productJson, cartJson }) => {

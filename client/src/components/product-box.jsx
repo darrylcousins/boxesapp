@@ -117,7 +117,6 @@ async function* ProductBoxApp({productJson, cartJson}) {
    */
   const init = async () => {
     const baseUrl = getSetting("General", "api-url");
-    let fetchUrl = `${baseUrl}current-boxes-by-product/${productJson.id}`;
     await Fetch(
       `${baseUrl}current-boxes-for-box-product/${productJson.id}`
     ).then(async ({ error, json }) => {
@@ -145,7 +144,6 @@ async function* ProductBoxApp({productJson, cartJson}) {
         if (Object.keys(json).length > 0) {
           fetchBoxes = Object.keys(json);
           fetchJson = json;
-          console.log(fetchJson);
           Object.entries(fetchJson).forEach(([handle, byDeliveryDate]) => {
             byDeliveryDate.forEach(box => {
               if (box.shopify_product_id === cartBoxId && box.delivered === inCartWithDate) {
@@ -196,7 +194,7 @@ async function* ProductBoxApp({productJson, cartJson}) {
                 cartAddons={cartAddons}
                 boxInCart={Boolean(cartBoxId)} />
             ) : (
-              <p>Not a regular item in any box this week.</p>
+              <p style="margin-top: 20px">Not a regular item in any box this week.</p>
             )}
             <div class="listing-title" style={ title }>Add on product to:</div>
             { Object.keys(addOns).length > 0 ? (
@@ -208,7 +206,7 @@ async function* ProductBoxApp({productJson, cartJson}) {
                 cartAddons={cartAddons}
                 boxInCart={Boolean(cartBoxId)} />
             ) : (
-              <p>Not available as an add on product this week</p>
+              <p style="margin-top: 20px">Not available as an add on product this week</p>
             )}
           </Fragment>
         ) : (

@@ -7,7 +7,7 @@
  */
 import { createElement, Fragment } from "@b9g/crank";
 
-import CollapseWrapper from "../collapse-animator";
+import CollapseWrapper from "../lib/collapse-animator";
 import {
   getSetting,
   sortObjectByKeys,

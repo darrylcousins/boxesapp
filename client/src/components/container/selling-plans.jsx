@@ -6,7 +6,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
-import { selectSellingPlanEvent } from "../events";
+import { selectSellingPlanEvent } from "../lib/events";
 import { toPrice } from "../../helpers";
 
 /**

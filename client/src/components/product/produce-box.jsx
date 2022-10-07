@@ -7,11 +7,10 @@
  * @requires @bikeshaving/crank
  * @listens DOMContentLoaded
  */
-import "regenerator-runtime/runtime"; // regeneratorRuntime error
 import { createElement, Fragment } from "@b9g/crank";
-import { Fetch } from "../fetch";
-import BarLoader from "../bar-loader";
-import BoxSelect from "../box-select.js";
+import { Fetch } from "../lib/fetch";
+import BarLoader from "../lib/bar-loader";
+import BoxSelect from "./box-select";
 
 /**
  * Box crank component, used for both vege product page and in box select for index/collection page (?)
@@ -23,7 +22,7 @@ import BoxSelect from "../box-select.js";
  * submitCart
  * @yields {Element} A crank DOM component
  */
-async function* Box ({handle, boxes, selectedProduct, cartBox, boxInCart}) {
+async function* Box ({handle, boxes, selectedProduct, cartBox, cartAddons, boxInCart, idx}) {
 
   /**
    * The box fetched
@@ -32,6 +31,14 @@ async function* Box ({handle, boxes, selectedProduct, cartBox, boxInCart}) {
    * @type {objec}
    */
   let fetchBox = null;
+
+  /**
+   * Error on fetch
+   *
+   * @member fetchError
+   * @type {object}
+   */
+  let fetchError = null;
 
   /**
    * The boxes this product is a member of sorted as object with date keys
@@ -70,7 +77,15 @@ async function* Box ({handle, boxes, selectedProduct, cartBox, boxInCart}) {
 
   init();
 
-  for await ({handle, boxes} of this) {
+
+  const isCartBox = () => {
+    return cartBox 
+      && cartBox.shopify_product_id === fetchBox.id
+      && boxes.map(box => box.delivered).includes(cartBox.delivered)
+      && cartBox;
+  };
+
+  for await ({handle, boxes, idx, cartBox, cartAddons} of this) {
     yield (
       <Fragment>
         { (!loading && fetchBox) ? (
@@ -81,41 +96,22 @@ async function* Box ({handle, boxes, selectedProduct, cartBox, boxInCart}) {
               boxes={boxesByDate}
               dates={boxes.map(box => box.delivered)}
               title={fetchBox.title}
-              initialDate={null}
+              idx={idx}
               initialProducts={[]}
-              cartBox={cartBox && cartBox.shopify_product_id === fetchBox.id && cartBox}
+              cartBox={isCartBox()}
+              cartAddons={cartAddons}
               boxInCart={boxInCart}
             />
           </Fragment>
         ) : (
-          <BarLoader />
+          <div class="mv1">
+            <BarLoader />
+          </div>
         )}
       </Fragment>
     )
   };
 };
 
-/**
- * To group the boxes of dates
- *
- * TODO check box-app for cartJson collection to pass down here
- *
- * @function Boxes
- * @param {object} props.selectedProduct el To pass down the addOn product to get to
- * submitCart
- */
-function Boxes ({boxes, selectedProduct, cartBox, boxInCart}) {
-  console.log(cartBox);
-  return (
-    Object.entries(boxes).map(([handle, boxes]) => (
-      <Box 
-        handle={handle}
-        boxes={boxes}
-        selectedProduct={selectedProduct}
-        cartBox={cartBox}
-        boxInCart={boxInCart} />
-    ))
-  )
-};
+export default Box;
 
-export default Boxes;

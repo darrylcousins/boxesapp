@@ -16,7 +16,7 @@ export default async (req, res, next) => {
    orders: _mongodb.collection("orders"),
    boxes: _mongodb.collection("boxes"),
    settings: _mongodb.collection("settings"),
-  }
+  };
   const response = Object();
   const product_id = parseInt(req.params.product_id);
 

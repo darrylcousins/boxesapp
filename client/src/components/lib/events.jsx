@@ -53,10 +53,10 @@ export const selectDateEvent = (date) =>
  * @function containerDateSelect
  * @param {number} id The box id
  */
-export const containerDateSelectEvent = (boxId) =>
+export const containerDateSelectEvent = (boxId, idx) =>
   new CustomEvent("containerDateSelectEvent", {
     bubbles: true,
-    detail: { boxId },
+    detail: { boxId, idx },
   });
 
 /**

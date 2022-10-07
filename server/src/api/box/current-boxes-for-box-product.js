@@ -3,6 +3,8 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
+import { getFilterSettings } from "../../lib/settings.js";
+import { getOrderCount } from "../../lib/orders.js";
 /*
  * @function box/current-boxes-for-box-product.js
  * @param (Http request object) req
@@ -10,7 +12,6 @@
  * @param (function) next
  */
 export default async (req, res, next) => {
-  const collection = _mongodb.collection("boxes");
   const response = Object();
   const now = new Date();
   const box_product_id = parseInt(req.params.box_product_id, 10);
@@ -18,14 +19,27 @@ export default async (req, res, next) => {
   /**
    * Get upcoming delivery dates to filter boxes by
   */
-  const distinctDeliveryDates = (colln) => {
+  const distinctDeliveryDates = (colln, filters, counts) => {
     return new Promise((resolve, reject) => {
       colln.distinct('delivered', (err, data) => {
         if (err) return reject(err);
         const final = Array();
         data.forEach(el => {
           const d = new Date(Date.parse(el));
-          if (d >= now) final.push(d);
+          if (d >= now) {
+            const filter = filters[d.getDay()];
+            const count = el in counts ? counts[el] : 0;
+            // a limit of zero means no limit at all
+            if (filter) {
+              if (filter.hasOwnProperty("limit") && filter.limit > 0) {
+                if (count >= filter.limit) return;
+              };
+              if (filter.hasOwnProperty("cutoff") && filter.cutoff > Math.abs(d - now) / 36e5) {
+                return;
+              };
+            };
+            final.push(d);
+          };
         });
         final.sort((d1, d2) => {
           if (d1 < d2) return -1;
@@ -33,11 +47,17 @@ export default async (req, res, next) => {
           return 0;
         });
         resolve(final.map(el => el.toDateString()));
-      })
-    })
-  }
+      });
+    });
+  };
+  
+  const filters = await getFilterSettings();
+  const counts = await getOrderCount();
 
-  const dates = await distinctDeliveryDates(collection)
+  const collection = _mongodb.collection("boxes");
+
+  // the dates are filtered using filter settings including order limits and cutoff hours
+  const dates = await distinctDeliveryDates(collection, filters, counts)
     .then(dates => {
       return dates;
     })
@@ -45,6 +65,7 @@ export default async (req, res, next) => {
       res.status(400).json({ error: err.toString() });
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
     });
+
 
   // consider defining fields to avoid the inner product documents
   // https://docs.mongodb.com/drivers/node/fundamentals/crud/read-operations/project

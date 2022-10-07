@@ -5,7 +5,7 @@ export default {
     jsxFragment: "Fragment"
   },
   server: {
-    port: 3330,
+    port: 3335,
   },
   build: {
     // minify: false,

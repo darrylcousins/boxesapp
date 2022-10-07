@@ -63,6 +63,13 @@ function CollapseWrapper(Component) {
     if (element.childNodes.length === 1) {
       tempEl = element.childNodes[0];
     };
+
+    if (tempEl.getAttribute("name") === "noChildren") {
+      calculatedHeight += tempEl.offsetHeight;
+      element.style.height = `${calculatedHeight}px`;
+      return;
+    };
+
     tempEl.childNodes.forEach(el => {
       if (el.getAttribute("name") === "hasChildren") {
         el.childNodes.forEach(child => {
@@ -74,6 +81,7 @@ function CollapseWrapper(Component) {
     });
     calculatedHeight += 10;
     element.style.height = `${calculatedHeight}px`;
+    return;
   }
   
   /*

@@ -6,7 +6,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement } from "@b9g/crank";
-import { animationOptions, getSetting } from "../helpers";
+import { animationOptions, getSetting } from "../../helpers";
 
 function Popup ({ id, active, text, buttons, callback }) {
   

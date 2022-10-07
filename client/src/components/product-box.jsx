@@ -8,24 +8,16 @@
  * @requires @bikeshaving/crank
  * @listens DOMContentLoaded
  */
-import "regenerator-runtime/runtime"; // regeneratorRuntime error
 import { createElement, Fragment } from "@b9g/crank";
 import { renderer } from "@b9g/crank/dom";
 
-import AddToCartButton from "./add-button.js";
-import TextButton from "./text-button.js";
-import BarLoader from "./bar-loader.js";
-import BoxSelect from "./box-select.js";
-import ProductDescription from "./product-description.js";
-import QuantityForm from "./container/quantity-form.js";
-import IncludedProducts from "./container/included-products";
-import SelectMenu from "./select-menu";
-import Flash from "./flash";
-import IconCart from "./icon-cart";
-import { Fetch } from "./fetch";
-import { shallowEqual } from "../lib";
-import { hasOwnProp } from "../helpers";
-import Boxes from "./container/produce-boxes";
+import BarLoader from "./lib/bar-loader";
+import { Fetch } from "./lib/fetch";
+import {
+  hasOwnProp,
+  getSetting
+} from "../helpers";
+import Boxes from "./product/produce-boxes";
 
 /**
  * BoxApp crank component
@@ -89,13 +81,6 @@ async function* ProductBoxApp({productJson, cartJson}) {
    */
   let loading = true;
   /**
-   * Base url to api
-   *
-   * @member baseUrl
-   * @type {string}
-   */
-  const baseUrl = _baseUrl;
-  /**
    * The cart price??
    *
    * @member priceElement
@@ -116,6 +101,13 @@ async function* ProductBoxApp({productJson, cartJson}) {
    * @type {object}
    */
   let cartBoxId = null;
+  /**
+   * Add on items already in cart
+   *
+   * @member cartAddons
+   * @type {object}
+   */
+  let cartAddons = [];
 
   /**
    * Gather box includes for display, watch for dates, cart items and date
@@ -124,6 +116,7 @@ async function* ProductBoxApp({productJson, cartJson}) {
    * @function init
    */
   const init = async () => {
+    const baseUrl = getSetting("General", "api-url");
     await Fetch(
       `${baseUrl}current-boxes-for-box-product/${productJson.id}`
     ).then(async ({ error, json }) => {
@@ -138,9 +131,16 @@ async function* ProductBoxApp({productJson, cartJson}) {
               // get the delivery date regardless of which box
               inCartWithDate = item.properties["Delivery Date"];
               cartBoxId = item.product_id;
-            }
-          }
-        }
+            } else if (item.product_type === "Box Produce") {
+              const { title, product_id, quantity } = item;
+              cartAddons.push({
+                product_id,
+                quantity,
+                title
+              });
+            };
+          };
+        };
         if (Object.keys(json).length > 0) {
           fetchBoxes = Object.keys(json);
           fetchJson = json;
@@ -148,23 +148,23 @@ async function* ProductBoxApp({productJson, cartJson}) {
             byDeliveryDate.forEach(box => {
               if (box.shopify_product_id === cartBoxId && box.delivered === inCartWithDate) {
                 cartBox = box;
-              }
+              };
               if (box.addOnProduct) {
                 if (!hasOwnProp.call(addOns, handle)) {
                   addOns[handle] = [];
-                }
+                };
                 addOns[handle].push(box);
-              }
+              };
               if (box.includedProduct) {
                 if (!hasOwnProp.call(includes, handle)) {
                   includes[handle] = [];
-                }
+                };
                 includes[handle].push(box);
-              }
+              };
             });
           });
-        }
-      }
+        };
+      };
       loading = false;
       this.refresh();
     });
@@ -172,30 +172,41 @@ async function* ProductBoxApp({productJson, cartJson}) {
 
   await init();  // set up script
 
+  const title = {
+    "border-style": "solid",
+    "border-color": "silver",
+    "border-width": "0px 0px 1px 0px",
+  };
+
   for await ({ productJson } of this) {
     yield (
       <div class="mt1">
         { fetchError && <Error msg={fetchError} /> }
         { !loading ? (
           <Fragment>
+            <div class="listing-title" style={ title }>Included in the boxes:</div>
             { Object.keys(includes).length > 0 ? (
-              <Fragment>
-                <h4 class="mb0">Included in the boxes:</h4>
-                <Boxes boxes={includes} selectedProduct={productJson} cartBox={cartBox} boxInCart={Boolean(cartBoxId)} />
-              </Fragment>
+              <Boxes
+                type="includes"
+                boxList={includes}
+                selectedProduct={productJson}
+                cartBox={cartBox}
+                cartAddons={cartAddons}
+                boxInCart={Boolean(cartBoxId)} />
             ) : (
-              <Fragment>
-                <h4 class="mb0">Included in the boxes:</h4>
-                <p>Not a regular item in any box this week.</p>
-              </Fragment>
+              <p style="margin-top: 20px">Not a regular item in any box this week.</p>
             )}
+            <div class="listing-title" style={ title }>Add on product to:</div>
             { Object.keys(addOns).length > 0 ? (
-              <Fragment>
-                <h4 class="mb0">Add on product to:</h4>
-                <Boxes boxes={addOns} selectedProduct={productJson} cartBox={cartBox} boxInCart={Boolean(cartBoxId)} />
-              </Fragment>
+              <Boxes
+                type="addons"
+                boxList={addOns}
+                selectedProduct={productJson}
+                cartBox={cartBox}
+                cartAddons={cartAddons}
+                boxInCart={Boolean(cartBoxId)} />
             ) : (
-              <p>Not available as an add on product this week</p>
+              <p style="margin-top: 20px">Not available as an add on product this week</p>
             )}
           </Fragment>
         ) : (

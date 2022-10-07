@@ -413,9 +413,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    */
   const submitCart = async () => {
 
+    const url = "/cart";
     if (!boxHasChanged && loadedFromCart) {
       // redirect to cart if loaded from cart and no changes made
-      const url = "/cart";
       window.location = url;
     };
 

@@ -60,17 +60,15 @@ async function* Box ({handle, boxes, selectedProduct, cartBox, cartAddons, boxIn
    */
   let loading = true;
 
-  const shopUrl = "https://southbridge-dev.myshopify.com";
-
   const init = async () => {
     await Fetch(
-      `${shopUrl}/products/${handle}.js`
+      `/products/${handle}.js`
     ).then(async ({ error, json }) => {
       if (error) {
         fetchError = error;
       } else {
         fetchBox = json;
-        fetchBox.url = `${shopUrl}/products/${fetchBox.handle}`;
+        fetchBox.url = `/products/${fetchBox.handle}`;
         loading = false;
         await this.refresh();
       }

@@ -57,8 +57,8 @@ export default async (req, res, next) => {
       _id: new ObjectID(),
       shopify_title: product.title.replace(/,/g, ""),
       shopify_handle: product.handle,
-      shopify_product_id,
-      shopify_variant_id: path.basename(product.variants.nodes[0].id),
+      shopify_product_id: parseInt(shopify_product_id),
+      shopify_variant_id: parseInt(path.basename(product.variants.nodes[0].id)),
       shopify_price: parseFloat(product.variants.nodes[0].price) * 100,
       shopify_tag: product.tag
     }

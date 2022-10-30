@@ -1058,7 +1058,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
           if (aop) {
             // got an add on product
             const item = selectedBox.addOnProducts.find(el => el.shopify_product_id === parseInt(aop, 10));
-            if (item) {
+            if (item && !selectedAddons.find(el => el.shopify_product_id === parseInt(aop, 10))) {
               const product = { ...item };
               product.quantity = 1;
               selectedAddons.push(product);

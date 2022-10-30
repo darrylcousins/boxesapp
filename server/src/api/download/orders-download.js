@@ -49,11 +49,11 @@ export default async (req, res, next) => {
       // collect incremented item count in included items and add to extras list
       const extras = order.addons;
       order.including.forEach(product => {
-        let { product_title, count } = matchNumberedString(product);
-        if (count === 2) {
-          extras.push(product_title);
-        } else if (count > 2) {
-          extras.push(`${product_title} (${count - 1})`);
+        let { title, quantity } = matchNumberedString(product);
+        if (quantity === 2) {
+          extras.push(title);
+        } else if (quantity > 2) {
+          extras.push(`${title} (${quantity - 1})`);
         };
       });
       extras.sort();

@@ -11,7 +11,7 @@ export const matchNumberedString = (str) => {
   let count = 1;
   const match = str.match(/\(\d+\)$/);
   if (match) {
-    count = parseInt(str.slice(match.index+1, match.index+match[0].length-1));
+    count = parseInt(str.slice(match.index+1, match.index+match[0].length-1), 10);
     str = str.slice(0, match.index).trim();
   }
   return { title: str, quantity: count };

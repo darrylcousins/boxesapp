@@ -8,6 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const paths = window.location.pathname.split("/").filter(el => el !== "");
 
+  console.log(paths);
+
   if (paths.length === 0) paths.push("index");
 
   import(`./md-sources/${paths.join("/")}.md`).then(({ default: html }) => {

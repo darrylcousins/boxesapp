@@ -7,6 +7,6 @@ export default defineConfig({
     vitePluginMdToHTML()
   ],
   server: {
-    port: 4000,
+    port: 4003,
   },
 })

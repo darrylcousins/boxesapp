@@ -7,8 +7,8 @@
  */
 import { createElement, Fragment, Raw } from "@b9g/crank";
 import { marked } from "marked";
-//import hljs from "highlight.js/lib/core";
-import hljs from "highlight.js";
+import hljs from "highlight.js/lib/core";
+//import hljs from "highlight.js";
 
 import Navigation from "./navigation.jsx";
 import Credits from "./credits.jsx";

@@ -194,23 +194,26 @@ function *Page() {
         </div>
         <Navigation pathname={ pathname } mode={ mode } />
         <div class="cf"></div>
-        <Alert>
-          This documentation is still under construction, incomplete, and
-          already a little out of date. The
-          application itself is running successfully on a
-          <a href="https://www.streamsideorganics.co.nz"
-            class="link mh1 b black-60 dim"
-            title="Streamside Organics">production site</a>
-          but a list of improvements and features are waiting in the wings
-          until such a time when the
-          <a href="mailto:cousinsd@proton.me"
-            class="link mh1 b black-60 dim"
-            title="Email Darryl Cousins">developer</a>
-              has time to resume work on it.
-        </Alert>
         <div id="page-wrapper" role="document">
+          <Alert>
+            This documentation is still under construction, incomplete, and
+            already a little out of date. The
+            application itself is running successfully on a
+            <a href="https://www.streamsideorganics.co.nz"
+              class="link mh1 b black-60 dim"
+              title="Streamside Organics">production site</a>
+            but a list of improvements and features are waiting in the wings
+            until such a time when the
+            <a href="mailto:cousinsd@proton.me"
+              class="link mh1 b black-60 dim"
+              title="Email Darryl Cousins">developer</a>
+                has time to resume work on it.
+          </Alert>
           <div id="page-content" role="main" class={ `markdown-body ${mode}-mode` }>
             <Raw value={ html } />
+          </div>
+          <div id="timestamp">
+            Documentation first published Friday December 16 2022.
           </div>
           <footer class="footer pb2 pt3 mt3 tl bt nowrap">
             Darryl Cousins

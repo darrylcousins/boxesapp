@@ -297,3 +297,13 @@ Run the build script:
 cd client
 node build.js
 ```
+
+## Run the Server
+
+The command runs the process in the shell.
+
+```bash
+cd server
+npm run serve
+```
+

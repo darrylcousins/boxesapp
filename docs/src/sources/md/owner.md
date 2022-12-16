@@ -1,14 +1,23 @@
 # Store Owner
 
-* [Checklist](/owner-checklist):
+* <a href="/owner-checklist"
+data-page="/owner-checklist" title="Checklist">
+Checklist
+</a>
 
   > A checklist for installation and configuration.
 
-* [Shopify](/owner-shopify):
+* <a href="/owner-shopify"
+data-page="/owner-shopify" title="Shopify">
+Shopify
+</a>
 
   > Details setting up products: `Container Box` and `Box Product` product types.
 
-* [Recharge](/owner-recharge):
+* <a href="/owner-recharge"
+data-page="/owner-recharge" title="Recharge">
+Recharge
+</a>
 
   > Installaton and configuration of Recharge.
 

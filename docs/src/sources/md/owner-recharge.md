@@ -101,15 +101,23 @@ and footer. The following could be suggested adding to the header:
 
 ```html
 <section class="rct_content"
-  style="background-color:khaki; padding: 10px;border:1px;margin-bottom:1em">
-    <p><img 
-    style="width:50px;float:left;margin-right:1em;" src="https://boxesapp.nz/assets/boxes.svg" />
+     style="background-color:khaki; padding: 10px;border:1px;margin-bottom:1em">
+  <p>
+    <img 
+      style="width:50px;float:left;margin-right:1em;"
+      src="https://boxesapp.nz/assets/boxes.svg"
+    />
     To skip an order, or cancel a subscription, or change the products in your
     box subscription please return to your
-    <a href="/account" style="font-weight: bold;color:#333">account</a> page and select
-    the link to <i style="font-weight: bold">Manage Subscribed Boxes</i>.</p>
+    <a href="/account" 
+       style="font-weight: bold;color:#333">
+      account
+    </a>
+    page and select the link to
+    <i style="font-weight: bold">Manage Subscribed Boxes</i>.
+  </p>
 </section>
 ``` 
 
-<img src="/assets/CustomerPortalHeader.png" width="660" />
+<img src="CustomerPortalHeader.png" width="660" />
 

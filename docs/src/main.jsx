@@ -13,6 +13,8 @@ import bash from "highlight.js/lib/languages/bash";
 import django from "highlight.js/lib/languages/django";
 import nginx from "highlight.js/lib/languages/nginx";
 import monkey from "highlight.js/lib/languages/monkey";
+import json from "highlight.js/lib/languages/json";
+import xml from "highlight.js/lib/languages/xml";
 
 import "./style.scss";
 
@@ -21,10 +23,12 @@ import { CopyrightIcon } from "./components/lib/icon.jsx";
 
 document.addEventListener("DOMContentLoaded", async () => {
   hljs.registerLanguage('javascript', javascript);
-  hljs.registerLanguage('django', django);
+  hljs.registerLanguage('django', django); // great job with .liquid file
   hljs.registerLanguage('bash', bash);
   hljs.registerLanguage('nginx', nginx);
-  hljs.registerLanguage('monkey', monkey);
+  hljs.registerLanguage('monkey', monkey); // pretty good job with .env file
+  hljs.registerLanguage('json', json);
+  hljs.registerLanguage('html', xml);
   await renderer.render(
     <Fragment>
       <Page />

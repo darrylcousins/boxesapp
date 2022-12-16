@@ -129,7 +129,6 @@ function *Page() {
     ev.preventDefault();
 
     pathname = ev.target.dataset.page;
-    console.log(pathname);
     const pagetitle = ev.target.title;
     const state = { additionalInformation: 'Updated the URL from navigation' };
     window.history.pushState(state, pagetitle, pathname);

@@ -1,0 +1,44 @@
+{
+  "navigation":[
+    {
+      "title":"Home",
+      "link":"/index",
+      "description":"Landing page"
+    },
+    {
+      "title":"Store Customer",
+      "link":"/customer",
+      "description":"Overview of boxes interface for customer"
+    },
+    {
+      "title":"Store Owner",
+      "subnav":[
+        {
+          "title":"Overview",
+          "link":"/owner",
+          "description":"An overview for the store owner"
+        },
+        {
+          "title":"Checklist",
+          "link":"/owner-checklist",
+          "description":"An installation checklist for the store owner"
+        },
+        {
+          "title":"Shopify",
+          "link":"/owner-shopify",
+          "description":"Information about Shopify integration for the store owner"
+        },
+        {
+          "title":"Recharge",
+          "link":"/owner-recharge",
+          "description":"Information about Recharge integration for the store owner"
+        }
+      ]
+    },
+    {
+      "title":"System Administrator",
+      "link":"/sysadmin",
+      "description":"Instructions for the sysadmin of the app server"
+    }
+  ]
+}

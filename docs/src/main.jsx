@@ -1,0 +1,30 @@
+/**
+ * Entry point
+ *
+ * @module src/main.jsx
+ * @exports {Element} Home
+ * @author Darryl Cousins <cousinsd@proton.me>
+ */
+import { createElement, Fragment } from "@b9g/crank";
+import { renderer } from "@b9g/crank/dom";
+import hljs from "highlight.js/lib/core";
+import javascript from "highlight.js/lib/languages/javascript";
+import django from "highlight.js/lib/languages/django";
+
+import "./style.scss";
+
+import Page from "./components/app/page.jsx";
+import { CopyrightIcon } from "./components/lib/icon.jsx";
+
+document.addEventListener("DOMContentLoaded", async () => {
+  /*
+  hljs.registerLanguage('javascript', javascript);
+  hljs.registerLanguage('django', django);
+  */
+  await renderer.render(
+    <Fragment>
+      <Page />
+
+    </Fragment>
+  , document.querySelector("#app"));
+});

@@ -2,47 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>boxesapp.nz</title>
-    <style>
-      #navigation { opacity: 0 }
-    </style>
+    <title>BoxesApp</title>
   </head>
   <body>
-    <section class="markdown-body">
-      <div class="header">
-        <h1>
-          <a href="/" style="text-decoration: none; color: #24292f; width: 100%;">
-            Boxes App
-            <img style="width:50px; float: right;" src="/assets/boxes.svg" />
-          </a>
-        </h1>
-      </div>
-      <div id="navigation">
-        <ul>
-          <li><a class="link dim" href="/">Home</a></li>
-          <li><a class="link dim" href="/customer">Store Customer</a></li>
-          <li class="dropdown">
-            <a href="javascript:void(0)" class="dropbtn link dim" title="Store Owner">Store Owner</a>
-            <div class="dropdown-content">
-              <a class="link dim" href="/owner-checklist" title="Checklist">Checklist</a>
-              <a class="link dim" href="/RECHARGE" title="Recharge">Recharge</a>
-              <a class="link dim" href="/owner-shopify" title="Shopify">Shopify</a>
-            </div>
-          </li>
-          <li class="dropdown">
-            <a href="javascript:void(0)" class="dropbtn link dim" title="System Administrator">System Administrator</a>
-            <div class="dropdown-content">
-              <a class="link dim" href="/INSTALL" title="Install">Install</a>
-              <a class="link dim" href="/SHOPIFY" title="Shopify">Shopify</a>
-              <a class="link dim" href="/RECHARGE" title="Recharge">Recharge</a>
-            </div>
-          </li>
-        </ul>
-      </div>
-      <div id="app"></div>
-      <script type="module" src="/main.jsx"></script>
-    </section>
+    <!-- 512px 768px 1024px -->
+    <div id="main" class="mw6 mw7-m mw8-l center">
+      <div id="app" class="mh2 mh2-m mh0-l"></div>
+      <script type="module" src="/src/main.jsx"></script>
+    </div>
   </body>
 </html>

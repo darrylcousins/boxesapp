@@ -5,21 +5,19 @@ data-page="/owner-checklist" title="Checklist">
 Checklist
 </a>
 
-  > A checklist for installation and configuration.
+  > A checklist for installation and configuration by the store owner.
 
 * <a href="/owner-shopify"
 data-page="/owner-shopify" title="Shopify">
 Shopify
 </a>
 
-  > Details setting up products: `Container Box` and `Box Product` product types.
+  > Details setting up `Container Box` and `Box Product` product types in the Shopify admin dashboard.
 
 * <a href="/owner-recharge"
 data-page="/owner-recharge" title="Recharge">
 Recharge
 </a>
 
-  > Installaton and configuration of Recharge.
-
-A rough preview tour of the administration interface can be seen [here](https://drive.google.com/file/d/16zMoHqAO5WtjadNIKKByToAedoXWEjWU/view?usp=sharing).
+  > Installaton and configuration of Recharge by the store owner.
 

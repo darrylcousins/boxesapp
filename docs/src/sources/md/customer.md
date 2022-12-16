@@ -28,6 +28,10 @@ When the customer selects to subscribe to the box they will receive 2 emails.
 A further email may also be sent from Recharge to the customer if nominated to
 do so in the Recharge settings by the store owner.
 
+## Subsequent Subscription Orders
+
+With a subscription Recharge creates an order on Shopify and charges the customer 3 days prior to the delivery date. A 
+
 ## Editing a Subscribed Box
 
 In between orders the customer may edit the items in their box. This will be
@@ -40,16 +44,20 @@ prior to that the customer will need to confirm the update by clicking the
 A charge is processed and a new order is created by Recharge 3 days prior to
 the scheduled delivery date, after which time the box cannot be edited. Three
 days prior to the order being created a `charge upcoming` email is sent to the
-customer by Boxes, at this time the necessary changes are automatically made to
+customer by BoxesApp, at this time the necessary changes are automatically made to
 the customers box (unavailable extras removed etc) in the same manner as shown
-below. Between the charge upcoming and the charge processed (i.e. order
-created) the customer has the opportunity to make changes to their box.
+in the video below. Between the charge upcoming and the charge being processed
+(i.e. the charge made and the order created) the customer has the opportunity
+to make changes to their box.
 
-<div class="alert items-center flex ba b--black br2 ph3 pv2 mb3 black-80" 
-  style="background-color: sandybrown" role="alert">
-<div class="f1 w-10 tc"><span class="v-mid">&#9888;</span></div>
-<p class="lh-copy w-90 pt2">
-Update required, the customer can also pause/resume and cancel the box subscription from this interface.  
+<div class="todo">
+<p>
+<ul class="list">
+<li>
+Update to the video is required to show how the customer can also pause/resume and
+cancel/reactivate the box subscription from this interface.  
+</li>
+</ul>
 </p>
 </div>
 

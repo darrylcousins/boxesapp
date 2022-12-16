@@ -24,6 +24,11 @@
           "description":"An installation checklist for the store owner"
         },
         {
+          "title":"BoxesApp",
+          "link":"/owner-boxesapp",
+          "description":"A tour of the boxesapp dashboard and the actions available"
+        },
+        {
           "title":"Shopify",
           "link":"/owner-shopify",
           "description":"Information about Shopify integration for the store owner"

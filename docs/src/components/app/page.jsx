@@ -47,6 +47,13 @@ function *Page() {
    */
   let html = "";
 
+  const reloadEvent = (e) => {
+    // prevent reload
+    e.preventDefault();
+  };
+
+  addEventListener("beforeunload", reloadEvent, { capture: true });
+
   const imageEvents = () => {
     // add event listener for expanding image to all markdown content images if screen size large
     const content = document.querySelector("#page-content");
@@ -194,7 +201,7 @@ function *Page() {
         <div class="cf"></div>
         <Alert>
           This documentation is still under construction, incomplete, and
-          already in parts a little out of date. The
+          already a little out of date. The
           application itself is running successfully on a
           <a href="https://www.streamsideorganics.co.nz"
             class="link mh1 b black-60 dim"

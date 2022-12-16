@@ -1,20 +1,21 @@
 # BoxesApp
 
-* <a href="/owner"
-data-page="/owner" title="Store Owner">
-Store Owner
-</a>
-
-  > Documentation for the owner of the Shopify store, details required store
-  > and product settings.
-
 * <a href="/customer"
 data-page="/customer" title="Store Customer">
 Store Customer
 </a>
 
-  > Documentation for the customer - the shop owner may want to publish this on
-  > the Shopify store for their users.
+  > Video documentation of the functionality of the product interface when
+  > ordering a box and customer management of their subscriptions.
+
+* <a href="/owner"
+data-page="/owner" title="Store Owner">
+Store Owner
+</a>
+
+  > Documentation for the owner of the Shopify store. Describes the
+  > installation and configuration required to have BoxesApp running on a
+  > Shopify store.
 
 * <a href="/sysadmin"
 data-page="/sysadmin" title="System Administrator">

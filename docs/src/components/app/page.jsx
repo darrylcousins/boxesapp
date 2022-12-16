@@ -47,12 +47,7 @@ function *Page() {
    */
   let html = "";
 
-  const reloadEvent = (e) => {
-    // prevent reload
-    e.preventDefault();
-  };
-
-  addEventListener("beforeunload", reloadEvent, { capture: true });
+  addEventListener("beforeunload", () => { return false; });
 
   const imageEvents = () => {
     // add event listener for expanding image to all markdown content images if screen size large
@@ -138,7 +133,7 @@ function *Page() {
     pathname = ev.target.dataset.page;
     const pagetitle = ev.target.title;
     const state = { additionalInformation: 'Updated the URL from navigation' };
-    window.history.pushState(state, pagetitle, pathname);
+    //window.history.pushState(state, pagetitle, pathname);
 
     // hide pushmenu
     document.querySelector("#menu-switch").checked = false;

@@ -17,6 +17,7 @@ import BarLoader from "../lib/bar-loader.jsx";
 import {
   LightModeIcon,
   DarkModeIcon,
+  PreviewIcon,
 } from "../lib/icon.jsx";
 import { delay, animationOptions } from "../helpers.jsx";
 
@@ -40,6 +41,12 @@ function *Page() {
    */
   //let mode = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   let mode = "dark";
+
+  /**
+   * Markdown content
+   * @member {string} md
+   */
+  let md = "";
 
   /**
    * Parsed markdown content
@@ -110,6 +117,7 @@ function *Page() {
           hljs.highlightElement(el);
         });
         html = div.innerHTML;
+        md = text;
       }).catch((err) => {
         html = `
         <h1>${err.message}</h1>
@@ -120,6 +128,14 @@ function *Page() {
         await this.refresh();
         imageEvents();
       });
+  };
+
+  /**
+   * Replace parsed source with markdown text
+   * @method {Promise} showSource
+   */
+  const showSource = () => {
+    console.log("show source");
   };
 
   /**
@@ -191,6 +207,9 @@ function *Page() {
         </a>
         <div onclick={ (e) => toggleMode(mode === "dark" ? "light" : "dark") } class="pointer dib fr">
           { mode === "dark" ? <LightModeIcon /> : <DarkModeIcon /> }
+        </div>
+        <div onclick={ (e) => showSource() } class="pointer dib fr">
+          <PreviewIcon />
         </div>
         <Navigation pathname={ pathname } mode={ mode } />
         <div class="cf"></div>

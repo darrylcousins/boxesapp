@@ -199,7 +199,7 @@ function *Page() {
             This documentation is still under construction, incomplete, and
             already a little out of date. The
             application itself is running successfully on a
-            <a href="https://www.streamsideorganics.co.nz"
+            <a href="https://www.streamsideorganics.co.nz/collections/veggie-boxes-1"
               class="link mh1 b black-60 dim"
               title="Streamside Organics">production site</a>
             but a list of improvements and features are waiting in the wings
@@ -212,10 +212,10 @@ function *Page() {
           <div id="page-content" role="main" class={ `markdown-body ${mode}-mode` }>
             <Raw value={ html } />
           </div>
-          <div id="timestamp">
-            Documentation first published Friday December 16 2022.
-          </div>
           <footer class="footer pb2 pt3 mt3 tl bt nowrap">
+            <div id="timestamp" class="mb2">
+              Published Friday December 16 2022.
+            </div>
             Darryl Cousins
             <span class="ml1">&lt;
               <a class="link dim"

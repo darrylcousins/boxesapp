@@ -204,9 +204,9 @@ function *Page() {
               title="Streamside Organics">production site</a>
             but a list of improvements and features are waiting in the wings
             until such a time when the
-            <a href="mailto:cousinsd@proton.me"
+                <a href="https://cousinsd.net"
               class="link mh1 b black-60 dim"
-              title="Email Darryl Cousins">developer</a>
+              title="Darryl Cousins">developer</a>
                 has time to resume work on it.
           </Alert>
           <div id="page-content" role="main" class={ `markdown-body ${mode}-mode` }>

@@ -184,9 +184,7 @@ ${ `${ fence }` }
     ev.preventDefault();
 
     pathname = ev.target.dataset.page;
-    const pagetitle = ev.target.title;
-    const state = { additionalInformation: 'Updated the URL from navigation' };
-    //window.history.pushState(state, pagetitle, pathname);
+    history.pushState("", "", pathname)
 
     // hide pushmenu
     document.querySelector("#menu-switch").checked = false;

@@ -19,7 +19,11 @@ import {
   DarkModeIcon,
   PreviewIcon,
 } from "../lib/icon.jsx";
-import { delay, animationOptions } from "../helpers.jsx";
+import {
+  delay,
+  animationOptions,
+  animateFadeForAction,
+} from "../helpers.jsx";
 
 /**
  * Page component
@@ -43,10 +47,23 @@ function *Page() {
   let mode = "dark";
 
   /**
+   * Text indicator - parsed html or plain markdown text?
+   * @member {boolean} parsed
+   */
+  let parsed = true;
+
+  /**
    * Markdown content
    * @member {string} md
    */
   let md = "";
+
+  /**
+   * Markdown content presented as <pre><code> block
+   * Initialize as empty, populate on showSource, then retained
+   * @member {string} md_html
+   */
+  let md_html = "";
 
   /**
    * Parsed markdown content
@@ -102,22 +119,27 @@ function *Page() {
    * @method {Promise} pullPage
    */
   const pullPage = (pathname) => {
-    fetch(`.${pathname}.md`, {headers: {'Accept': 'text/markdown'}})
+    fetch(`.${pathname}.md`, {
+      headers: {
+        "Accept": "text/markdown",
+        "Cache-Control": "no-cache",
+      }})
       .then((res) => {
         if (!res.ok) {
           throw new Error(`${res.status} (${res.statusText})`);
         }
         return res.text();
       }).then((text) => {
-        const parsed = marked.parse(text);
         const div = document.createElement('div');
-        div.innerHTML = parsed.trim();
+        div.innerHTML = marked.parse(text).trim();
         // highlight code syntax - see also registerLanguage in main.jsx
         div.querySelectorAll('pre code').forEach((el) => {
           hljs.highlightElement(el);
         });
         html = div.innerHTML;
-        md = text;
+        // place 4 spaces at start of each line for nested code block
+        md = text.split("\n").map(line => `    ${line}`).join("\n");
+        parsed = true; // always start with parsed html
       }).catch((err) => {
         html = `
         <h1>${err.message}</h1>
@@ -133,9 +155,24 @@ function *Page() {
   /**
    * Replace parsed source with markdown text
    * @method {Promise} showSource
+   *
+   * Need to add 4 spaces in order to nest a code block
+   *
    */
-  const showSource = () => {
-    console.log("show source");
+  const showSource = async () => {
+    if (parsed) {
+      const fence = "```";
+      const t = `
+<h3>Showing Markdown Source For ${pathname}</h3>
+
+${ `${ fence }markdown` }
+${ `${ md }` }
+${ `${ fence }` }
+  `;
+      md_html = marked.parse(t).trim();
+    };
+    parsed = !parsed;
+    animateFadeForAction("page-content", () => this.refresh());
   };
 
   /**
@@ -205,11 +242,15 @@ function *Page() {
             id="boxes-logo" style="width: 80px; height:80px;">
           &nbsp;
         </a>
-        <div onclick={ (e) => toggleMode(mode === "dark" ? "light" : "dark") } class="pointer dib fr">
-          { mode === "dark" ? <LightModeIcon /> : <DarkModeIcon /> }
-        </div>
-        <div onclick={ (e) => showSource() } class="pointer dib fr">
+        <div onclick={ (e) => showSource() }
+          title={ `${parsed ? "Show" : "Hide" } markdown source` }
+          class="pointer dib fr">
           <PreviewIcon />
+        </div>
+        <div onclick={ (e) => toggleMode(mode === "dark" ? "light" : "dark") }
+          title={ `Switch to ${mode === "dark" ? "light" : "dark"} mode` }
+          class="pointer dib fr mr2">
+          { mode === "dark" ? <LightModeIcon /> : <DarkModeIcon /> }
         </div>
         <Navigation pathname={ pathname } mode={ mode } />
         <div class="cf"></div>
@@ -229,11 +270,15 @@ function *Page() {
                 has time to resume work on it.
           </Alert>
           <div id="page-content" role="main" class={ `markdown-body ${mode}-mode` }>
-            <Raw value={ html } />
+            { parsed ? (
+              <Raw value={ html } />
+            ) : (
+              <Raw value={ md_html } />
+            )}
           </div>
           <footer class="footer pb2 pt3 mt3 tl bt nowrap">
             <div id="timestamp" class="mb2">
-              Published Friday December 16 2022.
+              Published December 20 2022.
             </div>
             Darryl Cousins
             <span class="ml1">&lt;

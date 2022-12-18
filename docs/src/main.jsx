@@ -15,6 +15,7 @@ import nginx from "highlight.js/lib/languages/nginx";
 import monkey from "highlight.js/lib/languages/monkey";
 import json from "highlight.js/lib/languages/json";
 import xml from "highlight.js/lib/languages/xml";
+import markdown from "highlight.js/lib/languages/markdown";
 
 import "./style.scss";
 
@@ -29,6 +30,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   hljs.registerLanguage('monkey', monkey); // pretty good job with .env file
   hljs.registerLanguage('json', json);
   hljs.registerLanguage('html', xml);
+  hljs.registerLanguage('markdown', markdown);
   await renderer.render(
     <Fragment>
       <Page />

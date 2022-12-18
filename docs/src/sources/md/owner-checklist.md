@@ -1,4 +1,4 @@
-# Store Owner :: Checklist
+# Store Owner - Checklist
 
 ## Recharge
 

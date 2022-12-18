@@ -1,4 +1,4 @@
-# Store Owner :: Shopify
+# Store Owner - Shopify
 
 Documentation relating to setting up products on the store.
 

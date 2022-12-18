@@ -1,5 +1,12 @@
 # Store Owner
 
+* <a href="/owner-boxesapp"
+data-page="/owner-boxesapp" title="Admin Dashboard Overview">
+BoxesApp
+</a>
+
+  > A brief overview of the administration dashboard - work in progress.
+
 * <a href="/owner-checklist"
 data-page="/owner-checklist" title="Checklist">
 Checklist

@@ -1,4 +1,4 @@
-# Store Owner :: Recharge
+# Store Owner - Recharge
 
 ## Purchase options
 

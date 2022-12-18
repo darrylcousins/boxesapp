@@ -2,7 +2,8 @@
 
 ## Video Overview
 
-A rough video tour of the BoxesApp administration dashboard can be seen [here](https://drive.google.com/file/d/16zMoHqAO5WtjadNIKKByToAedoXWEjWU/view?usp=sharing).
+A rough video tour of the BoxesApp administration dashboard can be seen
+**[here](https://drive.google.com/file/d/16zMoHqAO5WtjadNIKKByToAedoXWEjWU/view?usp=sharing)**.
 
 ## To Do
 

@@ -38,9 +38,14 @@ export const getDeliveryDays = async (db, product_id) => {
 
     const now = new Date();
     // now filter the array accounting for limits
+    // Shape of el:
+    // deliveryDay: integer
+    // delivered: dateString
+    // deliverDate: dateObject
     const finalDates = dates.map(el => {
+      if (!el) return null;
       const filter = filters[el.deliverDay];
-      const count = el.delivered in counts ? counts[el.delivered] : 0;
+      const count = counts && el.delivered in counts ? counts[el.delivered] : 0;
       // a limit of zero means no limit at all
       if (filter) {
         if (filter.hasOwnProperty("limit") && filter.limit > 0) {

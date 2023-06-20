@@ -89,6 +89,9 @@ async function* Subscriptions() {
     await Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
+        console.log(json.next_cursor);
+        console.log(json.previous_cursor);
+        console.log(json.customers);
         if (error !== null) {
           fetchError = error;
           loading = false;
@@ -97,8 +100,6 @@ async function* Subscriptions() {
         };
         rechargeCustomers = json.customers;
         console.log(rechargeCustomers);
-        console.log(json.next_cursor);
-        console.log(json.previous_cursor);
         loading = false;
         this.refresh();
       })

@@ -78,6 +78,7 @@ const run = async () => {
       if (result.id !== 'null') url = path.join(url, result.id);
       if (["subscriptions"].includes(result.path) && result.method !== "DELETE") {
         url = `${url}?include=metafields`;
+        //url = `${url}&status=active`;
       };
       if (result.path === "metafields") {
         url = `${url}?owner_resource=subscription`;

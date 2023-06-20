@@ -162,7 +162,11 @@ export default async (req, res, next) => {
           // if one of these are in subscribed extras then we could substitute for the remove
           // pick one not already included let difference = arrA.filter(x => !arrB.includes(x));
           let possible = swaps.map(el => el.shopify_title)
-            .filter(x => !subscribedExtras.map(el => el.title).includes(x))
+
+          //.filter(x => !subscribedExtras.map(el => el.title).includes(x))
+          // Careful here XXX changed to boxAddOnExtras 28 Feb 2023
+          //
+            .filter(x => !boxAddOnExtras.map(el => el.title).includes(x))
             .filter(x => !boxSwappedExtras.map(el => el.title).includes(x));
           if (possible.length) {
             let title = possible[Math.floor(Math.random() * possible.length)];

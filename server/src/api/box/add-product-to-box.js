@@ -24,6 +24,12 @@ export default async (req, res, next) => {
     return;
   };
 
+  // prevent adding unavailable items
+  if (!shopify_product_id) {
+    res.status(400).json({ error: "No shopify product id" });
+    return;
+  };
+
   const body = `{
     product (id: "gid://shopify/Product/${shopify_product_id}") {
       id

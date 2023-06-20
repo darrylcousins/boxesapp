@@ -114,7 +114,10 @@ export default class Registry {
         headers: this.headers,
       };
       const { webhook } = await fetch(`${Recharge.Context.API_URL}/webhooks/${existing.webhook_id}`, options)
-        .then(result => result.json());
+        .then(result => {
+          const res = result.json();
+          return res;
+        });
       if (webhook.id === existing.webhook_id && webhook.topic === existing.topic.toLowerCase().replace(/_/g, '/')) {
         this.Handlers[topic] = handler;
         return; // webhook exists and match stored data

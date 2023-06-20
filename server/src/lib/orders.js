@@ -136,7 +136,12 @@ export const collatePickingData = async (options) => {
         const { title: name, quantity: count} = matchNumberedString(product);
         if (name === "None") continue;
         const key = (order.product_id === custom_box_id) ? "custom" : column;
-        const tag = `${order.products[name]}`;
+        let tag = null;
+        try {
+          tag = `${order.products[name]}`;
+        } catch(err) {
+          _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err})
+        };
 
         if (!Object.hasOwnProperty.call(final, tag)) {
           final[tag] = {}; // allowing incorrect tags e.g. null 

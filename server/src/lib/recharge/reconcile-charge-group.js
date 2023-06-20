@@ -23,10 +23,12 @@ export const reconcileGetGrouped = ({ charge }) => {
 
   try {
     for (const line_item of charge.line_items) {
+      console.log(line_item);
       const box_subscription_property = line_item.properties.find(el => el.name === "box_subscription_id");
       if (!box_subscription_property) {
         // should never happen! But what to do if it does? Maybe run the subscription-create webhook script?
         console.log("NO BOX_SUBSCRIPTION_PROPERTY");
+        console.log(JSON.stringify(line_item));
       };
       const box_subscription_id = parseInt(box_subscription_property.value);
       if (!grouped.hasOwnProperty(box_subscription_id)) {
@@ -116,7 +118,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   const query = {
     delivered: delivered.toDateString(),
     shopify_product_id: parseInt(subscription.external_product_id.ecommerce),
-    active: true
+    //active: true
   };
   let box = await _mongodb.collection("boxes").findOne(query);
   if (box) { // do we have the next box created?
@@ -567,6 +569,8 @@ export const gatherData = async ({ grouped, result }) => {
   for (const group of Object.values(grouped)) {
 
     const charge = group.charge;
+
+    //console.log(JSON.stringify(group, null, 2));
 
     // here just a line_item object
     const includedSubscriptions = group.included;

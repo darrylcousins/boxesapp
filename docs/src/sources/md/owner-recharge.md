@@ -1,4 +1,4 @@
-# Recharge
+# Store Owner - Recharge
 
 ## Purchase options
 
@@ -47,7 +47,7 @@ included products in sync with the box.
 5. *Swap product*:
   Also doable, again the difficulties will be when more than one `Container Box` is in the charge.
 
-<img src="/assets/CustomerPortal.png" width="660" />
+![Customer Portal](CustomerPortal.png)
 
 ## Pausing and Cancelling Subscriptions
 
@@ -63,13 +63,13 @@ customer portal. To get around that problem we can update the text shown to
 provide information that points the customer to the BoxesApp customer portal
 where pausing and cancelling can be done.
 
-<img src="/assets/Translations.png" width="960" />
+![Translations](Translations.png)
 
 ## Customer Notifications
 
 Because the Boxes App sends out an email on *subscription creation* and on
-*charge upcoming* (3 days prior to charge date) then these 2 email
-notifications can be disabled.
+*charge upcoming* (3 days prior to charge date) then it is recommended that these 2 email
+notifications be disabled.
 
 It could also be argued that because Shopify sends out an *order confirmed*
 email when the charge is created the Recharge notification *recurring charge
@@ -82,13 +82,13 @@ seems that this email is not sent when cancelling a single box subscription
 through the api. Awaiting confirmation from Recharge about this before creating
 an email from Boxes App confirming the cancellation.
 
-<img src="/assets/CustomerNotifications.png" width="660" />
+![CustomerNotifications](CustomerNotifications.png)
 
 ## Owner Notifications
 
-The *cancellation alert* notification should be enabled.
+The *cancellation alert* notification should be enabled along with these other settings.
 
-<img src="/assets/StoreOwnerNotifications.png" width="660" />
+![StoreOwnerNotifications](StoreOwnerNotifications.png)
 
 ## Customer Portal
 
@@ -101,14 +101,23 @@ and footer. The following could be suggested adding to the header:
 
 ```html
 <section class="rct_content"
-  style="background-color:khaki; padding: 10px;border:1px;margin-bottom:1em">
-    <p><img 
-    style="width:50px;float:left;margin-right:1em;" src="https://boxesapp.nz/assets/boxes.svg" />
+     style="background-color:khaki; padding: 10px;border:1px;margin-bottom:1em">
+  <p>
+    <img 
+      style="width:50px;float:left;margin-right:1em;"
+      src="https://boxesapp.nz/assets/boxes.svg"
+    />
     To skip an order, or cancel a subscription, or change the products in your
     box subscription please return to your
-    <a href="/account" style="font-weight: bold;color:#333">account</a> page and select
-    the link to <i style="font-weight: bold">Manage Subscribed Boxes</i>.</p>
+    <a href="/account" 
+       style="font-weight: bold;color:#333">
+      account
+    </a>
+    page and select the link to
+    <i style="font-weight: bold">Manage Subscribed Boxes</i>.
+  </p>
 </section>
 ``` 
 
-<img src="/assets/CustomerPortalHeader.png" width="660" />
+<img src="CustomerPortalHeader.png" width="660" />
+

@@ -1,12 +1,13 @@
-import { defineConfig } from "vite";
-//import { vitePluginMdToHTML } from 'vite-plugin-md-to-html';
-import vitePluginMdToHTML from "./src/index.js";
+import { SourcesHotReload } from "./vite.plugins.js";
 
-export default defineConfig({
-  plugins: [
-    vitePluginMdToHTML()
-  ],
-  server: {
-    port: 4000,
+export default {
+  plugins: [ SourcesHotReload() ],
+  esbuild: {
+    jsxFactory: 'createElement',
+    jsxFragment: 'Fragment'
   },
-})
+  server: {
+    port: 3332,
+  },
+};
+

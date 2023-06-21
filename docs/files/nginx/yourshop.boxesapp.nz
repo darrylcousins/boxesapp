@@ -15,8 +15,8 @@ server {
 	ssl_certificate /etc/letsencrypt/live/boxesapp.nz/fullchain.pem;
 	ssl_certificate_key /etc/letsencrypt/live/boxesapp.nz/privkey.pem;
 
-        set $my_port 3336; # yourshop.boxesapp.nz
-        set $my_cors https://yourshop-dev.myshopify.com;
+  set $my_port 3336; # yourshop.boxesapp.nz
+  set $my_cors https://yourshop-dev.myshopify.com;
 
 	root /home/cousinsd/Projects/boxesapp/server/dist/client;
 

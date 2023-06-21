@@ -1,4 +1,4 @@
-PORT="8000"
+PORT="4000"
 HOST="https://yourshop.boxesapp.nz"
 MAIL_DOMAIN="boxesapp.nz"
 
@@ -15,7 +15,7 @@ DB_PASSWORD='*************'
 
 SHOP_NAME="yourshop-dev"
 
-# proxy path configured in shopify admin
+# proxy path configured in shopify partner app admin
 PROXY_PATH="/tools/boxes"
 
 # shopify api pairs

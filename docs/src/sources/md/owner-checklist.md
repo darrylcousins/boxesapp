@@ -1,10 +1,8 @@
-# Shop Owner Checklist
-
-This is a shorter version of the information found [here](/owner).
+# Store Owner - Checklist
 
 ## Recharge
 
-Installing Recharge is not part of this documentation. More about Recharge integration with Boxes App [here](/RECHARGE).
+Installing Recharge is detailed [here](owner-recharge).
 
 ## Box Containers
 
@@ -34,7 +32,7 @@ Two edits are required to the theme to install the Boxes App.
 Firstly we need to load the `boxesapp` files in `layout/theme.liquid`. I've
 been placing it below other javascript script tags.
 
-```php
+```django
   {% if request.page_type == 'product' %}
     {{ 'boxesapp.css' | asset_url | stylesheet_tag }}
     {{ 'boxesapp.js' | asset_url | script_tag }}
@@ -48,7 +46,7 @@ any product **not** a `Container Box` should still render the correct form. The
 disabled for `Container Boxes` but should still render it's widget for any
 other subscription products in the shop.
 
-```php
+```django
   {% if product.type == 'Container Box' %}
     <script type="application/json" id="cart-json">
       {{ cart | json }}
@@ -77,11 +75,12 @@ It may be that the store owner will not want *Box Produce* items to be added
 individually to a cart nor to be subscribed for individually. To disable the
 product form the following 3 lines can replace the above.
 
-```php
+```django
   {% if product.type == 'Container Box' %}
     ...
   {% elif product.type != 'Box Produce' %}
     {% include 'product-form' %}
   {% endif %}
 ```
+
 

@@ -36,6 +36,18 @@ async function* Subscriptions() {
    */
   let searchTerm = null;
   /**
+   * The previous cursor
+   *
+   * @member {object|string} previousCursor
+   */
+  let previousCursor = null;
+  /**
+   * The nex cursor
+   *
+   * @member {object|string} nextCursor
+   */
+  let nextCursor = null;
+  /**
    * If the search term is invalid
    *
    * @member {object|string} searchError
@@ -61,6 +73,47 @@ async function* Subscriptions() {
   let rechargeCustomers = null;
 
   /**
+   * Helper method
+   *
+   * @function getBorders
+   */
+  const getBorders = (cursor) => {
+    let borders = "ba";
+    if (cursor === "previous") {
+      if (!nextCursor) return "ba br2";
+      return "ba br2 br--left";
+    };
+    if (cursor === "next") {
+      if (!previousCursor) return "ba br2";
+      return "bb br bt bl-0 br2 br--right";
+    };
+    if (position === "left") borders = "bb bl bt br-0 br2 br--left";
+    if (position === "middle") borders = "bb br bt bl-0";
+    if (position === "middle-left") borders = "ba";
+    if (position === "middle-right") borders = "bb br bt bl-0";
+    if (position === "right") borders = "br bt bb bl-0 br2 br--right";
+    if (position === "single") borders = "ba br2";
+    return borders;
+  };
+
+  /**
+   * Handle next/previous buttons
+   *
+   * @function clickEvent
+   */
+  const clickEvent = async (ev) => {
+    let target = ev.target;
+    const name = target.tagName.toUpperCase();
+    if (name === "BUTTON") {
+      target.blur();
+      loading = true;
+      await this.refresh();
+      fetchCustomers();
+    };
+  };
+
+  this.addEventListener("click", clickEvent);
+  /**
    * Handle the event calling to load another customer
    *
    * @function getNewCustomer
@@ -85,21 +138,21 @@ async function* Subscriptions() {
    * @function fetchCustomers
    */
   const fetchCustomers = async () => {
-    const uri = `/api/recharge-customers`;
+    let cursor = nextCursor || previousCursor;
+    const uri = `/api/recharge-customers?cursor=${cursor}`;
     await Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
-        console.log(json.next_cursor);
-        console.log(json.previous_cursor);
-        console.log(json.customers);
+        console.log(result);
         if (error !== null) {
           fetchError = error;
           loading = false;
           this.refresh();
           return null;
         };
+        nextCursor = json.next_cursor;
+        previousCursor = json.previous_cursor;
         rechargeCustomers = json.customers;
-        console.log(rechargeCustomers);
         loading = false;
         this.refresh();
       })
@@ -254,6 +307,24 @@ async function* Subscriptions() {
                 )}
               </div>
             )}
+            <div class="db tr">
+              { previousCursor && (
+                <button
+                  title="Previous"
+                  name="previous"
+                  type="button"
+                  class={`dark-grey b--dark-grey bg-transparent ph2 pv1 dim pointer ${getBorders("previous")}`}
+                >Previous</button>
+              )}
+              { nextCursor && (
+                <button
+                  title="Next"
+                  type="button"
+                  name="next"
+                  class={`dark-grey b--dark-grey bg-transparent ph2 pv1 dim pointer ${getBorders("next")}`}
+                >Next</button>
+              )}
+            </div>
             { rechargeCustomers && (
               <Fragment>
                 <table class="mt4 w-100 mw9 center" cellspacing="10">

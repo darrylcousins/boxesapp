@@ -91,6 +91,15 @@ if (process.env.NODE_ENV !== 'test') {
       metaKey: 'meta'
     })
   );
+  logger.add(
+    new winston.transports.MongoDB({
+      level: "debug",
+      db: mongo_uri,
+      options: mongo_options,
+      collection: 'logs',
+      metaKey: 'meta'
+    })
+  );
 };
 
 // separate logger for console logging of requests using morgan

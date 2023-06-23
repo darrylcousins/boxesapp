@@ -355,6 +355,18 @@ function* CurrentLogs() {
               >
                 <span class="v-mid di">Errors</span>
             </button>
+            <button
+              class={
+                `${
+                    logLevel === "debug" ? "white bg-black-80" : "grey bg-white"
+                  } dib w-third pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
+                }
+              title="Debug"
+              type="button"
+              onclick={() => changeLevel("debug")}
+              >
+                <span class="v-mid di">Debug</span>
+            </button>
           </div>
         </div>
         {loading && <BarLoader />}

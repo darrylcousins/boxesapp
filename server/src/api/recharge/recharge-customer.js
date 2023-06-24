@@ -19,7 +19,7 @@ export default async (req, res, next) => {
   let query;
   let path = "customers";
   if (Object.hasOwnProperty.call(req.query, "cursor")) {
-    query = [ ["limit", 1 ] ];
+    query = [ ["limit", 50 ] ]; // 50 is the default - can go to 250
     if (req.query.cursor !== "null") {
       query.push(["cursor", req.query.cursor ]);
     };

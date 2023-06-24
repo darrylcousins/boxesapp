@@ -7,10 +7,6 @@ import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import { gatherData, reconcileChargeGroup, reconcileGetGroups } from "../../lib/recharge/reconcile-charge-group.js";
 import fs from "fs";
 
-const delay = (t) => {
-  return new Promise(resolve => setTimeout(resolve, t));
-};
-
 /*
  * @function recharge/recharge-customer-charges.js
  * @param (Http request object) req
@@ -63,7 +59,7 @@ export default async (req, res, next) => {
     //fs.writeFileSync("recharge.subscription.json", JSON.stringify(result[0], null, 2));
     res.status(200).json({ result, reload });
   } catch(err) {
-    res.status(400).json({ error: err.toString() });
+    res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 };

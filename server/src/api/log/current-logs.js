@@ -22,7 +22,7 @@ export default async (req, res, next) => {
     const logs = await collection.find(query).sort({ timestamp: -1 }).toArray();
     res.status(200).json({ logs });
   } catch(err) {
-    res.status(400).json({ error: err.toString() });
+    res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 };

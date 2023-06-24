@@ -38,7 +38,7 @@ const main = async () => {
       const db = process.env.DB_NAME;
       const now = new Date();
       const since = new Date();
-      since.setDate(now.getDate() - 7); // only keep boxes and orders for 7 days
+      since.setDate(now.getDate() - 21); // keep boxes and orders for 21 days
       const report = [];
       const attachments = [];
       report.push(`DB clean: ${now.toString()}`);

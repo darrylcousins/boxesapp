@@ -2,16 +2,81 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import "dotenv/config";
+import { Job } from "bullmq";
 import { makeShopQuery } from "../shopify/helpers.js";
 import { getNZDeliveryDay } from "../dates.js";
+import { queue, queueEvents } from "../../bull/queue.js";
+import { winstonLogger } from "../../../config/winston.js"
+
+/*
+ * Recharge error codes
+ * 200 - OK: Everything worked as expected.
+ * 201 - OK: The request was successful, created a new resource, and resource created is in the body.
+ * 202 - OK: The request has been accepted and is in processing.
+ * 204 - OK: The server has successfully fulfilled the request and there is no content to send in the response body.
+ * 400 - Bad Request: The request was unacceptable, often due to a missing required parameter.
+ * 401 - Unauthorized: No valid API key was provided.
+ * 402 - Request Failed: The parameters were valid but the request failed.
+ * 403 - The request was authenticated but not authorized for the requested resource (permission scope error).
+ * 404 - Not Found: The requested resource doesn’t exist.
+ * 405 - Method Not Allowed: The method is not allowed for this URI.
+ * 406 - The request was unacceptable, or requesting a data source which is not allowed although permissions permit the request.
+ * 409 - Conflict: You will get this error when you try to send two requests to edit an address or any of its child objects at the same time, in order to avoid out of date information being returned.
+ * 415 - The request body was not a JSON object.
+ * 422 - The request was understood but cannot be processed due to invalid or missing supplemental information.
+ * 426 - The request was made using an invalid API version.
+ * 429 - The request has been rate limited.
+ * 500 - Internal server error.
+ * 501 - The resource requested has not been implemented in the current version but may be implemented in the future.
+ * 503 - A 3rd party service on which the request depends has timed out.
+ */
+
+//export const makeRechargeQuery = async ({method, path, limit, query, body}) => {
+export const makeRechargeQuery = async (opts) => {
+  const job = await queue.add(
+    "makeRechargeQuery",
+    opts,
+    {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 1000,
+      },
+    },
+  )
+  console.log("Queued")
+
+  /*
+   * Returns one of these values: "completed", "failed", "delayed", "active", "waiting", "waiting-children", "unknown".
+   */
+  // const state = await job.getState();
+
+  // This correctly waits until the job is done :)
+  await job.waitUntilFinished(queueEvents)
+  console.log("Done");
+
+  const finished = await Job.fromId(queue, job.id)
+
+  const { status, statusText } = finished.returnvalue;
+
+  // this will still go back to the caller
+  if (parseInt(status) > 299) {
+    throw new Error(`Recharge request failed with code ${status}: "${statusText}"`);
+  };
+
+  delete finished.returnvalue.status;
+  delete finished.returnvalue.statusText;
+
+  return finished.returnvalue;
+};
 
 /*
  * Construct and execute a query to recharge, used to get objects or post upates
  *
  * @function makeRechargeQuery
  */
-export const makeRechargeQuery = async ({method, path, limit, query, body}) => {
-  const http_method = method ? method : 'GET';
+export const doRechargeQuery = async ({method, path, limit, query, body}) => {
+  const http_method = method ? method : "GET";
   const start = "?";
   const searchString = query ? start + query.reduce((acc, curr, idx) => {
     const [key, value] = curr;
@@ -21,46 +86,49 @@ export const makeRechargeQuery = async ({method, path, limit, query, body}) => {
   
   const url = `${process.env.RECHARGE_URL}/${path}${searchString}${count}`;
 
-   _logger.info(`Query recharge: ${http_method} ${url}`);
+  // this will only go to syslog
+  //console.log(`Query recharge: ${http_method} ${url}`);
   return await fetch(encodeURI(url), {
     method: http_method,
     headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'X-RECHARGE-VERSION': process.env.RECHARGE_VERSION, 
-      'X-RECHARGE-ACCESS-TOKEN': process.env.RECHARGE_ACCESS_TOKEN, 
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "X-RECHARGE-VERSION": process.env.RECHARGE_VERSION,
+      "X-RECHARGE-ACCESS-TOKEN": process.env.RECHARGE_ACCESS_TOKEN,
     },
     body,
   })
-    .then(response => {
+    .then(async (response) => {
+
+      let json;
+
       if (http_method === "DELETE") {
-        return response;
+        json = response;
       } else {
-        // I don't recall if they come in "errors" or "error"
-        // XXX Fix me when you remember - same too for shopify api query
-        const json = response.json();
-        if (Object.hasOwnProperty.call(json, "errors")) {
-          const meta = {
-            recharge: {
-              uri: url,
-              method: http_method,
-              errors: json.errors,
-            },
-          };
-          _logger.notice(`Recharge fetch errors.`, { meta });
-        };
+        json = await response.json();
+        json.status = response.status;
+        json.statusText = response.statusText;
+
+        // log the error as log level debug
         if (Object.hasOwnProperty.call(json, "error")) {
           const meta = {
             recharge: {
               uri: url,
               method: http_method,
-              error: json.errors,
+              status: json.status,
+              text: json.statusText,
+              error: json.error,
             },
           };
-          _logger.notice(`Recharge fetch error.`, { meta });
+          winstonLogger.debug(`Recharge fetch error`, { meta });
         };
-        return json;
       };
+
+      if (parseInt(response.status) > 299) {
+        throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}"`);
+      };
+
+      return json;
     });
 };
 
@@ -126,7 +194,8 @@ export const updateSubscriptions = async ({ updates }) => {
     };
 
     const result = await makeRechargeQuery(options);
-    if (options.method === "POST") {
+
+    if (options.method === "POST" && false) {
       const { subscription } = result;
       includes.push({
         title: subscription.product_title,
@@ -136,7 +205,7 @@ export const updateSubscriptions = async ({ updates }) => {
         properties: subscription.properties,
       });
     };
-    await delay(500);
+    //await delay(500);
     if (options.method === "DELETE") {
       //console.log(result);
     };

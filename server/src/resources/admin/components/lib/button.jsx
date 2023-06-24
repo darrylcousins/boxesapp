@@ -43,6 +43,14 @@ const Button = (props) => {
     classList = "bg-transparent dark-green relative";
     classList += border ? ` b--${border}` : " b--dark-green";
     classList += hover ? ` ${hover}` : " hover-bg-dark-green hover-white";
+  } else if (type === "notice") {
+    classList = "bg-gold white relative";
+    classList += border ? ` b--${border}` : " b--orange";
+    classList += hover ? ` ${hover}` : " hover-bg-orange";
+  } else if (type === "notice-reverse") {
+    classList = "bg-transparent orange relative";
+    classList += border ? ` b--${border}` : " b--dark-orange";
+    classList += hover ? ` ${hover}` : " hover-bg-orange hover-white";
   } else if (type === "warning") {
     classList = "bg-red white relative";
     classList += border ? ` b--${border}` : " b--dark-red";

@@ -90,6 +90,9 @@ router.get(
   "/current-logs/:level/:object", 
   await import("./log/current-logs.js").then(({ default: fn }) => fn));
 router.get(
+  "/customer-logs", 
+  await import("./log/customer-logs.js").then(({ default: fn }) => fn));
+router.get(
   "/get-reconciled-box/:timestamp/:product_id", 
   await import("./order/get-reconciled-box.js").then(({ default: fn }) => fn));
 router.get(

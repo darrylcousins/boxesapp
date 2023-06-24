@@ -23,7 +23,7 @@ export const reconcileGetGrouped = ({ charge }) => {
 
   try {
     for (const line_item of charge.line_items) {
-      console.log(line_item);
+      //console.log(line_item);
       const box_subscription_property = line_item.properties.find(el => el.name === "box_subscription_id");
       if (!box_subscription_property) {
         // should never happen! But what to do if it does? Maybe run the subscription-create webhook script?
@@ -154,8 +154,15 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     previousBox = null;
   };
 
-  if (fetchBox.delivered === boxProperties["Delivery Date"]) {
+  // can be that no box is found
+  if (fetchBox && fetchBox.delivered === boxProperties["Delivery Date"]) {
     hasNextBox = true;
+  };
+  if (!fetchBox) {
+    fetchBox = {
+      includedProducts: [],
+      addOnProducts: [],
+    };
   };
 
   let notIncludedInThisBox = [];
@@ -538,7 +545,8 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   const lastOrder = await getLastOrder({
     customer_id: subscription.customer_id,
     address_id: subscription.address_id,
-    product_id: fetchBox.shopify_product_id,
+    //product_id: fetchBox.shopify_product_id,
+    product_id: parseInt(subscription.external_product_id.ecommerce),
     subscription_id: subscription.id,
   });
 
@@ -580,14 +588,18 @@ export const gatherData = async ({ grouped, result }) => {
     let subscription;
     // XXX in order to get the frequency I need to get the actual subscription
     if (!Object.hasOwnProperty.call(group, "subscription")) {
+      console.log("GROUP HAS NO SUBSCRIPTION");
       const item_id = Object.hasOwnProperty.call(group.box, "purchase_item_id")
         ? group.box.purchase_item_id : group.box.id;
+
+      // XXX try/catch?
       const result = await makeRechargeQuery({
         path: `subscriptions/${item_id}`,
       });
       subscription = result.subscription;
     } else {
       subscription = group.subscription;
+      console.log("GROUP HAS SUBSCRIPTION");
     };
 
     // subscription.purchase_item_id === actual subscription.id

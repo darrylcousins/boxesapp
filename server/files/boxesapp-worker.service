@@ -1,0 +1,24 @@
+# Basic tutorial for nodejs apps
+# https://techoverflow.net/2020/12/29/systemd-unit-for-autostarting-nodejs-application-npm-start/
+#
+# Get to know service files
+# https://linuxhandbook.com/create-systemd-services/
+# https://www.digitalocean.com/community/tutorials/understanding-systemd-units-and-unit-files
+#
+# Multiple instances for load balancing
+# https://nodesource.com/blog/running-your-node-js-app-with-systemd-part-2/
+
+
+[Unit]
+Description=Bullmq worker
+
+[Service]
+Type=simple
+Restart=always
+User=cousinsd
+Group=cousinsd
+WorkingDirectory=/home/cousinsd/Projects/boxesapp/server
+ExecStart=/usr/bin/npm run worker
+
+[Install]
+WantedBy=multi-user.target

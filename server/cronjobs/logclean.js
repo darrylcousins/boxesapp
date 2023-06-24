@@ -37,7 +37,7 @@ const main = async () => {
       const db = process.env.DB_NAME;
       const now = new Date();
       const since = new Date();
-      since.setDate(now.getDate() - 3); // only keep logs for 3 days
+      since.setDate(now.getDate() - 14); // keep logs for 14 days
 
       const report = [];
       const query = {

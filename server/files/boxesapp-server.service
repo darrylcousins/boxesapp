@@ -10,7 +10,7 @@
 
 
 [Unit]
-Description=Bullmq worker
+Description=BoxesApp server
 
 [Service]
 Type=simple
@@ -18,7 +18,8 @@ Restart=always
 User=myuser
 Group=mygroup
 WorkingDirectory=/home/myuser/Projects/boxesapp/server
-ExecStart=/usr/bin/npm run worker
+ExecStart=/usr/bin/npm run serve
 
 [Install]
 WantedBy=multi-user.target
+

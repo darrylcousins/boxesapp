@@ -18,7 +18,7 @@ server {
   set $my_port 3336; # yourshop.boxesapp.nz
   set $my_cors https://yourshop-dev.myshopify.com;
 
-	root /home/cousinsd/Projects/boxesapp/server/dist/client;
+	root /home/myuser/Projects/boxesapp/server/dist/client;
 
 	location / {
 		auth_basic off;

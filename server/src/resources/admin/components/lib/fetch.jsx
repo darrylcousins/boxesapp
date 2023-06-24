@@ -23,6 +23,7 @@ import { hasOwnProp } from "../helpers";
 const Fetch = async (src) => {
   const proxy = localStorage.getItem("proxy-path");
   console.log("fetching", `${proxy}${src}`);
+  let error = null;
   return fetch(`${proxy}${src}`)
     .then(async (response) => {
       let json;
@@ -37,10 +38,11 @@ const Fetch = async (src) => {
       return json;
     })
     .then((json) => {
-      return { error: null, json };
+      // jun 2023
+      if (Object.hasOwnProperty.call(json, "error")) error = json.error;
+      return { error, json };
     })
     .catch((e) => {
-      let error;
 
       try {
         error = JSON.parse(e.message);

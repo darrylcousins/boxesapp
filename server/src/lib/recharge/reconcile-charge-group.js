@@ -125,15 +125,38 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     hasNextBox = true;
     fetchBox = { ...box };
   };
+  // so dial back the delivered date by the subscription interval
   delivered.setDate(delivered.getDate() - days);
   query.delivered = delivered.toDateString();
-  // this should always find a box
+
+  // this should always find a box, see next note as to why it didn't
   box = await _mongodb.collection("boxes").findOne(query);
   if (box && fetchBox) {
     previousBox = { ...box };
   } else if (box) {
     fetchBox = { ...box };
   };
+  /*
+   * But sometimes it didn't until I realised why.
+   *
+   * Long before boxesapp had Recharge subscriptions I added a cronjob to clean
+   * the database nightly, both to save hard drive and to avoid storing any
+   * personal data (name, email etc in orders). Boxes were also included for
+   * the hard drive space. So with fortnightly subscriptions the old box was
+   * gone ... doh!
+   *
+   * So in the next couple of lines I keep trying to set a date where I can
+   * find a box, and express my frustration, and just make a mock box ... I say again, doh.
+   *
+   * Today 24 Jun 2023 it dawned on me that I need to keep box data longer
+   * (still only 7 days for orders, but 21 days for boxes).
+   *
+   * This all caused a lot of problems because a throw here meant that
+   * subscription boxes were not correctly updated on the charge/upcoming
+   * event.
+   *
+   */
+
   delivered.setDate(delivered.getDate() - days);
   query.delivered = delivered.toDateString();
   if (!previousBox) { // try one more time the last fetch may be fetchbox only
@@ -148,16 +171,17 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     fetchBox = await _mongodb.collection("boxes").findOne(query);
   };
 
-  // if still no current box then fudge it this can happen for two week deliveries
+  // XXX if still no current box then fudge it this can happen for **two week** subscriptions
   if (!fetchBox && previousBox) {
     fetchBox = { ...previousBox };
     previousBox = null;
   };
 
-  // can be that no box is found
+  // can be that no box is found (this line would throw)
   if (fetchBox && fetchBox.delivered === boxProperties["Delivery Date"]) {
     hasNextBox = true;
   };
+  // create a mock box
   if (!fetchBox) {
     fetchBox = {
       includedProducts: [],

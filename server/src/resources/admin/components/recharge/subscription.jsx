@@ -10,7 +10,7 @@ import { createElement, Fragment } from "@b9g/crank";
 import CollapseWrapper from "../lib/collapse-animator";
 import EditProducts from "../products/edit-products";
 import Error from "../lib/error";
-import { PostFetch } from "../lib/fetch";
+import { PostFetch, Fetch } from "../lib/fetch";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
 import BarLoader from "../lib/bar-loader";
@@ -18,6 +18,7 @@ import Button from "../lib/button";
 import TextButton from "../lib/text-button";
 import SkipChargeModal from "./skip-modal";
 import UnSkipChargeModal from "./unskip-modal";
+import LogsModal from "./logs-modal";
 import CancelSubscriptionModal from "./cancel-modal";
 import {
   animateFadeForAction,
@@ -70,6 +71,12 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
    * @member {object|string} fetchError
    */
   let fetchError = null;
+  /**
+   * The subscription logs if any
+   *
+   * @member {object} subscriptionLogs
+   */
+  let subscriptionLogs = [];
 
   /*
    * Control the collapse of product list
@@ -470,7 +477,47 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
     );
   };
 
-  console.log(subscription);
+  /*
+   * @function getLogs
+   * Fetch recent logs for this subscription
+   */
+  const getLogs = async () => {
+    const { customer, subscription_id } = subscription.attributes;
+    const uri = `/api/customer-logs?customer_id=${customer.id}&subscription_id=${subscription_id}`;
+    return Fetch(encodeURI(uri))
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          this.refresh();
+          return null;
+        };
+        // ensure distinct on timestamp (later fixed)
+        const logs = [];
+        const map = new Map();
+        for (const item of json.logs) {
+          if(!map.has(item.timestamp)){
+            map.set(item.timestamp, true);    // set any value to Map
+            logs.push({
+              timestamp: item.timestamp,
+              message: item.message
+            });
+          };
+        };
+        subscriptionLogs = logs;
+        console.log(subscriptionLogs);
+        return subscriptionLogs
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+        return null;
+      });
+  };
+
+  getLogs();
 
   for await ({ subscription, idx, allowEdits, admin } of this) { // eslint-disable-line no-unused-vars
 
@@ -521,6 +568,8 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
                 <CancelSubscriptionModal subscription={ subscription } />
               </Fragment>
             )}
+            <LogsModal logs={ subscriptionLogs }
+                box_title={ `${subscription.box.shopify_title} - ${subscription.attributes.variant}` } />
           </div>
         )}
         { !subscription.attributes.hasNextBox && !collapsed && (

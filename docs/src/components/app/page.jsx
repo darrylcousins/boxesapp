@@ -276,7 +276,8 @@ ${ `${ fence }` }
           </div>
           <footer class="footer pb2 pt3 mt3 tl bt nowrap">
             <div id="timestamp" class="mb2">
-              Published December 20 2022.
+              Published December 20 2022.<br />
+              Updated June 25 2023.<br />
             </div>
             Darryl Cousins
             <span class="ml1">&lt;

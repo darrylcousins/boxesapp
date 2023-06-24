@@ -313,6 +313,15 @@ cd boxesapp/client
 node build.js
 ```
 
+## Build the documentation
+
+```bash
+cd docs
+npm run build
+```
+
+Example nginx configuration files are included in `docs/files`.
+
 ## Run the Server
 
 The command runs the process in the shell.

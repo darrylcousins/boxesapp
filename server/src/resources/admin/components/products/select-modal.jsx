@@ -24,12 +24,18 @@ import { sortObjectByKeys, toPrice } from "../helpers";
  * @param {object} props.modalType Confirm or select
  * @param {object} props.hideModal Method to close the modal
  */
-function* SelectModal({ modalNote, modalType, modalSelectList, hideModal }) {
+function* SelectModal({ modalNote, modalType, modalSelectList, hideModal, multiple }) {
+
+  /* if selection is multiple */
+  let selectedProductIds = [];
+  let selectedProducts = [];
+  /* end if selection is multiple */
 
   /*
    * hold the selected product in the list
    */
   let selectedProductId = null;
+  // only one so select that product
   if (modalSelectList && modalSelectList.length === 1) {
     selectedProductId = modalSelectList[0].shopify_product_id;
   }
@@ -72,12 +78,12 @@ function* SelectModal({ modalNote, modalType, modalSelectList, hideModal }) {
       };
 
       const value = parseFloat(target.value);
-      selectedProductId = value;
-      selectedProduct = modalSelectList.filter(el => el && el)
-        .find(el => el.shopify_product_id === selectedProductId);
-      if (selectedProduct.quantity > 1) {
-        // XXX what was this?
-        console.log('MUST NOW MAKE A NOTE OF THE QUANTITY', selectedProduct.quantity, selectedProduct.shopify_title);
+      if (multiple) {
+        selectedProductIds.push(value);
+      } else {
+        selectedProductId = value;
+        selectedProduct = modalSelectList.filter(el => el && el)
+          .find(el => el.shopify_product_id === selectedProductId);
       };
       this.refresh();
     };
@@ -91,7 +97,11 @@ function* SelectModal({ modalNote, modalType, modalSelectList, hideModal }) {
    */
   const confirmSelection = async (ev) => {
     // selectedProductId will be null if only as a confirmation modal
-    await this.dispatchEvent(selectProductEvent(selectedProductId));
+    if (multiple) {
+      await this.dispatchEvent(selectProductEvent(selectedProductIds));
+    } else {
+      await this.dispatchEvent(selectProductEvent(selectedProductId));
+    };
   };
 
   const main = document.getElementById("front-modal-window");
@@ -126,12 +136,12 @@ function* SelectModal({ modalNote, modalType, modalSelectList, hideModal }) {
                         <label class="pointer items-center" style="font-size: 1em; margin-bottom: 0px;">
                           <input 
                             onclick={ handleClick }
-                            checked={ selectedProductId === product.shopify_product_id }
+                            checked={ selectedProductId === product.shopify_product_id || selectedProductIds.includes(parseInt(product.shopify_product_id)) }
                             class="mr2"
                             type="radio"
                             id={ product.shopify_product_id }
                             value={ product.shopify_product_id }
-                            name="product" />
+                            name={ product.shopify_title } />
                             { product.shopify_title } { product.quantity > 1 && `(${product.quantity})` }
                         </label>
                         { modalType === "add" && (
@@ -156,7 +166,7 @@ function* SelectModal({ modalNote, modalType, modalSelectList, hideModal }) {
                 </div>
               )}
               <div class="w-100 tr">
-                { (selectedProductId || modalSelectList.length ===1) && (
+                { (selectedProductId || modalSelectList.length ===1 || selectedProductIds.length > 0) && (
                   <Button
                     onclick={ confirmSelection }
                     type="primary">
@@ -167,7 +177,7 @@ function* SelectModal({ modalNote, modalType, modalSelectList, hideModal }) {
                   onclick={ hideModal }
                   border="black"
                   type="transparent/light">
-                  Cancel
+                  { modalSelectList.length > 0 ? "Cancel" : "OK" }
                 </Button>
               </div>
             </Fragment>

@@ -157,6 +157,11 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
           subscription.updates = [];
           subscription.removed = [];
           changed = [];
+          /* XXX Should I even try now that I push the update to bullmq
+           * Perhaps just notify user that the changes are in action
+           * Perhaps establish an open connection and report
+           * Can the user make further updates without getting the reulst
+           */
           // this will replace the new subscription template with an update object
           for (const included of json.includes) {
             const includedIdx = subscription.includes.findIndex(el => el.shopify_product_id === included.shopify_product_id);

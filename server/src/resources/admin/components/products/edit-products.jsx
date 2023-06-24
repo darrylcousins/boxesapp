@@ -101,6 +101,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     modalType: null, // additional data controlling appearance of modal
     modalNote: null, // helpful info to display to user
     hideModal: null,
+    multiple: false, // can we select multiple products - used only for addProduct
   };
 
   /**
@@ -135,8 +136,10 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
       showSelectModal = false;
       clearSelectModalOptions();
       this.refresh();
-    }
+    };
   };
+
+  window.document.addEventListener("keyup", hideSelectModal);
 
   /**
    * Map lists and collect extra items to calculate and list prices
@@ -230,6 +233,8 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
         <h6 class="fw4 tl fg-streamside-maroon">Select item to add to the box.</h6>
       ),
       hideModal: hideSelectModal,
+      modalStore: null,
+      multiple: true,
     };
     this.refresh();
   };
@@ -421,7 +426,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
    */
   const productSelected = async (ev) => {
     
-    const { modalStore, modalSelectList, modalSelect } = selectModalOptions;
+    const { modalStore, modalSelectList, modalSelect, multiple } = selectModalOptions;
     if (modalStore) {
       await moveItem({
         from: modalStore.from,
@@ -430,9 +435,20 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
       });
     };
 
-    if (modalSelect) {
+    if (modalSelect && multiple) {
+
+      for (const id of ev.detail.id) {
+        await moveItem({
+          from: modalSelect.from,
+          to: modalSelect.to,
+          id,
+        });
+      };
+
+    } else if (modalSelect) {
       // otherwise simply a confirmation of removal - e.g. removing add ons
       const id = modalSelectList.length === 1 ? modalSelectList[0].shopify_product_id : ev.detail.id;
+      // do the moves by calling moveItem
       await moveItem({
         from: modalSelect.from,
         to: modalSelect.to,
@@ -440,7 +456,6 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
       });
     };
 
-    // do the moves by calling moveItem
     showSelectModal = false;
     clearSelectModalOptions();
     this.refresh();
@@ -512,6 +527,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     if (orphanedItems.length > 0) {
       console.warn(JSON.stringify(orphanedItems, null, 2));
     };
+    console.log(boxLists);
 
     return orphanedItems;
   };
@@ -573,7 +589,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
           )}
         </div>
         { name === "Add on Items" && isEditable && (
-          <div class="dtc tr hover-dark-blue pointer w-10"
+          <div class="dtc tr hover-yellow pointer w-10"
             onclick={() => addProduct({to_list_name: name})}
             title={`Add item to ${name}`}>
             <span class="v-mid">

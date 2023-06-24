@@ -31,7 +31,8 @@ export const getSelectModalOptions = ({boxLists, from_list_name, shopify_product
           modalNote = (
             <Fragment>
               <h6 class="fw4 tl fg-streamside-maroon">
-                Unable to remove &lsquo;{product.shopify_title}&rsquo; due to availability.
+                { /* Unable to swap &lsquo;{product.shopify_title}&rsquo; due to availability. */ }
+                No similarly prices products to swap for &lsquo;{product.shopify_title}&rsquo;.
               </h6>
             </Fragment>
           );

@@ -261,7 +261,7 @@ async function* Subscriptions() {
     }
   };
 
-  await fetchCustomers();
+  fetchCustomers();
 
   for await (const props of this) { // eslint-disable-line no-unused-vars
     yield (
@@ -275,7 +275,6 @@ async function* Subscriptions() {
           )}
         </h4>
         { loading && <BarLoader /> }
-        { loading && <div>Loading customer ...</div> }
         { fetchError && <Error msg={fetchError} /> }
         { fetchCustomer ? (
             <Customer customer={ fetchCustomer } admin={ true } /> 

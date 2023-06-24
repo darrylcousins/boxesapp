@@ -10,6 +10,7 @@ In the case of BoxesApp, then this person is me, the developer.
 * [NodeJS](https://nodejs.org/en/)
 * [Nginx](https://www.nginx.com/)
 * [MongoDB](https://www.mongodb.com/)
+* [Redis](https://www.redis.com/)
 * [Git](https://git-scm.com/)
 
 ## Get code from git
@@ -80,6 +81,25 @@ registry
 settings
 ```
 
+## BullMQ
+
+Install [Redis](https://www.redis.com/) and secure with a password. Store these settings in `.env`.
+
+[BullMQ](https://docs.bullmq.io/) is a Node.js library that implements a fast
+and robust queue system built on top of Redis. A running process `worker` is
+required to pick up items added to the `queue` for processing. BoxesApp uses it
+to handle api calls to Recharge and Shopify to reduce the risk of dropped api
+calls.
+
+It can be directly run and uses Redis settings from `server/.env`.
+
+```bash
+cd server
+npm run worker
+```
+
+If `systemd` is used then the file `server/files/boxesapp-worker.service` can be used.
+
 ## Env
 
 ```bash
@@ -90,6 +110,10 @@ cp server/docs/env/example-env server/.env
 PORT="4000"
 HOST="https://yourshop.yourappserver.nz"
 MAIL_DOMAIN="yourappserver.nz"
+
+REDIS_HOST="localhost"
+REDIS_PORT=6379
+REDIS_PASSWORD="**********************************************"
 
 ALLOW_ORIGINS="yourshop.yourappserver.nz"
 SERVER_NAME="yourshop.yourappserver.nz"
@@ -123,24 +147,6 @@ RECHARGE_CLIENT_SECRET="********************************************************
 ```
 
 Edits are required to this file.
-
-## Building the Client
-
-Check the `boxesapp/client/src/base-url.js` file:
-
-```javascript
-export default "https://yourshop.yourappserver.nz/api/";
-```
-
-This url should point to the domain created above. Check
-`vite-config.js` for the install directory. I've been using
-[ThemeKit](https://shopify.dev/themes/tools/theme-kit/) and directly building
-and uploading the built files into the assets directory.
-
-```bash
-cd boxesapp/client
-node build.js
-```
 
 ## Settings
 
@@ -279,11 +285,19 @@ admin interface for editing this setting).
 
 ## Build the client
 
+Check the `boxesapp/client/src/base-url.js` file:
+
 ```bash
 cp client/src/base-url.example.js client/src/base-url.js
 ```
 
 Edits required to this file.
+
+```javascript
+export default "https://yourshop.yourappserver.nz/api/";
+```
+
+This url should point to the domain created above. Check
 
 In the development environment I'm using
 [ThemeKit](https://shopify.dev/themes/tools/theme-kit) to download the theme
@@ -291,10 +305,11 @@ into `client`. This will be apparent in `client/vite.config.js`. By running
 `theme watch` in this folder I can build the client and the files will be
 uploaded. Change `vite.config.js` to reflect a different `output.dir` if required.
 
-Run the build script:
+I've been directly building
+and uploading the built files into the assets directory of the theme.
 
 ```bash
-cd client
+cd boxesapp/client
 node build.js
 ```
 
@@ -307,3 +322,4 @@ cd server
 npm run serve
 ```
 
+If `systemd` is used then the file `server/files/boxesapp-server.service` can be used.

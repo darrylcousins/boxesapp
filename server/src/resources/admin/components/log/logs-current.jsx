@@ -11,7 +11,7 @@ import BarLoader from "../lib/bar-loader";
 import Error from "../lib/error";
 import { Fetch } from "../lib/fetch";
 import SelectMenu from "../lib/select-menu";
-import { animateFadeForAction } from "../helpers";
+import { titleCase, animateFadeForAction } from "../helpers";
 
 /**
  * Uses fetch to collect current boxes from api and then passes data to
@@ -25,33 +25,33 @@ import { animateFadeForAction } from "../helpers";
 function* CurrentLogs() {
 
   /**
-   * Which log level to view
+   * Which log level to view, always start with notice
    *
-   * @member level
+   * @member logLevel
    * @type {string}
    */
   let logLevel = "notice";
   /**
    * Select menu to filter on meta[object]
    *
-   * @member level
+   * @member menuSelectObject
    * @type {Boolean}
    */
   let menuSelectObject = false;
   /**
    * Selected object to filter on 'order', 'product' etc
    *
-   * @member level
+   * @member selectedObject
    * @type {string}
    */
   let selectedObject = null;
   /**
    * Possible selections to make on object type
    *
-   * @member level
+   * @member possibleObjects
    * @type {array}
    */
-  let possibleObjects = ["order", "product", "recharge", "app", "shopify"];
+  let possibleObjects = ["order", "product", "recharge", "shopify"];
   /**
    * Display loading indicator while fetching data
    *
@@ -72,6 +72,34 @@ function* CurrentLogs() {
    * @type {object|string|null}
    */
   let fetchError = null;
+  /**
+   * Capture currentPage
+   *
+   * @member currentPage
+   * @type {object|null}
+   */
+  let currentPage = null;
+  /**
+   * Capture nextPage
+   *
+   * @member nextPage
+   * @type {object|null}
+   */
+  let nextPage = null;
+  /**
+   * Capture previousPage
+   *
+   * @member previousPage
+   * @type {object|null}
+   */
+  let previousPage = null;
+  /**
+   * Using a selected date
+   *
+   * @member selectedDate
+   * @type {object|null}
+   */
+  let selectedDate = null;
 
   /*
    * Close menu
@@ -132,11 +160,17 @@ function* CurrentLogs() {
    * @function getLogs
    */
   const getLogs = () => {
+    let now;
+    if (selectedDate) {
+      now = new Date(new Date(selectedDate).toISOString().split('T')[0]);
+    } else {
+      now = new Date(new Date().toISOString().split('T')[0]);
+    };
     let uri;
     if (logLevel) {
-      uri = `/api/current-logs/${logLevel}`;
+      uri = `/api/current-logs/${now.getTime()}/${logLevel}`;
     } else {
-      uri = `/api/current-logs/all`;
+      uri = `/api/current-logs/${now.getTime()}/all`;
     };
     if (selectedObject) {
       uri = `${uri}/${selectedObject}`;
@@ -150,7 +184,11 @@ function* CurrentLogs() {
           this.refresh();
         } else {
           loading = false;
-          fetchLogs = json.logs;
+          console.log(json);
+          previousPage = json.previous;
+          nextPage = json.next;
+          currentPage = json.current;
+          fetchLogs = json.current.logs;
           if (document.getElementById("logs-table")) {
             animateFadeForAction("logs-table", async () => await this.refresh());
           } else {
@@ -167,9 +205,26 @@ function* CurrentLogs() {
 
   getLogs();
 
+  /**
+   * Filter collection on a log level
+   *
+   * @function changeLevel
+   */
   const changeLevel = async (level) => {
     logLevel = level;
     if (logLevel === "error") selectedObject = null;
+    loading = true;
+    await this.refresh();
+    getLogs();
+  };
+
+  /**
+   * Filter collection on a date - used by next/previous
+   *
+   * @function changeDate
+   */
+  const changeDate = async (date) => {
+    selectedDate = date;
     loading = true;
     await this.refresh();
     getLogs();
@@ -275,35 +330,22 @@ function* CurrentLogs() {
   };
 
   /*
-                <div class="dtc w-70">
-                  { title === "properties" && (
-                    str.map(item => (
-                      <div class="dt-row w-100">
-                        <div class="dtc w-50 gray tr pr2">
-                          { item.name }:
-                        </div>
-                        <div class="dtc w-50">
-                          { item.value }
-                        </div>
-                      </div>
-                    ))
-                  )}
-                  { title === "stack" && (
-                    str.split("\n").map(el => (
-                      <div>{ el }</div>
-                    ))
-                  )}
-                  { title !== "stack" && title !== "properties" (
-                    str
-                  )}
-                </div>
-                */
+   * Helper method to render log.meta
+   */
+  const formatLevel = (el) => {
+    let word = el;
+    if (word.endsWith("s")) {
+      word.replace("/s$/", "");
+    };
+    return titleCase(word);
+  };
+
   for (const _ of this) { // eslint-disable-line no-unused-vars
 
     yield (
       <div class="w-100 pb2 center">
         <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
-          Current Logs
+          { logLevel && formatLevel(logLevel) } Logs for { currentPage && `${ currentPage.date } (${ currentPage.count })` }
         </h4>
         <div class="relative w-100 tr pr2">
           <Help id="logsInfo" />
@@ -312,8 +354,8 @@ function* CurrentLogs() {
           </p>
         </div>
         <div class="w-100 flex">
-          <div class="w-20 v-bottom center">
-            { logLevel === "notice" ? (
+          { false && (
+            <div class="w-20 v-bottom center">
               <SelectMenu
                 id="selectObject"
                 menu={possibleObjects.map(el => ({text: el.toUpperCase(), item: el}))}
@@ -323,19 +365,40 @@ function* CurrentLogs() {
               >
                 { selectedObject ? `${selectedObject} messages`.toUpperCase() : "FILTER BY" }&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#9662;
               </SelectMenu>
-            ) : (
-              <span>&nbsp;</span>
+            </div>
+          )}
+          <div class="w-40 v-bottom">
+            { /* need to fix the br (border radius) settings */ }
+            { previousPage && previousPage.count > 0 && (
+              <button
+                class={ `grey bg-white dib w-50  pv1 outline-0 b--grey ba ${ nextPage.count > 0  && "br-0" } br2 br--left mv1 pointer` }
+                title="Previous"
+                type="button"
+                onclick={ () => changeDate(previousPage.date) }
+                >
+                  <div class="v-mid di b">{ `<<` } { previousPage.date } ({ previousPage.count })</div>
+              </button>
+            )}
+            { nextPage && nextPage.count > 0 && (
+              <button
+                class={ `grey bg-white dib w-50  pv1 outline-0 b--grey ba br2 br--right mv1 pointer` }
+                title="Previous"
+                type="button"
+                onclick={ () => changeDate(nextPage.date) }
+                >
+                  <div class="v-mid di b">{ nextPage.date } ({ nextPage.count }) { `>>` }</div>
+              </button>
             )}
           </div>
-          <div class="w-30">
-            &nbsp;
+          <div class="w-10 v-bottom tr">
+            { " " }
           </div>
           <div class="w-50 v-bottom tr">
             <button
               class={
                 `${
                     logLevel === "notice" ? "white bg-black-80" : "grey bg-white"
-                  } dib w-third pv1 outline-0 b--grey ba br2 br--left mv1 pointer`
+                  } dib w-25 pv1 outline-0 b--grey ba br2 br--left mv1 pointer`
                 }
               title="Notices"
               type="button"
@@ -346,8 +409,20 @@ function* CurrentLogs() {
             <button
               class={
                 `${
+                    logLevel === "warn" ? "white bg-black-80" : "grey bg-white"
+                  } dib w-25 pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
+                }
+              title="Debug"
+              type="button"
+              onclick={() => changeLevel("warn")}
+              >
+                <span class="v-mid di">Warn</span>
+            </button>
+            <button
+              class={
+                `${
                     logLevel === "error" ? "white bg-black-80" : "grey bg-white"
-                  } dib w-third pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
+                  } dib w-25 pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
                 }
               title="Errors"
               type="button"
@@ -358,14 +433,14 @@ function* CurrentLogs() {
             <button
               class={
                 `${
-                    logLevel === "debug" ? "white bg-black-80" : "grey bg-white"
-                  } dib w-third pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
+                    logLevel === "fatal" ? "white bg-black-80" : "grey bg-white"
+                  } dib w-25 pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
                 }
-              title="Debug"
+              title="Fatal"
               type="button"
-              onclick={() => changeLevel("debug")}
+              onclick={() => changeLevel("fatal")}
               >
-                <span class="v-mid di">Debug</span>
+                <span class="v-mid di">Fatal</span>
             </button>
           </div>
         </div>

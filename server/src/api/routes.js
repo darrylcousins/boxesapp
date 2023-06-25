@@ -84,10 +84,10 @@ router.get(
   "/current-logs", 
   await import("./log/current-logs.js").then(({ default: fn }) => fn));
 router.get(
-  "/current-logs/:level", 
+  "/current-logs/:timestamp/:level", 
   await import("./log/current-logs.js").then(({ default: fn }) => fn));
 router.get(
-  "/current-logs/:level/:object", 
+  "/current-logs/:timestamp/:level/:object", 
   await import("./log/current-logs.js").then(({ default: fn }) => fn));
 router.get(
   "/customer-logs", 

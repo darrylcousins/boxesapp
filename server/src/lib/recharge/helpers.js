@@ -109,7 +109,7 @@ export const doRechargeQuery = async ({method, path, limit, query, body}) => {
         json.status = response.status;
         json.statusText = response.statusText;
 
-        // log the error as log level debug
+        // log the error as log level warn
         if (Object.hasOwnProperty.call(json, "error")) {
           const meta = {
             recharge: {
@@ -120,7 +120,7 @@ export const doRechargeQuery = async ({method, path, limit, query, body}) => {
               error: json.error,
             },
           };
-          winstonLogger.debug(`Recharge fetch error`, { meta });
+          winstonLogger.warn(`Recharge fetch error`, { meta });
         };
       };
 

@@ -53,21 +53,25 @@ if (process.env.NODE_ENV !== 'production') {
       )
     })
   );
+  /*
+   * Not logging to file
+   */
+  /*
+  } else {
+    logger.add(
+      new winston.transports.File({
+        filename: path.resolve('logs/app.log'),
+        format: fileFormat,
+      })
+    );
+  */
 };
-/*
-} else {
-  logger.add(
-    new winston.transports.File({
-      filename: path.resolve('logs/app.log'),
-      format: fileFormat,
-    })
-  );
-*/
 
 // create a stream object with a 'write' function that will be used by `morgan`
 logger.stream = {
   write: function(message, encoding) {
-    // use the 'info' log level so the output will be picked up by both transports (file and console)
+    // use the 'info' log level so the output will be picked up by both
+    // transports (file and console) - though not using file
     logger.info(message);
   },
 };
@@ -80,20 +84,14 @@ if (process.env.NODE_ENV !== 'test') {
   // logger transport to log all actions on objects
   // this is made available in the app as globals._logger
   // notice level used to log changes made to objects
+  // error level logs try/catch errors
+  // warn level currently only for api/bullmq 'errors'
+  // fatal not logged anywhere at the moment
   // e.g. order created, subscription created etc
   // use 'metadata' to add ids and similar
   logger.add(
     new winston.transports.MongoDB({
       level: "notice",
-      db: mongo_uri,
-      options: mongo_options,
-      collection: 'logs',
-      metaKey: 'meta'
-    })
-  );
-  logger.add(
-    new winston.transports.MongoDB({
-      level: "debug",
       db: mongo_uri,
       options: mongo_options,
       collection: 'logs',

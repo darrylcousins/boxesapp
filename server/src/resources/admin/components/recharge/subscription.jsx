@@ -18,7 +18,7 @@ import Button from "../lib/button";
 import TextButton from "../lib/text-button";
 import SkipChargeModal from "./skip-modal";
 import UnSkipChargeModal from "./unskip-modal";
-import LogsModal from "./logs-modal";
+import LogsModal from "../log/logs-modal";
 import CancelSubscriptionModal from "./cancel-modal";
 import {
   animateFadeForAction,
@@ -505,7 +505,7 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
             });
           };
         };
-        subscriptionLogs = logs;
+        subscriptionLogs = json.logs;
         console.log(subscriptionLogs);
         return subscriptionLogs
       })

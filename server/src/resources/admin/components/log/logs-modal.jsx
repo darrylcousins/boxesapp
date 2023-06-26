@@ -26,6 +26,13 @@ async function* LogsModal({ logs, box_title }) {
    * @member {boolean} visible
    */
   let visible = false;
+  /**
+   * Possible selections to make on object type
+   *
+   * @member possibleObjects
+   * @type {array}
+   */
+  let possibleObjects = ["order", "product", "recharge", "shopify"];
 
   /**
    * Close the modal
@@ -35,6 +42,51 @@ async function* LogsModal({ logs, box_title }) {
   const closeModal = () => {
     visible = false;
     this.refresh();
+  };
+
+  /*
+   * Helper method to render log.meta
+   */
+  const formatMeta = (el) => {
+    if (!Object.hasOwnProperty.call(el, 'meta')) {
+      return <div>&nbsp;</div>;
+    };
+    if (el.meta === null) {
+      return <div>&nbsp;</div>;
+    };
+    // expecting just one object on meta 'order', 'product', 'customer', 'subscription'?
+    const obj = Object.keys(el.meta)[0];
+    if (possibleObjects.includes(obj)) {
+      return (
+        <div class="dt w-100 mv1">
+          { Object.entries(el.meta[obj]).map(([title, str]) => (
+              <div class="dt-row w-100">
+                <div class="dtc w-30 gray tr pr2">
+                  { title }:
+                </div>
+                <div class="dtc w-70">
+                  { str }
+                </div>
+              </div>
+          ))}
+        </div>
+      );
+    } else {
+      return (
+        <div class="dt w-100 mv1">
+          { Object.entries(el.meta).map(([title, str]) => (
+              <div class="dt-row w-100">
+                <div class="dtc w-50 gray tr pr2">
+                  { title }:
+                </div>
+                <div class="dtc w-50">
+                  { str }
+                </div>
+              </div>
+          ))}
+        </div>
+      );
+    };
   };
 
   /**
@@ -104,9 +156,14 @@ async function* LogsModal({ logs, box_title }) {
                   </p>
                   <ul class="list pl0 mt0">
                    { logs.map((log) => (
-                     <li class="dt">
-                       <div class="dib b mr4">{ dateString(log.timestamp) }</div>
-                       <div class="dib">{ log.message }</div>
+                     <li class="dt w-100">
+                       <div class="dib b w-30">{ dateString(log.timestamp) }</div>
+                       <div class="dib w-70 pl2">
+                         <div class="db b i w-100">{ log.message }</div>
+                         <div class="dtc db w-100">
+                           { formatMeta(log) }
+                         </div>
+                       </div>
                      </li>
                   ))}
                   </ul>

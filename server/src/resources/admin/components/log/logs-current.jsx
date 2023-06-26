@@ -1,9 +1,8 @@
 /**
- * Top of hierarchy of elements to render boxes
+ * Render current logs
  *
- * @module app/components/boxes-current
- * @exports CurrentBoxes
- * @requires module:app/components/boxes~Boxes
+ * @module app/components/logs-current
+ * @exports CurrentLogs
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
@@ -99,6 +98,7 @@ function* CurrentLogs() {
    * @member selectedDate
    * @type {object|null}
    */
+  //let selectedDate = "2023-06-25";
   let selectedDate = null;
 
   /*
@@ -264,7 +264,7 @@ function* CurrentLogs() {
   };
 
   /*
-   * Helper method to render log.meta
+   * Helper method
    */
   const getMetaObject = (el) => {
     if (!Object.hasOwnProperty.call(el, 'meta')) {
@@ -330,7 +330,7 @@ function* CurrentLogs() {
   };
 
   /*
-   * Helper method to render log.meta
+   * Helper method to render format level
    */
   const formatLevel = (el) => {
     let word = el;

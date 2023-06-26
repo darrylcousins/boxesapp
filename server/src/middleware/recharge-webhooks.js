@@ -11,18 +11,17 @@ export default function applyRechargeWebhooks({ app }) {
   app.post("/recharge", async (req, res) => {
     const topic = req.get("x-recharge-topic");
 
-    // hard for me to understand why this doesn't show in server log
-    //_logger.info(`Shopify webhook ${topic} received.`);
-
-    // so I make my own to use with console.log
+    // don't really need this to be logged
+    /*
     const now = new Date();
     const hours = now.getHours().toString().padStart(2, "0");
     const minutes = now.getMinutes().toString().padStart(2, "0");
     const seconds = now.getSeconds().toString().padStart(2, "0");
     const nowString = `${hours}:${minutes}:${seconds}`;
-    const message = `Shopify webhook ${topic} received.`;
+    const message = `Recharge webhook ${topic} received.`;
     const logString = `${nowString} - ${"info".yellow}: ${message}`;
     console.log(logString);
+    */
 
     // The following info messages are not logged to console in production
     // But the error message is logged

@@ -45,7 +45,7 @@ export default async function chargeCreated(topic, shop, body) {
     // get the parent subscription and ignore if box_subscription_id is set
     for (const line_item of charge.line_items) {
 
-      const { purchase_item_id: id, properties, title } = line_item;
+      const { purchase_item_id: id, properties, title, variant_title } = line_item;
 
       // make properties into easily accessible object
       attributes = properties.reduce(
@@ -53,7 +53,7 @@ export default async function chargeCreated(topic, shop, body) {
         {});
 
       if (Object.keys(attributes).includes("Including")) {
-        parent = { id, attributes, title };
+        parent = { id, attributes, title, variant_title };
       };
 
       // consider checking all line_items?
@@ -195,7 +195,7 @@ export default async function chargeCreated(topic, shop, body) {
       subscription_id: parent.id,
       customer_id: charge.customer.id,
       address_id: charge.address_id,
-      box: parent.title,
+      box: `${parent.title} - ${parent.variant_title}`,
       delivered: firstDeliveryDate,
       next_delivery: delivery,
       email: charge.customer.email,
@@ -206,7 +206,7 @@ export default async function chargeCreated(topic, shop, body) {
 
   try {
     //fs.writeFileSync(`recharge.charge-${charge.id}.json`, JSON.stringify(charge, null, 2));
-    fs.writeFileSync(`recharge.charge-${charge.id}-updated.json`, JSON.stringify(updatedCharge, null, 2));
+    fs.writeFileSync(`recharge.charge-updated.json`, JSON.stringify(updatedCharge, null, 2));
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

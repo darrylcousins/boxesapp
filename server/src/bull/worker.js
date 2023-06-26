@@ -37,6 +37,7 @@ const worker = new Worker(
   workerOptions
 );
 
+/*
 worker.on('completed', async (job, returnvalue) => {
   await job.log(`Worker: ${job.name} job with id ${job.id} has completed with result ${returnvalue}!`);
   //console.info(returnvalue);
@@ -49,7 +50,7 @@ worker.on('failed', async (job, err) => {
 worker.on('progress', async (job, progress) => {
   await job.log(`Worker: ${job.name} with id ${job.id} and data ${JSON.stringify(job.data)} has progressed with ${progress}`);
 });
-
+*/
 worker.on('error', async (err) => {
   // log the error
   await job.log(`Worker: Failed with ${err}`);

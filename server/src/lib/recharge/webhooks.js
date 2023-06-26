@@ -6,6 +6,7 @@ import { Recharge } from "./index.js";
 
 // May still need some of these that have been disabled
 
+import chargeCreated from "../../webhooks/recharge/charge-created.js";
 import chargeUpcoming from "../../webhooks/recharge/charge-upcoming.js";
 import orderProcessed from "../../webhooks/recharge/order-processed.js";
 import subscriptionCreated from "../../webhooks/recharge/subscription-created.js";
@@ -15,6 +16,7 @@ export const webhook_topics = {
   "SUBSCRIPTION_CREATED": subscriptionCreated,
   "SUBSCRIPTION_UPDATED": subscriptionUpdated,
   "ORDER_PROCESSED": orderProcessed,
+  "CHARGE_CREATED": chargeCreated,
   "CHARGE_UPCOMING": chargeUpcoming,
 };
 

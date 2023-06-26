@@ -13,8 +13,12 @@ export default async (req, res) => {
 
   const { level, timestamp, object } = req.params;
 
-  console.log(timestamp);
-  console.log(level);
+  const formatDate = (date) => {
+    const getYear = date.toLocaleString("default", { year: "numeric" });
+    const getMonth = date.toLocaleString("default", { month: "2-digit" });
+    const getDay = date.toLocaleString("default", { day: "2-digit" });
+    return `${getYear}-${getMonth}-${getDay}`;
+  };
 
   if (!timestamp) {
     res.status(200).json({ error: "No timestamp provided" });
@@ -23,35 +27,38 @@ export default async (req, res) => {
 
   const collection = _mongodb.collection("logs");
   try {
-
     const time = parseInt(timestamp);
+    const start = new Date(time).toISOString().split("T")[0];
+
+    // mongodb logs are stored in ISOTime so need to adjust for timezone
 
     // one day at a time
-    const today = new Date(time);
-    const yesterday = new Date(time);
-    const tomorrow = new Date(time);
-    yesterday.setDate(today.getDate() - 1);
-    tomorrow.setDate(today.getDate() + 2);
+    const today = new Date(`${start}T00:00:00`);
+    let yesterday = new Date(`${start}T00:00:00`);
+    let tomorrow = new Date(`${start}T00:00:00`);
+    yesterday.setHours(today.getHours() - 24);
+    tomorrow.setHours(today.getHours() + 24);
 
     // get date strings
-    const current = today.toISOString().split("T")[0];
-    const previous = yesterday.toISOString().split("T")[0];
-    let next = tomorrow.toISOString().split("T")[0];
+    const current = start;
+    const previous = formatDate(yesterday);
+    const next = formatDate(tomorrow);
 
     const query = {};
     // first set up filters
     if (level && level !== "all") query.level = level;
     if (object) query[`meta.${object}`] = { "$exists": true };
     // add time filter
-    query["$and"] = [
-      {timestamp: { "$gt": yesterday }},
+    const match = { ...query };
+    match["$and"] = [
+      {timestamp: { "$gte": yesterday }},
       {timestamp: { "$lte": tomorrow }},
     ];
 
     const pipeline = [
-      { "$match": query },
+      { "$match": match },
       { "$group": {
-        _id : { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } },
+        _id : { $dateToString: { format: "%Y-%m-%d", date: "$timestamp", timezone: "+12:00" } },
         "count": { "$sum": 1 },
       }},
       { "$sort": { _id: 1 }},
@@ -59,25 +66,20 @@ export default async (req, res) => {
 
     // get counts
     const result = await collection.aggregate(pipeline).toArray();
-    console.log(result);
     const counts = result.reduce(
       (acc, curr) => Object.assign(acc, { [`${curr._id}`]: curr.count }),
       {});
 
-    // update tomorrow and the query to get results for the day
-    tomorrow.setDate(tomorrow.getDate() - 1);
-    next = tomorrow.toISOString().split("T")[0];
     query["$and"] = [
-      {timestamp: { "$gt": today }},
-      {timestamp: { "$lt": tomorrow }},
+      {timestamp: { "$gt": yesterday }},
+      {timestamp: { "$lt": tomorrow}},
     ];
-    console.log(query);
     const logs = await collection.find(query).sort({ timestamp: -1 }).toArray();
 
     // compile the response
     const response = {};
     response.previous = { date: previous, count: 0 };
-    response.current = { date: current, count: 0, logs: logs };
+    response.current = { date: current, count: logs.length, logs: logs };
     response.next = { date: next, count: 0 };
 
     if (Object.keys(counts).includes(previous)) {
@@ -89,7 +91,6 @@ export default async (req, res) => {
     if (Object.keys(counts).includes(next)) {
       response.next.count = counts[next];
     };
-    console.log(response);
 
     res.status(200).json(response);
   } catch(err) {

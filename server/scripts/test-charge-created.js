@@ -11,7 +11,7 @@ global._mongodb;
 _logger.notice = (e, meta) => console.log(e, meta);
 
 import chargeCreated from "../src/webhooks/recharge/charge-created.js";
-import charge from "../recharge.charge-848097943.json" assert { type: "json" };
+import charge from "../recharge.charge.json" assert { type: "json" };
 
 const run = async () => {
   global._mongodb = await getMongoConnection();

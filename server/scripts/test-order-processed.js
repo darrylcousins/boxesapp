@@ -8,22 +8,22 @@ global._filename = (_meta) => _meta.url.split("/").pop();
 dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
 global._logger = console;
 global._mongodb;
-_logger.notice = (e) => console.log(e);
+_logger.notice = (e, meta) => console.log(e, meta);
 
 import orderProcessed from "../src/webhooks/recharge/order-processed.js";
 import order from "../recharge.order.json" assert { type: "json" };
 
 const run = async () => {
-  //global._mongodb = await getMongoConnection();
+  global._mongodb = await getMongoConnection();
   try {
     console.log('this ran');
     const mytopic = "ORDER_PROCESSED";
-    await orderProcessed("ORDER_PROCESSED", "shop", JSON.stringify(order));
+    await orderProcessed("ORDER_PROCESSED", "shop", JSON.stringify({ order }));
 
   } catch(e) {
     console.error(e);
   } finally {
-    //process.emit('SIGINT'); // should close mongo connection
+    process.emit('SIGINT'); // should close mongo connection
   };
 };
 

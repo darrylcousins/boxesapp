@@ -27,6 +27,7 @@ export const reconcileGetGrouped = ({ charge }) => {
       const box_subscription_property = line_item.properties.find(el => el.name === "box_subscription_id");
       if (!box_subscription_property) {
         // should never happen! But what to do if it does? Maybe run the subscription-create webhook script?
+        // Jun 2023 Switching to updating box_subscription_id on first charge created webhook
         console.log("NO BOX_SUBSCRIPTION_PROPERTY");
         console.log(JSON.stringify(line_item));
       };
@@ -118,7 +119,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   const query = {
     delivered: delivered.toDateString(),
     shopify_product_id: parseInt(subscription.external_product_id.ecommerce),
-    //active: true
+    active: true
   };
   let box = await _mongodb.collection("boxes").findOne(query);
   if (box) { // do we have the next box created?

@@ -44,7 +44,7 @@ export const makeRechargeQuery = async (opts) => {
       },
     },
   )
-  //console.log("Queued")
+  console.log("Queued")
 
   /*
    * Returns one of these values: "completed", "failed", "delayed", "active", "waiting", "waiting-children", "unknown".
@@ -53,7 +53,7 @@ export const makeRechargeQuery = async (opts) => {
 
   // This correctly waits until the job is done :)
   await job.waitUntilFinished(queueEvents)
-  //console.log("Done");
+  console.log("Done");
 
   const finished = await Job.fromId(queue, job.id)
 

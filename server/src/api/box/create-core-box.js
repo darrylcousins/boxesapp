@@ -22,9 +22,14 @@ export default async (req, res, next) => {
     addOnProducts: [],
     includedProducts: []
   };
-  const insertResult = await collection.insertOne(doc);
-  _logger.info(
-    `${insertResult.insertedCount} documents were inserted with the _id: ${insertResult.insertedId}`,
-  );
-  res.status(200).json(doc);
+  try {
+    const insertResult = await collection.insertOne(doc);
+    _logger.info(
+      `${insertResult.insertedCount} documents were inserted with the _id: ${insertResult.insertedId}`,
+    );
+    res.status(200).json(doc);
+  } catch(err) {
+    res.status(200).json({ error: err.message });
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
 };

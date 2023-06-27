@@ -12,7 +12,6 @@
 export default async (req, res, next) => {
   const collection = _mongodb.collection("orders");
   const query = req.body;
-  _logger.info(JSON.stringify(req.body, null, 2));
   const response = Object();
   try {
     collection.distinct('source', query, (err, result) => {
@@ -20,7 +19,7 @@ export default async (req, res, next) => {
       res.status(200).json(result);
     });
   } catch(err) {
-    res.status(400).json({ error: err.toString() });
+    res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 };

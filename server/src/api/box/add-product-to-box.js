@@ -20,13 +20,13 @@ export default async (req, res, next) => {
   _logger.info(`adding product with id ${shopify_product_id} to type: ${product_type}`);
 
   if (!product_type) {
-    res.status(400).json({ error: "No product type" });
+    res.status(200).json({ error: "No product type" });
     return;
   };
 
   // prevent adding unavailable items
   if (!shopify_product_id) {
-    res.status(400).json({ error: "No shopify product id" });
+    res.status(200).json({ error: "No shopify product id" });
     return;
   };
 
@@ -98,7 +98,7 @@ export default async (req, res, next) => {
     });
 
   if (typeof productDoc === "string") {
-    res.status(400).json({error: productDoc});
+    res.status(200).json({error: productDoc});
 
   } else {
     const collection = _mongodb.collection("boxes");

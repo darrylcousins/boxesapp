@@ -47,7 +47,7 @@ export default async (req, res, next) => {
     _logger.notice(`Order edited through admin api.`, { meta });
     res.status(200).json(result);
   } catch(err) {
-    res.status(400).json({ error: err.toString() });
+    res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 };

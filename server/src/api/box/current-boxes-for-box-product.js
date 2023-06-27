@@ -62,7 +62,7 @@ export default async (req, res, next) => {
       return dates;
     })
     .catch(err => {
-      res.status(400).json({ error: err.toString() });
+      res.status(200).json({ error: err.toString() });
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
     });
 
@@ -103,7 +103,7 @@ export default async (req, res, next) => {
         res.status(200).json(response);
       });
   } catch(err) {
-    res.status(400).json({ error: err.toString() });
+    res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 };

@@ -14,10 +14,15 @@ import { ObjectID } from "mongodb";
 export default async (req, res, next) => {
 
   const collection = _mongodb.collection("boxes");
-  collection.findOne(req.body, async (e, box) => {
-    if (e) _logger.info(`${_filename(import.meta)} Got error ${e}`);
-    await collection.deleteOne({_id: ObjectID(req.body._id)}, (e, result) => {
-      res.status(200).json(result);
+  try {
+    collection.findOne(req.body, async (e, box) => {
+      if (e) _logger.info(`${_filename(import.meta)} Got error ${e}`);
+      await collection.deleteOne({_id: ObjectID(req.body._id)}, (e, result) => {
+        res.status(200).json(result);
+      });
     });
-  });
+  } catch(err) {
+    res.status(200).json({ error: err.message });
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
 };

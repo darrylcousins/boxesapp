@@ -23,7 +23,7 @@ export default async (req, res, next) => {
   const collection = _mongodb.collection("boxes");
   const result = await collection.findOne({ delivered: deliveryDay, shopify_product_id })
   if (result) {
-    res.status(400).json({error: `${deliveryDay} already has ${result.shopify_title}`});
+    res.status(200).json({error: `${deliveryDay} already has ${result.shopify_title}`});
     return;
   };
 

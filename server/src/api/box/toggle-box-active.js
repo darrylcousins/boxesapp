@@ -17,28 +17,33 @@ export default async (req, res, next) => {
   const {box_id, delivered, active} = req.body;
   const collection = _mongodb.collection("boxes");
 
-  if (box_id && !delivered) {
-    collection.updateOne(
-      {_id: ObjectID(box_id)},
-      {$set: {active}}
-      , async (err, result) => {
-      if (err) {
-        _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-      };
+  try {
+    if (box_id && !delivered) {
+      collection.updateOne(
+        {_id: ObjectID(box_id)},
+        {$set: {active}}
+        , async (err, result) => {
+        if (err) {
+          _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+        };
 
-      res.status(200).json(result);
-    });
-  } else if (!box_id && delivered) {
-    collection.updateMany(
-      {delivered},
-      {$set: {active}}
-      , async (err, result) => {
-      if (err) {
-        _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-      };
+        res.status(200).json(result);
+      });
+    } else if (!box_id && delivered) {
+      collection.updateMany(
+        {delivered},
+        {$set: {active}}
+        , async (err, result) => {
+        if (err) {
+          _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+        };
 
-      res.status(200).json(result);
-    });
+        res.status(200).json(result);
+      });
+    };
+  } catch(err) {
+    res.status(200).json({ error: err.message });
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 };
 

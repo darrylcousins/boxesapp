@@ -33,11 +33,11 @@ export default async (req, res, next) => {
     // could be that the customer has more than one box subscribed
     // but XXX assumption can only be one result by customer and charge_date
     if (result.charges.length < 1) {
-      res.status(200).json({ errors: "not found" });
+      res.status(200).json({ error: "not found" });
       return;
     };
     if (result.charges.length > 1) {
-      res.status(200).json({ errors: "too many not found" });
+      res.status(200).json({ error: "too many not found" });
       return;
     };
     const charge = result.charges[0]
@@ -60,7 +60,7 @@ export default async (req, res, next) => {
     res.status(200).json(included_subscriptions);
 
   } catch(err) {
-    res.status(400).json({ error: err.toString() });
+    res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 };

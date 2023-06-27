@@ -58,7 +58,7 @@ export default async (req, res, next) => {
       const result = await _mongodb.collection("boxes").aggregate(pipeline).toArray();
       product_id = result[0].product_id;
     } catch(err) {
-      res.status(400).json({ error: err.toString() });
+      res.status(200).json({ error: err.message });
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
       return;
     };
@@ -80,7 +80,7 @@ export default async (req, res, next) => {
   } catch(err) {
     const meta = err;
     meta.product_id = product_id;
-    res.status(400).json({ error: err.toString() });
+    res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta});
   };
 };

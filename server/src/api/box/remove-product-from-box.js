@@ -19,12 +19,14 @@ export default async (req, res, next) => {
   pullCmd[product_type] = {shopify_product_id};
 
   const collection = _mongodb.collection("boxes");
-  collection.updateOne(
-    {_id: ObjectID(box_id)},
-    {$pull: pullCmd}
-    , async (e, result) => {
-    if (e) _logger.info(`${_filename(import.meta)} Got error ${e}`);
-
+  try {
+    const result = await collection.updateOne(
+      { _id: ObjectID(box_id) },
+      { $pull: pullCmd }
+    );
     res.status(200).json(result);
-  });
+  } catch(err) {
+    res.status(200).json({ error: err.message });
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
 };

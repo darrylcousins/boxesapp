@@ -185,7 +185,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   // create a mock box
   if (!fetchBox) {
     fetchBox = {
-      shopify_title: "", 
+      shopify_title: "",
       includedProducts: [],
       addOnProducts: [],
     };

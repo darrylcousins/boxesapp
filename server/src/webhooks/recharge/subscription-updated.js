@@ -67,5 +67,7 @@ export default async function subscriptionUpdated(topic, shop, body) {
   };
   
   _logger.notice(`Recharge webhook ${topicLower} received.`, { meta });
+
+  return true;
 };
 

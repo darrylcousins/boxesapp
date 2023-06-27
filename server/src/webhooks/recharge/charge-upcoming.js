@@ -24,6 +24,8 @@ export default async function chargeUpcoming(topic, shop, body) {
   const topicLower = topic.toLowerCase().replace(/_/g, "/");
 
   const charge = JSON.parse(body).charge;
+
+  // need to add subscription id in order to fit into logs for customer
   const meta = {
     recharge: {
       topic: topicLower,
@@ -87,5 +89,7 @@ export default async function chargeUpcoming(topic, shop, body) {
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
+
+  return true;
 };
 

@@ -34,9 +34,12 @@ export default async function productsUpdate(topic, shop, body) {
           }
         };
         _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta: boxMeta });
+      } else {
+        return;
       };
     } catch(err) {
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+      return;
     };
   } else if (productJson.product_type === 'Box Produce') {
     const shopify_price = parseInt(parseFloat(productJson.variants[0].price) * 100);
@@ -49,6 +52,7 @@ export default async function productsUpdate(topic, shop, body) {
       };
     } catch (err) {
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+      return;
     };
     const tags = productJson.tags ? productJson.tags.split(',').map(el => el.trim()).filter(el => possible_tags.includes(el)) : [];
     let tag = "";
@@ -112,9 +116,12 @@ export default async function productsUpdate(topic, shop, body) {
           }
         };
         _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });
+      } else {
+        return;
       };
     } catch(err) {
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
     };
   };
+  return true;
 };

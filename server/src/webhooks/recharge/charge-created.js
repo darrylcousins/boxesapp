@@ -25,193 +25,166 @@ export default async function chargeCreated(topic, shop, body) {
 
   const charge = JSON.parse(body).charge;
 
-  // XXX explantion please
-  if ( !charge.processed_at) {
+  // Only process charges that have been successful
+  // could use status=success
+  //if ( !charge.processed_at) {
+  if ( charge.status !== "success") {
     console.log("charge not processed so returning")
     return;
   };
 
-  // capture the first charge by checking for box_subsciption_id
-  // subsequent charges will have this property and no action required
-  let cancel; // flag if box_subscription_id already set
-  let attributes; // reduce properties for easy access
-
-  // locate parent subscription
-  // XXX again this shows we can only make one subscription order per cart
-  const children = [];
-  let parent;
-
   try {
-    // get the parent subscription and ignore if box_subscription_id is set
+
+    let parent = null; // hang on the box subscription for logging
+    /* Collect values used when updating subscriptions */
+    let deliveryDate;
+    let currentDeliveryDate;
+    let boxSubscriptionId;
+    let nextChargeScheduledAt;
+    let orderDayOfWeek;
+    let subscription; // passed onto the email algorithm
+
+    // loop line_items and find the parent box subscription and calculate new values
     for (const line_item of charge.line_items) {
 
-      const { purchase_item_id: id, properties, title, variant_title } = line_item;
-
-      // make properties into easily accessible object
-      attributes = properties.reduce(
-        (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value }),
-        {});
-
-      if (Object.keys(attributes).includes("Including")) {
-        parent = { id, attributes, title, variant_title };
+      // exit if box_subscription_id is already set
+      if (line_item.properties.some(el => el.name === "box_subscription_id")) {
+        console.log("found subscription id so exiting");
+        return;
       };
 
-      // consider checking all line_items?
-      cancel = line_item.properties.some(el => el.name === "box_subscription_id");
-      if (cancel) break;
+      if (line_item.properties.some(el => el.name === "Including")) {
+        // get the subscription so as to access order_interval_frequency
+        subscription = await getSubscription(line_item.purchase_item_id);
+        boxSubscriptionId = subscription.id
+
+        parent = { ...line_item }; // save parent line_item for logging
+        const properties = [ ...parent.properties ];
+
+        /*
+         * Update the Delivery Date using "order_interval_frequency" and
+         * "order_interval_unit": for us 1 weeks or 2 weeks Requiring
+         * subscription to be made in "weeks" so as to be able to define
+         * order_day_of_week if (subscription.order_interval_unit === "week") {
+         * Note this will break if the user sets units to days, which should
+         * not be possible
+         */
+        const days = parseInt(subscription.order_interval_frequency) * 7; // number of weeks by 7
+        const dateItem = properties.find(el => el.name === "Delivery Date");
+        currentDeliveryDate = dateItem.value;
+        const dateObj = new Date(Date.parse(currentDeliveryDate));
+        dateObj.setDate(dateObj.getDate() + days);
+        deliveryDate = dateObj.toDateString();
+
+        /* Match "order_day_of_week" to 3 days before "Delivery Date"
+         * "normal" weekdays in javascript are numbered Sunday = 0 but recharges uses Monday = 0
+         * This is because recharge uses python in the backend
+         * So to get our 3 days we'll subtract 4 days
+         */
+        let currentIdx = dateObj.getDay() - 4; // 0 = Sunday, javascript style
+        if (currentIdx < 0) currentIdx = currentIdx + 7; // fix to ensure the future
+        orderDayOfWeek = currentIdx % 7;
+
+        // with the delivery date we fix the next_charge_scheduled_at to 3 days prior
+        const offset = dateObj.getTimezoneOffset()
+        const nextChargeDate = new Date(dateObj.getTime() - (offset*60*1000));
+        nextChargeDate.setDate(nextChargeDate.getDate() - 3);
+        // Put to the required yyyy-mm-dd format
+        // Could use .split("T")[0] instead of substring
+        nextChargeScheduledAt = nextChargeDate.toISOString().substring(0,10);
+
+        break;
+      } else {
+        continue;
+      };
+    };
+
+    // used to compile the email
+    const updatedLineItems = []; // update line items to match subscription updates
+
+    // loop again to make updates to delivery date and next scheduled at
+    for (const line_item of charge.line_items) {
+
+      const properties = [ ...line_item.properties ];
+      const dateItem = properties.find(el => el.name === "Delivery Date");
+      const dateIdx = properties.indexOf(dateItem);
+      dateItem.value = deliveryDate;
+      properties[dateIdx] = dateItem;
+      properties.push({ name: "box_subscription_id", value: boxSubscriptionId.toString() });
+      line_item.properties = [ ...properties ];
+
+      // update that parent object with new properties
+      if (properties.some(el => el.name === "Including")) {
+        parent.properties = [ ...properties ];
+      };
+
+      updatedLineItems.push(line_item);
+
+      const updateData = {
+        order_day_of_week: orderDayOfWeek, // assign orderDay
+        properties: line_item.properties,
+      };
+      updateSubscription(line_item.purchase_item_id, updateData);
+      updateChargeDate(line_item.purchase_item_id, nextChargeScheduledAt);
 
     };
 
-    console.log(charge.id, "got a cancel value:", cancel);
-    if (cancel) return; // box_subscription_id already set
+    const updatedCharge = { ...charge };
+
+    const updatedSubscription = { ...subscription };
+    updatedSubscription.properties = [ ...parent.properties ];
+
+
+    try {
+      updatedCharge.scheduled_at = nextChargeScheduledAt;
+      updatedCharge.line_items = updatedLineItems;
+      updatedCharge.subscription = updatedSubscription;
+
+      const grouped = reconcileGetGrouped({ charge: updatedCharge });
+      grouped[parent.purchase_item_id].subscription = updatedSubscription; // pass subscription to avoid api call
+
+      let result = [];
+      result = await gatherData({ grouped, result });
+      result[0].attributes.charge_id = null;
+
+      let admin_email = _mongodb.collection("settings").findOne({handle: "admin-email"});
+      if (admin_email) admin_email = admin_email.value;
+      await subscriptionCreatedMail({ subscriptions: result, admin_email });
+
+    } catch(err) {
+      _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    };
+
+    const meta = {
+      recharge: {
+        topic: `${topicLower} via first order`,
+        charge_id: charge.id,
+        subscription_id: parent.purchase_item_id,
+        customer_id: charge.customer.id,
+        address_id: charge.address_id,
+        shopify_order_id: charge.external_order_id.ecommerce,
+        box: `${parent.title} - ${parent.variant_title}`,
+        delivered: currentDeliveryDate,
+        next_delivery: deliveryDate,
+        email: charge.customer.email,
+      }
+    };
+
+    _logger.notice(`Recharge webhook ${topicLower} received.`, { meta });
+
+  } catch(err) {
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
+
+
+  try {
     fs.writeFileSync(`recharge.charge-${charge.id}.json`, JSON.stringify(charge, null, 2));
+    //fs.writeFileSync(`recharge.charge-updated.json`, JSON.stringify(updatedCharge, null, 2));
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
-
-
-  // We need order_interval_frequency so must get the subscription
-  const subscription = await getSubscription(parent.id);
-
-  /* 
-   * Step 1 for created: change "order_day_of_week" to match 3 days before "Delivery Date"
-   * "normal" weekdays in javascript are numbered Sunday = 0 but recharges uses Monday = 0
-   * This is because recharge uses python in the backend
-   * So to get our 3 days we'll subtract 4 days
-   * Thursday delivery => Monday charge
-   * Tuesday delivery => Saturday charge
-   */
-  let firstDeliveryDate = parent.attributes["Delivery Date"]; // keep this for the log meta data
-  let deliveryDate = new Date(Date.parse(parent.attributes["Delivery Date"]));
-  let currentIdx = deliveryDate.getDay() - 4; // 0 = Sunday, javascript style
-  if (currentIdx < 0) currentIdx = currentIdx + 7; // fix to ensure the future
-
-  /* 
-   * changing this on the subscription will update the
-   * "next_charge_scheduled_at" but because recharge will pick the next date
-   * matching order_day_of_week we also set next_charge_scheduled_at as below
-   * using the api call to subscription/{id}/set_next_charge_date see
-   * api/recharge-update-charge-date.js for example This is only applicable to
-   * subscriptions with order_interval_unit = “week”.  Value of 0 equals to
-   * Monday, 1 to Tuesday etc.
-   */
-  const orderDayOfWeek = currentIdx % 7;
-
-  /*
-   * Step 2 Now update the Delivery Date using
-   * "order_interval_frequency" and "order_interval_unit": for us 1 weeks or 2 weeks
-   * Requiring subscription to be made in "weeks" so as to be able to define order_day_of_week
-   * if (subscription.order_interval_unit === "week") {
-   * Note this will break if the user sets units to days, which should not be possible
-   */
-  const daysToNextDelivery = parseInt(subscription.order_interval_frequency) * 7;
-  deliveryDate.setDate(deliveryDate.getDate() + daysToNextDelivery);
-
-  // with the delivery date we fix the next_charge_scheduled_at to 3 days prior
-  const offset = deliveryDate.getTimezoneOffset()
-  let nextChargeDate = new Date(deliveryDate.getTime() - (offset*60*1000));
-  nextChargeDate.setDate(nextChargeDate.getDate() - 3);
-  // Put to the required yyyy-mm-dd format
-  let nextChargeScheduledAt = nextChargeDate.toISOString().substring(0,10);
-
-  const delivery = deliveryDate.toDateString();
-
-  const updatedLineItems = []; // update line items to match subscription updates
-
-  // update subscriptions with properties and dates
-  let props;
-  let updateData;
-
-
-  for (const line_item of charge.line_items) {
-    // make properties into easily accessible object
-    attributes = line_item.properties.reduce(
-      (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value }),
-      {});
-
-    props = { ...attributes };
-    props["Delivery Date"] = delivery;
-    props["box_subscription_id"] = parent.id.toString();
-
-    line_item.properties = Object.keys(props).map((key) => { return { name: key, value: props[key] }});
-
-    updatedLineItems.push(line_item);
-
-    if (Object.keys(attributes).includes("Including")) {
-      continue; // ignore the parent in this loop
-    };
-
-    updateData = {
-      order_day_of_week: orderDayOfWeek, // assign orderDay
-      properties: Object.keys(props).map((key) => { return { name: key, value: props[key] }}),
-    };
-    await updateSubscription(line_item.purchase_item_id, updateData);
-    await updateChargeDate(line_item.purchase_item_id, nextChargeScheduledAt);
-
-  };
-
-  // and the parent
-  props = { ...parent.attributes };
-  props["Delivery Date"] = delivery;
-  props["box_subscription_id"] = parent.id.toString();
-
-  updateData = {
-    order_day_of_week: orderDayOfWeek, // assign orderDay
-    properties: Object.keys(props).map((key) => { return { name: key, value: props[key] }}),
-  };
-  await updateSubscription(parent.id, updateData);
-  await updateChargeDate(parent.id, nextChargeScheduledAt);
-
-  const updatedSubscription = { ...subscription };
-  updatedSubscription.properties = Object.keys(props).map((key) => { return { name: key, value: props[key] }});
-
-  const updatedCharge = { ...charge };
-
-  try {
-    updatedCharge.scheduled_at = nextChargeScheduledAt;
-    updatedCharge.line_items = updatedLineItems;
-
-    const grouped = reconcileGetGrouped({ charge: updatedCharge });
-    grouped[parent.id].subscription = updatedSubscription; // pass subscription to avoid api call
-
-    let result = [];
-    result = await gatherData({ grouped, result });
-    result[0].attributes.charge_id = null;
-
-    let admin_email = _mongodb.collection("settings").findOne({handle: "admin-email"});
-    if (admin_email) admin_email = admin_email.value;
-    await subscriptionCreatedMail({ subscriptions: result, admin_email });
-
-  } catch(err) {
-    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-  };
-
-  topicLower = "subscription/created"; // makes the logs clearer
-  const meta = {
-    recharge: {
-      topic: `${topicLower} via first charge`,
-      charge_id: charge.id,
-      subscription_id: parent.id,
-      customer_id: charge.customer.id,
-      address_id: charge.address_id,
-      box: `${parent.title} - ${parent.variant_title}`,
-      delivered: firstDeliveryDate,
-      next_delivery: delivery,
-      email: charge.customer.email,
-    }
-  };
-
-  _logger.notice(`Recharge webhook ${topicLower} received.`, { meta });
-
-  try {
-    //fs.writeFileSync(`recharge.charge-${charge.id}.json`, JSON.stringify(charge, null, 2));
-    fs.writeFileSync(`recharge.charge-updated.json`, JSON.stringify(updatedCharge, null, 2));
-
-  } catch(err) {
-    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-  };
-  return;
+  return true;
 };
 
 

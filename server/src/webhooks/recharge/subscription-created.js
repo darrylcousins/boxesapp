@@ -2,6 +2,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
+/* No longer required - but keep in mind if we can allow admin to create subscription boxes? */
 export default async function subscriptionCreated(topic, shop, body) {
 
   const mytopic = "SUBSCRIPTION_CREATED";

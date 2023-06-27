@@ -53,5 +53,7 @@ export default async function ordersUpdated(topic, shop, body) {
     };
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    return;
   };
+  return true;
 };

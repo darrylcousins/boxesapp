@@ -5,6 +5,7 @@ import { updateStoreObject } from "../../lib/shopify/helpers.js";
 import { mongoInsert } from "../../lib/mongo/mongo.js";
 import { processOrderJson } from "../../lib/orders.js";
 import updateProductInventory from "./update-product-inventory.js";
+import fs from "fs";
 
 export default async function ordersCreate(topic, shop, body) {
 
@@ -72,4 +73,12 @@ export default async function ordersCreate(topic, shop, body) {
     id, tags: order.delivered
   });
   updateProductInventory(order);
+
+  try {
+    fs.writeFileSync(`shopify.order-${orderJson.id}.json`, JSON.stringify(orderJson, null, 2));
+
+  } catch(err) {
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
+  return true;
 };

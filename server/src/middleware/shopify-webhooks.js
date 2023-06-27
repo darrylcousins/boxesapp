@@ -29,7 +29,9 @@ export default function applyShopifyWebhooks({ app }) {
       Shopify.Registry.process(req, res)
         .then(
           (res) => {
-            _logger.info(`Shopify webhook ${topic} processed, returned 200.`);
+            if (res) { // mostly returns null value
+              _logger.info(`Shopify webhook ${topic} processed, returned 200.`);
+            };
           },
           (err) => {
             _logger.info(`Shopify webhook ${topic} failed and logged.`);

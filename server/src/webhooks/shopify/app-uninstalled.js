@@ -33,6 +33,6 @@ export default async function appUninstalled(topic, shop, body) {
     }
   };
   _logger.notice(`Shop webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });
-
+  return true;
 };
 

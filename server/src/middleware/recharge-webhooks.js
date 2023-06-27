@@ -29,7 +29,9 @@ export default function applyRechargeWebhooks({ app }) {
       Recharge.Registry.process(req, res)
         .then(
           (res) => {
-            _logger.info(`Recharge webhook ${topic} processed, returned 200.`);
+            if (res) { // mostly returns null value
+              _logger.info(`Recharge webhook ${topic} processed, returned 200.`);
+            };
           },
           (err) => {
             _logger.info(`Recharge webhook ${topic} failed and logged.`);

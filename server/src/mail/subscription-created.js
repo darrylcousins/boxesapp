@@ -15,11 +15,13 @@ import subscriptionTemplate from "./templates/subscription.js";
  * @param (object) data
  */
 export default async ({ subscriptions, admin_email }) => {
-  const email = subscriptions[0].attributes.customer.email;
-  const address_id = subscriptions[0].attributes.address_id;
-  const subscription_id = subscriptions[0].attributes.subscription_id;
-  const customer_id = subscriptions[0].attributes.customer.id;
+  const subscription = subscriptions[0];
+  const email = subscription.attributes.customer.email;
+  const address_id = subscription.attributes.address_id;
+  const subscription_id = subscription.attributes.subscription_id;
+  const customer_id = subscription.attributes.customer.id;
   const admin = admin_email ? admin_email : process.env.ADMIN_EMAIL;
+  const box = `${subscription.attributes.title} - ${subscription.attributes.variant}`;
 
   const engine = new Liquid();
   const options = {
@@ -59,7 +61,8 @@ export default async ({ subscriptions, admin_email }) => {
           recharge: {
             subscription_id,
             customer_id,
-            email: email,
+            box,
+            email,
           }
         };
         _logger.notice(`Recharge subscription created email sent.`, { meta });

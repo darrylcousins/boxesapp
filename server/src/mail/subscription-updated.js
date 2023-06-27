@@ -56,6 +56,7 @@ export default async ({ subscription_id, attributes, includes, nextChargeDate, n
           recharge: {
             customer_id: attributes.customer.id,
             charge_id: attributes.charge_id,
+            box: `${attributes.title} - ${attributes.variant}`,
             email: attributes.customer.email,
           }
         };

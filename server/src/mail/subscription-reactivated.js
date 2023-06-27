@@ -63,6 +63,7 @@ export default async ({ subscription_id, box, included, nextChargeDate, nextDeli
           recharge: {
             email: customer.email,
             customer_id: box.customer_id,
+            box: `${box.product_title} - ${box.variant_title}`,
             subscription_id: box.id,
           }
         };

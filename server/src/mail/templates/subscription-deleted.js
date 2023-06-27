@@ -20,7 +20,7 @@ export default `
         The deleted subscription included:
         <ul>
           <li>
-              {{ box.product_title }} - {{ product.variant_title }}
+              {{ box.product_title }} - {{ box.variant_title }}
           </li>
           {% for item in included %}
             <li>

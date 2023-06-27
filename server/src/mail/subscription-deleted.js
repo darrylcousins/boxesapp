@@ -59,9 +59,10 @@ export default async ({ subscription_id, box, included, admin_email }) => {
         });
         const meta = {
           recharge: {
-            email: customer.email,
             customer_id: box.customer_id,
             subscription_id: box.id,
+            box: `${box.product_title} - ${box.variant_title}`,
+            email: customer.email,
           }
         };
         _logger.notice(`Recharge subscription deleted email sent.`, { meta });

@@ -21,7 +21,6 @@ export default async function chargeCreated(topic, shop, body) {
     _logger.notice(`Recharge webhook ${topic} received but expected ${mytopic}`, { meta: { recharge: {} } });
     return;
   };
-  let topicLower = topic.toLowerCase().replace(/_/g, "/");
 
   const charge = JSON.parse(body).charge;
 
@@ -155,6 +154,24 @@ export default async function chargeCreated(topic, shop, body) {
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
     };
 
+    const topicLower = "subscription/created";
+
+    /* verify that customer is in local mongodb */
+    const collection = _mongodb.collection("customers");
+    const customer = await collection.findOne({ recharge_id: parseInt(charge.customer.id) });
+    const insert = {
+      first_name: charge.billing_address.first_name,
+      last_name: charge.billing_address.last_name,
+      email: charge.customer.email,
+      recharge_id: parseInt(charge.customer.id),
+      shopify_id: parseInt(charge.customer.external_customer_id.ecommerce),
+    };
+    console.log(insert);
+    if (!customer) {
+      const res = await collection.insertOne(c);
+      console.log(res);
+    };
+
     const meta = {
       recharge: {
         topic: `${topicLower} via first order`,
@@ -162,7 +179,7 @@ export default async function chargeCreated(topic, shop, body) {
         subscription_id: parent.purchase_item_id,
         customer_id: charge.customer.id,
         address_id: charge.address_id,
-        shopify_order_id: charge.external_order_id.ecommerce,
+        shopify_order_id: parseInt(charge.external_order_id.ecommerce),
         box: `${parent.title} - ${parent.variant_title}`,
         delivered: currentDeliveryDate,
         next_delivery: deliveryDate,

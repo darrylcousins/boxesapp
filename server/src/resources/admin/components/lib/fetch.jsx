@@ -27,6 +27,9 @@ const Fetch = async (src) => {
   return fetch(`${proxy}${src}`)
     .then(async (response) => {
       let json;
+      if (response.status === 500) {
+        return { error: "500 Server Error" };
+      };
       try {
         json = await response.json();
       } catch (e) {
@@ -98,6 +101,9 @@ const PostFetch = async ({ src, data, headers }) => {
   return fetch(`${proxy}${src}`, opts)
     .then(async (response) => {
       let json;
+      if (response.status === 500) {
+        return { error: "500 Server Error" };
+      };
       try {
         json = await response.json();
       } catch (e) {

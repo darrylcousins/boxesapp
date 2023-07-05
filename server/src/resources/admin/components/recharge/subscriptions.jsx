@@ -139,11 +139,11 @@ async function* Subscriptions() {
    */
   const fetchCustomers = async () => {
     let cursor = nextCursor || previousCursor;
-    const uri = `/api/recharge-customers?cursor=${cursor}`;
+    //const uri = `/api/recharge-customers?cursor=${cursor}`;
+    const uri = `/api/recharge-customers`;
     await Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
-        console.log(result);
         if (error !== null) {
           fetchError = error;
           loading = false;
@@ -182,7 +182,6 @@ async function* Subscriptions() {
           return null;
         };
         fetchCustomer = json;
-        console.log(fetchCustomer);
         loading = false;
         this.refresh();
       })
@@ -331,25 +330,26 @@ async function* Subscriptions() {
                     <tr>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Customer</th>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Email</th>
-                      <th class="fw6 bb b--black-20 tc pb3 pr3 bg-white">Active</th>
-                      <th class="fw6 bb b--black-20 tc pb3 pr3 bg-white">Payment status</th>
                     </tr>
                   </thead>
                 { rechargeCustomers.map((customer, idx) => (
                   <tr crank-key={ `${ customer.last_name }-${ idx }` }>
                     <td class="pv3 pr3 bb b--black-20">
-                      <div class="pointer fg-streamside-blue b" onclick={ () => fetchRechargeCustomer(customer.id) }>
-                        { customer.first_name } { customer.last_name }
+                      <div class="dt w-100">
+                        <div class="dt-row pointer fg-streamside-blue b w-100" onclick={ () => fetchRechargeCustomer(customer.recharge_id) }>
+                          <div class="dtc w-100">
+                            <div class="dib w-50">
+                              { customer.last_name }
+                            </div>
+                            <div class="dib w-50">
+                              { customer.first_name }
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td class="pv3 pr3 bb b--black-20">
                       { customer.email }
-                    </td>
-                    <td class="pv3 pr3 bb b--black-20 tc">
-                      { customer.subscriptions_active_count ? "Yes" : "No" }
-                    </td>
-                    <td class="pv3 pr3 bb b--black-20 tc">
-                      { customer.has_valid_payment_method ? "Valid" : "Pending" }
                     </td>
                   </tr>
                 ))}

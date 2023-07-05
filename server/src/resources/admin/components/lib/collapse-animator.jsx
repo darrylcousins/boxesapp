@@ -11,6 +11,18 @@ import { collapseElement, transitionElementHeight, sleepUntil } from "../helpers
 /**
  * Wrap a crank Component and animate collapse
  *
+ * I've tried many times to make this a generator which will update as a child component.
+ * But to get around that problem the wrapper can be refreshed by
+ * reinitializing in the parent component
+ *
+ * let CollapsibleThing = CollapseWrapper(Thing); // this won't update on refresh
+ *
+ * const someAction = () => {
+ *   someAttibuteForThing = newValue;
+ *   CollapsibleThing = CollapseWrapper(Thing); // reinitialize
+ *   this.refresh();
+ * }
+ *
  * @function AnimateCollapseWrapper
  * @returns {Function} Return the wrapped component
  * @param {object} Component The component to be wrapped

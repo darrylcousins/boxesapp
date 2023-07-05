@@ -2,6 +2,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { mongoUpdate } from "../../lib/mongo/mongo.js";
+import { sortObjectByKeys } from "../../lib/helpers.js";
 
 export default async function ordersUpdated(topic, shop, body) {
 
@@ -45,6 +46,7 @@ export default async function ordersUpdated(topic, shop, body) {
                   delivered: date.toDateString(),
                 }
               };
+              meta.order = sortObjectByKeys(meta.order);
               _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });
             };
           };

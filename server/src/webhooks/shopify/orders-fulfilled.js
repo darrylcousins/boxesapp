@@ -8,6 +8,8 @@
  * XXX cronjobs/dbclean run weekly clears older orders from the database as
  * well as saving them to json file
  */
+import { sortObjectByKeys } from "../../lib/helpers.js";
+
 export default async function ordersFulfilled(topic, shop, body) {
 
   const mytopic = "ORDERS_FULFILLED";
@@ -30,6 +32,7 @@ export default async function ordersFulfilled(topic, shop, body) {
         deleted: result.deletedCount,
       }
     };
+    meta.order = sortObjectByKeys(meta.order);
     _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

@@ -35,7 +35,7 @@ async function *ShopifyProductImage({ shopify_title, shopify_product_id }) {
 
   getImage();
 
-  for await ({ shopify_title } of this) { // eslint-disable-line no-unused-vars
+  for await ({ shopify_title, shopify_product_id } of this) { // eslint-disable-line no-unused-vars
     yield (
       <div class="ba dib v-mid" id={ id } style="width: 3em; height: 3em" >
         { loading ? (

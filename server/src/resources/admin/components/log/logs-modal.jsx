@@ -65,7 +65,7 @@ async function* LogsModal({ logs, box_title }) {
                   { title }:
                 </div>
                 <div class="dtc w-70">
-                  { str }
+                  { (typeof str === "string") ? `${ str }` : `${JSON.stringify(str)}` }
                 </div>
               </div>
           ))}

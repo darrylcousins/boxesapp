@@ -1,5 +1,5 @@
 /*
- * @module api/recharge/recharge-delete-subscription.js
+ * @module api/recharge/recharge-updated-charge-date.js
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
@@ -7,7 +7,7 @@ import { gatherData, reconcileChargeGroup, reconcileGetGroups } from "../../lib/
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 
 /*
- * @function recharge/recharge-delete-subscription.js
+ * @function recharge/recharge-updated-charge-date.js
  * @param (Http request object) req
  * @param (Http response object) res
  * @param (function) next

@@ -88,7 +88,7 @@ if (process.env.NODE_ENV !== 'test') {
   // warn level currently only for api/bullmq 'errors'
   // fatal not logged anywhere at the moment
   // e.g. order created, subscription created etc
-  // use 'metadata' to add ids and similar
+  // use 'meta' to add ids and similar
   logger.add(
     new winston.transports.MongoDB({
       level: "notice",

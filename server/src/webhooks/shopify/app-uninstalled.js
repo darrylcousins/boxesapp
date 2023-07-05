@@ -2,6 +2,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import { sortObjectByKeys } from "../../lib/helpers.js";
 
 export default async function appUninstalled(topic, shop, body) {
 
@@ -32,6 +33,7 @@ export default async function appUninstalled(topic, shop, body) {
       deleted_recharge: rechargeIds.length,
     }
   };
+  meta.shopify = sortObjectByKeys(meta.shopify);
   _logger.notice(`Shop webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });
   return true;
 };

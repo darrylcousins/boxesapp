@@ -28,7 +28,6 @@ function* SelectModal({ modalNote, modalType, modalSelectList, hideModal, multip
 
   /* if selection is multiple */
   let selectedProductIds = [];
-  let selectedProducts = [];
   /* end if selection is multiple */
 
   /*
@@ -79,7 +78,12 @@ function* SelectModal({ modalNote, modalType, modalSelectList, hideModal, multip
 
       const value = parseFloat(target.value);
       if (multiple) {
-        selectedProductIds.push(value);
+        const idx = selectedProductIds.indexOf(value);
+        if (idx !== -1) {
+          selectedProductIds.splice(idx, 1);
+        } else {
+          selectedProductIds.push(value);
+        };
       } else {
         selectedProductId = value;
         selectedProduct = modalSelectList.filter(el => el && el)

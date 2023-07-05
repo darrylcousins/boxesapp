@@ -10,10 +10,12 @@ import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
  * @param (Http request object) req
  * @param (Http response object) res
  * @param (function) next
+ *
+ * Jun 2023 No longer used for getting all customers (admin ui subscribers view
+ * now uses customers stored in mongodb)
  */
 export default async (req, res, next) => {
   // get recharge customer using shopify customer id
-  // handles all customers as well
   let shopify_customer_id
   let recharge_customer_id
   let query;
@@ -42,6 +44,7 @@ export default async (req, res, next) => {
       res.status(200).json(result.customer);
       return;
     };
+    // deprecated
     if (!result.customers || !result.customers.length) {
       res.status(200).json([]);
       return;

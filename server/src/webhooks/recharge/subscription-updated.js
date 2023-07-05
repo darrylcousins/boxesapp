@@ -1,7 +1,8 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
-import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import { sortObjectByKeys } from "../../lib/helpers.js";
+import { getMetaForSubscription, writeFileForSubscription } from "./helpers.js";
 
 export default async function subscriptionUpdated(topic, shop, body) {
 
@@ -14,60 +15,52 @@ export default async function subscriptionUpdated(topic, shop, body) {
 
   const subscription = JSON.parse(body).subscription;
 
-  // make properties into easily accessible object
-  const attributes = subscription.properties.reduce(
-    (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value }),
+  writeFileForSubscription(subscription, mytopic.toLowerCase().split("_")[1]);
+
+  const meta = getMetaForSubscription(subscription, topicLower);
+
+  const properties = subscription.properties.reduce(
+    (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
     {});
 
-  // We are looking for the next_charge_scheduled_at because the customer can
-  // skip an order in the recharge customer interface and we need to update the
-  // Delivery Date - also for any related subscribed and included items
-  const nextChargeDate = new Date(Date.parse(subscription.next_charge_scheduled_at));
-  let deliveryDate = new Date(Date.parse(attributes["Delivery Date"]));
-  const currentDate = new Date(Date.parse(attributes["Delivery Date"]));
-
-  // XXX Required that interval unit is weeks - this will break if set to days
-  const days = parseInt(subscription.order_interval_frequency) * 7;
-  while (deliveryDate < nextChargeDate) {
-    deliveryDate.setDate(deliveryDate.getDate() + days);
-  };
-
-  if (currentDate.getTime() === deliveryDate.getTime()) {
-    // date has not been changed
-    return;
-  };
-
-  // We need to update this subscription
-  attributes["Delivery Date"] = deliveryDate.toDateString();
-  
-  const properties = Object.entries(attributes).map(([name, value]) => {
-    return { name, value };
-  });
-
-  const updateResult = await makeRechargeQuery({
-    method: "PUT",
-    path: `subscriptions/${subscription.id}`,
-    body: JSON.stringify({ properties })
-  });
-
-  // Only log it if it is the container box all the other items will just update
-  if (!Object.keys(attributes).includes("Including")) {
-    return;
-  };
-
-  const meta = {
-    recharge: {
-      topic: topicLower,
-      subscription_id: subscription.id,
+  // find the updates_pending document and set the update as completed i.e. updated: true
+  // could still test for quantity and properties,  but may not need to.
+  try {
+    const shopify_product_id = parseInt(subscription.external_product_id.ecommerce);
+    const subscription_id = parseInt(subscription.id);
+    const query = {
+      subscription_id: parseInt(properties.box_subscription_id),
       customer_id: subscription.customer_id,
       address_id: subscription.address_id,
-      title: subscription.product_title,
-      delivered: deliveryDate.toDateString(),
-    }
+      scheduled_at: subscription.next_charge_scheduled_at,
+      rc_subscription_ids:
+        { $elemMatch: {
+          $and: [
+            { shopify_product_id },
+            { subscription_id },
+          ]},
+        },
+    };
+    const update = { $set: {
+      "rc_subscription_ids.$[i].updated": true
+    }};
+    const options = {
+      arrayFilters: [
+        {
+          "i.shopify_product_id": shopify_product_id,
+          "i.subscription_id": subscription_id,
+        }
+      ]
+    };
+    const res =  await _mongodb.collection("updates_pending").updateOne(query, update, options);
+    meta.recharge.updates_pending = (res.matchedCount > 0) ? "UPDATED ON UPDATE" : "NOT FOUND";
+  } catch(err) {
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
-  
-  _logger.notice(`Recharge webhook ${topicLower} received.`, { meta });
 
-  return true;
+  meta.recharge = sortObjectByKeys(meta.recharge);
+  _logger.notice(`Subscription updated.`, { meta });
+
+  return;
+
 };
-

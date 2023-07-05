@@ -49,7 +49,7 @@ const Button = (props) => {
     classList += hover ? ` ${hover}` : " hover-bg-orange";
   } else if (type === "notice-reverse") {
     classList = "bg-transparent orange relative";
-    classList += border ? ` b--${border}` : " b--dark-orange";
+    classList += border ? ` b--${border}` : " b--orange";
     classList += hover ? ` ${hover}` : " hover-bg-orange hover-white";
   } else if (type === "warning") {
     classList = "bg-red white relative";

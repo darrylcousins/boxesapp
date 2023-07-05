@@ -18,12 +18,13 @@ export default function (options) {
   return function (req, res, next) {
 
     // bypass authentication if running on localhost
-    if (req.hostname === "localhost" && process.env.SERVER === "local") {
+    if (req.hostname === "localhost" && process.env.SERVER_NAME === "local") {
       next();
     } else {
       // Implement the middleware function based on the options object
       const allowed = process.env.ALLOW_ORIGINS.split(',').map(el => el.trim());
       //allowed.push(req.hostname);
+
 
       const host = req.get('host'); // always set with fetch callee
 
@@ -36,7 +37,8 @@ export default function (options) {
           return;
         }
       }
-    _logger.info(`${_filename(import.meta)} Passed through api auth middleware`);
+
+      _logger.info(`${_filename(import.meta)} Passed through api auth middleware`);
       next();
     };
   };

@@ -160,18 +160,9 @@ function* CurrentLogs() {
    * @function getLogs
    */
   const getLogs = () => {
-    let now;
-    if (selectedDate) {
-      now = new Date(new Date(selectedDate).toISOString().split('T')[0]);
-    } else {
-      now = new Date(new Date().toISOString().split('T')[0]);
-    };
-    let uri;
-    if (logLevel) {
-      uri = `/api/current-logs/${now.getTime()}/${logLevel}`;
-    } else {
-      uri = `/api/current-logs/${now.getTime()}/all`;
-    };
+    const now = selectedDate ? new Date(selectedDate) : new Date();
+    let uri = `/api/current-logs/${now.getTime()}`;
+    uri = logLevel ? `${uri}/${logLevel}` : `${uri}/all`;
     if (selectedObject) {
       uri = `${uri}/${selectedObject}`;
     }
@@ -204,6 +195,17 @@ function* CurrentLogs() {
   };
 
   getLogs();
+
+  /**
+   * Refresh logs
+   *
+   * @function refreshLogs
+   */
+  const refreshLogs = async () => {
+    loading = true;
+    await this.refresh();
+    getLogs();
+  };
 
   /**
    * Filter collection on a log level
@@ -305,7 +307,7 @@ function* CurrentLogs() {
                   { title }:
                 </div>
                 <div class="dtc w-50">
-                  { str }
+                  { (typeof str === "string") ? `${ str }` : `${JSON.stringify(str)}` }
                 </div>
               </div>
           ))}
@@ -354,7 +356,7 @@ function* CurrentLogs() {
           </p>
         </div>
         <div class="w-100 flex">
-          { false && (
+          { true && (
             <div class="w-20 v-bottom center">
               <SelectMenu
                 id="selectObject"
@@ -371,7 +373,7 @@ function* CurrentLogs() {
             { /* need to fix the br (border radius) settings */ }
             { previousPage && previousPage.count > 0 && (
               <button
-                class={ `grey bg-white dib w-50  pv1 outline-0 b--grey ba ${ nextPage.count > 0  && "br-0" } br2 br--left mv1 pointer` }
+                class={ `grey bg-white bg-animate hover-bg-light-gray dib w-50 pv1 outline-0 b--grey ba ${ nextPage.count > 0  && "br-0" } br2 br--left mv1 pointer` }
                 title="Previous"
                 type="button"
                 onclick={ () => changeDate(previousPage.date) }
@@ -381,7 +383,7 @@ function* CurrentLogs() {
             )}
             { nextPage && nextPage.count > 0 && (
               <button
-                class={ `grey bg-white dib w-50  pv1 outline-0 b--grey ba br2 br--right mv1 pointer` }
+                class={ `grey bg-white bg-animate hover-bg-light-gray dib w-50  pv1 outline-0 b--grey ba br2 br--right mv1 pointer` }
                 title="Previous"
                 type="button"
                 onclick={ () => changeDate(nextPage.date) }
@@ -390,14 +392,21 @@ function* CurrentLogs() {
               </button>
             )}
           </div>
-          <div class="w-10 v-bottom tr">
-            { " " }
+          <div class="w-10 v-bottom tr mh1">
+            <button
+              class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-50  pv1 outline-0 b--grey ba br2 br--right mv1 pointer` }
+              title="Refresh"
+              type="button"
+              onclick={refreshLogs}
+              >
+                <span class="v-mid di">Refresh</span>
+            </button>
           </div>
           <div class="w-50 v-bottom tr">
             <button
               class={
                 `${
-                    logLevel === "notice" ? "white bg-black-80" : "grey bg-white"
+                    logLevel === "notice" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
                   } dib w-25 pv1 outline-0 b--grey ba br2 br--left mv1 pointer`
                 }
               title="Notices"
@@ -409,7 +418,7 @@ function* CurrentLogs() {
             <button
               class={
                 `${
-                    logLevel === "warn" ? "white bg-black-80" : "grey bg-white"
+                    logLevel === "warn" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
                   } dib w-25 pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
                 }
               title="Debug"
@@ -421,7 +430,7 @@ function* CurrentLogs() {
             <button
               class={
                 `${
-                    logLevel === "error" ? "white bg-black-80" : "grey bg-white"
+                    logLevel === "error" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
                   } dib w-25 pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
                 }
               title="Errors"
@@ -433,7 +442,7 @@ function* CurrentLogs() {
             <button
               class={
                 `${
-                    logLevel === "fatal" ? "white bg-black-80" : "grey bg-white"
+                    logLevel === "fatal" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
                   } dib w-25 pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
                 }
               title="Fatal"

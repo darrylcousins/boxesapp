@@ -4,117 +4,160 @@
  */
 
 import subscriptionUpdatedMail from "../../mail/subscription-updated.js";
-import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
-import { delay } from "../../lib/helpers.js";
+import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
+import { sortObjectByKeys } from "../../lib/helpers.js";
+import fs from "fs";
 
 /*
  * @function recharge/recharge-update-charge-date.js
  * @param (Http request object) req
  * @param (Http response object) res
  * @param (function) next
+ *
+ * The algorithm here is almost identical to webhooks/charge-created:
+ * charge-created: update subscription.properties with box_subscripton_id
+ *                 update next_charge_scheduled_at (force 3 days before Delivery Day)
+ * update-charge-dated: update subscription.properties with new Delivery Day
+ *                      update next_charge_scheduled_at
  */
 export default async (req, res, next) => {
-  const data = req.body;
-  const attributes = JSON.parse(data.attributes);
-  const includes = JSON.parse(data.includes);
-  delete data.attributes;
-  delete data.includes;
 
-  const meta = {
-    recharge: {
-      customer_id: attributes.customer.id,
-      shopify_customer_id: attributes.customer.external_customer_id.ecommerce,
-      email: attributes.customer.email,
-      subscription_id: attributes.subscription_id,
-      next_delivery: data.nextdeliverydate,
-      next_charge: data.nextchargedate,
-    },
+  const { nextchargedate, nextdeliverydate, includes: includesStr, attributes: attributesStr, properties: propertiesStr } = req.body;
+
+  // deconstruct form data
+  const attributes = JSON.parse(attributesStr);
+  const includes = JSON.parse(includesStr);
+  const properties = JSON.parse(propertiesStr);
+
+  const { charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
+
+  // add updated flag to rec_subscription_ids
+  const update_shopify_ids = includes.map(el => el.shopify_product_id);
+  let updated;
+  const subscription_ids = rc_subscription_ids.map(el => {
+    updated = update_shopify_ids.indexOf(el.shopify_product_id) === -1;
+    return { ...el, updated };
+  });
+
+  /*
+  console.log("Attributes", JSON.stringify(attributes, null, 2));
+  console.log("Includes", JSON.stringify(includes, null, 2));
+  console.log("Properties", JSON.stringify(properties, null, 2));
+  */
+
+  let chargeDate = new Date(Date.parse(nextchargedate));
+  // store as ISO date
+  const offset = chargeDate.getTimezoneOffset()
+  chargeDate = new Date(chargeDate.getTime() - (offset*60*1000))
+  const next_scheduled_at = chargeDate.toISOString().split('T')[0];
+
+  const collection = _mongodb.collection("updates_pending");
+  const doc= {
+    charge_id,
+    customer_id: customer.id,
+    address_id,
+    subscription_id,
+    scheduled_at: next_scheduled_at, // this will match the updated subscriptions and charges
+    rc_subscription_ids: subscription_ids,
+    timestamp: new Date(),
   };
+  delete properties.Likes;
+  delete properties.Dislikes;
+  for (const [key, value] of Object.entries(properties)) {
+    doc[key] = value;
+  };
+  const result = await collection.updateOne(
+    { charge_id: attributes.charge_id },
+    { "$set" : doc },
+    { "upsert": true }
+  );
 
+  // update the properties
   let delivered;
   const updates = includes.map(el => {
     const properties = [ ...el.properties ];
     delivered = properties.find(el => el.name === "Delivery Date");
-    delivered.value = data.nextdeliverydate;
-    const id = el.subscription_id;
-    return { id, properties };
+    delivered.value = nextdeliverydate;
+    return { id:el.subscription_id, title: el.title, properties };
   });
+  // ensure the box subscription is the first to create a new charge
+  for(var x in updates) updates[x].properties.some(el => el.name === "Including") ? updates.unshift(updates.splice(x,1)[0]) : 0;
+
+  let io;
+  let sockets;
+  const { session_id } = req.query;
+
+  if (typeof session_id !== "undefined") {
+    sockets = req.app.get("sockets");
+    console.log("SOCKETS", sockets, session_id);
+    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
+      const socket_id = sockets[session_id];
+      io = req.app.get("io").to(socket_id);
+      io.emit("uploadProgress", "Received request, processing data...");
+    };
+  };
+
+  const topicLower = "charge/update-charge-date";
+  const meta = {
+    recharge: {
+      topic: topicLower,
+      charge_id: attributes.charge_id,
+      customer_id: attributes.customer.id,
+      shopify_customer_id: attributes.customer.external_customer_id.ecommerce,
+      subscription_id: attributes.subscription_id,
+      email: attributes.customer.email,
+      old_delivery: attributes.nextDeliveryDate,
+      new_delivery: nextdeliverydate,
+      old_charge_date: attributes.nextChargeDate,
+      new_charge_date: nextchargedate,
+    }
+  };
+  for (const [key, value] of Object.entries(properties)) {
+    meta.recharge[key] = value;
+  };
+
+  meta.recharge = sortObjectByKeys(meta.recharge);
+  _logger.notice(`Recharge customer api reqest ${topicLower}.`, { meta });
 
   try {
 
-    let chargeDate = new Date(Date.parse(data.nextchargedate));
-    const offset = chargeDate.getTimezoneOffset()
-    chargeDate = new Date(chargeDate.getTime() - (offset*60*1000))
-    const nextChargeDate = chargeDate.toISOString().split('T')[0];
-
-    // get the charge to pass back to page to refresh the subscription display
-    /*
-    const chargeQuery = await makeRechargeQuery({
-      method: "GET",
-      path: `charges/${attributes.charge_id}`,
-    });
-
-    let charge;
-    if (Object.hasOwnProperty.call(chargeQuery, "charge")) {
-      charge = chargeQuery.charge;
-    } else {
-      // need to manufacture the charge
-      charge = {};
-    };
-    */
-    let charge = {};
-    charge.line_items = [];
-    charge.scheduled_at = data.nextchargedate;
-    charge.id = null;
-
-    let body;
-    for (const [idx, update] of updates.entries()) {
-      body = { date: nextChargeDate };
-      const result = await makeRechargeQuery({
-        method: "POST",
-        path: `subscriptions/${update.id}/set_next_charge_date`,
-        body: JSON.stringify(body),
-      }).then(async (res) => {
-        body = { properties: update.properties };
-        if (idx === updates.length - 1) {
-          body.commit = true; // on last update only
-        };
-        console.log(body);
-        await delay(500);
-        return await makeRechargeQuery({
-          method: "PUT",
-          path: `subscriptions/${res.subscription.id}`,
-          body: JSON.stringify(body),
-        });
-      });
-      //console.log(result);
-      result.subscription.purchase_item_id = result.subscription.id;
-      result.subscription.images = { small: null };
-      result.subscription.unit_price = result.subscription.price;
-      result.subscription.title = result.subscription.product_title;
-      const price = parseFloat(result.subscription.price) * result.subscription.quantity;
-      result.subscription.total_price = `${price.toFixed(2)}`;
-      charge.line_items.push(result.subscription);
-      await delay(800); // or use PromiseThrottle?
+    for (const update of updates) {
+      const opts = {
+        id: update.id,
+        title: update.title,
+        body: { properties: update.properties },
+        io,
+        session_id,
+      };
+      await updateSubscription(opts);
     };
 
-    _logger.notice(`Recharge update charge date.`, { meta });
+    for (const update of updates) {
+      const opts = {
+        id: update.id,
+        title: update.title,
+        date: next_scheduled_at,
+        io,
+        session_id,
+      };
+      await updateChargeDate(opts); // argh, this creates a new charge!
+    };
 
     const mail = {
       subscription_id: attributes.subscription_id,
       attributes,
       includes,
-      nextChargeDate: data.nextchargedate,
-      nextDeliveryDate: data.nextdeliverydate,
+      nextChargeDate: nextchargedate,
+      nextDeliveryDate: nextdeliverydate,
     };
     await subscriptionUpdatedMail(mail);
 
     // res.status(200).json({ success: true, nextchargedate: data.nextchargedate, nextdeliverydate: data.nextdeliverydate });
+    // This data is passed by form-modal back to initiator using 'listing.reload' event
     res.status(200).json({
       success: true,
       action: "updated",
       subscription_id: attributes.subscription_id,
-      charge,
     });
 
   } catch(err) {

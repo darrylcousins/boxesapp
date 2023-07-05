@@ -5,6 +5,7 @@ import "isomorphic-fetch";
 import PromiseThrottle from "promise-throttle";
 import "dotenv/config";
 import { Shopify } from "../../lib/shopify/index.js";
+import { sortObjectByKeys } from "../../lib/helpers.js";
 
 // XXX consider using src/helpers/shopify:makeShopifyQuery ?
 const storeUrl = `https://${process.env.SHOP_NAME}.myshopify.com/admin/api/${process.env.SHOPIFY_API_VERSION}/`;
@@ -85,6 +86,7 @@ const getInventoryItemId = async (product) => {
             file: _filename(import.meta),
           }
         };
+        meta.product = sortObjectByKeys(meta.product);
         _logger.notice(`Update inventory, failed to get inventory_item_id`, { meta });
         return null;
       }
@@ -141,6 +143,7 @@ const updateProductInventoryLevel = async (product, count) => {
     }
   };
   if (!inventory_item_id) {
+    meta.product = sortObjectByKeys(meta.product);
     _logger.notice(`Update inventory, failed to get inventory_item_id`, { meta });
     return false;
   };
@@ -158,6 +161,7 @@ const updateProductInventoryLevel = async (product, count) => {
       //_logger.notice(`Inventory level changed from ${location.available} to ${adjusted}`, { meta });
     };
   } else {
+    meta.product = sortObjectByKeys(meta.product);
     _logger.notice(`Update inventory, inventory location not found`, { meta });
   };
   return true;

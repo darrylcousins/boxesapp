@@ -2,7 +2,8 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { makeRechargeQuery, getSubscription, updateSubscription } from "../../lib/recharge/helpers.js";
-import fs from "fs";
+import { sortObjectByKeys } from "../../lib/helpers.js";
+import { writeFileForOrder } from "./helpers.js";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
@@ -11,17 +12,16 @@ import fs from "fs";
 export default async function orderProcessed(topic, shop, body) {
 
   const mytopic = "ORDER_PROCESSED";
-  _logger.notice(`Recharge webhook ${mytopic} received`, { meta: { recharge: {} } });
+
   if (topic !== mytopic) {
     _logger.notice(`Recharge webhook ${topic} received but expected ${mytopic}`, { meta: { recharge: {} } });
     return;
   };
+  const topicLower = "order/processed";
 
   const order = JSON.parse(body).order;
 
-  fs.writeFileSync(`recharge.order-${order.type}-${order.id}.json`, JSON.stringify(order, null, 2));
-
-  const topicLower = "order/processed";
+  writeFileForOrder(order, mytopic.toLowerCase().split("_")[1]);
 
   try {
     let parent = null; // hang on the box subscription for logging
@@ -57,9 +57,10 @@ export default async function orderProcessed(topic, shop, body) {
       const dateIdx = properties.indexOf(dateItem);
       dateItem.value = deliveryDate;
       properties[dateIdx] = dateItem;
-      updateSubscription(line_item.purchase_item_id, { properties });
+      await updateSubscription({ id: line_item.purchase_item_id, body: { properties }});
 
     };
+
     const meta = {
       recharge: {
         topic: topicLower,
@@ -76,13 +77,12 @@ export default async function orderProcessed(topic, shop, body) {
         type: order.type,
       }
     };
-    _logger.notice(`Recharge webhook ${topicLower} received and delivery date updated.`, { meta });
+    meta.recharge = sortObjectByKeys(meta.recharge);
+    _logger.notice(`Order processed and delivery date updated.`, { meta });
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 
-  return true;
+  return;
 };
-
-

@@ -33,6 +33,26 @@ import { winstonLogger } from "../../../config/winston.js"
 
 //export const makeRechargeQuery = async ({method, path, limit, query, body}) => {
 export const makeRechargeQuery = async (opts) => {
+
+  const { io, session_id, finish } = opts;
+  delete opts.io;
+
+  const emit = ({ io, eventName, message }) => { // args should be the rest of it
+    if (io) {
+      io.emit(eventName, message);
+    };
+  };
+
+  const eventName = "uploadProgress";
+  const title = (typeof opts.title !== "undefined") ? `"${opts.title}"` : "";
+
+  emit({
+    io,
+    eventName,
+    message: `${session_id} Received query continue...`
+  });
+
+  // opts is the job data passed to doRechargeQuery
   const job = await queue.add(
     "makeRechargeQuery",
     opts,
@@ -45,7 +65,50 @@ export const makeRechargeQuery = async (opts) => {
     },
   )
   console.log("Queued")
+  emit({
+    io,
+    eventName,
+    message: `Queued ${title} update...`
+  });
 
+
+  if (io) {
+    queueEvents.on('progress', async ({ jobId, data }, timestamp) => {
+      const job = await Job.fromId(queue, jobId);
+      if (typeof job.data.session_id !== "undefined") {
+        console.log("job completed with session_id: ", job.data.session_id)
+        const title = (typeof job.data.title !== "undefined") ? job.data.title : "";
+        emit({
+          io,
+          eventName,
+          message: `Updating ${title}...`
+        });
+      };
+    });
+    queueEvents.on('completed', async ({ jobId, returnvalue }) => {
+      const job = await Job.fromId(queue, jobId);
+      if (typeof job.data.session_id !== "undefined") {
+        console.log("job completed with session_id: ", job.data.session_id)
+        const title = (typeof job.data.title !== "undefined") ? job.data.title : "";
+        emit({
+          io,
+          eventName,
+          message: `Update ${title} completed...`
+        });
+        if (typeof job.data.finish !== "undefined") {
+          // e.g. updateSubscriptions
+          console.log("all jobs completed: ", job.data.session_id)
+          emit({
+            io,
+            eventName: "finished",
+            message: job.data.session_id
+          });
+        };
+      };
+    });
+  };
+
+  await job.updateProgress(`Update ${title} executing...`);
   /*
    * Returns one of these values: "completed", "failed", "delayed", "active", "waiting", "waiting-children", "unknown".
    */
@@ -57,7 +120,8 @@ export const makeRechargeQuery = async (opts) => {
 
   const finished = await Job.fromId(queue, job.id)
 
-  const { status, statusText } = finished.returnvalue;
+  const { method, status, statusText, title: queryTitle } = finished.returnvalue;
+  console.log(method, status, statusText, queryTitle ? queryTitle : "");
 
   // this will still go back to the caller
   if (parseInt(status) > 299) {
@@ -66,6 +130,8 @@ export const makeRechargeQuery = async (opts) => {
 
   delete finished.returnvalue.status;
   delete finished.returnvalue.statusText;
+  delete finished.returnvalue.queryTitle;
+  delete finished.returnvalue.method;
 
   return finished.returnvalue;
 };
@@ -75,19 +141,28 @@ export const makeRechargeQuery = async (opts) => {
  *
  * @function makeRechargeQuery
  */
-export const doRechargeQuery = async ({method, path, limit, query, body}) => {
+export const doRechargeQuery = async ({method, path, limit, query, body, title, finish}) => {
   const http_method = method ? method : "GET";
+
   const start = "?";
-  const searchString = query ? start + query.reduce((acc, curr, idx) => {
+  /* Not such a great idea because then I get charge updated BEFORE subscription updated
+  if (finish) {
+    const commit = ["commit", "true"];
+    Array.isArray(query) ? query.push(commit) : query = [commit];
+  };
+  */
+  if (limit) {
+    const count = ["limit", limit];
+    Array.isArray(query) ? query.push(count) : query = [count];
+  };
+  const reducer = (acc, curr, idx) => {
     const [key, value] = curr;
     return acc + `${ idx > 0 ? "&" : ""}${key}=${value}`;
-  }, "") : "";
-  const count = limit ? `&limit=${limit}` : "";
+  };
+  const searchString = query ? `?${query.reduce(reducer, "")}` : "";
   
-  const url = `${process.env.RECHARGE_URL}/${path}${searchString}${count}`;
+  const url = `${process.env.RECHARGE_URL}/${path}${searchString}`;
 
-  // this will only go to syslog
-  //console.log(`Query recharge: ${http_method} ${url}`);
   return await fetch(encodeURI(url), {
     method: http_method,
     headers: {
@@ -100,14 +175,13 @@ export const doRechargeQuery = async ({method, path, limit, query, body}) => {
   })
     .then(async (response) => {
 
-      let json;
+      let json = {};
 
       if (http_method === "DELETE") {
         json = response;
+        winstonLogger.warn(`Recharge delete`, { meta: json });
       } else {
         json = await response.json();
-        json.status = response.status;
-        json.statusText = response.statusText;
 
         // log the error as log level warn
         if (Object.hasOwnProperty.call(json, "error")) {
@@ -122,6 +196,10 @@ export const doRechargeQuery = async ({method, path, limit, query, body}) => {
           };
           winstonLogger.warn(`Recharge fetch error`, { meta });
         };
+        json.status = response.status;
+        json.statusText = response.statusText;
+        json.title = title;
+        json.method = http_method;
       };
 
       if (parseInt(response.status) > 299) {
@@ -140,8 +218,7 @@ const delay = (t) => {
  * @function getSubscription
  * @return { subscription } 
  */
-export const getSubscription = async (id, t) => {
-  if (t) await delay(t);
+export const getSubscription = async (id) => {
   const { subscription } = await makeRechargeQuery({
     method: "GET",
     path: `subscriptions/${id}`,
@@ -153,13 +230,22 @@ export const getSubscription = async (id, t) => {
  * @function updateSubscription
  * @return { subscription } 
  */
-export const updateSubscription = async (id, body, t) => {
-  if (t) await delay(t);
+export const updateSubscription = async ({ id, title, body, io, session_id }) => {
+  const options = {};
+  options.path = `subscriptions/${id}`;
+  options.method = "PUT";
+  options.body = JSON.stringify(body);
+  options.io = io;
+  options.session_id = session_id;
+  options.title = title;
+  const result = await makeRechargeQuery(options);
+  /*
   const result = await makeRechargeQuery({
     method: "PUT",
     path: `subscriptions/${id}`,
     body: JSON.stringify(body)
   });
+  */
   return result;
 };
 
@@ -167,12 +253,22 @@ export const updateSubscription = async (id, body, t) => {
  * @function updateChargeDate
  * @return { subscription }
  */
-export const updateChargeDate = async (id, date) => {
+export const updateChargeDate = async ({ id, date, title, io, session_id }) => {
+  const options = {};
+  options.path = `subscriptions/${id}/set_next_charge_date`;
+  options.method = "POST";
+  options.body = JSON.stringify({ date });
+  options.io = io;
+  options.session_id = session_id;
+  options.title = title;
+  const result = await makeRechargeQuery(options);
+  /*
   const result = await makeRechargeQuery({
     method: "POST",
     path: `subscriptions/${id}/set_next_charge_date`,
     body: JSON.stringify({ date })
   });
+  */
   return result;
 };
 
@@ -181,18 +277,21 @@ export const updateChargeDate = async (id, date) => {
  * @param { updates }
  * @return { includes } // new subscriptions created
  */
-export const updateSubscriptions = async ({ updates }) => {
+export const updateSubscriptions = async ({ updates, io, session_id }) => {
 
-  const includes = [];
-  for (const update of updates) {
+  //for (const update of updates) {
+  for (let i = 0; i < updates.length; i++) {
+    const update = updates[i];
     delete update.shopify_product_id;
     const options = {};
+
     if (Object.hasOwnProperty.call(update, "subscription_id")) {
       options.path = `subscriptions/${update.subscription_id}`;
       if (update.quantity === 0) {
         options.method = "DELETE";
       } else {
-        options.method = "PUT";
+        options.method = "PUT"; // updating a subscription
+        options.title = update.title;
         const body = {
           properties: update.properties,
           quantity: update.quantity,
@@ -201,29 +300,27 @@ export const updateSubscriptions = async ({ updates }) => {
         options.body = JSON.stringify(body);
       };
     } else {
+      // creating a new subscription requires post to subscriptions
+      options.title = update.product_title;
       options.path = "subscriptions";
       options.method = "POST";
       options.body = JSON.stringify(update);
     };
 
+    options.io = io;
+    options.session_id = session_id;
+    // need to pass in the finish call so to know that all have completed and we
+    // can emit "finished"
+    if (i === updates.length - 1) {
+      options.finish = true;
+    };
     const result = await makeRechargeQuery(options);
 
-    if (options.method === "POST" && false) {
-      const { subscription } = result;
-      includes.push({
-        title: subscription.product_title,
-        shopify_product_id: parseInt(subscription.external_product_id.ecommerce),
-        subscription_id: subscription.id,
-        quantity: subscription.quantity,
-        properties: subscription.properties,
-      });
-    };
-    //await delay(500);
     if (options.method === "DELETE") {
-      //console.log(result);
+      console.log("DELETE", result);
     };
   };
-  return { includes };
+  return;
 };
 
 /*

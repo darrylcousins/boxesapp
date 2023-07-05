@@ -4,9 +4,9 @@
 import { sortObjectByKeys } from "../../lib/helpers.js";
 import { getMetaForSubscription, writeFileForSubscription } from "./helpers.js";
 
-export default async function subscriptionCreated(topic, shop, body) {
+export default async function subscriptionDeleted(topic, shop, body) {
 
-  const mytopic = "SUBSCRIPTION_CREATED";
+  const mytopic = "SUBSCRIPTION_DELETED";
   if (topic !== mytopic) {
     _logger.notice(`Recharge webhook ${topic} received but expected ${mytopic}`, { meta: { recharge: {} } });
     return;
@@ -23,15 +23,6 @@ export default async function subscriptionCreated(topic, shop, body) {
     (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
     {});
 
-  // if a new subscription from shopify then the properties won't yet have box_subscription_id
-  // this is being set in the charge/created webhook where we have access to all line_items
-  if (!Object.hasOwnProperty.call(properties, "box_subscription_id")) {
-    // still log it but will be missing the box subscription so won't show up in customer logs
-    meta.recharge = sortObjectByKeys(meta.recharge);
-    _logger.notice(`Subscription created without box id. Exiting.`, { meta });
-    return;
-  };
-
   // find the updates_pending document and set the update as completed i.e. updated: true
   // could still test for quantity and properties,  but may not need to.
   try {
@@ -46,29 +37,30 @@ export default async function subscriptionCreated(topic, shop, body) {
         { $elemMatch: {
           $and: [
             { shopify_product_id },
-            { subscription_id: null },
+            { subscription_id },
           ]},
         },
     };
     const update = { $set: {
       "rc_subscription_ids.$[i].updated": true,
-      "rc_subscription_ids.$[i].subscription_id": subscription.id,
     }};
     const options = {
       arrayFilters: [
         {
           "i.shopify_product_id": shopify_product_id,
-          "i.subscription_id": null,
+          "i.subscription_id": subscription_id,
         }
       ]
     };
     const res =  await _mongodb.collection("updates_pending").updateOne(query, update, options);
-    meta.recharge.updates_pending = (res.matchedCount > 0) ? "UPDATED ON CREATED" : "NOT FOUND";
+    meta.recharge.updates_pending = (res.matchedCount > 0) ? "UPDATED ON REMOVE" : "NOT FOUND";
+    meta.recharge = sortObjectByKeys(meta.recharge);
+    _logger.notice(`Subscription deleted.`, { meta });
+
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 
-  meta.recharge = sortObjectByKeys(meta.recharge);
-  _logger.notice(`Subscription created.`, { meta });
-
+  return;
 };
+

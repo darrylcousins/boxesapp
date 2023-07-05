@@ -28,7 +28,7 @@ export default async (req, res, next) => {
   try {
     const { charges } = await makeRechargeQuery({
       path: `charges`,
-      query
+      query,
     });
 
     if (!charges || !charges.length) {

@@ -2,6 +2,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { updateStoreObject } from "../../lib/shopify/helpers.js";
+import { sortObjectByKeys } from "../../lib/helpers.js";
 import { mongoInsert } from "../../lib/mongo/mongo.js";
 import { processOrderJson } from "../../lib/orders.js";
 import updateProductInventory from "./update-product-inventory.js";
@@ -53,6 +54,7 @@ export default async function ordersCreate(topic, shop, body) {
 
   //const product_id = orderJson.line_items[0].product_id;
   if (!product_id) {
+    meta.order = sortObjectByKeys(meta.order);
     _logger.notice(`${_filename(import.meta)} Create order webhook received but not a boxes order`, { meta });
     return;
   };
@@ -66,6 +68,7 @@ export default async function ordersCreate(topic, shop, body) {
   meta.order.email = order.contact_email;
   const result = await mongoInsert(collection, order);
   if (result.upsertedCount === 1) {
+    meta.order = sortObjectByKeys(meta.order);
     _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });
   };
   const id = order.shopify_order_id.toString();

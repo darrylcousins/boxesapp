@@ -11,23 +11,24 @@ global._mongodb;
 _logger.notice = (e, { meta }) => console.log(e, JSON.stringify(meta, null, 2));
 process.env.NODE_ENV = "test";
 
-import subscriptionCreated from "../src/webhooks/recharge/subscription-created.js";
+import subscriptionDeleted from "../src/webhooks/recharge/subscription-deleted.js";
 // box
 import subscription from "../json/recharge.subscription.box.json" assert { type: "json" };
 // carrots
 //import subscription from "../json/recharge.subscription.carrot.json" assert { type: "json" };
 
-const run = async () => {
-  global._mongodb = await getMongoConnection();
-  try {
 
-    const mytopic = "SUBSCRIPTION_CREATED";
-    await subscriptionCreated("SUBSCRIPTION_CREATED", "shop", JSON.stringify({ subscription }));
+const run = async () => {
+  try {
+    global._mongodb = await getMongoConnection();
+
+    const mytopic = "SUBSCRIPTION_DELETED";
+    await subscriptionDeleted("SUBSCRIPTION_DELETED", "shop", JSON.stringify({ subscription }));
 
   } catch(e) {
     console.error(e);
   } finally {
-    process.emit("SIGINT");
+    process.emit('SIGINT'); // should close mongo connection
   };
 };
 
@@ -36,6 +37,8 @@ const main = async () => {
 };
 
 main().catch(console.error);
+
+
 
 
 

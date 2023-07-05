@@ -26,9 +26,15 @@ export default async (req, res) => {
   };
 
   const collection = _mongodb.collection("logs");
+
   try {
-    const time = parseInt(timestamp);
-    const start = new Date(time).toISOString().split("T")[0];
+    let time = parseInt(timestamp);
+    let start = new Date(time);
+
+    const offset = start.getTimezoneOffset()
+    start = new Date(start.getTime() - (offset*60*1000))
+
+    start = start.toISOString().split("T")[0];
 
     // mongodb logs are stored in ISOTime so need to adjust for timezone
 

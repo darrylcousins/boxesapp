@@ -49,4 +49,10 @@ export default {
       },
     },
   },
+  // https://vitejs.dev/config/server-options.html
+  // disable cors which injects "*" in development server but I use nginx to so was ending up
+  // with error 'access-control-allow-origin' header contains multiple values
+  server: {
+    cors: false,
+  },
 };

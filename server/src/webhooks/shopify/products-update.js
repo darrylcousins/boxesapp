@@ -1,6 +1,8 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
+import { sortObjectByKeys } from "../../lib/helpers.js";
+
 export default async function productsUpdate(topic, shop, body) {
 
   const mytopic = "PRODUCTS_UPDATE";
@@ -33,6 +35,7 @@ export default async function productsUpdate(topic, shop, body) {
             modified: boxResult.modifiedCount,
           }
         };
+        boxMeta.product = sortObjectByKeys(boxMeta.product);
         _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta: boxMeta });
       } else {
         return;
@@ -115,6 +118,7 @@ export default async function productsUpdate(topic, shop, body) {
             modified: resultCount,
           }
         };
+        meta.product = sortObjectByKeys(meta.product);
         _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });
       } else {
         return;

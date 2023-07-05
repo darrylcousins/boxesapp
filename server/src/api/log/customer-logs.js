@@ -21,7 +21,7 @@ export default async (req, res, next) => {
 
   const collection = _mongodb.collection("logs");
   try {
-    const result = await collection.find(query).sort({ timestamp: -1 }).toArray();
+    const result = await collection.find(query).sort({ timestamp: -1 }).limit(10).toArray();
     //
     // not to many queries are expected so just aggregate in a loop
     // should be smart enough to add this to the pipeline

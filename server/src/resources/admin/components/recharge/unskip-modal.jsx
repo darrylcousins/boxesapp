@@ -47,6 +47,7 @@ const options = {
   ShowLink,
   saveMsg: "Rescheduling subscription ... please be patient, it will take some seconds.",
   successMsg: "Successfully rescheduled subscription, reloading page.",
+  useSession: false, // set up socket.io to get feedback
 };
 
 /**
@@ -129,6 +130,7 @@ async function* UnSkipCharge(props) {
     const data = {
       attributes: JSON.stringify(subscription.attributes),
       includes: JSON.stringify(subscription.includes),
+      properties: JSON.stringify(subscription.properties),
       nextchargedate: chargeDays[daysIndex],
       nextdeliverydate: deliveryDays[daysIndex],
     };
@@ -148,6 +150,10 @@ async function* UnSkipCharge(props) {
         datatype: "string",
       },
       includes: {
+        type: "hidden",
+        datatype: "string",
+      },
+      properties: {
         type: "hidden",
         datatype: "string",
       },

@@ -47,6 +47,7 @@ const options = {
   ShowLink,
   saveMsg: "Pausing subscription ... please be patient, it will take some seconds.",
   successMsg: "Successfully paused subscription, reloading page.",
+  useSession: false, // set up socket.io to get feedback
 };
 
 /**
@@ -115,6 +116,7 @@ async function* SkipCharge(props) {
     const data = {
       attributes: JSON.stringify(subscription.attributes),
       includes: JSON.stringify(subscription.includes),
+      properties: JSON.stringify(subscription.properties),
       pauseinterval: intervalDays[intervalIndex],
       nextchargedate: chargeDays[intervalIndex],
       nextdeliverydate: deliveryDays[intervalIndex],
@@ -135,6 +137,10 @@ async function* SkipCharge(props) {
         datatype: "string",
       },
       includes: {
+        type: "hidden",
+        datatype: "string",
+      },
+      properties: {
         type: "hidden",
         datatype: "string",
       },

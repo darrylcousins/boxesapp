@@ -15,6 +15,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment, Portal } from "@b9g/crank";
+import { io } from "socket.io-client";
 
 import BarLoader from "../lib/bar-loader";
 import Error from "../lib/error";
@@ -31,6 +32,7 @@ import { parseStringTemplate } from "../helpers";
  * @returns {Function} Return the wrapped component
  * @param {object} Component The component to be wrapped
  * @param {object} options Options for form and modal
+ * @param {object} options.useSession Use session.io // e.g. skip-modal.js
  */
 function FormModalWrapper(Component, options) {
   /**
@@ -41,7 +43,7 @@ function FormModalWrapper(Component, options) {
    * @param {object} props Property object
    */
   return function* (props) {
-    const { id, title, linkTitle, src, ShowLink, color, saveMsg, successMsg, maxWidth, portal } = options;
+    const { id, title, linkTitle, src, ShowLink, color, saveMsg, successMsg, maxWidth, portal, useSession } = options;
     const name = title.toLowerCase().replace(/ /g, "-");
     let visible = false;
     let loading = false;
@@ -133,6 +135,12 @@ function FormModalWrapper(Component, options) {
         return false;
       });
 
+      let session_id;
+      if (Object.hasOwnProperty.call(formData, "sessionId")) {
+        session_id = formData.sessionId;
+        delete formData.sessionId;
+      };
+
       // we have a file so need to use FormData and not json encode data
       // see PostFetch
       if (hasFile) {
@@ -157,13 +165,19 @@ function FormModalWrapper(Component, options) {
 
       const toastData = { ...dataSet };
 
+      // allows passing a function in form-modal options
+      let uri = (typeof src === "string") ? src : src();
+      if (session_id) {
+        uri = `${uri}?session_id=${session_id}`;
+      };
       /*
-      console.log(src);
+      console.log(uri);
       console.log(data);
       console.warn('Posting saved successfully but disabled for development');
+      return;
       */
 
-      PostFetch({ src, data, headers })
+      PostFetch({ src: encodeURI(uri), data, headers })
         .then((result) => {
           //console.log('Submit result:', JSON.stringify(result, null, 2));
           const { formError, error, json } = result;
@@ -214,6 +228,47 @@ function FormModalWrapper(Component, options) {
         });
     };
 
+    /*
+     * Get and connect to socket.io, on connect insert the sessionId into the
+     * data then call the submission method 'callback'
+     * @function getSessionId
+     */
+    const getSessionId = async (callback, data) => {
+      const proxy = localStorage.getItem("proxy-path");
+      const sessionId = Math.random().toString(36).substr(2, 9);
+      const host = `https://${ window.location.host }`;
+      const socket = io(host, {
+        autoConnect: true, // could also do this with socket.open()
+        path: `${proxy}/socket-io`,
+        transports: ["polling"], // disable websocket polling - no wss on shopify
+      });
+      socket.emit('connectInit', sessionId);
+      socket.on('connected', async (id) => {
+        if (id === sessionId) {
+          console.log('connected with id', id);
+        };
+      });
+      socket.on('uploadProgress', async (data) => {
+        console.log(data);
+        // display data or update timer
+      });
+      socket.on('finished', async (id) => {
+        if (id === sessionId) {
+          console.log('closing connection for id', id);
+          socket.disconnect();
+        };
+      });
+      socket.on('connect', async () => {
+        console.log("connection opened with id", sessionId);
+        // do the work
+        data.sessionId = sessionId;
+        await callback(data);
+      });
+      socket.on('disconnect', async () => {
+        console.log("connection closed with id", sessionId);
+      });
+    };
+
     const fieldIds = [];
     const fieldData = [];
     let fieldLength = 0;
@@ -226,12 +281,16 @@ function FormModalWrapper(Component, options) {
       fieldData.push(ev.detail);
       if (fieldData.length === fieldLength) {
         const finalData = Object.fromEntries(fieldData.map(el => [el.id, el.value]));
-        saveData(finalData);
+        if (typeof useSession !== "undefined" && useSession) {
+          getSessionId(saveData, finalData);
+        } else {
+          saveData(finalData);
+        };
       }
     });
 
     /**
-     * Loop through form elements and request data
+     * Loop through form elements and request data which is collected by listener form.data.feed
      *
      * @function getData
      */

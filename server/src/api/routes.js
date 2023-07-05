@@ -138,6 +138,9 @@ router.post(
   "/remove-orders", 
   await import("./order/remove-orders.js").then(({ default: fn }) => fn));
 router.get(
+  "/recharge-customer-charge/:charge_id", 
+  await import("./recharge/recharge-customer-charge.js").then(({ default: fn }) => fn));
+router.get(
   "/recharge-customer-charges/:customer_id", 
   await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
 router.get(
@@ -145,7 +148,7 @@ router.get(
   await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
 router.get(
   "/recharge-customers",  // gets all customers
-  await import("./recharge/recharge-customer.js").then(({ default: fn }) => fn));
+  await import("./recharge/recharge-customers.js").then(({ default: fn }) => fn));
 router.get(
   "/recharge-customers/:recharge_customer_id",  // gets all customers
   await import("./recharge/recharge-customer.js").then(({ default: fn }) => fn));

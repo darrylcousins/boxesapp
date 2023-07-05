@@ -3,8 +3,9 @@
  */
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import { updateSubscriptions } from "../../lib/recharge/helpers.js";
+import { sortObjectByKeys } from "../../lib/helpers.js";
 import chargeUpcomingMail from "../../mail/charge-upcoming.js";
-//import fs from 'fs';
+import { getMetaForCharge, writeFileForCharge } from "./helpers.js";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * This will trigger X days before the upcoming charge is scheduled. The default
@@ -25,16 +26,13 @@ export default async function chargeUpcoming(topic, shop, body) {
 
   const charge = JSON.parse(body).charge;
 
-  // need to add subscription id in order to fit into logs for customer
-  const meta = {
-    recharge: {
-      topic: topicLower,
-      charge_id: charge.id,
-      email: charge.customer.email,
-    }
-  };
-  _logger.notice(`Recharge webhook ${topicLower} received.`, { meta });
+  writeFileForCharge(charge, mytopic.toLowerCase().split("_")[1]);
 
+  const meta = getMetaForCharge(charge, topicLower);
+
+  meta.recharge = sortObjectByKeys(meta.recharge);
+
+  _logger.notice(`Charge upcoming.`, { meta });
 
   // First up we may assume that multiple boxes are present to find them we can
   // group the line_items by a common box_subscription_id
@@ -47,6 +45,9 @@ export default async function chargeUpcoming(topic, shop, body) {
     for (const [idx, subscription] of result.entries()) {
       if (subscription.updates && subscription.updates.length) {
 
+        // need to set data in updates_pending to prevent user from editing subscription in this timeframe
+        //
+        //
         // Reconcile the items in the subscription with the new box
         await updateSubscriptions({ updates: subscription.updates });
 
@@ -80,7 +81,6 @@ export default async function chargeUpcoming(topic, shop, body) {
       };
 
     };
-    //fs.writeFileSync("recharge.upcoming.json", JSON.stringify(result, null, 2));
     
     let admin_email = _mongodb.collection("settings").findOne({handle: "admin-email"});
     if (admin_email) admin_email = admin_email.value;

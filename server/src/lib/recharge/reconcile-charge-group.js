@@ -17,9 +17,12 @@ export const reconcileGetGrouped = ({ charge }) => {
 
   const grouped = {};
 
-  // We can group a set of line_items to belong to a single box using the
-  // `box_subscription_id`
-  // group the line_items by a common box_subscription_id
+  /* We can group a set of line_items to belong to a single box using the
+   * `box_subscription_id`
+   * group the line_items by a common box_subscription_id
+   *
+   * { box: the box line item, includes: the other line items, charge: the parsed charge }
+   */
 
   try {
     for (const line_item of charge.line_items) {
@@ -28,22 +31,35 @@ export const reconcileGetGrouped = ({ charge }) => {
       if (!box_subscription_property) {
         // should never happen! But what to do if it does? Maybe run the subscription-create webhook script?
         // Jun 2023 Switching to updating box_subscription_id on first charge created webhook
-        console.log("NO BOX_SUBSCRIPTION_PROPERTY");
-        console.log(JSON.stringify(line_item));
+        console.log("NO BOX SUBSCRIPTION PROPERTY", charge.id, line_item.title);
       };
       const box_subscription_id = parseInt(box_subscription_property.value);
       if (!grouped.hasOwnProperty(box_subscription_id)) {
-        grouped[box_subscription_id] = {"box": null, "included": []};
+        grouped[box_subscription_id] = {"box": null, "included": [], "rc_subscription_ids": []}; // initilize
       };
       if (line_item.purchase_item_id === box_subscription_id) {
         grouped[box_subscription_id].box = line_item;
       } else {
         grouped[box_subscription_id].included.push(line_item);
       };
+      grouped[box_subscription_id].rc_subscription_ids.push({
+        shopify_product_id: parseInt(line_item.external_product_id.ecommerce),
+        subscription_id: parseInt(line_item.purchase_item_id),
+        quantity: parseInt(line_item.quantity),
+      });
       grouped[box_subscription_id].charge = charge;
+    };
+    for (const key of Object.keys(grouped)) {
+      if (Object.keys(grouped[key].box) === "null") {
+        console.log("NO BOX ON GROUPED CHARGE", grouped[key].charge.id);
+      };
     };
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
+
+  for (const group of Object.values(grouped)) {
+    group.rc_subscription_ids.sort();
   };
 
   return grouped;
@@ -500,10 +516,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     }).sort().join(join);
   };
 
-  // and use to update boxProperties - XXX move this down to later
-  boxProperties["Likes"] = Array.from(setOfLikes).sort().join(",");
-  boxProperties["Dislikes"] = Array.from(setOfDislikes).sort().join(",");
-
   // when pushing swapped items back to lists bring the quantity back up
   boxSwappedExtras = boxSwappedExtras.map(el => {
     const item = { ...el };
@@ -526,6 +538,10 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     return item;
   });
 
+  // and use to update boxProperties - XXX move this down to later
+  //boxProperties["Likes"] = Array.from(setOfLikes).sort().join(",");
+  //boxProperties["Dislikes"] = Array.from(setOfDislikes).sort().join(",");
+
   // add the box subscription itself to the updates required
   // can we push this through to the front end when customer, or admin goes to their update
   const finalProperties = {
@@ -535,8 +551,8 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     "Add on Items": makeItemString(boxAddOnExtras, ","),
     "Swapped Items": makeItemString(boxSwappedExtras, ","),
     "Removed Items": makeItemString(boxRemovedItems, ","),
-    "Likes": boxProperties["Likes"],
-    "Dislikes": boxProperties["Dislikes"],
+    //"Likes": boxProperties["Likes"],
+    //"Dislikes": boxProperties["Dislikes"],
   };
 
   const updateProperties = { ...finalProperties };
@@ -619,10 +635,10 @@ export const gatherData = async ({ grouped, result }) => {
         ? group.box.purchase_item_id : group.box.id;
 
       // XXX try/catch?
-      const result = await makeRechargeQuery({
+      const res = await makeRechargeQuery({
         path: `subscriptions/${item_id}`,
       });
-      subscription = result.subscription;
+      subscription = res.subscription;
     } else {
       subscription = group.subscription;
       console.log("GROUP HAS SUBSCRIPTION");
@@ -649,6 +665,11 @@ export const gatherData = async ({ grouped, result }) => {
     //address.name = `${charge.billing_address.first_name} ${charge.billing_address.last_name}`;
 
     const isEditable = chargeDate > new Date();
+
+    /*
+    delete boxProperties["Likes"];
+    delete boxProperties["Dislikes"];
+    */
 
     const {
       fetchBox,
@@ -687,6 +708,17 @@ export const gatherData = async ({ grouped, result }) => {
       images[`${extra.title}`] = extra.image;
     };
 
+    const query = {
+      //charge_id: parseInt(charge.id), now trying to avoid this because of updating charge and new charges created.
+      customer_id: parseInt(group.charge.customer.id),
+      address_id: parseInt(group.charge.address_id),
+      next_charge_date: group.charge.scheduled_at,
+      subscription_id: group.box.purchase_item_id,
+      // hope that works testing in array of arrays
+      //rc_subscription_ids: group.rc_subscription_ids, // these may not yet be updated
+    };
+    const pending = await _mongodb.collection("updates_pending").findOne(query);
+
     const totalPrice = includes.map(el => parseFloat(el.price) * el.quantity).reduce((sum, el) => sum + el, 0);
     const attributes = {
       nextChargeDate,
@@ -694,11 +726,14 @@ export const gatherData = async ({ grouped, result }) => {
       hasNextBox,
       title: fetchBox.shopify_title,
       variant: subscription.variant_title,
+      pending,
       frequency,
       days,
       images,
+      scheduled_at: group.charge.scheduled_at,
       subscription_id: subscription.id,
       templateSubscription,
+      rc_subscription_ids: group.rc_subscription_ids.sort(),
       charge_id: group.charge.id,
       address_id: group.charge.address_id,
       customer: group.charge.customer,

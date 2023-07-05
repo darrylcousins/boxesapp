@@ -139,7 +139,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     };
   };
 
-  window.document.addEventListener("keyup", hideSelectModal);
+  window.document.addEventListener("keyup", (ev) => { if (this) hideSelectModal(ev) });
 
   /**
    * Map lists and collect extra items to calculate and list prices
@@ -205,15 +205,29 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
    * @function removeProduct
    * @param {object} props.from_list_name The name of the from list
    */
-  const removeProduct = ({shopify_product_id, from_list_name}) => {
-    selectModalOptions = getSelectModalOptions({
-      boxLists,
-      shopify_product_id,
-      from_list_name
-    });
-    selectModalOptions.hideModal = hideSelectModal;
-    showSelectModal = true;
-    this.refresh();
+  const removeProduct = async ({shopify_product_id, from_list_name}) => {
+    const product = boxLists[from_list_name].find(el => el.shopify_product_id === shopify_product_id);
+    // if only one then move it otherwise seek confirm
+    if (product.quantity === 1 && from_list_name.toLowerCase() === "add on items") {
+      await moveItem({id: shopify_product_id, from: from_list_name, to: "possibleAddons"});
+      this.refresh();
+      setTimeout(() => {
+        this.dispatchEvent(
+          new CustomEvent("collapse.wrapper.resize", {
+            bubbles: true,
+          })
+        );
+      }, 100);
+    } else {
+      selectModalOptions = getSelectModalOptions({
+        boxLists,
+        shopify_product_id,
+        from_list_name
+      });
+      selectModalOptions.hideModal = hideSelectModal;
+      showSelectModal = true;
+      this.refresh();
+    };
   };
 
   /**
@@ -527,7 +541,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     if (orphanedItems.length > 0) {
       console.warn(JSON.stringify(orphanedItems, null, 2));
     };
-    console.log(boxLists);
+    //console.log(boxLists);
 
     return orphanedItems;
   };
@@ -727,8 +741,19 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
   };
 
   const getLeftBorder = (name, idx) => {
-    if (box.shopify_title === "Custom Box") return "";
+    if (boxLists["Including"].length === 0) return "";
     if (idx > 0) return "bl-0";
+    return "";
+  };
+
+  const getWrapperBottomBorder = (name, idx) => {
+    if (boxLists["Including"].length === 0) return "bb-0";
+    return "";
+  };
+
+  const getTableBottomPadding = (name, idx) => {
+    if (boxLists["Including"].length === 0) return "";
+    if (idx > 0) return "pb2";
     return "";
   };
 
@@ -855,9 +880,9 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                   </div>
                 ) : (
                   testVisibility(name) && (
-                    <div id={ name } class={`w-100 flex flex-column ba b--silver ${ getLeftBorder(name, idx) }`}>
+                    <div id={ name } class={`w-100 flex flex-column ba ${ getWrapperBottomBorder(name, idx) } b--silver ${ getLeftBorder(name, idx) }`}>
                       <Title name={ name } idx={ idx } />
-                      <div class="w-100 pb2">
+                      <div class={ `w-100 ${ getTableBottomPadding(name, idx) }` }>
                         <Body properties={ boxLists } name={ name } idx={ idx } />
                       </div>
                     </div>

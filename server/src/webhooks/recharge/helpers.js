@@ -5,6 +5,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import fs from "fs";
+import { matchNumberedString } from "../../lib/helpers.js";
 
 /*
  * @ function getMetaForCharge
@@ -13,8 +14,10 @@ export const getMetaForCharge = (charge, topic) => {
   /* Start logging all details */
   const rc_subscription_ids = [];
   let properties;
+  let title;
   for (const line_item of charge.line_items) {
     if (line_item.properties.some(el => el.name === "Including")) {
+      title = line_item.title;
       properties = line_item.properties.reduce(
         (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
         {});
@@ -28,6 +31,7 @@ export const getMetaForCharge = (charge, topic) => {
   const meta = {
     recharge: {
       topic,
+      title,
       charge_id: charge.id,
       customer_id: charge.customer.id,
       email: charge.customer.email,
@@ -141,3 +145,110 @@ export const writeFileForOrder = (order, topic) => {
 
 };
 
+/*
+ * helper method to build logging meta for multiple subscriptions
+ * @ function buildMetaForBox
+ */
+export const buildMetaForBox = (id, charge) => {
+  const tempCharge = { ...charge };
+  // remove any line items not linked to this box subscription
+  tempCharge.line_items =  charge.line_items.filter(el => {
+    if (el.properties.some(el => el.name === "box_subscription_id")) {
+      if (parseInt(el.properties.find(el => el.name === "box_subscription_id").value) === id) return true;
+    };
+    return false;
+  });
+  return getMetaForCharge(tempCharge, "charge/created");
+};
+
+/*
+ * helper method to build list of title, quantity from string
+ * @ function buildMetaForBox
+ */
+export const itemStringToList = (props, name) => {
+  if (Boolean(props.find(el => el.name === name).value)) {
+    return props
+      .find(el => el.name === name).value
+      .split(",")
+      .filter(el => el.trim() !== "")
+      .map(el => matchNumberedString(el));
+  } else {
+    return [];
+  };
+};
+
+/*
+ * get the line_items not updated with a box_subscription_id property and sort into boxes
+ * and a simple list of box subscription ids already updated with box_subscription_id
+ * @ function sortCharge
+ */
+export const getBoxesForCharge = (charge) => {
+  let box_subscriptions_possible = [];
+  let box_subscription_ids = [];
+  for (const line_item of charge.line_items) {
+    if (line_item.properties.some(el => el.name === "box_subscription_id")) {
+      box_subscription_ids.push(parseInt(line_item.properties.find(el => el.name === "box_subscription_id").value));
+    } else {
+      // group these using line_item.title if "Including" and properties "Add on product to"
+      // create a shape that includes the Add on items and quantities and subcription id 
+      // then I should be able to pretty much gather up the correct items to the box
+      // even if the worst case of double box subscription orders were allowed
+      // i.e. we could have 2 Small Boxes - they will have different subscription ids
+      // using extras might be how to reconcile near identical boxes, ie
+      // decrement the quantity each time one is matched to a box of the same
+      // title
+      if (line_item.properties.some(el => el.name === "Including")) {
+        let including = itemStringToList(line_item.properties, "Including")
+          .map(el => { el.quantity--; return el; }) // includes have one for free
+          .filter(el => el.quantity > 0);
+        let addOnItems = itemStringToList(line_item.properties, "Add on Items");
+        // defines unique box subscriptions, will only fail if has identical addons
+        const box = {
+          subscription_id: line_item.purchase_item_id,
+          title: line_item.title,
+          extras: [ ...including, ...addOnItems],
+          line_items: [] // to collect connected items in this box
+        };
+        box_subscriptions_possible.push(box);
+      };
+    };
+  };
+
+  // best I can see is that this will only happen once on creation of a box subscription
+  // also we only allow one order per customer at a time so should never find two here
+  // however below I have looped through these to manage a subscription at a time
+  // it could only fail if say 2 Small Boxes with identical extras
+  if (box_subscriptions_possible.length > 0) {
+    for (const line_item of charge.line_items) {
+      // skip those with box_subscription_id
+      if (!line_item.properties.some(el => el.name === "box_subscription_id")) {
+        let name;
+        // use title to gather line_item objects
+        if (line_item.properties.some(el => el.name === "Add on product to")) {
+          name = line_item.properties.find(el => el.name === "Add on product to").value;
+        } else {
+          name = line_item.title;
+        };
+        let item_id = line_item.purchase_item_id;
+        const possible = box_subscriptions_possible.filter(el => el.title === name);
+        for (const poss of possible) {
+          if (poss.subscription_id === item_id) {
+            // the box subscription
+            poss.line_items.push(line_item);
+          };
+          if (poss.extras.find(el => el.title === line_item.title && el.quantity === line_item.quantity)) {
+            // match title and quantity
+            // here is where we might be able sort between different boxes, ie
+            // instead of matching el.quantity we could pull it out of extras
+            // each time a match is made
+            poss.line_items.push(line_item);
+          };
+        };
+      };
+    };
+  };
+
+  box_subscription_ids = Array.from(new Set(box_subscription_ids)); // make unique list
+  
+  return { box_subscription_ids, box_subscriptions_possible };
+};

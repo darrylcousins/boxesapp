@@ -39,6 +39,7 @@ function* Timer({seconds, callback}) {
       count--;
       if (count < 1) {
         clearInterval(interval);
+        //callback(startInterval, endInterval);
         callback(startInterval, endInterval);
       };
       this.refresh();

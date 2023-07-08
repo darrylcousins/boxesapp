@@ -14,13 +14,14 @@ import fs from "fs";
  * @param (function) next
  */
 export default async (req, res, next) => {
-  const customer_id = req.params.customer_id;
+  const { customer_id, address_id, scheduled_at, subscription_id } = req.params;
+
   const query = [
     ["customer_id", customer_id ],
     ["status", "queued" ],
     ["sort_by", "scheduled_at-asc" ],
   ];
-  if (Object.hasOwnProperty.call(req.params, "address_id")) {
+  if (address_id) {
     query.push(["address_id", req.params.address_id]); // match address id
     query.push(["scheduled_at", req.params.scheduled_at]); // match scheduled
   };
@@ -29,15 +30,16 @@ export default async (req, res, next) => {
     const { charges } = await makeRechargeQuery({
       path: `charges`,
       query,
+      title: "Charges",
     });
 
     if (!charges || !charges.length) {
       // return a result of none
-      res.status(200).json([]);
+      res.status(200).json({ message: "No charges found" });
       return;
     };
 
-    const groups = reconcileGetGroups({ charges });
+    const groups = await reconcileGetGroups({ charges });
     let result = [];
 
     for (const grouped of groups) {
@@ -45,19 +47,14 @@ export default async (req, res, next) => {
       result = await gatherData({ grouped, result });
       // if anything to new then the page will force a reload
     };
-    let reload = false;
 
-    for (const charge of charges) {
-      const created_at = new Date(Date.parse(charge.created_at));
-      const now = new Date();
-      const createdSince = Math.ceil(Math.abs(now - created_at) / (1000 * 60)); // in minutes
-      if (createdSince < 2) reload = true;
-      // if this is less than say 2 minutes then wait and try again
-      // this because it can take a few minutes to load all subscriptions into the charge via webhooks
+    if (subscription_id) {
+      const subscription = result.find(el => el.attributes.subscription_id === parseInt(subscription_id));
+      return res.status(200).json({ subscription });
+    } else {
+      return res.status(200).json({ result });
     };
 
-    //fs.writeFileSync("recharge.subscription.json", JSON.stringify(result[0], null, 2));
-    res.status(200).json({ result, reload });
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

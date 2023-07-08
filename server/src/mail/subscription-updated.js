@@ -15,6 +15,7 @@ import subscriptionUpdatedTemplate from "./templates/subscription-updated.js";
  */
 export default async ({ subscription_id, attributes, includes, nextChargeDate, nextDeliveryDate, admin_email }) => {
   const admin = admin_email ? admin_email : process.env.ADMIN_EMAIL;
+  const box = `${attributes.title} - ${attributes.variant}`;
 
   const engine = new Liquid();
   const options = {
@@ -49,7 +50,7 @@ export default async ({ subscription_id, attributes, includes, nextChargeDate, n
 `, options);
         sendmail({
           to: attributes.customer.email,
-          subject: `\[${process.env.SHOP_NAME}\] Box subscription updated`,
+          subject: `\[${process.env.SHOP_NAME}\] Box subscription updated ${box}`,
           html: htmlOutput.html
         });
         const meta = {
@@ -60,7 +61,7 @@ export default async ({ subscription_id, attributes, includes, nextChargeDate, n
             email: attributes.customer.email,
           }
         };
-        _logger.notice(`Recharge subscription cancelled email sent.`, { meta });
+        _logger.notice(`Recharge subscription updated email sent.`, { meta });
       });
 
   } catch(err) {

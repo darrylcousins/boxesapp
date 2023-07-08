@@ -5,7 +5,6 @@
 
 import subscriptionDeletedMail from "../../mail/subscription-deleted.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
-import { delay } from "../../lib/helpers.js";
 
 /*
  * @function recharge/recharge-delete-subscription.js
@@ -35,8 +34,8 @@ export default async (req, res, next) => {
         method: "DELETE",
         path: `subscriptions/${id}`,
         body: JSON.stringify({ send_email: true }),
+        title: `Delete ${id}`
       });
-      await delay(500);
     };
 
     const mail = {

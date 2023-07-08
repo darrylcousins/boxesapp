@@ -46,7 +46,7 @@ const options = {
   src: "/api/recharge-update-charge-date",
   ShowLink,
   saveMsg: "Pausing subscription ... please be patient, it will take some seconds.",
-  successMsg: "Successfully paused subscription, reloading page.",
+  successMsg: "Updates have been queued, reloading ...",
   useSession: false, // set up socket.io to get feedback
 };
 
@@ -68,16 +68,22 @@ async function* SkipCharge(props) {
   const deliveryDays = [];
   const chargeDays = [];
   const intervalDays = [];
-  const interval = subscription.attributes.days === 7 ? "week" : "fortnigt";
+  /* july 2023 allow fortnightly subscriptions to change date at weekly intervals */
+  /*
+  const interval = subscription.attributes.days === 7 ? 7 : 14;
   const multiplier = subscription.attributes.days === 7 ? 1 : 2;
   const count = subscription.attributes.days === 7 ? 3 : 2;
+  */
+  const interval = 7;
+  const multiplier = 1;
+  const count = 3;
   let delivered = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
   let charge = new Date(Date.parse(subscription.attributes.nextChargeDate));
   for (let i=0; i<count; i++) {
     intervalDays.push(`${multiplier * (i + 1)} week${i > 0 ? "s" : ""}`);
-    delivered.setDate(delivered.getDate() + subscription.attributes.days);
+    delivered.setDate(delivered.getDate() + interval);
     deliveryDays.push(delivered.toDateString());
-    charge.setDate(charge.getDate() + subscription.attributes.days);
+    charge.setDate(charge.getDate() + interval);
     chargeDays.push(charge.toDateString());
   };
 
@@ -172,17 +178,17 @@ async function* SkipCharge(props) {
      * These values can be arbitary provided that match the template string
      */
     const toastTemplate = {
-      template: "${title} - ${variant} subscription paused successfully.",
+      template: "${title} - ${variant} subscription has been queued for update.",
       title: subscription.box.shopify_title,
       variant: subscription.attributes.variant,
     };
 
     const deliveredObj = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
-    deliveredObj.setDate(deliveredObj.getDate() + subscription.attributes.days);
+    deliveredObj.setDate(deliveredObj.getDate() + interval);
     const updatedDelivery = deliveredObj.toDateString();
 
     const chargeObj = new Date(Date.parse(subscription.attributes.nextChargeDate));
-    chargeObj.setDate(chargeObj.getDate() + subscription.attributes.days);
+    chargeObj.setDate(chargeObj.getDate() + interval);
     const updatedCharge = chargeObj.toDateString();
 
     yield (
@@ -191,32 +197,32 @@ async function* SkipCharge(props) {
           Are you sure you want to pause the subscription?<br />
           <div class="cf">
             <div class="fl w-50 gray tr pr3 pv1 b">
-              Scheduled delivery date:
-            </div>
-            <div class="fl w-50 pv1 b">
-              { subscription.attributes.nextDeliveryDate }
-            </div>
-            <div class="fl w-50 gray tr pr3 pv1 b">
               This payment date:
             </div>
             <div class="fl w-50 pv1 b">
               { subscription.attributes.nextChargeDate }
+            </div>
+            <div class="fl w-50 gray tr pr3 pv1 b">
+              Scheduled delivery date:
+            </div>
+            <div class="fl w-50 pv1 b">
+              { subscription.attributes.nextDeliveryDate }
             </div>
           </div>
         </p>
         <p class="lh-copy tl">
           <div class="cf mt3">
             <div class="fl w-50 gray tr pr3 pv1 b">
-              New delivery date will be:
-            </div>
-            <div class="fl w-50 pv1 b" id="delivery-date">
-              { deliveryDays[intervalIndex] }
-            </div>
-            <div class="fl w-50 gray tr pr3 pv1 b">
               New payment date will be:
             </div>
             <div class="fl w-50 pv1 b" id="charge-date">
               { chargeDays[intervalIndex] }
+            </div>
+            <div class="fl w-50 gray tr pr3 pv1 b">
+              New delivery date will be:
+            </div>
+            <div class="fl w-50 pv1 b" id="delivery-date">
+              { deliveryDays[intervalIndex] }
             </div>
           </div>
         </p>

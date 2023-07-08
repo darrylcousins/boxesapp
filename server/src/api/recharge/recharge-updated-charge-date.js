@@ -20,11 +20,13 @@ export default async (req, res, next) => {
     const { address } = await makeRechargeQuery({
       method: "GET",
       path: `addresses/${charge.line_items[0].address_id}`,
+      title: "Address"
     });
     charge.shipping_address = address;
     const { customer } = await makeRechargeQuery({
       method: "GET",
       path: `customers/${charge.line_items[0].customer_id}`,
+      title: "Customer"
     });
     charge.customer = customer;
   };
@@ -37,7 +39,7 @@ export default async (req, res, next) => {
 
   try {
 
-    const groups = reconcileGetGroups({ charges: [ charge ] });
+    const groups = await reconcileGetGroups({ charges: [ charge ] });
     let result = [];
 
     for (const grouped of groups) {

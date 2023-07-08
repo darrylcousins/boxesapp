@@ -23,6 +23,11 @@ import Customer from "./customer";
 async function* Subscriptions() {
 
   /**
+   * Links to admin interfaces
+   */
+  const shopAdmin = `https://${ localStorage.getItem("shop") }/admin/customers`;
+  const rechargeAdmin = `https://${ localStorage.getItem("recharge") }.admin.rechargeapps.com/merchant/customers`;
+  /**
    * True while loading data from api
    * Starts false until search term submitted
    *
@@ -330,18 +335,22 @@ async function* Subscriptions() {
                     <tr>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Customer</th>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Email</th>
+                      <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Recharge</th>
+                      <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Shopify</th>
                     </tr>
                   </thead>
                 { rechargeCustomers.map((customer, idx) => (
                   <tr crank-key={ `${ customer.last_name }-${ idx }` }>
-                    <td class="pv3 pr3 bb b--black-20">
+                    <td class="pr3 bb b--black-20">
                       <div class="dt w-100">
-                        <div class="dt-row pointer fg-streamside-blue b w-100" onclick={ () => fetchRechargeCustomer(customer.recharge_id) }>
+                        <div class="ml2 dt-row pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
+                          title="Show customer subscriptions"
+                          onclick={ () => fetchRechargeCustomer(customer.recharge_id) }>
                           <div class="dtc w-100">
-                            <div class="dib w-50">
+                            <div class="dib w-50 mv2 pl2">
                               { customer.last_name }
                             </div>
-                            <div class="dib w-50">
+                            <div class="dib w-50 mv2 pl2">
                               { customer.first_name }
                             </div>
                           </div>
@@ -349,7 +358,33 @@ async function* Subscriptions() {
                       </div>
                     </td>
                     <td class="pv3 pr3 bb b--black-20">
-                      { customer.email }
+                      <div class="dt w-100">
+                        <div class="ml2 dt-row pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
+                          title="Show customer subscriptions"
+                          onclick={ () => fetchRechargeCustomer(customer.recharge_id) }>
+                          <div class="dtc w-100">
+                            <div class="dib w-100 mv2 pl2">
+                              { customer.email }
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="pv3 pr3 bb b--black-20">
+                      <a href={ `${ rechargeAdmin }/${ customer.recharge_id }` }
+                        class="dim fg-streamside-blue no-underline"
+                        target="_blank"
+                        title="View customer in recharge admin">
+                        { customer.recharge_id }
+                      </a>
+                    </td>
+                    <td class="pv3 pr3 bb b--black-20">
+                      <a href={ `${ shopAdmin }/${ customer.shopify_id }` }
+                        class="dim fg-streamside-blue no-underline"
+                        target="_blank"
+                        title="View customer in shopify admin">
+                        { customer.shopify_id }
+                      </a>
                     </td>
                   </tr>
                 ))}
@@ -366,4 +401,6 @@ async function* Subscriptions() {
   };
 };
 
+//https://southbridge-dev-sp.admin.rechargeapps.com/merchant/customers/
+//https://....myshopify.com/customes
 export default Subscriptions;

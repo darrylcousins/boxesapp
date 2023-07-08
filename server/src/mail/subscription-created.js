@@ -54,7 +54,7 @@ export default async ({ subscriptions, admin_email }) => {
 `, options);
         sendmail({
           to: email,
-          subject: `\[${process.env.SHOP_NAME}\] Box subscription created`,
+          subject: `\[${process.env.SHOP_NAME}\] Box subscription created ${box}`,
           html: htmlOutput.html
         });
         const meta = {

@@ -2,7 +2,7 @@
  * @module api/recharge/reconcile-charge-group.js
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
-import { matchNumberedString } from "../helpers.js";
+import { sortObjectByKeys, matchNumberedString } from "../helpers.js";
 import { getNZDeliveryDay } from "../dates.js";
 import { getLastOrder, makeRechargeQuery } from "./helpers.js";
 import isEqual from "lodash.isequal";
@@ -13,7 +13,7 @@ import isEqual from "lodash.isequal";
  *
  * @returns grouped line items by common property "box_subscription_id"
  */
-export const reconcileGetGrouped = ({ charge }) => {
+export const reconcileGetGrouped = async ({ charge }) => {
 
   const grouped = {};
 
@@ -48,21 +48,29 @@ export const reconcileGetGrouped = ({ charge }) => {
         quantity: parseInt(line_item.quantity),
       });
       grouped[box_subscription_id].charge = charge;
+
     };
-    for (const key of Object.keys(grouped)) {
-      if (Object.keys(grouped[key].box) === "null") {
-        console.log("NO BOX ON GROUPED CHARGE", grouped[key].charge.id);
+    for (const [box_subscription_id, group] of Object.entries(grouped)) {
+
+      const query = {
+        customer_id: parseInt(group.charge.customer.id),
+        address_id: parseInt(group.charge.address_id),
+        scheduled_at: group.charge.scheduled_at,
+        subscription_id: parseInt(box_subscription_id),
+      };
+      console.log("reconcile grouped finding pending", query);
+      grouped[box_subscription_id].pending = Boolean(await _mongodb.collection("updates_pending").findOne(query));
+      console.log("reconcile grouped found pending", grouped[box_subscription_id].pending);
+
+      if (Object.keys(group.box) === "null") {
+        console.log("NO BOX ON GROUPED CHARGE", group.charge.id);
       };
     };
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 
-  for (const group of Object.values(grouped)) {
-    group.rc_subscription_ids.sort();
-  };
-
-  return grouped;
+  return sortObjectByKeys(grouped);
 };
 
 /*
@@ -72,14 +80,14 @@ export const reconcileGetGrouped = ({ charge }) => {
  * @returns groups of grouped line items by common property "box_subscription_id"
  * This keeps a common box together
  */
-export const reconcileGetGroups = ({ charges }) => {
+export const reconcileGetGroups = async ({ charges }) => {
 
   const groups = [];
 
   for (const charge of charges) {
     // First up we may assume that multiple boxes are present to find them we can
     // group the line_items by a common box_subscription_id
-    const grouped = reconcileGetGrouped({ charge });
+    const grouped = await reconcileGetGrouped({ charge });
 
     groups.push(grouped);
   };
@@ -93,6 +101,9 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   const boxProperties = subscription.properties.reduce(
     (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
     {});
+
+  delete boxProperties["Likes"];
+  delete boxProperties["Dislikes"];
 
   const includes = includedSubscriptions.map(el => {
     return {
@@ -224,8 +235,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   const boxLists = { ...boxProperties };
   // i.e Beetroot (2),Celeriac ... etc
   delete boxLists["Delivery Date"];
-  delete boxLists["Likes"];
-  delete boxLists["Dislikes"];
   delete boxLists["box_subscription_id"];
 
   // init arrays that we can change later
@@ -268,17 +277,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   // this array to only update items that are subscribed
   const titledSubscribedExtras = subscribedExtras.map(el => el.title);
 
-  const setOfLikes = (typeof boxProperties["Likes"] === "string") // can be null when first created
-    ? new Set(boxProperties["Likes"].split(",").map(el => el.trim()).filter(el => el !== ""))
-    : new Set();
-  const setOfDislikes = (typeof boxProperties["Dislikes"] === "string") // can be null when first created
-    ? new Set(boxProperties["Dislikes"].split(",").map(el => el.trim()).filter(el => el !== ""))
-    : new Set();
-
-  // update likes and dislikes
-  for (const el of subscribedExtras) setOfLikes.add(el.title);
-  for (const el of boxRemovedItems) setOfDislikes.add(el.title);
-  
   const addOnProducts = fetchBox.addOnProducts.map(el => el.shopify_title);
   const includedProducts = fetchBox.includedProducts.map(el => el.shopify_title);
 
@@ -538,10 +536,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     return item;
   });
 
-  // and use to update boxProperties - XXX move this down to later
-  //boxProperties["Likes"] = Array.from(setOfLikes).sort().join(",");
-  //boxProperties["Dislikes"] = Array.from(setOfDislikes).sort().join(",");
-
   // add the box subscription itself to the updates required
   // can we push this through to the front end when customer, or admin goes to their update
   const finalProperties = {
@@ -551,8 +545,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     "Add on Items": makeItemString(boxAddOnExtras, ","),
     "Swapped Items": makeItemString(boxSwappedExtras, ","),
     "Removed Items": makeItemString(boxRemovedItems, ","),
-    //"Likes": boxProperties["Likes"],
-    //"Dislikes": boxProperties["Dislikes"],
   };
 
   const updateProperties = { ...finalProperties };
@@ -637,6 +629,7 @@ export const gatherData = async ({ grouped, result }) => {
       // XXX try/catch?
       const res = await makeRechargeQuery({
         path: `subscriptions/${item_id}`,
+        title: group.box.title
       });
       subscription = res.subscription;
     } else {
@@ -665,11 +658,6 @@ export const gatherData = async ({ grouped, result }) => {
     //address.name = `${charge.billing_address.first_name} ${charge.billing_address.last_name}`;
 
     const isEditable = chargeDate > new Date();
-
-    /*
-    delete boxProperties["Likes"];
-    delete boxProperties["Dislikes"];
-    */
 
     const {
       fetchBox,
@@ -701,23 +689,22 @@ export const gatherData = async ({ grouped, result }) => {
       };
     });
 
+    if (updates.length > 0) {
+      // need to adjust rc_subscription_ids
+      const rc_subscription_ids = [ ...group.rc_subscription_ids ];
+      for (const update of updates) {
+        const rc_subscription = rc_subscription_ids.find(el => el.subscription_id === update.subscription_id);
+        rc_subscription.quantity = update.quantity;
+      };
+      group.rc_subscription_ids = rc_subscription_ids;
+    };
+
     const images = {
       [`${subscription.product_title}`]: group.box.images.small
     };
     for (const extra of subscribedExtras) {
       images[`${extra.title}`] = extra.image;
     };
-
-    const query = {
-      //charge_id: parseInt(charge.id), now trying to avoid this because of updating charge and new charges created.
-      customer_id: parseInt(group.charge.customer.id),
-      address_id: parseInt(group.charge.address_id),
-      next_charge_date: group.charge.scheduled_at,
-      subscription_id: group.box.purchase_item_id,
-      // hope that works testing in array of arrays
-      //rc_subscription_ids: group.rc_subscription_ids, // these may not yet be updated
-    };
-    const pending = await _mongodb.collection("updates_pending").findOne(query);
 
     const totalPrice = includes.map(el => parseFloat(el.price) * el.quantity).reduce((sum, el) => sum + el, 0);
     const attributes = {
@@ -726,7 +713,7 @@ export const gatherData = async ({ grouped, result }) => {
       hasNextBox,
       title: fetchBox.shopify_title,
       variant: subscription.variant_title,
-      pending,
+      pending: group.pending,
       frequency,
       days,
       images,

@@ -147,6 +147,9 @@ router.get(
   "/recharge-customer-charges/:customer_id/:address_id/:scheduled_at", 
   await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
 router.get(
+  "/recharge-customer-charges/:customer_id/:address_id/:scheduled_at/:subscription_id", 
+  await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
+router.get(
   "/recharge-customers",  // gets all customers
   await import("./recharge/recharge-customers.js").then(({ default: fn }) => fn));
 router.get(
@@ -185,6 +188,9 @@ router.get(
 router.get(
   "/recharge-subscriptions/:customer_id", 
   await import("./recharge/recharge-subscriptions.js").then(({ default: fn }) => fn));
+router.get(
+  "/recharge-cancelled-subscription/:customer_id/:address_id", 
+  await import("./recharge/recharge-cancelled-subscription.js").then(({ default: fn }) => fn));
 router.get(
   "/recharge-cancelled-subscriptions/:customer_id", 
   await import("./recharge/recharge-cancelled-subscriptions.js").then(({ default: fn }) => fn));

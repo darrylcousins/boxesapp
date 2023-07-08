@@ -1,0 +1,26 @@
+#progress {
+  background-color: #eef1f3;
+  width:100%;
+  height:3px;
+  border: 1px solid #333;
+}
+
+#innerprogress {
+  width: 95%;
+  vertical-align:middle;
+}
+
+#move {
+  width: 100px;
+  height: 3px;
+  position:relative;
+  border-radius: 2px;
+  // background-color:#ffd700; //yellow
+  background-color:#ff6300; // orange
+  -webkit-animation: backandforth 4s ease 0s;
+  -webkit-animation-iteration-count:infinite;
+  animation: backandforth 4s ease 0s;
+  animation-iteration-count:infinite;
+}
+
+@keyframes backandforth {0%{left:0;} 50%{left:96%;} 100%{left:0;}}

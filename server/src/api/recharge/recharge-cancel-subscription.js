@@ -6,7 +6,8 @@
 //import fs from "fs";
 import subscriptionCancelledMail from "../../mail/subscription-cancelled.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
-import { delay } from "../../lib/helpers.js";
+import { sortObjectByKeys } from "../../lib/helpers.js";
+
 /*
  * @function recharge/recharge-cancel-subscription.js
  * @param (Http request object) req
@@ -15,50 +16,103 @@ import { delay } from "../../lib/helpers.js";
  */
 export default async (req, res, next) => {
 
-  /* for creating mail - can be deleted
-  const mail = {};
-  mail.subscription_id = parseInt(req.body.subscription_id);
-  mail.includes = JSON.parse(req.body.includes);
-  mail.attributes = JSON.parse(req.body.attributes);
-  fs.writeFileSync("recharge.cancel.json", JSON.stringify(mail, null, 2));
-  res.status(200).json({ success: true });
-  return;
-  */
+  let io;
+  let sockets;
+  const { session_id } = req.query;
+
+  if (typeof session_id !== "undefined") {
+    sockets = req.app.get("sockets");
+    console.log("SOCKETS", sockets, session_id);
+    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
+      const socket_id = sockets[session_id];
+      io = req.app.get("io").to(socket_id);
+      io.emit("uploadProgress", "Received request, processing data...");
+    };
+  };
+
+  const cancellation_reason = req.body.cancellation_reason;
+
+  const { includes: includesStr, attributes: attributesStr, properties: propertiesStr } = req.body;
+
+  const includes = JSON.parse(includesStr);
+  const attributes = JSON.parse(attributesStr);
+  const properties = JSON.parse(propertiesStr);
+
+  const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
+
+  //console.log(attributes);
+  //console.log("INCLUDES",includes);
+  //console.log(properties);
+
+  // add updated flag to rec_subscription_ids
+  // rc_subscription_ids should have everything in includes
+  const subscription_ids = rc_subscription_ids.map(el => {
+    return { ...el, updated: true };
+  });
+
+  // make sure that the box is last
+  for(var x in includes) includes[x].properties.some(el => el.name === "Including") ? includes.push( includes.splice(x,1)[0] ) : 0;
+
+  const doc= {
+    charge_id,
+    customer_id: customer.id,
+    address_id,
+    subscription_id,
+    scheduled_at,
+    rc_subscription_ids: subscription_ids,
+    title,
+    timestamp: new Date(),
+  };
+  delete properties.Likes;
+  delete properties.Dislikes;
+  for (const [key, value] of Object.entries(properties)) {
+    doc[key] = value;
+  };
+  const result = await _mongodb.collection("updates_pending").updateOne(
+    { subscription_id },
+    { "$set" : doc },
+    { "upsert": true }
+  );
+
+  const topicLower = "subscription/cancelled";
+  const meta = {
+    recharge: {
+      topic: topicLower,
+      charge_id,
+      customer_id: customer.id,
+      address_id,
+      subscription_id,
+      email: customer.email,
+      next_delivery: attributes.nextDeliveryDate,
+      next_charge_date: attributes.nextChargeDate,
+      rc_subscription_ids: subscription_ids,
+    }
+  };
+  for (const [key, value] of Object.entries(properties)) {
+    meta.recharge[key] = value;
+  };
+
+  meta.recharge = sortObjectByKeys(meta.recharge);
+  _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
 
   try {
-    const cancellation_reason = req.body.cancellation_reason;
-    const includes = JSON.parse(req.body.includes);
-    const attributes = JSON.parse(req.body.attributes);
-    const subscription_id = parseInt(req.body.subscription_id);
-    const meta = {
-      recharge: {
-        customer_id: attributes.customer.id,
-        shopify_customer_id: parseInt(attributes.customer.external_customer_id.ecommerce),
-        email: attributes.customer.email,
-        address_id: attributes.address_id,
-        subscription_id: attributes.subscription_id,
-      },
-    };
-
-    for (const id of includes.map(el => el.subscription_id)) {
+    for (const update of includes) {
       const body = {
         cancellation_reason_comments: "BoxesApp cancel subscription",
         cancellation_reason: cancellation_reason,
       };
-      if (id !== subscription_id) body.send_email = false;
-      const result = await makeRechargeQuery({
+      if (update.subscription_id !== subscription_id) body.send_email = false;
+      await makeRechargeQuery({
         method: "POST",
-        path: `subscriptions/${id}/cancel`,
+        path: `subscriptions/${update.subscription_id}/cancel`,
         body: JSON.stringify(body),
+        title: `Cancel ${update.title}`,
       });
-      await delay(500);
     };
 
-    const data = { subscription_id, attributes, includes };
-    await subscriptionCancelledMail(data);
+    await subscriptionCancelledMail({ subscription_id, attributes, includes });
 
     res.status(200).json({ success: true, action: "cancelled", subscription_id });
-    _logger.notice(`Recharge cancel subscription.`, { meta });
 
   } catch(err) {
     res.status(200).json({ error: err.message });

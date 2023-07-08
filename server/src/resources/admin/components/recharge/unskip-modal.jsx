@@ -46,7 +46,7 @@ const options = {
   src: "/api/recharge-update-charge-date",
   ShowLink,
   saveMsg: "Rescheduling subscription ... please be patient, it will take some seconds.",
-  successMsg: "Successfully rescheduled subscription, reloading page.",
+  successMsg: "Updates have been queued, reloading ...",
   useSession: false, // set up socket.io to get feedback
 };
 
@@ -79,16 +79,22 @@ async function* UnSkipCharge(props) {
   // these need to count backwards
   const deliveryDays = [];
   const chargeDays = [];
+  /* july 2023 allow fortnightly subscriptions to change date at weekly intervals */
+  /*
   const multiplier = subscription.attributes.days === 7 ? 1 : 2;
+  const interval = subscription.attributes.days === 7 ? 7 : 14;
+  */
+  const multiplier = 1;
+  const interval = 7;
 
   let delivered = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
   let charge = new Date(Date.parse(subscription.attributes.nextChargeDate));
   // instead of counting up for 3, we count back until diffDays < 7?
   let diffDays = getDiffDays(subscription);
-  for (diffDays; diffDays > subscription.attributes.days; diffDays -= subscription.attributes.days) {
-    delivered.setDate(delivered.getDate() - subscription.attributes.days);
+  for (diffDays; diffDays > interval; diffDays -= interval) {
+    delivered.setDate(delivered.getDate() - interval);
     deliveryDays.push(delivered.toDateString());
-    charge.setDate(charge.getDate() - subscription.attributes.days);
+    charge.setDate(charge.getDate() - interval);
     chargeDays.push(charge.toDateString());
   };
   deliveryDays.reverse();
@@ -185,17 +191,17 @@ async function* UnSkipCharge(props) {
      * These values can be arbitary provided that match the template string
      */
     const toastTemplate = {
-      template: "${title} - ${variant} subscription rescheduled successfully.",
+      template: "${title} - ${variant} subscription has been queued for update.",
       title: subscription.box.shopify_title,
       variant: subscription.attributes.variant,
     };
 
     const deliveredObj = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
-    deliveredObj.setDate(deliveredObj.getDate() + subscription.attributes.days);
+    deliveredObj.setDate(deliveredObj.getDate() + interval);
     const updatedDelivery = deliveredObj.toDateString();
 
     const chargeObj = new Date(Date.parse(subscription.attributes.nextChargeDate));
-    chargeObj.setDate(chargeObj.getDate() + subscription.attributes.days);
+    chargeObj.setDate(chargeObj.getDate() + interval);
     const updatedCharge = chargeObj.toDateString();
 
     yield (
@@ -204,32 +210,32 @@ async function* UnSkipCharge(props) {
           Are you sure you want to reschedule the subscription?<br />
           <div class="cf">
             <div class="fl w-50 gray tr pr3 pv1 b">
-              Scheduled delivery date:
-            </div>
-            <div class="fl w-50 pv1 b">
-              { subscription.attributes.nextDeliveryDate }
-            </div>
-            <div class="fl w-50 gray tr pr3 pv1 b">
               This payment date:
             </div>
             <div class="fl w-50 pv1 b">
               { subscription.attributes.nextChargeDate }
+            </div>
+            <div class="fl w-50 gray tr pr3 pv1 b">
+              Scheduled delivery date:
+            </div>
+            <div class="fl w-50 pv1 b">
+              { subscription.attributes.nextDeliveryDate }
             </div>
           </div>
         </p>
         <p class="lh-copy tl">
           <div class="cf mt3">
             <div class="fl w-50 gray tr pr3 pv1 b">
-              New delivery date will be:
-            </div>
-            <div class="fl w-50 pv1 b" id="delivery-date">
-              { deliveryDays[daysIndex] }
-            </div>
-            <div class="fl w-50 gray tr pr3 pv1 b">
               New payment date will be:
             </div>
             <div class="fl w-50 pv1 b" id="charge-date">
               { chargeDays[daysIndex] }
+            </div>
+            <div class="fl w-50 gray tr pr3 pv1 b">
+              New delivery date will be:
+            </div>
+            <div class="fl w-50 pv1 b" id="delivery-date">
+              { deliveryDays[daysIndex] }
             </div>
           </div>
         </p>

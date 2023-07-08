@@ -165,7 +165,8 @@ function* CurrentLogs() {
     uri = logLevel ? `${uri}/${logLevel}` : `${uri}/all`;
     if (selectedObject) {
       uri = `${uri}/${selectedObject}`;
-    }
+    };
+    console.log(uri);
     Fetch(uri)
       .then((result) => {
         const { error, json } = result;
@@ -356,20 +357,20 @@ function* CurrentLogs() {
           </p>
         </div>
         <div class="w-100 flex">
-          { true && (
+          { false && (
             <div class="w-20 v-bottom center">
-              <SelectMenu
-                id="selectObject"
-                menu={possibleObjects.map(el => ({text: el.toUpperCase(), item: el}))}
-                title="Filter by Object"
-                active={menuSelectObject}
-                style={{border: 0, color: "brown"}}
-              >
-                { selectedObject ? `${selectedObject} messages`.toUpperCase() : "FILTER BY" }&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#9662;
-              </SelectMenu>
+                <SelectMenu
+                  id="selectObject"
+                  menu={possibleObjects.map(el => ({text: el.toUpperCase(), item: el}))}
+                  title="Filter by Object"
+                  active={menuSelectObject}
+                  style={{border: 0, color: "brown"}}
+                >
+                  { selectedObject ? `${selectedObject} messages`.toUpperCase() : "FILTER BY" }&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#9662;
+                </SelectMenu>
             </div>
           )}
-          <div class="w-40 v-bottom">
+          <div class="w-30 v-bottom tr">
             { /* need to fix the br (border radius) settings */ }
             { previousPage && previousPage.count > 0 && (
               <button
@@ -392,7 +393,7 @@ function* CurrentLogs() {
               </button>
             )}
           </div>
-          <div class="w-10 v-bottom tr mh1">
+          <div class="w-20 v-bottom tr mh1">
             <button
               class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-50  pv1 outline-0 b--grey ba br2 br--right mv1 pointer` }
               title="Refresh"

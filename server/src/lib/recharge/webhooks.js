@@ -13,11 +13,15 @@ import orderProcessed from "../../webhooks/recharge/order-processed.js";
 import subscriptionCreated from "../../webhooks/recharge/subscription-created.js";
 import subscriptionDeleted from "../../webhooks/recharge/subscription-deleted.js";
 import subscriptionUpdated from "../../webhooks/recharge/subscription-updated.js";
+import subscriptionCancelled from "../../webhooks/recharge/subscription-cancelled.js";
+import subscriptionActivated from "../../webhooks/recharge/subscription-activated.js";
 
 export const webhook_topics = {
   "SUBSCRIPTION_CREATED": subscriptionCreated,
   "SUBSCRIPTION_DELETED": subscriptionDeleted,
   "SUBSCRIPTION_UPDATED": subscriptionUpdated,
+  "SUBSCRIPTION_ACTIVATED": subscriptionActivated,
+  "SUBSCRIPTION_CANCELLED": subscriptionCancelled,
   "ORDER_PROCESSED": orderProcessed,
   "CHARGE_CREATED": chargeCreated,
   "CHARGE_UPCOMING": chargeUpcoming,

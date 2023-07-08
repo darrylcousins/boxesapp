@@ -10,12 +10,14 @@ import { io } from "socket.io-client";
 import { createElement, Fragment } from "@b9g/crank";
 import CollapseWrapper from "../lib/collapse-animator";
 import EditProducts from "../products/edit-products";
+import Cancelled from "./cancelled";
 import Error from "../lib/error";
 import { PostFetch, Fetch } from "../lib/fetch";
 import { toastEvent } from "../lib/events";
 import Timer from "../lib/timer";
 import Toaster from "../lib/toaster";
 import BarLoader from "../lib/bar-loader";
+import ProgressLoader from "../lib/progress-loader";
 import Button from "../lib/button";
 import TextButton from "../lib/text-button";
 import SkipChargeModal from "./skip-modal";
@@ -44,27 +46,39 @@ import {
 async function *Subscription({ subscription, idx, allowEdits, admin }) {
 
 
+  console.log("=============================================================================");
+  console.log("TITLE", subscription.attributes.title);
   console.log("Box", subscription.box);
   console.log("Address", subscription.address);
   console.log("Attributes", subscription.attributes);
   console.log("Messages", subscription.messages);
   console.log("Properties", subscription.properties);
   console.log("Includes", subscription.includes);
+  console.log("Updates", subscription.updates);
+  console.log("RC_IDS", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
+  /*
   console.log("Ids", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
   console.log(JSON.stringify(
     subscription.attributes.rc_subscription_ids.map(el => {
       return [ el.subscription_id, el.shopify_product_id, el.quantity ].sort();
     }).sort()
     ,null, 2));
+    */
 
   let CollapsibleProducts = CollapseWrapper(EditProducts);
+  /**
+   * After subscription cancelled simply display it here
+   *
+   * @member {array} CancelledSubscription
+   */
+  let CancelledSubscription = false;
   /**
    * Simple hold on to the original list as copies of the objects in the list
    * These are { quantity, subscription_id, shopify_product_id }
    *
    * @member {array} rc_subscription_ids_orig
    */
-  const rc_subscription_ids_orig = subscription.attributes.rc_subscription_ids.map(el => { return {...el}; });
+  let rc_subscription_ids_orig = subscription.attributes.rc_subscription_ids.map(el => { return {...el}; });
   /**
    * Simple hold on to the original list as copies of the objects in the list
    * These are { quantity, subscription_id, shopify_product_id }
@@ -82,9 +96,19 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
    *
    * @member {array} timerSeconds
    */
-  const timerSeconds = 30;
+  const timerSeconds = 10;
   /**
-   * Hold changed items
+   * On cancel, delete, and reactivate we need to ask the Customer component to
+   * reload all subscriptions. This value stores the string value of the
+   * action. Editing products and changing schedule only requires the
+   * refreshing of this subscription only.
+   *
+   * @member {array} eventAction
+   */
+  let eventAction = "";
+  /**
+   * Hold changed items only used when toggling products, previously was using
+   * this to find updates
    *
    * @member {array} changed
    */
@@ -125,8 +149,8 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
    *
    * @member {object|string} editsPending
    */
-  //let editsPending = Boolean(subscription.attributes.pending);
-  let editsPending;
+  let editsPending = Boolean(subscription.attributes.pending);
+  //let editsPending;
   /**
    * The subscription logs if any
    *
@@ -177,6 +201,8 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
    * Get and connect to socket.io, on connect insert the sessionId into the
    * data then call the submission method 'callback'
    * @function getSessionId
+   *
+   * This is disabled at the moment see saveChanges method
    */
   const getSessionId = async (callback, data) => {
     const proxy = localStorage.getItem("proxy-path");
@@ -285,26 +311,13 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
           this.refresh();
         } else {
           // remove the zerod items
+          /*
           subscription.messages = [];
           subscription.updates = [];
           subscription.removed = [];
           changed = [];
-
-          console.log("returned message: ", json.message);
-
-          /*
-          let notice;
-          if (key === "updates") {
-            notice = "Subscription updated to match upcoming box";
-          } else {
-            notice = "Subscription updates saved";
-          };
-          this.dispatchEvent(toastEvent({
-            notice,
-            bgColour: "black",
-            borderColour: "black"
-          }));
           */
+          console.log("returned json: ", json);
         }
       })
       .catch((err) => {
@@ -324,11 +337,11 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
     const { type, product, properties: props, total_price } = ev.detail;
     // type shape is "to": the to list, "from: the from list, "count?": a quantity change
     // props are lists of { shopify_title, quantity } entries
+
     console.log(type);
-    console.log(props);
 
     let rc_subscription_ids = [ ...subscription.attributes.rc_subscription_ids ];
-    changed.push(product.shopify_product_id);
+    changed.push(product.shopify_product_id); // used to figure product toggling
 
     // update the properties with changed quantities and remove likes and dislikes
     // This updates the string values from the shopify_title, quantity returned from EditProducts
@@ -353,7 +366,6 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
     let rc_subscription;
 
     if (Object.hasOwnProperty.call(type, "from")) {
-      console.log(type.from, type.to);
       if (type.from === "Add on Items" && type.to === "Available Products") {
         if (included) {
           // item to be removed from subscription
@@ -373,7 +385,6 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
       };
       if (type.from === "Available Products" && type.to === "Add on Items") {
         const removedIdx = subscription.removed.findIndex(el => el.shopify_product_id === product.shopify_product_id);
-        console.log("XXXX", JSON.stringify(subscription.removed, null, 2));
         if (removedIdx !== -1) {
           subscription.removed[removedIdx].quantity = 1; // will have been set to zero
           rc_subscription = rc_subscription_ids.find(el => el.shopify_product_id === parseInt(product.shopify_product_id));
@@ -398,9 +409,8 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
     if (Object.hasOwnProperty.call(type, "count")) {
       // fix depending on the list, i.e. if Including then decrement by 1, so that zero will remove in from includes
       quantity = (type.count === "Add on Items") ? product.quantity : product.quantity - 1;
-      console.log("has count", type.count, quantity);
       if (included) {
-        if (quantity === 0) {
+        if (quantity === 0 && type.count === "Add on Items") {
           // remove from included listing
           subscription.includes.splice(subscription.includes.indexOf(included), 1);
         } else {
@@ -459,19 +469,13 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
     // update these in place
     subscription.attributes.rc_subscription_ids = [ ...rc_subscription_ids ];
 
-    // was using "changed" but now comparing rc original with updated
-    const updates = getUpdatesFromIncludes();
-    console.log(JSON.stringify(updates, null, 2));
 
 
     /* REMOVE BELOW _ DEV */
     //console.log(JSON.stringify(subscription.includes, null, 2));
-
-    const tuples = subscription.attributes.rc_subscription_ids.map(el => {
-      return [ el.subscription_id, el.shopify_product_id, el.quantity ].sort();
-    }).sort();
-    console.log(JSON.stringify(tuples, null, 2));
-    console.log(JSON.stringify(subscription.properties, null, 2));
+    // was using "changed" but now comparing rc original with updated
+    const updates = getUpdatesFromIncludes();
+    console.log(JSON.stringify(updates, null, 2));
   };
 
   /**
@@ -489,12 +493,26 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
     let updates = [];
     let found;
     let subscriptionBox = subscription.includes.find(el => el.subscription_id === subscription.attributes.subscription_id);
+    console.log("RC ORIG", JSON.stringify(rc_subscription_ids_orig, null, 2));
+    console.log("RC CURRENT", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
     for (const item of subscription.attributes.rc_subscription_ids) {
       let updateItem = null;
       found = rc_subscription_ids_orig.find(el => el.shopify_product_id === item.shopify_product_id);
       if (found && found.quantity !== item.quantity) {
+        console.log("FOUND", found);
+        console.log("UPDATE", item);
+        const removed = subscription.removed.some(el => el.shopify_product_id === item.shopify_product_id);
+        console.log("IN REMOVED?", removed);
+        const included = subscription.includes.some(el => el.shopify_product_id === item.shopify_product_id);
+        console.log("IN INCLUDED?", included);
         if (item.quantity === 0) {
-          updateItem = subscription.removed.find(el => el.shopify_product_id === item.shopify_product_id);
+          if (removed) {
+            // i.e. was in Add on Items
+            updateItem = subscription.removed.find(el => el.shopify_product_id === item.shopify_product_id);
+          } else {
+            // i.e. was in Including with an extra
+            updateItem = subscription.includes.find(el => el.shopify_product_id === item.shopify_product_id);
+          };
         } else {
           updateItem = subscription.includes.find(el => el.shopify_product_id === item.shopify_product_id);
         };
@@ -503,7 +521,6 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
       };
       if (updateItem) {
         updates.push(updateItem);
-        console.log("Pushing updateItem:", JSON.stringify(updateItem, null, 2));
       };
     };
     let updateBox = false;
@@ -567,18 +584,15 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
    * Fetch the charge as a "subscription" object
    */
   const getCharge = async (charge_id) => {
-    const rc_subscription_ids = subscription.attributes.rc_subscription_ids.map(el => {
-      return [ el.subscription_id, el.shopify_product_id, el.quantity ];
-    }).sort();
     let uri = `/api/recharge-customer-charge/${charge_id}`;
     uri = `${uri}?customer_id=${subscription.attributes.customer.id}`;
     uri = `${uri}&address_id=${subscription.attributes.address_id}`;
     uri = `${uri}&subscription_id=${subscription.attributes.subscription_id}`;
-    uri = `${uri}&rc_subscription_ids=${JSON.stringify(rc_subscription_ids)}`;
     uri = `${uri}&scheduled_at=${subscription.attributes.scheduled_at}`;
     console.log(uri);
     return Fetch(encodeURI(uri))
       .then((result) => {
+        console.log(result);
         const { error, json } = result;
         if (error !== null) {
           fetchError = error;
@@ -597,51 +611,143 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
    * Reload this particular charge from the server as a 'subsciption' object
    */
   const reloadCharge = async (restartTimer, killTimer) => {
-    loading = true;
-    this.refresh();
+
+    console.log(eventAction);
+    // only do this on deleted action
+    if (eventAction === "deleted") {
+      // if this is a cancel or delete then we need to ask customer to reload all
+      const event = `subscription.${eventAction}`;
+      const subdiv = document.querySelector(`#subscription-${subscription.attributes.subscription_id}`);
+      const div = document.querySelector(`#customer`);
+      animateFade(div, 0.3);
+      setTimeout(() => {
+        animateFadeForAction(subdiv, () => {
+          this.dispatchEvent(
+            new CustomEvent(event, {
+              bubbles: true,
+              detail: { result },
+            })
+          );
+        });
+      }, 100);
+      return;
+    };
+
+    // duplicated in the Cancelled component - surely should figure out
+    if (eventAction === "cancelled") {
+      console.log("got cancelled action so need to reload the cancelled subscription");
+      const json = await getCancelledSubscription();
+      console.log(json);
+      /*
+       * Which has this shape:
+       * box: recharge subscription object
+       * charge: line_items: array of subscription objects all includes (including box too)
+       * included: === charge.line_items
+       * rc_subscription_ids: should match our current rc_subscription_ids
+       */
+
+      if (Object.hasOwnProperty.call(json, "message")) {
+        // do something with it? Toast?
+        attempts += 1; // force Timer reload and count attempts
+        editsPending = true;
+        if (restartTimer) restartTimer(timerSeconds);
+        return;
+      } else {
+        editsPending = false;
+        attempts = 0;
+        changed = [];
+        CancelledSubscription = json;
+      };
+    };
 
     const charge = await getCharge(subscription.attributes.charge_id);
-    await getLogs();  // refresh the logs
-    console.log("Back to here?", charge);
-    if (charge) {
-      //console.log(charge.includes);
-      console.log(charge.attributes);
-      //console.log(subscription.includes);
-      console.log(subscription.attributes);
-      Object.assign(subscription, charge);
-      console.log("HERE", subscription.attributes.pending);
-      editsPending = Boolean(subscription.attributes.pending);
-      fetchError = null;
-      CollapsibleProducts = CollapseWrapper(EditProducts);
-      attempts = 0;
-      if (killTimer) killTimer();
-    } else {
-      attempts += 1; // force Timer reload and count attempts
+    console.log("reloaded charge:", charge);
+    let pending = false;
+    if (charge && typeof charge !== "string") {
+      if (charge.attributes.pending) {
+        pending = true;
+      } else {
+        // reload subscription
+        for (const key of Object.keys(charge)) {
+          subscription[key] = charge[key];
+        };
+        rc_subscription_ids_orig = subscription.attributes.rc_subscription_ids.map(el => { return {...el}; });
+        console.log("HERE PENDING", subscription.attributes.pending);
+        editsPending = Boolean(subscription.attributes.pending);
+        CollapsibleProducts = CollapseWrapper(EditProducts); // forces refresh of products
+        attempts = 0;
+        changed = [];
+        await getLogs();  // refresh the logs
+      };
     };
+    if (charge === "PENDING" || pending) {
+      attempts += 1; // force Timer reload and count attempts
+      pending = true;
+      editsPending = Boolean(pending);
+    };
+    fetchError = null;
+    if (killTimer) killTimer();
     loading = false;
     await this.refresh();
-    if (subscription.attributes.pending) {
+    if ( charge === "PENDING" || pending) {
       if (restartTimer) restartTimer(timerSeconds);
     };
   };
 
   /*
-   * Same copied to Cancelled
-   * Tidy display of subscriptions after skip and cancel submissions made
-   * (skip-modal, unskip-modal, cancel-modal)
-   * Possible actions are cancelled, deleted, reactivated, and updated (dates)
+   * @function getCancelledSubscription
+   * Retreive a cancelled subscription after cancelling
    */
-  const reLoad = async (ev) => {
-    const result = ev.detail.json; // success, action, subscription_id
-    const subscription_id = result.subscription_id;
+  const getCancelledSubscription = async () => {
+    let uri = `/api/recharge-cancelled-subscription`;
+    uri = `${uri}/${subscription.attributes.customer.id}/${subscription.attributes.address_id}`;
+    uri = `${uri}?ids=${ subscription.includes.map(el => el.subscription_id).join(",") }`;
+    uri = `${uri}&subscription_id=${subscription.attributes.subscription_id}`;
+    console.log(uri);
+    return Fetch(encodeURI(uri))
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          this.refresh();
+          return null;
+        };
+        return json;
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+        return null;
+      });
+  };
 
-    const event = `subscription.${result.action}`;
-    console.log(event);
+  const listingReload = async (ev) => {
+    const result = ev.detail.json; // success, action, subscription_id
+    console.log("listing reload:", result);
+
+    const subscription_id = result.subscription_id;
+    // update attributes nextChargeDate, nextDeliveryDate, scheduled_at
+    if (Object.hasOwnProperty.call(result, "scheduled_at")) {
+      // update dates from skip and unskip
+      subscription.attributes.scheduled_at = result.scheduled_at;
+      subscription.attributes.nextChargeDate = result.nextchargedate;
+      subscription.attributes.nextDeliveryDate = result.nextdeliverydate;
+      // and update the new product template
+      subscription.attributes.templateSubscription.next_charge_scheduled_at = result.scheduled_at;
+    };
+
+    // this means that the timer will start and reload
     editsPending = true;
     CollapsibleProducts = CollapseWrapper(EditProducts);
+    if (result.action) eventAction = `${result.action}`;
     await this.refresh();
-    return; // don't need to reload but need to set editsPending
 
+    return;
+
+    // if this is a cancel or delete then we need to ask customer to reload all
+    const event = `subscription.${result.action}`;
     const subdiv = document.querySelector(`#subscription-${result.subscription_id}`);
     const div = document.querySelector(`#customer`);
     animateFade(div, 0.3);
@@ -660,7 +766,7 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
   };
 
   // listing.reload dispatched by form-modal
-  this.addEventListener("listing.reload", reLoad);
+  this.addEventListener("listing.reload", listingReload);
 
   /*
    * @function AttributeRow
@@ -726,25 +832,29 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
    * Cannot pause if within timeframe of frequency
    */
   const isSkippable = () => {
+    return true;
     const now = new Date();
     const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
     const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
-    return diffDays <= subscription.attributes.days; //i.e. 7 or 14
+    return diffDays <= subscription.attributes.days * 2; //i.e. 7 or 14
   };
 
   /*
    * Determine if can be rescheduled
    * Cannot reschedule if it means going back to scheduled delivery date
    * which can happen on two week subscriptions and original order out in the future
+   * july 2023 Changed this to allow unskippable provided there is still time
+   * before the charge upcoming webhook is received
    */
   const isUnSkippable = () => {
-    console.log("last delivered", subscription.attributes.lastOrder.delivered);
     const ts = Date.parse(subscription.attributes.lastOrder.delivered);
     if (isNaN(ts)) return false; // can happen if the order is not completed
     const lastDeliveryDate = new Date(ts);
     const delivered = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
     const diffDays = Math.ceil(Math.abs(delivered - lastDeliveryDate) / (1000 * 60 * 60 * 24));
-    return diffDays > subscription.attributes.days; //i.e. 7 or 14
+    //const interval = subscription.attributes.days; //i.e. 7 or 14
+    const interval = 7; // allow fortnightly subscriptions to also reschedule by a week
+    return diffDays > interval;
   };
 
   /*
@@ -779,7 +889,7 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
     if (Boolean(subscription.attributes.lastOrder)
       && Object.hasOwnProperty.call(subscription.attributes.lastOrder, "order_number")) {
       data.push(
-        ["Last Order", `#${subscription.attributes.lastOrder.order_number}`],
+        ["Last Order", `${subscription.attributes.lastOrder.delivered} (#${subscription.attributes.lastOrder.order_number})`],
       );
     };
     return data;
@@ -836,156 +946,162 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
   for await ({ subscription, idx, allowEdits, admin } of this) { // eslint-disable-line no-unused-vars
 
     yield (
-      <Fragment>
-        <h6 class="tl mb0 w-100 fg-streamside-maroon">
-          {subscription.box.shopify_title} - {subscription.attributes.variant}
-        </h6>
-        { !subscription.attributes.hasNextBox && (
-          <div class="pv2 orange">Box items not yet loaded for <span class="b">
-              { subscription.attributes.nextDeliveryDate }
-          </span></div>
-        )}
-        <div class="flex-container-reverse w-100 pt2 relative" id={ `title-${idx}` }>
-          { admin && (
+      CancelledSubscription ? (
+        <Cancelled subscription={ CancelledSubscriptioin } idx={ 400 } />
+      ) : (
+        <Fragment>
+          <h6 class="tl mb0 w-100 fg-streamside-maroon">
+            {subscription.box.shopify_title} - {subscription.attributes.variant}
+          </h6>
+          { (!subscription.attributes.hasNextBox && !editsPending) && (
+            <div class="pv2 orange">Box items not yet loaded for <span class="b">
+                { subscription.attributes.nextDeliveryDate }
+            </span></div>
+          )}
+          <div class="flex-container-reverse w-100 pt2 relative" id={ `title-${idx}` }>
+            { admin && (
+              <div class="dt">
+                <AttributeColumn data={ idData() } />
+              </div>
+            )}
             <div class="dt">
-              <AttributeColumn data={ idData() } />
+              <div class="">
+                <AttributeColumn data={ chargeData() } />
+              </div>
+            </div>
+            <div class="dt tr nowrap">
+              <AddressColumn data={ addressData() } />
+            </div>
+          </div>
+          { subscription.messages.length === 0 && (
+            <div id={`skip_cancel-${subscription.attributes.subscription_id}`} class="cf w-100 pv2">
+              <div class="fl w-30">
+                <LogsModal logs={ subscriptionLogs }
+                    box_title={ `${subscription.box.shopify_title} - ${subscription.attributes.variant}` } />
+                <Button type="success-reverse"
+                  onclick={reloadCharge}
+                  title="Reload"
+                >
+                  <span class="b">
+                    Reload
+                  </span>
+                </Button>
+              </div>
+              <div class="fl w-70 tr">
+                { ( allowEdits && !editsPending ) && collapsed && (
+                  <Fragment>
+                    { isSkippable() === true && (
+                      <SkipChargeModal subscription={ subscription } />
+                    )}
+                    { isUnSkippable() === true && (
+                        <UnSkipChargeModal subscription={ subscription } />
+                    )}
+                    <CancelSubscriptionModal subscription={ subscription } />
+                  </Fragment>
+                )}
+                <Button type="success-reverse"
+                  onclick={toggleCollapse}
+                  title={ collapsed ? (subscription.attributes.hasNextBox && !editsPending ? "Edit products" : "Show products") : "Hide products" }
+                >
+                  <span class="b">
+                    { collapsed ? (subscription.attributes.hasNextBox && !editsPending ? "Edit products" : "Show products") : "Hide products" }
+                  </span>
+                </Button>
+              </div>
             </div>
           )}
-          <div class="dt">
-            <div class="">
-              <AttributeColumn data={ chargeData() } />
+          { !subscription.attributes.hasNextBox && !collapsed && (
+            <div class="dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+              <p class="">You will be able to edit your box products when the next box has been loaded.</p>
             </div>
-          </div>
-          <div class="dt tr nowrap">
-            <AddressColumn data={ addressData() } />
-          </div>
-        </div>
-        { subscription.messages.length === 0 && (
-          <div id={`skip_cancel-${subscription.attributes.subscription_id}`} class="cf w-100 pv2">
-            <div class="fl w-30">
-              <LogsModal logs={ subscriptionLogs }
-                  box_title={ `${subscription.box.shopify_title} - ${subscription.attributes.variant}` } />
-              <Button type="success-reverse"
-                onclick={reloadCharge}
-                title="Reload"
-              >
-                <span class="b">
-                  Reload
-                </span>
-              </Button>
-            </div>
-            <div class="fl w-70 tr">
-              { ( allowEdits && !editsPending ) && collapsed && (
-                <Fragment>
-                  { isSkippable() === true ? (
-                    <SkipChargeModal subscription={ subscription } />
+          )}
+          { (editsPending || subscription.attributes.pending) && (
+            <Fragment>
+              <div class="orange pa2 ma2 br3 ba b--orange bg-light-yellow">
+                <p class="b">
+                  { ( subscription.attributes.pending || attempts > 0) ? (
+                    `Your subscription has updates pending. `
                   ) : (
-                    isUnSkippable() === true && (
-                      <UnSkipChargeModal subscription={ subscription } />
-                    )
+                    `Your updates have been queued for saving. `
                   )}
-                  <CancelSubscriptionModal subscription={ subscription } />
-                </Fragment>
-              )}
-              <Button type="success-reverse"
-                onclick={toggleCollapse}
-                title={ collapsed ? (subscription.attributes.hasNextBox && !editsPending ? "Edit products" : "Show products") : "Hide products" }
-              >
-                <span class="b">
-                  { collapsed ? (subscription.attributes.hasNextBox && !editsPending ? "Edit products" : "Show products") : "Hide products" }
-                </span>
-              </Button>
-            </div>
-          </div>
-        )}
-        { !subscription.attributes.hasNextBox && !collapsed && (
-          <div class="dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
-            <p class="">You will be able to edit your box products when the next box has been loaded.</p>
-          </div>
-        )}
-        { (editsPending || subscription.attributes.pending) && (
-          <div class="orange pv2 ma2 br3 ba b--orange bg-light-yellow">
-            <p class="b">
-              { subscription.attributes.pending ? (
-                `Your subscription has updates pending. `
-              ) : (
-                `Your updates have been queued for saving. `
-              )}
-              This can take several minutes. Reloading subscription in 
-              <div class="di w-2">
-                <Timer seconds={ timerSeconds } callback={ reloadCharge } /> ...
-              </div>
-              { attempts ? ` ${formatCount(attempts)} attempt` : "" }
-            </p>
-          </div>
-        )}
-        { subscription.messages.length > 0 && subscription.attributes.hasNextBox && !subscription.attributes.pending && (
-            <div class="dark-blue pv2 ma2 br3 ba b--dark-blue bg-washed-blue">
-                <Fragment>
-                  <ul class="">
-                    { subscription.messages.map(el => <li>{el}</li>) }
-                  </ul>
-                  { subscription.attributes.nowAvailableAsAddOns.length > 0 && (
-                    <p class="pl5">New available this week: { subscription.attributes.nowAvailableAsAddOns.join(", ") }</p>
-                  )}
-                  <div class="tr mv2 mr3">
-                    <Button type="primary-reverse"
-                      title="Continue"
-                      onclick={() => saveChanges("updates")}>
-                      <span class="b">
-                        Continue
-                      </span>
-                    </Button>
+                  This can take several minutes. Reloading subscription in 
+                  <div class="di w-2">
+                    <Timer seconds={ timerSeconds } callback={ reloadCharge } /> ...
                   </div>
-                </Fragment>
-            </div>
-        )}
-        { loading && <div id={ `loader-${idx}` }><BarLoader /></div> }
-        { fetchError && <Error msg={fetchError} /> }
-        <div id={`saveBar-${subscription.attributes.subscription_id}`} class="save_bar white mv1 br2">
-          <div class="flex-container w-100 pa2">
-            <div class="w-100 pl4" style="line-height: 2em">
-              <span class="bold v-mid">
-                Unsaved changes
-              </span>
-            </div>
-            <div class="w-100 tr">
-              <div class="dib pr2 nowrap">
-                <Button
-                  onclick={ cancelEdits }
-                  type="transparent/dark">
-                  Cancel
-                </Button>
+                  { attempts ? ` ${formatCount(attempts)} attempt` : "" }
+                </p>
               </div>
-              <div class="dib pr2" id="saveEdits">
-                <Button
-                  onclick={ saveEdits }
-                  hover="dim"
-                  border="navy"
-                  type="primary">
-                  Save
-                </Button>
+              <ProgressLoader />
+            </Fragment>
+          )}
+          { subscription.messages.length > 0 && subscription.attributes.hasNextBox && !editsPending && (
+              <div class="dark-blue pv2 ma2 br3 ba b--dark-blue bg-washed-blue">
+                  <Fragment>
+                    <ul class="">
+                      { subscription.messages.map(el => <li>{el}</li>) }
+                    </ul>
+                    { subscription.attributes.nowAvailableAsAddOns.length > 0 && (
+                      <p class="pl5">New available this week: { subscription.attributes.nowAvailableAsAddOns.join(", ") }</p>
+                    )}
+                    <div class="tr mv2 mr3">
+                      <Button type="primary-reverse"
+                        title="Continue"
+                        onclick={() => saveChanges("updates")}>
+                        <span class="b">
+                          Continue
+                        </span>
+                      </Button>
+                    </div>
+                  </Fragment>
+              </div>
+          )}
+          { loading && <div id={ `loader-${idx}` }><BarLoader /></div> }
+          { fetchError && <Error msg={fetchError} /> }
+          <div id={`saveBar-${subscription.attributes.subscription_id}`} class="save_bar white mv1 br2">
+            <div class="flex-container w-100 pa2">
+              <div class="w-100 pl4" style="line-height: 2em">
+                <span class="bold v-mid">
+                  Unsaved changes
+                </span>
+              </div>
+              <div class="w-100 tr">
+                <div class="dib pr2 nowrap">
+                  <Button
+                    onclick={ cancelEdits }
+                    type="transparent/dark">
+                    Cancel
+                  </Button>
+                </div>
+                <div class="dib pr2" id="saveEdits">
+                  <Button
+                    onclick={ saveEdits }
+                    hover="dim"
+                    border="navy"
+                    type="primary">
+                    Save
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div class="mb2 bb b--black-80">
-          { ( allowEdits ) && (
-            <div id={ `products-${idx}` }>
-              <CollapsibleProducts
-                collapsed={ collapsed }
-                properties={ subscription.properties }
-                box={ subscription.box }
-                images={ subscription.attributes.images }
-                nextChargeDate={ subscription.attributes.nextChargeDate }
-                isEditable={ subscription.attributes.hasNextBox && !editsPending }
-                key={ idx }
-                id={ `subscription-${idx}` }
-              />
-            </div>
-          )}
-        </div>
-      </Fragment>
+          <div class="mb2 bb b--black-80">
+            { ( allowEdits ) && (
+              <div id={ `products-${idx}` }>
+                <CollapsibleProducts
+                  collapsed={ collapsed }
+                  properties={ subscription.properties }
+                  box={ subscription.box }
+                  images={ subscription.attributes.images }
+                  nextChargeDate={ subscription.attributes.nextChargeDate }
+                  isEditable={ subscription.attributes.hasNextBox && !editsPending }
+                  key={ idx }
+                  id={ `subscription-${idx}` }
+                />
+              </div>
+            )}
+          </div>
+        </Fragment>
+      )
     )
   };
 };

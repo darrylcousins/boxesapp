@@ -28,6 +28,13 @@ export const capWords = (arr) => {
   return arr.map(el => el.charAt(0).toUpperCase() + el.substring(1).toLowerCase());
 };
 
+/* 
+ * compare 2 arrays
+ */
+export const compareArrays = (a, b) => {
+  return (a.length === b.length && a.every((element, index) => element === b[index]));
+};
+
 /*
  * Sort an object by keys
  * i.e. {'b': b, 'a': a} => {"a": a, "b": b}

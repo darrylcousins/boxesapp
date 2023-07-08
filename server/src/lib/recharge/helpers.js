@@ -178,7 +178,7 @@ export const doRechargeQuery = async ({method, path, limit, query, body, title, 
       let json = {};
 
       if (http_method === "DELETE") {
-        json = response;
+        json = {};
         winstonLogger.warn(`Recharge delete`, { meta: json });
       } else {
         json = await response.json();
@@ -196,11 +196,11 @@ export const doRechargeQuery = async ({method, path, limit, query, body, title, 
           };
           winstonLogger.warn(`Recharge fetch error`, { meta });
         };
-        json.status = response.status;
-        json.statusText = response.statusText;
-        json.title = title;
-        json.method = http_method;
       };
+      json.status = response.status;
+      json.statusText = response.statusText;
+      json.title = title;
+      json.method = http_method;
 
       if (parseInt(response.status) > 299) {
         throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}"`);
@@ -218,10 +218,11 @@ const delay = (t) => {
  * @function getSubscription
  * @return { subscription } 
  */
-export const getSubscription = async (id) => {
+export const getSubscription = async (id, title) => {
   const { subscription } = await makeRechargeQuery({
     method: "GET",
     path: `subscriptions/${id}`,
+    title,
   });
   return subscription;
 };
@@ -314,11 +315,8 @@ export const updateSubscriptions = async ({ updates, io, session_id }) => {
     if (i === updates.length - 1) {
       options.finish = true;
     };
-    const result = await makeRechargeQuery(options);
+    await makeRechargeQuery(options);
 
-    if (options.method === "DELETE") {
-      console.log("DELETE", result);
-    };
   };
   return;
 };
@@ -335,7 +333,8 @@ export const getLastOrder = async ({ customer_id, address_id, subscription_id, p
       ["purchase_item_id", subscription_id ],
       ["status", "success" ],
       ["limit", 1 ],
-    ]
+    ],
+    title: "Get last order",
   });
   const charge = (charges.length) ? charges[0] : null;
   if (charge) {

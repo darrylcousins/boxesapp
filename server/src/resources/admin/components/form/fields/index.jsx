@@ -68,7 +68,7 @@ function *Field({ index, label, hideLabel, options, data, formElements, ...props
   const onBlur = (ev) => {
     const el = ev.target;
     if (!el.checkValidity()) {
-      console.log(el);
+      //console.log(el);
       if (el.nextSibling) {
         el.nextSibling.innerHTML = el.validationMessage;
         el.nextSibling.classList.remove("hidden");

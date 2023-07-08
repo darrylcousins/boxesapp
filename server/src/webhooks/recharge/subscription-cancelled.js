@@ -4,9 +4,9 @@
 import { sortObjectByKeys } from "../../lib/helpers.js";
 import { getMetaForSubscription, writeFileForSubscription } from "./helpers.js";
 
-export default async function subscriptionUpdated(topic, shop, body) {
+export default async function subscriptionCancelled(topic, shop, body) {
 
-  const mytopic = "SUBSCRIPTION_UPDATED";
+  const mytopic = "SUBSCRIPTION_CANCELLED";
   if (topic !== mytopic) {
     _logger.notice(`Recharge webhook ${topic} received but expected ${mytopic}`, { meta: { recharge: {} } });
     return;
@@ -28,12 +28,14 @@ export default async function subscriptionUpdated(topic, shop, body) {
   try {
     const shopify_product_id = parseInt(subscription.external_product_id.ecommerce);
     const subscription_id = parseInt(subscription.id);
-    
+    // it appears that sometimes, but not always, the deleted subscription has next_charge_scheduled_at = null
+    // so the query fails, so I've removed the scheduled_at row of query and added quantity: 0
+    // I've got good confidence that this will still be robust enough
     const query = {
       subscription_id: parseInt(properties.box_subscription_id),
       customer_id: subscription.customer_id,
       address_id: subscription.address_id,
-      scheduled_at: subscription.next_charge_scheduled_at,
+      //scheduled_at: subscription.next_charge_scheduled_at,
       rc_subscription_ids:
         { $elemMatch: {
           $and: [
@@ -43,7 +45,7 @@ export default async function subscriptionUpdated(topic, shop, body) {
         },
     };
     const update = { $set: {
-      "rc_subscription_ids.$[i].updated": true
+      "rc_subscription_ids.$[i].updated": true,
     }};
     const options = {
       arrayFilters: [
@@ -54,15 +56,15 @@ export default async function subscriptionUpdated(topic, shop, body) {
       ]
     };
     const res =  await _mongodb.collection("updates_pending").updateOne(query, update, options);
-    meta.recharge.updates_pending = (res.matchedCount > 0) ? "UPDATED ON UPDATED" : "NOT FOUND";
+    meta.recharge.updates_pending = (res.matchedCount > 0) ? "UPDATED ON REMOVE" : "NOT FOUND";
+    meta.recharge = sortObjectByKeys(meta.recharge);
+    _logger.notice(`Subscription cancelled.`, { meta });
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 
-  meta.recharge = sortObjectByKeys(meta.recharge);
-  _logger.notice(`Subscription updated.`, { meta });
-
   return;
-
 };
+
+

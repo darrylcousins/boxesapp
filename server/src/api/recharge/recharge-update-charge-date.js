@@ -22,17 +22,31 @@ import fs from "fs";
  */
 export default async (req, res, next) => {
 
+  let io;
+  let sockets;
+  const { session_id } = req.query;
+
+  if (typeof session_id !== "undefined") {
+    sockets = req.app.get("sockets");
+    console.log("SOCKETS", sockets, session_id);
+    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
+      const socket_id = sockets[session_id];
+      io = req.app.get("io").to(socket_id);
+      io.emit("uploadProgress", "Received request, processing data...");
+    };
+  };
+
   const { nextchargedate, nextdeliverydate, includes: includesStr, attributes: attributesStr, properties: propertiesStr } = req.body;
 
-  // deconstruct form data
-  const attributes = JSON.parse(attributesStr);
   const includes = JSON.parse(includesStr);
+  const attributes = JSON.parse(attributesStr);
   const properties = JSON.parse(propertiesStr);
 
-  const { charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
+  const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
 
-  // add updated flag to rec_subscription_ids
+  // add updated flag to rc_subscription_ids
   const update_shopify_ids = includes.map(el => el.shopify_product_id);
+
   let updated;
   const subscription_ids = rc_subscription_ids.map(el => {
     updated = update_shopify_ids.indexOf(el.shopify_product_id) === -1;
@@ -59,6 +73,8 @@ export default async (req, res, next) => {
     subscription_id,
     scheduled_at: next_scheduled_at, // this will match the updated subscriptions and charges
     rc_subscription_ids: subscription_ids,
+    updated_charge_date: false,
+    title,
     timestamp: new Date(),
   };
   delete properties.Likes;
@@ -82,20 +98,6 @@ export default async (req, res, next) => {
   });
   // ensure the box subscription is the first to create a new charge
   for(var x in updates) updates[x].properties.some(el => el.name === "Including") ? updates.unshift(updates.splice(x,1)[0]) : 0;
-
-  let io;
-  let sockets;
-  const { session_id } = req.query;
-
-  if (typeof session_id !== "undefined") {
-    sockets = req.app.get("sockets");
-    console.log("SOCKETS", sockets, session_id);
-    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
-      const socket_id = sockets[session_id];
-      io = req.app.get("io").to(socket_id);
-      io.emit("uploadProgress", "Received request, processing data...");
-    };
-  };
 
   const topicLower = "charge/update-charge-date";
   const meta = {
@@ -121,6 +123,9 @@ export default async (req, res, next) => {
 
   try {
 
+    // necessarily has 2 updates to the subscription, must somehow know how
+    // many when I get the webhook
+
     for (const update of updates) {
       const opts = {
         id: update.id,
@@ -140,7 +145,8 @@ export default async (req, res, next) => {
         io,
         session_id,
       };
-      await updateChargeDate(opts); // argh, this creates a new charge!
+      // this will update an existing charge with the matching scheduled_at or create a new charge
+      await updateChargeDate(opts);
     };
 
     const mail = {
@@ -158,6 +164,9 @@ export default async (req, res, next) => {
       success: true,
       action: "updated",
       subscription_id: attributes.subscription_id,
+      scheduled_at: next_scheduled_at,
+      nextchargedate,
+      nextdeliverydate,
     });
 
   } catch(err) {

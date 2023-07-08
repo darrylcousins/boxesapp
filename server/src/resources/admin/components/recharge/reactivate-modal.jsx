@@ -45,7 +45,7 @@ const options = {
   src: "/api/recharge-reactivate-subscription",
   ShowLink,
   saveMsg: "Reactivating box subscription ... please be patient, it will take some seconds.",
-  successMsg: "Successfully reactivated box subscription, reloading page.",
+  successMsg: "Reactivation has been queued, reloading ...",
 };
 
 /**
@@ -81,7 +81,7 @@ async function* ReactivateSubscription(props) {
       type: "hidden",
       datatype: "string",
     },
-    included: {
+    includes: {
       type: "hidden",
       datatype: "string",
     },
@@ -122,7 +122,7 @@ async function* ReactivateSubscription(props) {
     const getInitialData = () => {
       return {
         box: JSON.stringify(subscription.box),
-        included: JSON.stringify(subscription.included),
+        includes: JSON.stringify(subscription.included),
         nextchargedate: nextCharge.toDateString(),
         nextdeliverydate: nextDelivery.toDateString(),
       };
@@ -133,7 +133,7 @@ async function* ReactivateSubscription(props) {
      * These values can be arbitary provided that match the template string
      */
     const toastTemplate = {
-      template: "${title} - ${variant} subscription reactivated successfully.",
+      template: "${title} - ${variant} subscription has been queued for reactivation.",
       title: subscription.box.product_title,
       variant: subscription.box.variant_title,
     };

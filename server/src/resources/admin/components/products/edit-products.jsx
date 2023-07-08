@@ -132,10 +132,14 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     let target = ev.target;
     if (target.tagName.toLowerCase() === "path") target = target.parentNode.parentNode;
     if (target.tagName.toLowerCase() === "svg") target = target.parentNode;
-    if ((target && target.tagName.toLowerCase() === "button") || (ev.key && ev.key === "Escape")) {
-      showSelectModal = false;
-      clearSelectModalOptions();
-      this.refresh();
+    try {
+      if ((target && target.tagName.toLowerCase() === "button") || (ev.key && ev.key === "Escape")) {
+        showSelectModal = false;
+        clearSelectModalOptions();
+        this.refresh();
+      };
+    } catch(err) {
+      console.error(err.message);
     };
   };
 

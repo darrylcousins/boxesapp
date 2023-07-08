@@ -38,7 +38,8 @@ export default async (req, res, next) => {
   try {
     const result = await makeRechargeQuery({
       path,
-      query
+      query,
+      title: "Recharge Customer"
     });
     if (result.customer) {
       res.status(200).json(result.customer);

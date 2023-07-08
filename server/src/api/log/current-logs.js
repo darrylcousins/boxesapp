@@ -75,6 +75,7 @@ export default async (req, res) => {
     const counts = result.reduce(
       (acc, curr) => Object.assign(acc, { [`${curr._id}`]: curr.count }),
       {});
+    console.log(counts);
 
     query["$and"] = [
       {timestamp: { "$gt": yesterday }},

@@ -36,7 +36,7 @@ export default async function chargeUpcoming(topic, shop, body) {
 
   // First up we may assume that multiple boxes are present to find them we can
   // group the line_items by a common box_subscription_id
-  const grouped = reconcileGetGrouped({ charge });
+  const grouped = await reconcileGetGrouped({ charge });
 
   let result = [];
   try {

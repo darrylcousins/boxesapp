@@ -8,6 +8,8 @@ import { reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.j
 import fs from "fs";
 
 /*
+ * Retrieve all cancelled subscriptions for customer
+ *
  * @function recharge/recharge-customer-charges.js
  * @param (Http request object) req
  * @param (Http response object) res
@@ -31,6 +33,7 @@ export default async (req, res, next) => {
     const { subscriptions } = await makeRechargeQuery({
       path: `subscriptions`,
       query,
+      title: "Cancelled subscriptions",
     });
 
     if (!subscriptions || !subscriptions.length) {
@@ -39,30 +42,29 @@ export default async (req, res, next) => {
       return;
     };
 
+    let address_id;
     for (const el of subscriptions) {
-      el.purchase_item_id = el.id // needed for grouping
+      el.purchase_item_id = el.id; // needed for grouping
+      address_id = el.address_id; // doesn't really matter here but is tidier
     };
 
     const charge = {};
     charge.line_items = subscriptions;
+    charge.customer = { id: parseInt(req.params.customer_id) };
+    charge.address_id = address_id;
+    charge.scheduled_at = null;
 
-    const grouped = reconcileGetGrouped({ charge });
+    const grouped = await reconcileGetGrouped({ charge });
 
     const result = [];
 
     for (const [subscription_id, group] of Object.entries(grouped)) {
+      // removing charge object which duplicates included
       result.push({
         subscription_id,
         box: group.box,
         included: group.included,
       });
-      /*
-      fs.writeFileSync(`recharge.${subscription_id}.json`, JSON.stringify({
-        subscription_id,
-        box: group.box,
-        included: group.included,
-      }, null, 2));
-      */
     };
 
     res.status(200).json(result);

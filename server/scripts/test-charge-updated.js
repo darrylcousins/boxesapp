@@ -12,7 +12,8 @@ _logger.notice = (e, { meta }) => console.log(e, JSON.stringify(meta, null, 2));
 process.env.NODE_ENV = "test";
 
 import chargeUpdated from "../src/webhooks/recharge/charge-updated.js";
-import charge from "../json/recharge.charge.updated.json" assert { type: "json" };
+//import charge from "../json/recharge.charge.updated.json" assert { type: "json" };
+import charge from "../json/recharge.charge.test.json" assert { type: "json" };
 
 const run = async () => {
   global._mongodb = await getMongoConnection();

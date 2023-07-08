@@ -46,7 +46,8 @@ const options = {
   src: "/api/recharge-cancel-subscription",
   ShowLink,
   saveMsg: "Cancelling box subscription ... please be patient, it will take some seconds.",
-  successMsg: "Successfully cancelled box subscription, reloading page.",
+  successMsg: "Cancellation has been queued, reloading ...",
+  useSession: false, // set up socket.io to get feedback
 };
 
 /**
@@ -78,7 +79,11 @@ async function* CancelSubscription(props) {
       type: "hidden",
       datatype: "string",
     },
-    attributes: {
+    properties: {
+      type: "hidden",
+      datatype: "string",
+    },
+    updates: {
       type: "hidden",
       datatype: "string",
     },
@@ -104,7 +109,8 @@ async function* CancelSubscription(props) {
     const getInitialData = () => ({
       subscription_id: `${subscription.attributes.subscription_id}`,
       includes: JSON.stringify(subscription.includes),
-      attributes: JSON.stringify(subscription.attributes),
+      updates: JSON.stringify(subscription.updates),
+      properties: JSON.stringify(subscription.properties),
       cancellation_reason: "",
     });
 
@@ -113,7 +119,7 @@ async function* CancelSubscription(props) {
      * These values can be arbitary provided that match the template string
      */
     const toastTemplate = {
-      template: "${title} - ${variant} subscription cancelled successfully.",
+      template: "${title} - ${variant} subscription has been queued for cancellation.",
       title: subscription.box.shopify_title,
       variant: subscription.attributes.variant,
     };

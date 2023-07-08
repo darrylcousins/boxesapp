@@ -14,8 +14,22 @@ import { sortObjectByKeys } from "../../lib/helpers.js";
  */
 export default async (req, res, next) => {
 
+  let io;
+  let sockets;
+  const { session_id } = req.query;
+
+  if (typeof session_id !== "undefined") {
+    sockets = req.app.get("sockets");
+    console.log("SOCKETS", sockets, session_id);
+    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
+      const socket_id = sockets[session_id];
+      io = req.app.get("io").to(socket_id);
+      io.emit("uploadProgress", "Received request, processing data...");
+    };
+  };
+
   const { updates, attributes, properties } = req.body;
-  const { charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
+  const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
 
   // add updated flag to rec_subscription_ids
   const update_shopify_ids = updates.map(el => el.shopify_product_id);
@@ -34,6 +48,7 @@ export default async (req, res, next) => {
     subscription_id,
     scheduled_at,
     rc_subscription_ids: subscription_ids,
+    title,
     timestamp: new Date(),
   };
   delete properties.Likes;
@@ -46,20 +61,6 @@ export default async (req, res, next) => {
     { "$set" : doc },
     { "upsert": true }
   );
-
-  let io;
-  let sockets;
-  const { session_id } = req.query;
-
-  if (typeof session_id !== "undefined") {
-    sockets = req.app.get("sockets");
-    console.log("SOCKETS", sockets, session_id);
-    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
-      const socket_id = sockets[session_id];
-      io = req.app.get("io").to(socket_id);
-      io.emit("uploadProgress", "Received request, processing data...");
-    };
-  };
 
   const topicLower = "charge/update";
   const meta = {
@@ -85,7 +86,7 @@ export default async (req, res, next) => {
   try {
 
     // using sockets
-    updateSubscriptions({ updates, io, session_id });
+    await updateSubscriptions({ updates, io, session_id });
     const response = { message: "Updates scheduled" };
 
     // only return items that have been added, i.e. a POST

@@ -6,7 +6,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement } from "@b9g/crank";
-import Subscriptions from "../recharge/subscriptions";
+import Customers from "../recharge/customers";
 
 /**
  * Route to recharge, linked from navigation
@@ -17,6 +17,6 @@ import Subscriptions from "../recharge/subscriptions";
  * import {renderer} from '@bikeshaving/crank/cjs/dom';
  * renderer.render(<Recharge />, document.querySelector('#app'))
  */
-export default () => <Subscriptions />;
+export default () => <Customers />;
 
 

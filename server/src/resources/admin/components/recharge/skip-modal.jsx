@@ -76,7 +76,7 @@ async function* SkipCharge(props) {
   */
   const interval = 7;
   const multiplier = 1;
-  const count = 3;
+  const count = 2;
   let delivered = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
   let charge = new Date(Date.parse(subscription.attributes.nextChargeDate));
   for (let i=0; i<count; i++) {
@@ -171,6 +171,23 @@ async function* SkipCharge(props) {
     };
   };
 
+  /**
+   * Local save to perform actions before calling form-modal doSave
+   *
+   * @function thisSave
+   * @returns {null}
+   */
+  const thisSave = () => {
+    console.log("YES HERE");
+    this.dispatchEvent(
+      new CustomEvent("customer.disableevents", {
+        bubbles: true,
+        detail: { subscription_id: subscription.attributes.subscription_id },
+      })
+    );
+    doSave();
+  };
+
   for await (const _ of this) { // eslint-disable-line no-unused-vars
 
     /*
@@ -236,7 +253,7 @@ async function* SkipCharge(props) {
           />
         </div>
         <div class="cf tr">
-          <Button type="primary" onclick={doSave}>
+          <Button type="primary" onclick={thisSave}>
             Yes, Pause Subscription
           </Button>
           <Button type="secondary" onclick={closeModal}>

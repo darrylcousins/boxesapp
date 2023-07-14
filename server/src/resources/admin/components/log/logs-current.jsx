@@ -50,7 +50,7 @@ function* CurrentLogs() {
    * @member possibleObjects
    * @type {array}
    */
-  let possibleObjects = ["order", "product", "recharge", "shopify"];
+  let possibleObjects = ["order", "product", "recharge", "shopify", "mail"];
   /**
    * Display loading indicator while fetching data
    *
@@ -176,6 +176,7 @@ function* CurrentLogs() {
           this.refresh();
         } else {
           loading = false;
+          fetchError = false;
           console.log(json);
           previousPage = json.previous;
           nextPage = json.next;

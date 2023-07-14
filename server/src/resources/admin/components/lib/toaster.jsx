@@ -89,5 +89,6 @@ export default async (ev) => {
       content.removeChild(notice);
     });
   });
+  ev.stopPropagation(); // prevent other listeners catching the toast
 };
 

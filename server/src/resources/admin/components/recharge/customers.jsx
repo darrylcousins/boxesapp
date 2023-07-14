@@ -2,8 +2,8 @@
  * Creates element to render recharge subsciptions
  *
  * @module app/recharge/subscriptions
- * @requires module:app/recharge/subscriptions~Subscriptions
- * @exports Subscriptions
+ * @requires module:app/recharge/subscriptions~Customers
+ * @exports Customers
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
@@ -20,7 +20,7 @@ import Customer from "./customer";
  * @generator
  * @yields {Element} - a html table display of the boxes
  */
-async function* Subscriptions() {
+async function* Customers() {
 
   /**
    * Links to admin interfaces
@@ -271,15 +271,15 @@ async function* Subscriptions() {
     yield (
       <div class="w-100 pa2 center" id="subscriptions">
         <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
-          Recharge Subscriptions {""}
+          Recharge Customers {""}
           { fetchCustomer && (
             <span style="font-size: smaller;" class="ml4">
               {fetchCustomer.first_name} {fetchCustomer.last_name} &lt;{fetchCustomer.email}&gt;
             </span>
           )}
         </h4>
-        { loading && <BarLoader /> }
         { fetchError && <Error msg={fetchError} /> }
+        { loading && <BarLoader /> }
         { fetchCustomer ? (
             <Customer customer={ fetchCustomer } admin={ true } /> 
         ) : (
@@ -403,4 +403,4 @@ async function* Subscriptions() {
 
 //https://southbridge-dev-sp.admin.rechargeapps.com/merchant/customers/
 //https://....myshopify.com/customes
-export default Subscriptions;
+export default Customers;

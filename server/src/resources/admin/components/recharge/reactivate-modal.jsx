@@ -95,17 +95,50 @@ async function* ReactivateSubscription(props) {
     },
   };
 
+  /**
+   * Local save to perform actions before calling form-modal doSave
+   *
+   * @function thisSave
+   * @returns {null}
+   */
+  const thisSave = () => {
+    this.dispatchEvent(
+      new CustomEvent("customer.disableevents", {
+        bubbles: true,
+        detail: { subscription_id: subscription.box.id },
+      })
+    );
+    doSave();
+  };
+
+  /**
+   * Initialize this
+   *
+   * @function init
+   * @returns {null}
+   */
   const init = () => {
-    // need to figure out some dates
+    // need to figure out some dates and take into account the lastOrder.delivered date
     const delivered = new Date(Date.parse(subscription.box.properties.find(el => el.name === "Delivery Date").value));
     // get the next available day for the order (later than today)
     const now = new Date();
     now.setDate(now.getDate() + 1);
     const current = findNextWeekday(subscription.box.order_day_of_week + 1, now);
-
     nextCharge = new Date(current.getTime());
-
+    nextCharge.setHours(0,0,0,0);
+    // this then is the first available delivery later than now
     nextDelivery = findNextWeekday(delivered.getDay(), current);
+    nextDelivery.setHours(0,0,0,0);
+    // however the lastOrder may already have used that date (long shot but possible)
+    // so ensure the reactivation date is later than last order
+    const ts = Date.parse(subscription.lastOrder.delivered); // could be null ie lastOrder = {}
+    if (!isNaN(ts)) { // can happen if the order is not completed or found by the api
+      const lastOrderDate = new Date(ts);
+      do {
+        nextDelivery.setDate(nextDelivery.getDate() + 7);
+        nextCharge.setDate(nextCharge.getDate() + 7);
+      } while (lastOrderDate >= nextDelivery);
+    };
   };
 
   init();
@@ -151,7 +184,7 @@ async function* ReactivateSubscription(props) {
             Subscription ID:
           </div>
           <div class="dtc pv1">
-            <span>{ subscription.subscription_id }</span>
+            <span>{ subscription.box.id }</span>
           </div>
         </div>
         <div class="cf">
@@ -176,7 +209,7 @@ async function* ReactivateSubscription(props) {
           meta={toastTemplate}
         />
         <div class="tr">
-          <Button type="primary" onclick={doSave}>
+          <Button type="primary" onclick={thisSave}>
             Yes, Reactivate Subscription
           </Button>
           <Button type="secondary" onclick={closeModal}>

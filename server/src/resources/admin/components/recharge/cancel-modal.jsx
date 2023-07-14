@@ -83,6 +83,10 @@ async function* CancelSubscription(props) {
       type: "hidden",
       datatype: "string",
     },
+    attributes: {
+      type: "hidden",
+      datatype: "string",
+    },
     updates: {
       type: "hidden",
       datatype: "string",
@@ -95,6 +99,22 @@ async function* CancelSubscription(props) {
       valid: false,
       size: 100,
     },
+  };
+
+  /**
+   * Local save to perform actions before calling form-modal doSave
+   *
+   * @function thisSave
+   * @returns {null}
+   */
+  const thisSave = () => {
+    this.dispatchEvent(
+      new CustomEvent("customer.disableevents", {
+        bubbles: true,
+        detail: { subscription_id: subscription.attributes.subscription_id },
+      })
+    );
+    doSave();
   };
 
   for await (const _ of this) { // eslint-disable-line no-unused-vars
@@ -111,6 +131,7 @@ async function* CancelSubscription(props) {
       includes: JSON.stringify(subscription.includes),
       updates: JSON.stringify(subscription.updates),
       properties: JSON.stringify(subscription.properties),
+      attributes: JSON.stringify(subscription.attributes),
       cancellation_reason: "",
     });
 
@@ -138,7 +159,7 @@ async function* CancelSubscription(props) {
           meta={toastTemplate}
         />
         <div class="tr">
-          <Button type="primary" onclick={doSave}>
+          <Button type="primary" onclick={thisSave}>
             Yes, Remove Subscription
           </Button>
           <Button type="secondary" onclick={closeModal}>

@@ -67,12 +67,6 @@ async function *Customer({ customer, admin }) {
    * @member {object} charge groups for the customer
    */
   let originalChargeGroups = [];
-  /**
-   * Disallow edits to groups in this list
-   *
-   * @member {object} charge groups for the customer
-   */
-  let noEdits = [];
 
   /**
    * Return to customer search
@@ -186,10 +180,141 @@ async function *Customer({ customer, admin }) {
       });
   };
 
+
+  /**
+   * Update charge groups and remove the deleted subscription
+   * @function removeSubscription
+   * @listen subscription.deleted event
+   */
+  const removeSubscription = (ev) => {
+    console.log(ev.detail);
+    const { subscription, subscription_id } = ev.detail
+    const deleted = cancelledGroups.find(el => el.box.id === subscription_id);
+    const idx = cancelledGroups.indexOf(deleted);
+    cancelledGroups.splice(idx, 1);
+    let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
+    for (const id of subscription_ids) {
+      const div = document.querySelector(`#subscription-${id}`);
+      div.classList.remove("disableevents");
+    };
+    const div = document.querySelector(`#customer`);
+    animateFadeForAction(div, async () => await this.refresh(), 800);
+  };
+
+  this.addEventListener("subscription.deleted", removeSubscription);
+
+  /**
+   * Move the reactivated subscription to chargeGroups
+   * @function reactivateSubscription
+   * @listen subscription.deleted event
+   */
+  const reactivateSubscription = async (ev) => {
+    console.log(ev.detail);
+    const { subscription, subscription_id } = ev.detail
+    const cancelled = cancelledGroups.find(el => el.box.id === subscription_id);
+    const idx = cancelledGroups.indexOf(cancelled);
+    cancelledGroups.splice(idx, 1);
+    chargeGroups.push(subscription);
+    originalChargeGroups = cloneDeep(chargeGroups); // save for cancel event
+    let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
+    for (const id of subscription_ids) {
+      const div = document.querySelector(`#subscription-${id}`);
+      div.classList.remove("disableevents");
+    };
+    const div = document.querySelector(`#customer`);
+    animateFadeForAction(div, async () => await this.refresh(), 800);
+  };
+
+  this.addEventListener("subscription.reactivated", reactivateSubscription);
+
+  /**
+   * Move the cancelled subscription to cancelledGroups
+   * @function cancelSubscription
+   * @listen subscription.cancelled event
+   */
+  const cancelSubscription = async (ev) => {
+    console.log(ev.detail);
+    const { subscription, subscription_id } = ev.detail
+    const charge = chargeGroups.find(el => el.attributes.subscription_id === subscription_id);
+    const idx = chargeGroups.indexOf(charge);
+    chargeGroups.splice(idx, 1);
+    originalChargeGroups = cloneDeep(chargeGroups); // save for cancel event
+    cancelledGroups.push(subscription);
+    let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
+    for (const id of subscription_ids) {
+      const div = document.querySelector(`#subscription-${id}`);
+      div.classList.remove("disableevents");
+    };
+    const div = document.querySelector(`#customer`);
+    animateFadeForAction(div, async () => await this.refresh(), 800);
+  };
+
+  this.addEventListener("subscription.cancelled", cancelSubscription);
+
+  /**
+   * Disable all events on subscription objects not including the current
+   * @function disableEvents
+   * @listen subscription.editing event
+   */
+  const disableEvents = async (ev) => {
+    console.log(ev.detail);
+    const { subscription_id } = ev.detail;
+    let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
+    subscription_ids = subscription_ids.filter(el => el !== subscription_id);
+    console.log(subscription_ids);
+    for (const id of subscription_ids) {
+      const div = document.querySelector(`#subscription-${id}`);
+      div.classList.add("disableevents");
+    };
+  };
+
+  this.addEventListener("customer.disableevents", disableEvents);
+
+  /**
+   * Enable all events on subscription objects not including the current
+   * @function enableEvents
+   * @listen subscription.editing event
+   */
+  const enableEvents = async (ev) => {
+    console.log(ev.detail);
+    const { subscription_id } = ev.detail;
+    let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
+    subscription_ids = subscription_ids.filter(el => el !== subscription_id);
+    console.log(subscription_ids);
+    for (const id of subscription_ids) {
+      const div = document.querySelector(`#subscription-${id}`);
+      div.classList.remove("disableevents");
+    };
+  };
+
+  this.addEventListener("customer.enableevents", enableEvents);
+
+  /**
+   * For reloading and cancelling changes
+   * Simple reverts all changes.
+   *
+   * @listens customer.reload From Subscription "cancel" changes button
+   */
+  const reloadAll = (ev) => {
+    loading = true;
+    chargeGroups = [];
+    this.refresh();
+
+    setTimeout(() => {
+      loading = false;
+      chargeGroups = cloneDeep(originalChargeGroups);
+      this.refresh();
+      }, 
+      500);
+  };
+
+  this.addEventListener("customer.reload", reloadAll);
+
   /*
    * @function getCharge
    * Fetch the charge as a "subscription" object
    */
+  /*
   const getCharge = async (charge_id) => {
     const uri = `/api/recharge-customer-charge/${charge_id}`;
     return Fetch(encodeURI(uri))
@@ -205,6 +330,7 @@ async function *Customer({ customer, admin }) {
         fetchError = err;
       });
   };
+  */
 
   /**
    * For reloading a specific charge
@@ -213,6 +339,7 @@ async function *Customer({ customer, admin }) {
    *
    * The subscription itself handles this, but we should update the chargeGroups!
    */
+  /*
   const reloadCharge = async (ev) => {
 
     loading = true;
@@ -232,138 +359,7 @@ async function *Customer({ customer, admin }) {
     this.refresh();
   };
 
-  /**
-   * For reloading cancelled changes
-   *
-   * @listens customer.reload From Subscription
-   */
   this.addEventListener("charge.reload", reloadCharge);
-
-  /**
-   * For reloading and cancelling changes
-   * Simple reverts all changes.
-   *
-   * @listens customer.revert From Subscription
-   */
-  const reloadAll = (ev) => {
-
-    loading = true;
-    chargeGroups = [];
-    this.refresh();
-
-    setTimeout(() => {
-      loading = false;
-      chargeGroups = cloneDeep(originalChargeGroups);
-      this.refresh();
-      }, 
-      1000);
-  };
-
-  /**
-   * For reloading cancelled changes
-   *
-   * @listens customer.revert From Subscription
-   */
-  this.addEventListener("customer.reload", reloadAll);
-
-  /**
-   * Update charge groups and remove the deleted subscription
-   * We need to do it this way because of time delay from recharge api
-   * @function removeSubscription
-   * @listen subscription.deleted event
-   */
-  const removeSubscription = (ev) => {
-    const result = ev.detail.result;
-    const subscription = cancelledGroups.find(el => el.subscription_id === result.subscription_id);
-    const idx = cancelledGroups.indexOf(subscription);
-    cancelledGroups.splice(idx, 1);
-    const div = document.querySelector(`#customer`);
-    animateFadeForAction(div, () => this.refresh(), 800);
-  };
-
-  this.addEventListener("subscription.deleted", removeSubscription);
-
-  /**
-   * Update charge groups and remove the deleted subscription
-   * We need to do it this way because of time delay from recharge api
-   * @function removeSubscription
-   * @listen subscription.deleted event
-   */
-  const reactivateSubscription = async (ev) => {
-    const result = ev.detail.result;
-    const subscription = cancelledGroups.find(el => el.subscription_id === `${result.subscription_id}`);
-    const idx = cancelledGroups.indexOf(subscription);
-    cancelledGroups.splice(idx, 1);
-    loading = true;
-    this.refresh();
-    let headers = { "Content-Type": "application/json" };
-    const src = `/api/recharge-reactivated-subscription`;
-    const data = subscription;
-    data.scheduled_at = result.scheduled_at;
-    await PostFetch({ src, data, headers })
-      .then((result) => {
-        const { error, json } = result;
-        if (error !== null) {
-          fetchError = error;
-          loading = false;
-          this.refresh();
-        };
-        chargeGroups.push(json); // needs to be ordered
-        sortChargeGroups();
-        originalChargeGroups = cloneDeep(chargeGroups);
-        loading = false;
-        const div = document.querySelector(`#customer`);
-        animateFadeForAction(div, () => this.refresh(), 800);
-      })
-      .catch((err) => {
-        fetchError = err;
-        loading = false;
-        this.refresh();
-      });
-  };
-
-  this.addEventListener("subscription.reactivated", reactivateSubscription);
-
-  /**
-   * Update charge groups and remove the deleted subscription
-   * Then load into cancelledGroups
-   * @function cancelSubscription
-   * @listen subscription.cancelled event
-   */
-  const cancelSubscription = async (ev) => {
-    const result = ev.detail.result;
-    const subscription = chargeGroups.find(el => el.attributes.subscription_id === result.subscription_id);
-    const idx = chargeGroups.indexOf(subscription);
-    const ids = subscription.includes.map(el => el.subscription_id).join(",");
-    chargeGroups.splice(idx, 1);
-    originalChargeGroups = cloneDeep(chargeGroups);
-    loading = true;
-    this.refresh();
-    let headers = { "Content-Type": "application/json" };
-    const src = "/api/recharge-cancelled-subscriptions";
-    const data = { ids };
-    await PostFetch({ src, data, headers })
-      .then((result) => {
-        const { error, json } = result;
-        if (error !== null) {
-          fetchError = error;
-          loading = false;
-          this.refresh();
-        } else {
-          cancelledGroups.push(json[0]);
-          loading = false;
-          const subdiv = document.querySelector(`#customer`);
-          animateFadeForAction(subdiv, () => this.refresh(), 800);
-        }
-      })
-      .catch((err) => {
-        fetchError = err;
-        loading = false;
-        this.refresh();
-      });
-  };
-
-  this.addEventListener("subscription.cancelled", cancelSubscription);
 
   /**
    * When subscription dates have been changed
@@ -374,6 +370,7 @@ async function *Customer({ customer, admin }) {
    *
    * XXX not used? No
    */
+  /*
   const chargeUpdated = async (ev) => {
 
     const result = ev.detail.result;
@@ -410,6 +407,7 @@ async function *Customer({ customer, admin }) {
   };
 
   this.addEventListener("subscription.updated", chargeUpdated);
+  */
 
   if (!Object.hasOwnProperty.call(customer, "external_customer_id")) {
     await getRechargeCustomer().then(res => {
@@ -467,7 +465,7 @@ async function *Customer({ customer, admin }) {
                       subscription={ group } idx={ idx }
                       admin={ admin }
                       crank-key={ `${group.attributes.nextChargeDate.replace(/ /g, "_")}-${idx}` }
-                      allowEdits={ !noEdits.includes(idx) } />
+                    />
                   </div>
                 ))}
               </Fragment>

@@ -14,7 +14,7 @@ import { createElement, Fragment } from "@b9g/crank";
  * @returns {Element} DOM component
  * @example
  * import {renderer} from '@b9g/crank/dom';
- * renderer.render(<Subscriptions />, document.querySelector('#app'))
+ * renderer.render(<Pagination />, document.querySelector('#app'))
  */
 function *Pagination({callback, pageCount, pageNumber}) {
 

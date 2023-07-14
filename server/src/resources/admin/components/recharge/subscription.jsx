@@ -7,7 +7,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { io } from "socket.io-client";
-import { createElement, Fragment } from "@b9g/crank";
+import { createElement, Fragment, Portal } from "@b9g/crank";
 import CollapseWrapper from "../lib/collapse-animator";
 import EditProducts from "../products/edit-products";
 import Cancelled from "./cancelled";
@@ -29,6 +29,7 @@ import {
   animateFade,
   collapseElement,
   transitionElementHeight,
+  formatCount,
   LABELKEYS
 } from "../helpers";
 
@@ -43,10 +44,10 @@ import {
  * import {renderer} from '@b9g/crank/dom';
  * renderer.render(<Subscription subscription={subscription} />, document.querySelector('#app'))
  */
-async function *Subscription({ subscription, idx, allowEdits, admin }) {
+async function *Subscription({ subscription, idx, admin }) {
 
 
-  console.log("=============================================================================");
+  console.log("=======================================");
   console.log("TITLE", subscription.attributes.title);
   console.log("Box", subscription.box);
   console.log("Address", subscription.address);
@@ -96,7 +97,7 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
    *
    * @member {array} timerSeconds
    */
-  const timerSeconds = 10;
+  const timerSeconds = 30;
   /**
    * On cancel, delete, and reactivate we need to ask the Customer component to
    * reload all subscriptions. This value stores the string value of the
@@ -186,6 +187,7 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
   const toggleCollapse = async () => {
     collapsed = !collapsed;
     await this.refresh();
+    /*
     if (changed.length > 0) {
       setTimeout(() => {
           const bar = document.querySelector(`#saveBar-${subscription.attributes.subscription_id}`);
@@ -195,6 +197,7 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
         }, 
         1000);
     };
+    */
   };
 
   /*
@@ -249,6 +252,12 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
   const saveChanges = async (key) => {
     editsPending = true;
     CollapsibleProducts = CollapseWrapper(EditProducts);
+    this.dispatchEvent(
+      new CustomEvent("customer.disableevents", {
+        bubbles: true,
+        detail: { subscription_id: subscription.attributes.subscription_id },
+      })
+    );
     await this.refresh();
     await doChanges({ key });
 
@@ -266,6 +275,7 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
    */
   const doChanges = async ({ key, sessionId }) => {
     let updates;
+    let label;
     if (key === "includes") {
       // find the loaded image for the added items (loaded from shopify)
       for (const item of subscription.includes) {
@@ -280,13 +290,16 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
         };
       };
       updates = getUpdatesFromIncludes();
+      label = "USER";
     } else {
       updates = subscription.updates;
+      label = "RECONCILE";
     };
     let headers = { "Content-Type": "application/json" };
     let src = `/api/recharge-update`;
+    src = `${src}?label=${label}`;
     if (sessionId) {
-      src = `${src}?session_id=${sessionId}`;
+      src = `${src}&session_id=${sessionId}`;
     };
 
     // this value is saved to mongodb so we can track the updates and figure
@@ -310,13 +323,7 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
           loading = false;
           this.refresh();
         } else {
-          // remove the zerod items
-          /*
-          subscription.messages = [];
-          subscription.updates = [];
-          subscription.removed = [];
-          changed = [];
-          */
+          // events handle the rest
           console.log("returned json: ", json);
         }
       })
@@ -598,7 +605,12 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
           fetchError = error;
           return null;
         } else {
-          return json.subscription;
+          if (json.message) {
+            console.log(json.message);
+            return null;
+          } else {
+            return json.subscription;
+          };
         };
       })
       .catch((err) => {
@@ -612,44 +624,22 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
    */
   const reloadCharge = async (restartTimer, killTimer) => {
 
-    console.log(eventAction);
-    // only do this on deleted action
-    if (eventAction === "deleted") {
-      // if this is a cancel or delete then we need to ask customer to reload all
-      const event = `subscription.${eventAction}`;
-      const subdiv = document.querySelector(`#subscription-${subscription.attributes.subscription_id}`);
-      const div = document.querySelector(`#customer`);
-      animateFade(div, 0.3);
-      setTimeout(() => {
-        animateFadeForAction(subdiv, () => {
-          this.dispatchEvent(
-            new CustomEvent(event, {
-              bubbles: true,
-              detail: { result },
-            })
-          );
-        });
-      }, 100);
-      return;
-    };
+    loading = true;
+    await this.refresh();
 
+    console.log(eventAction);
+    //
     // duplicated in the Cancelled component - surely should figure out
     if (eventAction === "cancelled") {
       console.log("got cancelled action so need to reload the cancelled subscription");
       const json = await getCancelledSubscription();
       console.log(json);
-      /*
-       * Which has this shape:
-       * box: recharge subscription object
-       * charge: line_items: array of subscription objects all includes (including box too)
-       * included: === charge.line_items
-       * rc_subscription_ids: should match our current rc_subscription_ids
-       */
-
       if (Object.hasOwnProperty.call(json, "message")) {
         // do something with it? Toast?
         attempts += 1; // force Timer reload and count attempts
         editsPending = true;
+        loading = false;
+        await this.refresh();
         if (restartTimer) restartTimer(timerSeconds);
         return;
       } else {
@@ -657,13 +647,44 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
         attempts = 0;
         changed = [];
         CancelledSubscription = json;
+        const notice = `Cancelled ${json.box.product_title} - ${json.box.variant_title}`;
+        this.dispatchEvent(toastEvent({
+          notice,
+          bgColour: "black",
+          borderColour: "black"
+        }));
+        fetchError = null;
+        if (killTimer) killTimer();
+        loading = false;
+        await this.refresh();
+        // then dispatch event to Customer which will shuffle the grouped subscriptions
+        const event = `subscription.cancelled`;
+        const subdiv = document.querySelector(`#subscription-${CancelledSubscription.box.id}`);
+        // customer div faded at Customer
+        //const div = document.querySelector(`#customer`);
+        //animateFade(div, 0.3);
+        setTimeout(() => {
+          animateFadeForAction(subdiv, () => {
+            this.dispatchEvent(
+              new CustomEvent(event, {
+                bubbles: true,
+                detail: {
+                  subscription: CancelledSubscription,
+                  //list: "chargeGroups",
+                  subscription_id: CancelledSubscription.box.id,
+                },
+              })
+            );
+          });
+        }, 100);
+        return;
       };
     };
 
     const charge = await getCharge(subscription.attributes.charge_id);
-    console.log("reloaded charge:", charge);
     let pending = false;
-    if (charge && typeof charge !== "string") {
+    if (charge) {
+      console.log("reloaded charge:", charge);
       if (charge.attributes.pending) {
         pending = true;
       } else {
@@ -672,15 +693,20 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
           subscription[key] = charge[key];
         };
         rc_subscription_ids_orig = subscription.attributes.rc_subscription_ids.map(el => { return {...el}; });
-        console.log("HERE PENDING", subscription.attributes.pending);
         editsPending = Boolean(subscription.attributes.pending);
         CollapsibleProducts = CollapseWrapper(EditProducts); // forces refresh of products
         attempts = 0;
         changed = [];
         await getLogs();  // refresh the logs
+        const notice = `Updated ${subscription.attributes.title} - ${subscription.attributes.variant}`;
+        this.dispatchEvent(toastEvent({
+          notice,
+          bgColour: "black",
+          borderColour: "black"
+        }));
       };
     };
-    if (charge === "PENDING" || pending) {
+    if (!charge || pending) {
       attempts += 1; // force Timer reload and count attempts
       pending = true;
       editsPending = Boolean(pending);
@@ -691,6 +717,13 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
     await this.refresh();
     if ( charge === "PENDING" || pending) {
       if (restartTimer) restartTimer(timerSeconds);
+    } else {
+      this.dispatchEvent(
+        new CustomEvent("customer.enableevents", {
+          bubbles: true,
+          detail: { subscription_id: subscription.attributes.subscription_id },
+        })
+      );
     };
   };
 
@@ -743,26 +776,7 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
     CollapsibleProducts = CollapseWrapper(EditProducts);
     if (result.action) eventAction = `${result.action}`;
     await this.refresh();
-
     return;
-
-    // if this is a cancel or delete then we need to ask customer to reload all
-    const event = `subscription.${result.action}`;
-    const subdiv = document.querySelector(`#subscription-${result.subscription_id}`);
-    const div = document.querySelector(`#customer`);
-    animateFade(div, 0.3);
-    if (event) { // passes up to Customer object
-      setTimeout(() => {
-        animateFadeForAction(subdiv, () => {
-          this.dispatchEvent(
-            new CustomEvent(event, {
-              bubbles: true,
-              detail: { result },
-            })
-          );
-        });
-      }, 100);
-    };
   };
 
   // listing.reload dispatched by form-modal
@@ -832,7 +846,6 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
    * Cannot pause if within timeframe of frequency
    */
   const isSkippable = () => {
-    return true;
     const now = new Date();
     const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
     const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
@@ -936,18 +949,13 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
 
   getLogs();
 
-  const formatCount = (count) => {
-    if (count === 1) return `${count}st`;
-    if (count === 2) return `${count}nd`;
-    if (count === 3) return `${count}rd`;
-    return `${count}th`;
-  };
+  const modalWindow = document.getElementById("modal-window");
 
-  for await ({ subscription, idx, allowEdits, admin } of this) { // eslint-disable-line no-unused-vars
+  for await ({ subscription, idx, admin } of this) { // eslint-disable-line no-unused-vars
 
     yield (
       CancelledSubscription ? (
-        <Cancelled subscription={ CancelledSubscriptioin } idx={ 400 } />
+        <Cancelled subscription={ CancelledSubscription } idx={ idx } admin={ admin } />
       ) : (
         <Fragment>
           <h6 class="tl mb0 w-100 fg-streamside-maroon">
@@ -988,7 +996,7 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
                 </Button>
               </div>
               <div class="fl w-70 tr">
-                { ( allowEdits && !editsPending ) && collapsed && (
+                { ( !editsPending ) && collapsed && (
                   <Fragment>
                     { isSkippable() === true && (
                       <SkipChargeModal subscription={ subscription } />
@@ -1017,7 +1025,7 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
           )}
           { (editsPending || subscription.attributes.pending) && (
             <Fragment>
-              <div class="orange pa2 ma2 br3 ba b--orange bg-light-yellow">
+              <div class="db w-100 orange pa2 ma2 br3 ba b--orange bg-light-yellow">
                 <p class="b">
                   { ( subscription.attributes.pending || attempts > 0) ? (
                     `Your subscription has updates pending. `
@@ -1026,12 +1034,14 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
                   )}
                   This can take several minutes. Reloading subscription in 
                   <div class="di w-2">
-                    <Timer seconds={ timerSeconds } callback={ reloadCharge } /> ...
+                    <Timer seconds={ timerSeconds } 
+                      crank-key={ `timer-${ idx }` }
+                      callback={ reloadCharge } /> ...
                   </div>
-                  { attempts ? ` ${formatCount(attempts)} attempt` : "" }
+                  { attempts ? ` ${formatCount(attempts)} attempt completed, updates pending` : "" }
                 </p>
+                <ProgressLoader />
               </div>
-              <ProgressLoader />
             </Fragment>
           )}
           { subscription.messages.length > 0 && subscription.attributes.hasNextBox && !editsPending && (
@@ -1085,8 +1095,8 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
             </div>
           </div>
           <div class="mb2 bb b--black-80">
-            { ( allowEdits ) && (
-              <div id={ `products-${idx}` }>
+            <div id={ `products-${idx}` }>
+              { subscription.box.shopify_title !== "" && (
                 <CollapsibleProducts
                   collapsed={ collapsed }
                   properties={ subscription.properties }
@@ -1097,8 +1107,8 @@ async function *Subscription({ subscription, idx, allowEdits, admin }) {
                   key={ idx }
                   id={ `subscription-${idx}` }
                 />
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </Fragment>
       )

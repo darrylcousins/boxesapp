@@ -8,19 +8,24 @@
 import { createElement, Fragment } from "@b9g/crank";
 import { toPrice, animateFadeForAction, animateFade } from "../helpers";
 import { PostFetch, Fetch } from "../lib/fetch";
+import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
 import Timer from "../lib/timer";
+import Error from "../lib/error";
 import BarLoader from "../lib/bar-loader";
 import ProgressLoader from "../lib/progress-loader";
 import ReactivateSubscriptionModal from "./reactivate-modal";
 import DeleteSubscriptionModal from "./delete-modal";
 import Subscription from "./subscription";
+import {
+  formatCount,
+} from "../helpers";
 
 /**
  * Render a cancelled subscription
  *
  */
-async function* Cancelled({ subscription, idx }) {
+async function* Cancelled({ subscription, idx, admin }) {
 
   console.log(JSON.stringify(subscription, null, 2));
   /**
@@ -30,6 +35,12 @@ async function* Cancelled({ subscription, idx }) {
    * @member {boolean} loading
    */
   let loading = false;
+  /**
+   * The fetch error if any
+   *
+   * @member {object|string} fetchError
+   */
+  let fetchError = null;
   /**
    * After subscription reactivated data is returned that we store here so we can load the "charge"
    *
@@ -67,7 +78,7 @@ async function* Cancelled({ subscription, idx }) {
    *
    * @member {array} timerSeconds
    */
-  const timerSeconds = 5;
+  const timerSeconds = 30;
 
   const pricedItems = () => {
     const result = [];
@@ -122,10 +133,13 @@ async function* Cancelled({ subscription, idx }) {
    */
   const reloadSubscription = async (restartTimer, killTimer) => {
 
+    loading = true;
+    await this.refresh();
+
     console.log(eventAction);
     // duplicated in the Subscription component - surely should figure out
+
     if (eventAction === "reactivated") {
-      console.log("got reactivated action so need to reload the reactivated subscription");
       const json = await getActivatedSubscription();
       console.log(json);
 
@@ -133,13 +147,71 @@ async function* Cancelled({ subscription, idx }) {
         // do something with it? Toast?
         attempts += 1; // force Timer reload and count attempts
         editsPending = true;
+        loading = false;
+        await this.refresh();
         if (restartTimer) restartTimer(timerSeconds);
         return;
       } else {
+        // Toast?
         editsPending = false;
         attempts = 0;
-        ReactivatedSubscription = json;
+        ReactivatedSubscription = json.subscription;
+        const notice = `Reactivated ${ReactivatedSubscription.box.shopify_title} - ${ReactivatedSubscription.attributes.variant}`;
+        this.dispatchEvent(toastEvent({
+          notice,
+          bgColour: "black",
+          borderColour: "black"
+        }));
+        fetchError = null;
+        if (killTimer) killTimer();
+        loading = false;
+        await this.refresh();
+        const event = `subscription.reactivated`;
+        const subdiv = document.querySelector(`#subscription-${ReactivatedSubscription.attributes.subscription_id}`);
+        // customer div faded at Customer
+        //const div = document.querySelector(`#customer`);
+        //animateFade(div, 0.3);
+        setTimeout(() => {
+          animateFadeForAction(subdiv, () => {
+            this.dispatchEvent(
+              new CustomEvent(event, {
+                bubbles: true,
+                detail: {
+                  subscription: ReactivatedSubscription,
+                  //list: "cancelGroups",
+                  subscription_id: ReactivatedSubscription.attributes.subscription_id
+                },
+              })
+            );
+          });
+        }, 100);
+        return;
       };
+    };
+
+    // only do this on deleted action
+    if (eventAction === "deleted") {
+      // if this is a cancel or delete then we need to ask customer to reload all
+      const event = `subscription.deleted`;
+      const subdiv = document.querySelector(`#subscription-${subscription.box.id}`);
+      // customer div faded at Customer
+      //const div = document.querySelector(`#customer`);
+      //animateFade(div, 0.3);
+      setTimeout(() => {
+        animateFadeForAction(subdiv, () => {
+          this.dispatchEvent(
+            new CustomEvent(event, {
+              bubbles: true,
+              detail: {
+                subscription
+                //list: "cancelGroups",
+                //subscription_id: subscription.box.id
+              },
+            })
+          );
+        });
+      }, 100);
+      return;
     };
 
   };
@@ -156,6 +228,7 @@ async function* Cancelled({ subscription, idx }) {
     if (result.action) eventAction = `${result.action}`;
     await this.refresh();
 
+    ev.stopPropagation();
     return;
   };
 
@@ -166,87 +239,104 @@ async function* Cancelled({ subscription, idx }) {
   for await ({ subscription } of this) { // eslint-disable-line no-unused-vars
 
     yield (
-      <Fragment>
-        <div class="mb2 pb2 bb b--black-80">
-          <h6 class="tl mb2 w-100 fg-streamside-maroon">
-            {subscription.box.product_title} - {subscription.box.variant_title}
-          </h6>
-          <div class="flex-container w-100">
-            <div class="w-50-ns w-100">
-              <div class="dt">
-                <div class="dtc gray b tr pr3 pv1">
-                  Cancelled on:
+      ReactivatedSubscription ? (
+        <Subscription subscription={ ReactivatedSubscription } idx={ idx } admin={ admin} />
+      ) : (
+        <Fragment>
+          <div class="mb2 pb2 bb b--black-80">
+            <h6 class="tl mb2 w-100 fg-streamside-maroon">
+              {subscription.box.product_title} - {subscription.box.variant_title}
+            </h6>
+            <div class="flex-container w-100">
+              <div class="w-50-ns w-100">
+                <div class="dt">
+                  <div class="dtc gray b tr pr3 pv1">
+                    Cancelled on:
+                  </div>
+                  <div class="dtc pv1">
+                    <span>{ new Date(Date.parse(subscription.box.cancelled_at)).toDateString() }</span>
+                  </div>
                 </div>
-                <div class="dtc pv1">
-                  <span>{ new Date(Date.parse(subscription.box.cancelled_at)).toDateString() }</span>
+                <div class="dt">
+                  <div class="dtc gray b tr pr3 pv1">
+                    Reason Given:
+                  </div>
+                  <div class="dtc pv1">
+                    <span>{ subscription.box.cancellation_reason }</span>
+                  </div>
                 </div>
+                <div class="dt">
+                  <div class="dtc gray b tr pr3 pv1">
+                    Subscription ID:
+                  </div>
+                  <div class="dtc pv1">
+                    <span>{ subscription.box.id }</span>
+                  </div>
+                </div>
+                { (Boolean(subscription.lastOrder) && Object.hasOwnProperty.call(subscription.lastOrder, "order_number")) && (
+                  <div class="dt">
+                    <div class="dtc gray b tr pr3 pv1">
+                      Last Order:
+                    </div>
+                    <div class="dtc pv1">
+                      <span>{ `${subscription.lastOrder.delivered} (#${subscription.lastOrder.order_number})` }</span>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div class="dt">
-                <div class="dtc gray b tr pr3 pv1">
-                  Reason Given:
-                </div>
-                <div class="dtc pv1">
-                  <span>{ subscription.box.cancellation_reason }</span>
-                </div>
-              </div>
-              <div class="dt">
-                <div class="dtc gray b tr pr3 pv1">
-                  Subscription ID:
-                </div>
-                <div class="dtc pv1">
-                  <span>{ subscription.subscription_id }</span>
-                </div>
+              <div class="w-50-ns w-100">
+                { pricedItems().map(item => (
+                  <div class="flex pv1">
+                    <div class="w-70 bold" style={{
+                        "text-overflow": "ellipsis",
+                        "white-space": "nowrap",
+                        "overflow": "hidden",
+                      }}>
+                      { item.title }
+                    </div>
+                    <div class="pricing w-10 tr">
+                      <span>${ item.price }</span>
+                    </div>
+                    <div class="w-10 tc">({ item.count })</div>
+                    <div class="pricing w-10 tr">
+                      <span>{ item.total_price  }</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            <div class="w-50-ns w-100">
-              { pricedItems().map(item => (
-                <div class="flex pv1">
-                  <div class="w-70 bold" style={{
-                      "text-overflow": "ellipsis",
-                      "white-space": "nowrap",
-                      "overflow": "hidden",
-                    }}>
-                    { item.title }
-                  </div>
-                  <div class="pricing w-10 tr">
-                    <span>${ item.price }</span>
-                  </div>
-                  <div class="w-10 tc">({ item.count })</div>
-                  <div class="pricing w-10 tr">
-                    <span>{ item.total_price  }</span>
-                  </div>
+            { !editsPending && (
+              <div id={`reactivate-${subscription.box.id}`} class="w-100 pv2 tr">
+                <DeleteSubscriptionModal subscription={ subscription } />
+                <ReactivateSubscriptionModal subscription={ subscription } />
+              </div>
+            )}
+            { editsPending && (
+              <Fragment>
+                <div class="orange pa2 ma2 br3 ba b--orange bg-light-yellow">
+                  <p class="b">
+                    { ( attempts > 0) ? (
+                      `Your subscription has updates pending. `
+                    ) : (
+                      `Your updates have been queued for saving. `
+                    )}
+                    This can take several minutes. Reloading subscription in 
+                    <div class="di w-2">
+                      <Timer seconds={ timerSeconds } 
+                        crank-key={ `timer-${ idx }` }
+                        callback={ reloadSubscription } /> ...
+                    </div>
+                    { attempts ? ` ${formatCount(attempts)} attempt completed, updates pending` : "" }
+                  </p>
                 </div>
-              ))}
-            </div>
+                <ProgressLoader />
+              </Fragment>
+            )}
           </div>
-          { !editsPending && (
-            <div id={`reactivate-${subscription.subscription_id}`} class="w-100 pv2 tr">
-              <DeleteSubscriptionModal subscription={ subscription } />
-              <ReactivateSubscriptionModal subscription={ subscription } />
-            </div>
-          )}
-          { editsPending && (
-            <Fragment>
-              <div class="orange pa2 ma2 br3 ba b--orange bg-light-yellow">
-                <p class="b">
-                  { ( attempts > 0) ? (
-                    `Your subscription has updates pending. `
-                  ) : (
-                    `Your updates have been queued for saving. `
-                  )}
-                  This can take several minutes. Reloading subscription in 
-                  <div class="di w-2">
-                    <Timer seconds={ timerSeconds } callback={ reloadSubscription } /> ...
-                  </div>
-                  { attempts ? ` ${formatCount(attempts)} attempt` : "" }
-                </p>
-              </div>
-              <ProgressLoader />
-            </Fragment>
-          )}
-        </div>
-        { loading && <div id={ `loader-${idx}` }><BarLoader /></div> }
-      </Fragment>
+          { fetchError && <Error msg={fetchError} /> }
+          { loading && <div id={ `loader-${idx}` }><BarLoader /></div> }
+        </Fragment>
+      )
     );
   }
 };

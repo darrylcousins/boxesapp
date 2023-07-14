@@ -76,6 +76,12 @@ async function* UnSkipCharge(props) {
     return diffDays;
   };
 
+  // XXX need to also account for the lastOrder.delivered date
+  const ts = Date.parse(subscription.attributes.lastOrder.delivered); // could be null ie lastOrder = {}
+  let lastOrderDate;
+  if (!isNaN(ts)) { // can happen if the order is not completed or found by the api
+    lastOrderDate = new Date(ts);
+  };
   // these need to count backwards
   const deliveryDays = [];
   const chargeDays = [];
@@ -93,9 +99,11 @@ async function* UnSkipCharge(props) {
   let diffDays = getDiffDays(subscription);
   for (diffDays; diffDays > interval; diffDays -= interval) {
     delivered.setDate(delivered.getDate() - interval);
-    deliveryDays.push(delivered.toDateString());
     charge.setDate(charge.getDate() - interval);
-    chargeDays.push(charge.toDateString());
+    if (!(lastOrderDate && lastOrderDate >= delivered)) {
+      deliveryDays.push(delivered.toDateString());
+      chargeDays.push(charge.toDateString());
+    };
   };
   deliveryDays.reverse();
   chargeDays.reverse();
@@ -184,6 +192,22 @@ async function* UnSkipCharge(props) {
     };
   };
 
+  /**
+   * Local save to perform actions before calling form-modal doSave
+   *
+   * @function thisSave
+   * @returns {null}
+   */
+  const thisSave = () => {
+    this.dispatchEvent(
+      new CustomEvent("customer.disableevents", {
+        bubbles: true,
+        detail: { subscription_id: subscription.attributes.subscription_id },
+      })
+    );
+    doSave();
+  };
+
   for await (const _ of this) { // eslint-disable-line no-unused-vars
 
     /*
@@ -249,7 +273,7 @@ async function* UnSkipCharge(props) {
           />
         </div>
         <div class="cf tr">
-          <Button type="primary" onclick={doSave}>
+          <Button type="primary" onclick={thisSave}>
             Yes, Change Date
           </Button>
           <Button type="secondary" onclick={closeModal}>

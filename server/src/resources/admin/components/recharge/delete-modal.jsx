@@ -78,6 +78,22 @@ async function* DeleteSubscription(props) {
     },
   };
 
+  /**
+   * Local save to perform actions before calling form-modal doSave
+   *
+   * @function thisSave
+   * @returns {null}
+   */
+  const thisSave = () => {
+    this.dispatchEvent(
+      new CustomEvent("customer.disableevents", {
+        bubbles: true,
+        detail: { subscription_id: subscription.box.id },
+      })
+    );
+    doSave();
+  };
+
   for await (const _ of this) { // eslint-disable-line no-unused-vars
 
     /**
@@ -118,7 +134,7 @@ async function* DeleteSubscription(props) {
             Subscription ID:
           </div>
           <div class="dtc pv1">
-            <span>{ subscription.subscription_id }</span>
+            <span>{ subscription.box.id }</span>
           </div>
         </div>
         <Form
@@ -129,7 +145,7 @@ async function* DeleteSubscription(props) {
           meta={toastTemplate}
         />
         <div class="tr">
-          <Button type="primary" onclick={doSave}>
+          <Button type="primary" onclick={thisSave}>
             Yes, Delete Subscription
           </Button>
           <Button type="secondary" onclick={closeModal}>

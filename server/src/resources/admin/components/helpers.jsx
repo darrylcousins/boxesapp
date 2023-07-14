@@ -326,7 +326,19 @@ export const transitionElementHeight = (element, start) => {
     calculatedHeight += el.scrollHeight;
   });
   element.style.height = calculatedHeight + "px";
-}
+};
+
+/*
+ * @function formatCount
+ * Format attempts count
+ *
+ */
+export const formatCount = (count) => {
+  if (count === 1) return `${count}st`;
+  if (count === 2) return `${count}nd`;
+  if (count === 3) return `${count}rd`;
+  return `${count}th`;
+};
 
 /*
  * @function delay

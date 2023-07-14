@@ -1,5 +1,6 @@
 import path from "path";
 import winston from "winston";
+import WinstonNodeMailer from "../src/mail/winston-mailer.js";
 import "winston-mongodb";
 import "dotenv/config";
 
@@ -96,6 +97,11 @@ if (process.env.NODE_ENV !== 'test') {
       options: mongo_options,
       collection: 'logs',
       metaKey: 'meta'
+    })
+  );
+  logger.add(
+    new WinstonNodeMailer({
+      level: "error",
     })
   );
 };

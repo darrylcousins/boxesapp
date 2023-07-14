@@ -47,7 +47,7 @@ export default async ({ subscription_id, attributes, includes, admin_email }) =>
 `, options);
         sendmail({
           to: attributes.customer.email,
-          subject: `\[${process.env.SHOP_NAME}\] Box subscription cancelled`,
+          subject: `\[${process.env.SHOP_NAME}\] Box subscription cancelled ${attributes.title} - ${attributes.variant}`,
           html: htmlOutput.html
         });
         const meta = {

@@ -19,8 +19,7 @@ export default function proxyWrite({ app, vite, template, path }) {
         .set("Content-Type", "application/liquid")
         .send(rendered);
     } catch(e) {
-      console.log(e);
-      console.log("ERROR");
+      console.log(e.message);
       if (vite) vite.ssrFixStacktrace(e);
 
       next(e);

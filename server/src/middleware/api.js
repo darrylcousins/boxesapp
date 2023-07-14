@@ -38,7 +38,7 @@ export default function (options) {
         }
       }
 
-      _logger.info(`${_filename(import.meta)} Passed through api auth middleware`);
+      //_logger.info(`${_filename(import.meta)} Passed through api auth middleware`);
       next();
     };
   };

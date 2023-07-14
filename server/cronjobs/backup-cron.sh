@@ -5,8 +5,10 @@
 # which will run at 3 a.m. daily
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+
 NODE="$( which node )"
 
-cd $SCRIPT_DIR
+cd $PARENT_DIR
 
-$NODE backup.js
+$NODE -r dotenv/config $SCRIPT_DIR/backup.js

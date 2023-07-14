@@ -12,36 +12,29 @@
  */
 import path from "path";
 import dotenv from "dotenv";    
-import { MongoClient } from "mongodb";
+import { winstonLogger } from "../config/winston.js";
+import { getMongo } from "../src/lib/mongo/mongo.js";
 
 dotenv.config({ path: path.resolve("..", ".env") });
 
-const run = async () => {
-
-  const username = encodeURIComponent(process.env.DB_USER);
-  const password = encodeURIComponent(process.env.DB_PASSWORD);
-
-  const mongo_uri = `mongodb://${username}:${password}@localhost/${process.env.DB_NAME}`;
-  let dbClient;
-
-  // assign the client from MongoClient
-  await MongoClient
-    .connect(mongo_uri, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(async (client) => {
-      const mongodb = client.db();
-      dbClient = client;
-
-      const boxes = await mongodb.collection("boxes").find({delivered: "Thu Jul 14 2022"}).toArray();
-      console.log(boxes);
-
-    })
-    .catch(error => console.error(`mongo connect error: ${error}`))
-    .finally(() => dbClient.close());
-
-};
-
 const main = async () => {
-  await run();
+
+  // for winstonLogger to store to mongo we need a client in the process
+  // regardless whether it is actually used in the script
+  const { mongo: mongodb, client: dbClient } = await getMongo();
+
+  try {
+    // do something
+  } catch(err) {
+    winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  } finally {
+    await dbClient.close();
+    process.exit(1);
+  };
 };
 
-main().catch(console.error);
+try {
+  await main();
+} catch(err) {
+  winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+};

@@ -2,11 +2,13 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import "dotenv/config";
+import { winstonLogger } from "../../../config/winston.js"
 /**
   * Mongodb helper methods
   *
  */
-export async function getMongoConnection() {
+
+async function makeMongoConnection() {
 
   const { MongoClient } = await import("mongodb");
 
@@ -24,18 +26,39 @@ export async function getMongoConnection() {
 
       dbClient = client;
 
-      // listen for the signal interruption (ctrl-c)
-      process.on('SIGINT', () => {
-        dbClient.close();
-        _logger.info(`${_filename(import.meta)} closing mongo dbClient connection`);
-        process.exit();
-      });
-
-      return DB;
+      return { DB, dbClient };
     })
     .catch(err => {
-      _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+      winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
     });
+};
+
+/*
+ * In this case it is the resposibility of the caller to close the connection
+ * Only used so far in makeShopQuery which is called in a separate process from worker
+ * @function getMong
+ */
+export const getMongo = async () => {
+  let mongo;
+  if (typeof _mongodb === "undefined") {
+    const { DB, dbClient } = await makeMongoConnection();
+    return { mongo: DB, client: dbClient };
+  };
+  return { mongo: _mongodb, client: null };
+};
+
+export async function getMongoConnection() {
+
+  const { DB, dbClient } = await makeMongoConnection();
+
+  // listen for the signal interruption (ctrl-c)
+  process.on('SIGINT', () => {
+    dbClient.close();
+    winstonLogger.info(`Closing mongo dbClient connection`);
+    process.exit();
+  });
+
+  return DB;
 };
 
 /*
@@ -43,7 +66,6 @@ export async function getMongoConnection() {
  */
 export const mongoRemove = async (collection, data) => {
   const { _id, ...parts } = data;
-  _logger.info(`${_filename(import.meta)} removing ${_id}`);
   return await collection.deleteOne(
     { _id }
   );

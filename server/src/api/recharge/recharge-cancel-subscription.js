@@ -54,6 +54,7 @@ export default async (req, res, next) => {
   for(var x in includes) includes[x].properties.some(el => el.name === "Including") ? includes.push( includes.splice(x,1)[0] ) : 0;
 
   const doc= {
+    label: "CANCEL",
     charge_id,
     customer_id: customer.id,
     address_id,
@@ -77,6 +78,7 @@ export default async (req, res, next) => {
   const topicLower = "subscription/cancelled";
   const meta = {
     recharge: {
+      label: "CANCEL",
       topic: topicLower,
       charge_id,
       customer_id: customer.id,

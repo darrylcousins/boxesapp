@@ -30,6 +30,7 @@ export default async (req, res, next) => {
 
   const { updates, attributes, properties } = req.body;
   const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
+  const label = req.query.label;
 
   // add updated flag to rec_subscription_ids
   const update_shopify_ids = updates.map(el => el.shopify_product_id);
@@ -42,6 +43,7 @@ export default async (req, res, next) => {
   // make sure that the box is last
   for(var x in updates) updates[x].properties.some(el => el.name === "Including") ? updates.push( updates.splice(x,1)[0] ) : 0;
   const doc= {
+    label: `${label}-PRODUCT-UPDATE`,
     charge_id,
     customer_id: customer.id,
     address_id,
@@ -66,6 +68,7 @@ export default async (req, res, next) => {
   const meta = {
     recharge: {
       topic: topicLower,
+      label: `${label}-PRODUCT-UPDATE`,
       charge_id,
       customer_id: customer.id,
       address_id,

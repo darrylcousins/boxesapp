@@ -16,7 +16,7 @@ export default async (req, res, next) => {
   const path = `customers/${req.params.customer_id}.json`;
   const fields = ["id", "email", "first_name", "last_name"];
   try {
-    const result = await makeShopQuery({path, fields})
+    const result = await makeShopQuery({path, fields, title: "Get customer"})
       .then(async ({customer}) => {
         return customer;
       });

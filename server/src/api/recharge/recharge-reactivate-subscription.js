@@ -48,15 +48,22 @@ export default async (req, res, next) => {
   console.log(properties);
   */
 
-  // add updated flag to rec_subscription_ids
+  // add updated flag to rc_subscription_ids
   // rc_subscription_ids should have everything in includes
   const subscription_ids = includes.map(el => {
     return { 
       subscription_id: el.id,
-      shopify_product_id: el.external_product_id.ecommerce,
+      shopify_product_id: parseInt(el.external_product_id.ecommerce),
       quantity: el.quantity,
       updated: false
     };
+  });
+  // add the parent box subscription
+  subscription_ids.push({
+    subscription_id: box.id,
+    shopify_product_id: parseInt(box.external_product_id.ecommerce),
+    quantity: box.quantity,
+    updated: false
   });
 
   // set dates
@@ -66,6 +73,7 @@ export default async (req, res, next) => {
   const nextChargeDate = chargeDate.toISOString().split('T')[0];
 
   const doc= {
+    label: "REACTIVATE",
     charge_id: null,
     customer_id,
     address_id,
@@ -81,15 +89,6 @@ export default async (req, res, next) => {
   // not sure why we have a string here
   properties.box_subscription_id = parseInt(properties.box_subscription_id);
 
-  return res.status(200).json({
-      success: true,
-      action: "reactivated",
-      subscription_id: box.id,
-      address_id,
-      customer_id,
-      scheduled_at: nextChargeDate,
-    });
-
   for (const [key, value] of Object.entries(properties)) {
     doc[key] = value;
   };
@@ -102,6 +101,7 @@ export default async (req, res, next) => {
   const topicLower = "subscription/reactivated";
   const meta = {
     recharge: {
+      label: "REACTIVATE",
       topic: topicLower,
       charge_id: null,
       customer_id: customer_id,
@@ -116,19 +116,17 @@ export default async (req, res, next) => {
     meta.recharge[key] = value;
   };
 
-  meta.recharge = sortObjectByKeys(meta.recharge);
-  _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
-
   const child_props = {
     "Delivery Date": nextdeliverydate,
     "Add on product to": title,
-    "box_subscription_id": subscription_id
+    "box_subscription_id": `${subscription_id}` // must be a string
   };
   const child_properties = Object.entries(child_props).map(([name, value]) => {
-    return { name: value };
+    return { name, value };
   });
   const parent_props = { ...properties,
     "Delivery Date": nextdeliverydate,
+    "box_subscription_id": `${subscription_id}` // must be a string
   };
   const parent_properties = Object.entries(parent_props).map(([name, value]) => {
     return { name, value };
@@ -136,6 +134,7 @@ export default async (req, res, next) => {
 
   const updates = [];
   // box subscription is not included in the includes
+  // put it at the end initially
   for (const subscription of [ ...includes, box ]) {
     const props = (subscription.id === subscription_id) ? parent_properties : child_properties;
     updates.push({
@@ -168,6 +167,9 @@ export default async (req, res, next) => {
       await updateSubscription(opts);
     };
 
+    // make sure that the box is first for final update
+    for(var x in updates) updates[x].properties.some(el => el.name === "Including") ? updates.unshift(updates.splice(x,1)[0]) : 0;
+
     // finally the charge date
     for (const update of updates) {
       const opts = {
@@ -184,11 +186,14 @@ export default async (req, res, next) => {
     const mail = {
       subscription_id: box.id,
       box,
-      included,
+      includes,
       nextChargeDate: nextchargedate,
       nextDeliveryDate: nextdeliverydate,
     };
     await subscriptionReactivatedMail(mail);
+
+    meta.recharge = sortObjectByKeys(meta.recharge);
+    _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
 
     res.status(200).json({
       success: true,

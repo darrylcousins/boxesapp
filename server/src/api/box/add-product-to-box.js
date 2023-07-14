@@ -4,7 +4,6 @@
  */
 
 import path from "path";
-import { makeShopQuery } from "../../lib/shopify/helpers.js";
 import { queryStoreGraphQL } from "../../lib/shopify/helpers.js";
 import { ObjectID } from "mongodb";
 

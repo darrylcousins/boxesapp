@@ -66,7 +66,7 @@ export default async (req, res, next) => {
   const path = `products/${product_id}.json`;
   const fields = ["id", "images"];
   try {
-    const result = await makeShopQuery({path, fields})
+    const result = await makeShopQuery({path, fields, title: "Get images"})
       .then(async ({product}) => {
         if (!Boolean(product)) return { image_src: "" };
         const image = product.images.find(el => Boolean(el.src));

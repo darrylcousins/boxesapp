@@ -18,6 +18,7 @@ export default async (req, res, next) => {
 
   const meta = {
     recharge: {
+      label: "DELETE",
       customer_id: box.customer_id,
       address_id: box.address_id,
       subscription_id: box.id,

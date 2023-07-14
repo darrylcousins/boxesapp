@@ -17,7 +17,7 @@ export default async (req, res, next) => {
   const path = `products/${req.params.product_id}.json`;
   const fields = ["id", "variants"];
   try {
-    const result = await makeShopQuery({path, fields})
+    const result = await makeShopQuery({path, fields, title: "Get price"})
       .then(async ({product}) => {
         let variant;
         if (variant_id < 10) { // just been passed a date.getDay()

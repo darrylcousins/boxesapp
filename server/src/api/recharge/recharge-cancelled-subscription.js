@@ -4,7 +4,7 @@
  */
 
 import { ObjectID } from "mongodb";
-import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import { makeRechargeQuery, getLastOrder } from "../../lib/recharge/helpers.js";
 import { reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import { sortObjectByKeys, compareArrays } from "../../lib/helpers.js";
 
@@ -43,10 +43,12 @@ export default async (req, res, next) => {
   if (findPending) {
     const pendingIds = findPending.rc_subscription_ids.map(el => el.subscription_id).sort();
     const check = compareArrays(ids, pendingIds);
-    console.log(check);
     const updated = findPending.rc_subscription_ids.every(el => el.updated === true);
-    console.log(updated);
     completed = check && updated;
+    if (completed) {
+      // safely remove the entry
+      await _mongodb.collection("updates_pending").deleteOne(search);
+    };
   };
 
 
@@ -87,6 +89,14 @@ export default async (req, res, next) => {
     const grouped = await reconcileGetGrouped({ charge });
     const result = grouped[subscription_id];
     delete result.charge; // charge.line_items duplicated in result.includes
+    result.subscription_id = subscription_id;
+
+    result.lastOrder = await getLastOrder({
+      customer_id: result.box.customer_id,
+      address_id: result.box.address_id,
+      product_id: parseInt(result.box.external_product_id.ecommerce),
+      subscription_id,
+    });
 
     return res.status(200).json(result);
 

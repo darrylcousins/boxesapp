@@ -20,7 +20,6 @@ export default async (req, res, next) => {
   let charge_id = req.params.charge_id;
   const { customer_id, address_id, subscription_id, scheduled_at } = req.query;
 
-
   const query = {
     //charge_id: parseInt(charge.id), now trying to avoid this because of updating charge and new charges created.
     customer_id: parseInt(customer_id),
@@ -30,24 +29,22 @@ export default async (req, res, next) => {
   };
   //console.log("customer-charge query", query);
   const findPending = await _mongodb.collection("updates_pending").findOne(query);
-  //console.log("customer-charge found", findPending);
   if (findPending) {
     charge_id = findPending.charge_id;
     // if this is a change date entry
     if (Object.hasOwnProperty.call(findPending, "updated_charge_date")) {
       if (findPending.updated_charge_date === true) {
-        console.log("Deleting updates_pending at customer-charge api");
+        _logger.info("Deleting updates_pending at customer-charge api");
         const res = await _mongodb.collection("updates_pending").deleteOne(query);
       } else {
         // return something here while waiting for charge date to be fully updated
         // because the charge will be gone or no longer containing this subscription
-        return res.status(200).json({ subscription: "PENDING" });
+        return res.status(200).json({ message: "updates pending" });
       };
     };
   };
 
   try {
-
     let result = {};
     try {
       result = await makeRechargeQuery({
@@ -73,8 +70,6 @@ export default async (req, res, next) => {
 
     if (result.charge) {
       const subscription = data.find(el => el.attributes.subscription_id === parseInt(subscription_id));
-      console.log("api/customer-charge, found subscription?.", Boolean(subscription), subscription_id);
-
       return res.status(200).json({ subscription });
     } else {
       return res.status(200).json({ error: "Not found" });

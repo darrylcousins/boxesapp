@@ -30,7 +30,7 @@ export default async (req, res, next) => {
     const query = [
       ["ids", shopify_product_id.toString()]
     ];
-    const { products } = await makeShopQuery({path, limit, query, fields});
+    const { products } = await makeShopQuery({path, limit, query, fields, title: "Find products"});
     if (products.length === 1) {
       const { id, title, handle } = products[0];
       box.shopify_product_id = id;

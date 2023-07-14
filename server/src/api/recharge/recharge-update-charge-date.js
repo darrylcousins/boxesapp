@@ -67,6 +67,7 @@ export default async (req, res, next) => {
 
   const collection = _mongodb.collection("updates_pending");
   const doc= {
+    label: "CHARGE_DATE",
     charge_id,
     customer_id: customer.id,
     address_id,
@@ -102,6 +103,7 @@ export default async (req, res, next) => {
   const topicLower = "charge/update-charge-date";
   const meta = {
     recharge: {
+      label: "CHARGE_DATE",
       topic: topicLower,
       charge_id: attributes.charge_id,
       customer_id: attributes.customer.id,

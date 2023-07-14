@@ -62,7 +62,7 @@ export default async (req, res, next) => {
     }
   };
 
-  const productDoc = await makeShopQuery({path, limit, query, fields})
+  const productDoc = await makeShopQuery({path, limit, query, fields, title: "Product search"})
     .then(async ({products}) => {
       if (products.length === 0) {
         _logger.info('no product found on shop');

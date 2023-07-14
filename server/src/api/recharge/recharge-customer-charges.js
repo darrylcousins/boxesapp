@@ -35,10 +35,55 @@ export default async (req, res, next) => {
 
     if (!charges || !charges.length) {
       // return a result of none
-      res.status(200).json({ message: "No charges found" });
-      return;
+      return res.status(200).json({ message: "No charges found" });
     };
 
+    // need to check for pending and return updates_pending
+    // because when reactivating the charge will initially not have all line_items
+    // only called from components: Customer and Cancelled, only cancelled passed a subscription_id
+    // note that the updated subscription may have been merged in an existing charge
+    if (charges.length === 1 && subscription_id) {
+      const charge = charges[0];
+      // charge_id matches here also by now
+      const query = {
+        subscription_id: parseInt(subscription_id),
+        customer_id: charge.customer.id,
+        address_id: charge.address_id,
+        scheduled_at: charge.scheduled_at,
+      };
+      // all rc_subscription_ids are true for this query
+      const updates_pending = await _mongodb.collection("updates_pending").findOne(query);
+      if (updates_pending) {
+        // XXX should I update the charge_id, at this point it will be null
+        // check that they have all been updated
+        const rc_subscription_ids = [];
+        for (const el of charge.line_items) {
+          // only match those with correct property box_subscription_id
+
+          const prop = el.properties.find(el => el.name === "box_subscription_id");
+          if (prop && parseInt(prop.value) === parseInt(subscription_id)) {
+            rc_subscription_ids.push({
+              subscription_id: el.item_purchase_id,
+              shopify_product_id: parseInt(el.external_product_id.ecommerce),
+              quantity: el.quantity,
+            });
+          };
+        };
+        const allUpdated = updates_pending.rc_subscription_ids.every(el => {
+          // check that all subscriptions have updated or been created
+          return el.updated === true && Number.isInteger(el.subscription_id);
+        });
+        const countMatch = updates_pending.rc_subscription_ids.length === rc_subscription_ids.length;
+        if (allUpdated && countMatch) {
+          _logger.info(`customer-charges removing entry in updates pending`);
+          await _mongodb.collection("updates_pending").deleteOne(query);
+        };
+        // still pending
+        if (!allUpdated || !countMatch) {
+          return res.status(200).json({ message: "Updates pending" });
+        };
+      };
+    };
     const groups = await reconcileGetGroups({ charges });
     let result = [];
 

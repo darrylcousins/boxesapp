@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import { makeRechargeQuery, getLastOrder } from "../../lib/recharge/helpers.js";
 import { reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import fs from "fs";
 
@@ -60,10 +60,18 @@ export default async (req, res, next) => {
 
     for (const [subscription_id, group] of Object.entries(grouped)) {
       // removing charge object which duplicates included
+      const lastOrder = await getLastOrder({
+        customer_id: group.box.customer_id,
+        address_id: group.box.address_id,
+        product_id: parseInt(group.box.external_product_id.ecommerce),
+        subscription_id,
+      });
+
       result.push({
         subscription_id,
         box: group.box,
         included: group.included,
+        lastOrder
       });
     };
 

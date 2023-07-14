@@ -189,7 +189,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    * @member customizingBox
    * @type {boolean}
    */
-  let customizingBox = false;
+  let customizingBox = true;
   /**
    * Register that a change has occurred
    * This is done on updatePriceElement

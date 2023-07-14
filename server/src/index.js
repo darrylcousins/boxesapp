@@ -30,6 +30,7 @@ import apiMiddleware from "./middleware/api.js";
 import verifyHost from "./middleware/verify-host.js";
 import proxyWrite from "./middleware/proxy-write.js";
 import docWrite from "./middleware/doc-write.js";
+import { morganMiddleware } from "./middleware/morgan.js";
 import { verifyProxy, verifyProxyAdmin, verifyProxyCustomer } from "./middleware/verify-proxy.js";
 
 import api from "./api/index.js";
@@ -61,12 +62,14 @@ export async function createServer(
 
   const app = express();
 
+  /*
   morgan.token('host', function(req, res) {
     return req.hostname;
   });
-  //const morganTokens = ':method :host :url :status :res[content-length] - :response-time ms';
-  const morganTokens = ':method :url :status :res[content-length] - :response-time ms';
+  const morganTokens = ':method :status :response-time ms :url :res[content-length]';
   if (!isTest) app.use(morgan(morganTokens, { stream: morganLogger.stream })); // simple
+  */
+  if (!isTest) app.use(morganMiddleware); // colorised
 
   // set headers
   app.set('trust proxy', 1);
@@ -152,7 +155,7 @@ if (!isTest) {
 
     const server = app.listen(
       process.env.PORT,
-      () => _logger.info(`${_filename(import.meta)} server running on ${process.env.PORT}`)
+      () => morganLogger.info(`${_filename(import.meta)} server running on ${process.env.PORT}, NODE_ENV=${process.env.NODE_ENV}`)
     );
 
     const io = new SocketServer(server, {

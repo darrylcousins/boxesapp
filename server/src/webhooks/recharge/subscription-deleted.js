@@ -57,7 +57,13 @@ export default async function subscriptionDeleted(topic, shop, body) {
       ]
     };
     const res =  await _mongodb.collection("updates_pending").updateOne(query, update, options);
-    meta.recharge.updates_pending = (res.matchedCount > 0) ? "UPDATED ON REMOVE" : "NOT FOUND";
+    if (res.matchedCount > 0) {
+      const entry = await _mongodb.collection("updates_pending").findOne(query);
+      meta.recharge.label = entry.label;
+      meta.recharge.updates_pending = "UPDATED ON DELETED";
+    } else {
+      meta.recharge.updates_pending = "NOT FOUND";
+    };
     meta.recharge = sortObjectByKeys(meta.recharge);
     _logger.notice(`Subscription deleted.`, { meta });
 

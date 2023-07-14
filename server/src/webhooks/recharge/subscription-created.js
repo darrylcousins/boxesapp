@@ -63,7 +63,14 @@ export default async function subscriptionCreated(topic, shop, body) {
       ]
     };
     const res =  await _mongodb.collection("updates_pending").updateOne(query, update, options);
-    meta.recharge.updates_pending = (res.matchedCount > 0) ? "UPDATED ON CREATED" : "NOT FOUND";
+    if (res.matchedCount > 0) {
+      query.rc_subscription_ids["$elemMatch"]["$and"][1] = { subscription_id: subscription.id };
+      const entry = await _mongodb.collection("updates_pending").findOne(query);
+      meta.recharge.label = entry.label;
+      meta.recharge.updates_pending = "UPDATED ON CREATED";
+    } else {
+      meta.recharge.updates_pending = "NOT FOUND";
+    };
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };

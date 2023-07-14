@@ -60,6 +60,7 @@ export default async function chargeCreated(topic, shop, body) {
         // all rc_subscription_ids are true for this query
         const updates_pending = await _mongodb.collection("updates_pending").findOne(query);
         if (updates_pending) {
+          meta.recharge.label = updates_pending.label;
           const allUpdated = updates_pending.rc_subscription_ids.every(el => {
             // check that all subscriptions have updated or been created
             return el.updated === true && Number.isInteger(el.subscription_id);
@@ -68,8 +69,6 @@ export default async function chargeCreated(topic, shop, body) {
           const rc_ids_removed = updates_pending.rc_subscription_ids.filter(el => el.quantity > 0);
           //const countMatch = updates_pending.rc_subscription_ids.length === meta.recharge.rc_subscription_ids.length;
           const countMatch = rc_ids_removed.length === meta.recharge.rc_subscription_ids.length;
-          console.log("charge-created updates pending rc count", rc_ids_removed.length);
-          console.log("charge-created this charge rc count", meta.recharge.rc_subscription_ids.length);
           if (allUpdated && countMatch) {
             if (updates_pending.charge_id === charge.id) {
               meta.recharge.updates_pending = "COMPLETED";
@@ -80,6 +79,7 @@ export default async function chargeCreated(topic, shop, body) {
                 { _id: ObjectID(updates_pending._id) },
                 { $set: { charge_id : charge.id, updated_charge_date: true } },
               );
+              _logger.info(`charge-created updating charge id`);
               meta.recharge.updates_pending = "UPDATING CHARGE ID";
             };
           } else {
@@ -147,8 +147,8 @@ export default async function chargeCreated(topic, shop, body) {
   /* 
    * Above here we are looking a charges created because next_scheduled_at was updated
    * From here down for newly created subscriptions through shopfiy
+   * So again we need to create a flag entry in updates_pending
    */
-
   try {
 
     // The worst case would be if two box subscriptions came in with the same title and
@@ -300,8 +300,35 @@ export default async function chargeCreated(topic, shop, body) {
       _logger.notice(`Charge created, subsciptions updated, and email sent ${topicLower}.`, { meta });
     };
 
+    /*
+     * Everything got done, now register this subscription as updating - ie awaiting webhooks
+     */
+    const update = {
+      label: "NEW SUBSCRIPTION",
+      charge_id: charge.id,
+      customer_id: charge.customer.id,
+      address_id: charge.address_id,
+      subscription_id: boxSubscription.purchase_item_id,
+      scheduled_at: nextChargeScheduledAt,
+      rc_subscription_ids: subscription_ids,
+      updated_charge_date: false,
+      title: boxSubscription.product_title,
+      timestamp: new Date(),
+    };
+    delete boxSubscription.properties.Likes;
+    delete boxSubscription.properties.Dislikes;
+    for (const [key, value] of Object.entries(boxSubscription.properties)) {
+      doc[key] = value;
+    };
+    const result = await _mongodb.collection("updates_pending").updateOne(
+      { charge_id: charge.id },
+      { "$set" : doc },
+      { "upsert": true }
+    );
+
+
     /* verify that customer is in local mongodb */
-    const collection = _mongodb.collection("customers");
+    // Farm this out to another process that collects the customer and add to other updates: dleted etc
     const doc = {
       first_name: charge.billing_address.first_name,
       last_name: charge.billing_address.last_name,
@@ -309,7 +336,7 @@ export default async function chargeCreated(topic, shop, body) {
       recharge_id: parseInt(charge.customer.id),
       shopify_id: parseInt(charge.customer.external_customer_id.ecommerce),
     };
-    const result = await _mongodb.collection("customers").updateOne(
+    await _mongodb.collection("customers").updateOne(
       { recharge_id: parseInt(charge.customer.id) },
       { "$set" : doc },
       { "upsert": true }

@@ -105,6 +105,7 @@ export const getMetaForSubscription = (subscription, topic) => {
  */
 export const writeFile = (json, type, topic) => {
 
+  return;
   if (process.env.NODE_ENV !== "development") return;
 
   /* development logging stuff */

@@ -33,7 +33,6 @@ export default async function subscriptionUpdated(topic, shop, body) {
       subscription_id: parseInt(properties.box_subscription_id),
       customer_id: subscription.customer_id,
       address_id: subscription.address_id,
-      scheduled_at: subscription.next_charge_scheduled_at,
       rc_subscription_ids:
         { $elemMatch: {
           $and: [
@@ -42,6 +41,8 @@ export default async function subscriptionUpdated(topic, shop, body) {
           ]},
         },
     };
+    // this addition fouled things when reactivating subscriptions
+    //if (Boolean(subscription.next_charge_scheduled_at)) query.scheduled_at = subscription.next_charge_scheduled_at;
     const update = { $set: {
       "rc_subscription_ids.$[i].updated": true
     }};
@@ -54,8 +55,15 @@ export default async function subscriptionUpdated(topic, shop, body) {
       ]
     };
     const res =  await _mongodb.collection("updates_pending").updateOne(query, update, options);
-    meta.recharge.updates_pending = (res.matchedCount > 0) ? "UPDATED ON UPDATED" : "NOT FOUND";
+    if (res.matchedCount > 0) {
+      const entry = await _mongodb.collection("updates_pending").findOne(query);
+      meta.recharge.label = entry.label;
+      meta.recharge.updates_pending = "UPDATED ON UPDATED";
+    } else {
+      meta.recharge.updates_pending = "NOT FOUND";
+    };
 
+    _logger.notice(`Query to update pending for ${subscription.product_title}`, { meta: { recharge: query} });
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };

@@ -72,6 +72,7 @@ export default async function chargeUpdated(topic, shop, body) {
       const updates_pending = await _mongodb.collection("updates_pending").findOne(query);
       // failing my query do the query match here
       if (updates_pending) {
+        meta.recharge.label = updates_pending.label;
         const allUpdated = updates_pending.rc_subscription_ids.every(el => {
           // check that all subscriptions have updated
           return el.updated === true && Number.isInteger(el.subscription_id);
@@ -80,11 +81,10 @@ export default async function chargeUpdated(topic, shop, body) {
         const rc_ids_removed = updates_pending.rc_subscription_ids.filter(el => el.quantity > 0);
         //const countMatch = updates_pending.rc_subscription_ids.length === meta.recharge.rc_subscription_ids.length;
         const countMatch = rc_ids_removed.length === meta.recharge.rc_subscription_ids.length;
-        console.log("charge-updated updates pending rc count", rc_ids_removed.length);
-        console.log("charge-updated this charge rc count", meta.recharge.rc_subscription_ids.length);
         if (allUpdated && countMatch) {
           if (updates_pending.charge_id === charge.id) {
             meta.recharge.updates_pending = "COMPLETED";
+            _logger.info(`charge-updated completed`);
             await _mongodb.collection("updates_pending").deleteOne({ _id: ObjectID(updates_pending._id) });
           } else {
             // not receiving charge created webhook when updating scheduled_at so just trusting this
@@ -94,6 +94,7 @@ export default async function chargeUpdated(topic, shop, body) {
               { _id: ObjectID(updates_pending._id) },
               { $set: { charge_id : charge.id, updated_charge_date: true } },
             );
+            _logger.info(`charge-updated charge id updated`);
             meta.recharge.updates_pending = "CHARGE ID UPDATED";
             // and it will be deleted at api/customer-charge
           };

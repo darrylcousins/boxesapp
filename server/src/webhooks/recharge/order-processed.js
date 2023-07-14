@@ -68,7 +68,6 @@ export default async function orderProcessed(topic, shop, body) {
         subscription_id: parent.purchase_item_id,
         customer_id: order.customer.id,
         address_id: order.address_id,
-        shopify_order_id: external_order_id.ecommerce,
         box: `${parent.title} - ${parent.variant_title}`,
         delivered: currentDeliveryDate,
         next_delivery: deliveryDate,

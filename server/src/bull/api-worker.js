@@ -2,11 +2,13 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { Worker } from "bullmq";
+import colors from "colors";
 
-import { redisOptions, queueName } from "./config.js";
-import { queue } from "./queue.js";
+import { redisOptions, apiQueueName, mailQueueName } from "./config.js";
 
 import { doRechargeQuery } from "../lib/recharge/helpers.js";
+import { doShopQuery } from "../lib/shopify/helpers.js";
+import { winstonLogger } from "../../config/winston.js";
 
 const workerOptions = {
   connection: redisOptions,
@@ -23,19 +25,49 @@ const workerOptions = {
  * Note that a processor can optionally return a value. This value can be
  * retrieved either by getting the job and accessing the "returnvalue" property
  * or by listening to the "completed" event:
+ *
+ * Also check https://docs.bullmq.io/guide/workers/sandboxed-processors
+ * Sandboxing might be a good approach for mail?
  */
-const processor = async (job) => {
-  if (job.name === "makeRechargeQuery") {
-    return await doRechargeQuery(job.data);
+const color = (str, color) => {
+  if (typeof str === "undefined") {
+    return "undefined".grey;
   };
-  return `${job.name} success`; // return a result?
+  return `${str}`[color];
 };
 
-const worker = new Worker(
-  queueName,
-  processor,
+const apiProcessor = async (job) => {
+  let returnvalue;
+  if (job.name === "makeRechargeQuery") {
+    returnvalue = await doRechargeQuery(job.data);
+  };
+  if (job.name === "makeShopQuery") {
+    returnvalue = await doShopQuery(job.data);
+  };
+  const { method, status, statusText, title } = returnvalue;
+  winstonLogger.info(`\
+${color(job.name.padEnd(17, " "), "magenta")} \
+${color(method, "green")} \
+${color(status, "yellow")} \
+${color(statusText, "blue")} \
+${title ? color(title, "white") : ""}\
+  `);
+  return returnvalue;
+};
+
+const apiWorker = new Worker(
+  apiQueueName,
+  apiProcessor,
   workerOptions
 );
+
+apiWorker.on('error', async (err) => {
+  // log the error
+  winstonLogger.error(`${"Failed".red} with ${err.message}`);
+  await job.log(`Failed with ${err}`);
+});
+  
+winstonLogger.info("Api worker started!".green);
 
 /*
 worker.on('completed', async (job, returnvalue) => {
@@ -51,9 +83,3 @@ worker.on('progress', async (job, progress) => {
   await job.log(`Worker: ${job.name} with id ${job.id} and data ${JSON.stringify(job.data)} has progressed with ${progress}`);
 });
 */
-worker.on('error', async (err) => {
-  // log the error
-  await job.log(`Worker: Failed with ${err}`);
-});
-  
-console.log("Worker started!");

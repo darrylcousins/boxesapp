@@ -3,10 +3,10 @@
  */
 import { Queue, QueueEvents } from "bullmq";
 
-import { redisOptions, queueName } from "./config.js";
+import { redisOptions, apiQueueName, mailQueueName } from "./config.js";
 
 /* Queue */
-export const queue = new Queue(queueName, {
+export const apiQueue = new Queue(apiQueueName, {
   connection: redisOptions,
   /*
   limiter: {
@@ -16,6 +16,20 @@ export const queue = new Queue(queueName, {
   */
 });
 
-export const queueEvents = new QueueEvents(queueName, {
+export const apiQueueEvents = new QueueEvents(apiQueueName, {
+  connection: redisOptions,
+});
+
+export const mailQueue = new Queue(mailQueueName, {
+  connection: redisOptions,
+  /*
+  limiter: {
+    max: 3, // limit the queue to a maximum of 3 jobs per 1 second
+    duration: 1000, // limit the queue to a maximum of 3 jobs per 1 second
+  },
+  */
+});
+
+export const mailQueueEvents = new QueueEvents(mailQueueName, {
   connection: redisOptions,
 });

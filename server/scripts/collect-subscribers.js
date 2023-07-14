@@ -47,14 +47,17 @@ const run = async () => {
         email: el.email,
         recharge_id: el.id,
         shopify_id: parseInt(el.external_customer_id.ecommerce),
+        subscriptions_active_count: el.subscriptions_active_count,
+        subscriptions_total_count: el.subscriptions_total_count,
       };
     });
 
-    for (const c of insert) {
-      const customer = await collection.findOne({ recharge_id: c.recharge_id });
-      if (!customer) {
-        const res = await collection.insertOne(c);
-      };
+    for (const doc of insert) {
+      const result = await _mongodb.collection("customers").updateOne(
+        { recharge_id: parseInt(doc.recharge_id) },
+        { "$set" : doc },
+        { "upsert": true }
+      );
     };
 
   } catch(e) {

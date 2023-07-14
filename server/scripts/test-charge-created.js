@@ -13,7 +13,7 @@ process.env.NODE_ENV = "test";
 
 import chargeCreated from "../src/webhooks/recharge/charge-created.js";
 //import charge from "../json/recharge.charge.created.json" assert { type: "json" };
-import charge from "../json/recharge.charge.test.json" assert { type: "json" };
+import charge from "./recharge.charge.json" assert { type: "json" };
 //import charge from "../json/recharge.charge.test2.json" assert { type: "json" };
 
 const run = async () => {

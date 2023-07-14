@@ -86,11 +86,13 @@ export default class Registry {
           if (webhookHandler) {
             try {
               await webhookHandler(webhookTopic, domain, reqBody);
-            } catch(err) {
-              return reject(err);
+            } catch(error) {
+              return reject(error);
             };
           } else {
-            return reject(new Error(`Recharge webhook ${topic} unknown handler.`));
+            const err = new Error(`Recharge webhook ${topic} unknown handler.`);
+            _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+            return reject(error);
           };
           return resolve();
         };

@@ -2,10 +2,9 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import "dotenv/config";
-import { Job } from "bullmq";
 import { makeShopQuery } from "../shopify/helpers.js";
 import { getNZDeliveryDay } from "../dates.js";
-import { queue, queueEvents } from "../../bull/queue.js";
+import { makeApiJob } from "../../bull/job.js";
 import { winstonLogger } from "../../../config/winston.js"
 
 /*
@@ -31,109 +30,9 @@ import { winstonLogger } from "../../../config/winston.js"
  * 503 - A 3rd party service on which the request depends has timed out.
  */
 
-//export const makeRechargeQuery = async ({method, path, limit, query, body}) => {
 export const makeRechargeQuery = async (opts) => {
-
-  const { io, session_id, finish } = opts;
-  delete opts.io;
-
-  const emit = ({ io, eventName, message }) => { // args should be the rest of it
-    if (io) {
-      io.emit(eventName, message);
-    };
-  };
-
-  const eventName = "uploadProgress";
-  const title = (typeof opts.title !== "undefined") ? `"${opts.title}"` : "";
-
-  emit({
-    io,
-    eventName,
-    message: `${session_id} Received query continue...`
-  });
-
-  // opts is the job data passed to doRechargeQuery
-  const job = await queue.add(
-    "makeRechargeQuery",
-    opts,
-    {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
-      },
-    },
-  )
-  console.log("Queued")
-  emit({
-    io,
-    eventName,
-    message: `Queued ${title} update...`
-  });
-
-
-  if (io) {
-    queueEvents.on('progress', async ({ jobId, data }, timestamp) => {
-      const job = await Job.fromId(queue, jobId);
-      if (typeof job.data.session_id !== "undefined") {
-        console.log("job completed with session_id: ", job.data.session_id)
-        const title = (typeof job.data.title !== "undefined") ? job.data.title : "";
-        emit({
-          io,
-          eventName,
-          message: `Updating ${title}...`
-        });
-      };
-    });
-    queueEvents.on('completed', async ({ jobId, returnvalue }) => {
-      const job = await Job.fromId(queue, jobId);
-      if (typeof job.data.session_id !== "undefined") {
-        console.log("job completed with session_id: ", job.data.session_id)
-        const title = (typeof job.data.title !== "undefined") ? job.data.title : "";
-        emit({
-          io,
-          eventName,
-          message: `Update ${title} completed...`
-        });
-        if (typeof job.data.finish !== "undefined") {
-          // e.g. updateSubscriptions
-          console.log("all jobs completed: ", job.data.session_id)
-          emit({
-            io,
-            eventName: "finished",
-            message: job.data.session_id
-          });
-        };
-      };
-    });
-  };
-
-  await job.updateProgress(`Update ${title} executing...`);
-  /*
-   * Returns one of these values: "completed", "failed", "delayed", "active", "waiting", "waiting-children", "unknown".
-   */
-  // const state = await job.getState();
-
-  // This correctly waits until the job is done :)
-  await job.waitUntilFinished(queueEvents)
-  console.log("Done");
-
-  const finished = await Job.fromId(queue, job.id)
-
-  const { method, status, statusText, title: queryTitle } = finished.returnvalue;
-  console.log(method, status, statusText, queryTitle ? queryTitle : "");
-
-  // this will still go back to the caller
-  if (parseInt(status) > 299) {
-    throw new Error(`Recharge request failed with code ${status}: "${statusText}"`);
-  };
-
-  delete finished.returnvalue.status;
-  delete finished.returnvalue.statusText;
-  delete finished.returnvalue.queryTitle;
-  delete finished.returnvalue.method;
-
-  return finished.returnvalue;
+  opts.processorName = "makeRechargeQuery";
+  return await makeApiJob(opts);
 };
 
 /*
@@ -172,46 +71,40 @@ export const doRechargeQuery = async ({method, path, limit, query, body, title, 
       "X-RECHARGE-ACCESS-TOKEN": process.env.RECHARGE_ACCESS_TOKEN,
     },
     body,
-  })
-    .then(async (response) => {
+  }).then(async (response) => {
 
-      let json = {};
+    let json = {};
 
-      if (http_method === "DELETE") {
-        json = {};
-        winstonLogger.warn(`Recharge delete`, { meta: json });
-      } else {
-        json = await response.json();
+    if (http_method === "DELETE") {
+      json = {};
+    } else {
+      json = await response.json();
 
-        // log the error as log level warn
-        if (Object.hasOwnProperty.call(json, "error")) {
-          const meta = {
-            recharge: {
-              uri: url,
-              method: http_method,
-              status: json.status,
-              text: json.statusText,
-              error: json.error,
-            },
-          };
-          winstonLogger.warn(`Recharge fetch error`, { meta });
+      // log the error as log level error
+      if (Object.hasOwnProperty.call(json, "error")) {
+        const meta = {
+          recharge: {
+            uri: url,
+            method: http_method,
+            status: json.status,
+            text: json.statusText,
+            error: json.error,
+          },
         };
+        winstonLogger.notice(`Recharge fetch error`, { meta });
       };
-      json.status = response.status;
-      json.statusText = response.statusText;
-      json.title = title;
-      json.method = http_method;
+    };
+    json.status = response.status;
+    json.statusText = response.statusText;
+    json.title = title;
+    json.method = http_method;
 
-      if (parseInt(response.status) > 299) {
-        throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}"`);
-      };
+    if (parseInt(response.status) > 299) {
+      throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}"`);
+    };
 
-      return json;
-    });
-};
-
-const delay = (t) => {
-  return new Promise(resolve => setTimeout(resolve, t));
+    return json;
+  });
 };
 
 /*
@@ -240,13 +133,6 @@ export const updateSubscription = async ({ id, title, body, io, session_id }) =>
   options.session_id = session_id;
   options.title = title;
   const result = await makeRechargeQuery(options);
-  /*
-  const result = await makeRechargeQuery({
-    method: "PUT",
-    path: `subscriptions/${id}`,
-    body: JSON.stringify(body)
-  });
-  */
   return result;
 };
 
@@ -263,13 +149,6 @@ export const updateChargeDate = async ({ id, date, title, io, session_id }) => {
   options.session_id = session_id;
   options.title = title;
   const result = await makeRechargeQuery(options);
-  /*
-  const result = await makeRechargeQuery({
-    method: "POST",
-    path: `subscriptions/${id}/set_next_charge_date`,
-    body: JSON.stringify({ date })
-  });
-  */
   return result;
 };
 
@@ -330,6 +209,7 @@ export const getLastOrder = async ({ customer_id, address_id, subscription_id, p
     path: `charges`,
     query: [
       ["customer_id", customer_id ],
+      ["address_id", address_id ],
       ["purchase_item_id", subscription_id ],
       ["status", "success" ],
       ["limit", 1 ],
@@ -340,7 +220,8 @@ export const getLastOrder = async ({ customer_id, address_id, subscription_id, p
   if (charge) {
     const { order } = await makeShopQuery({
       path: `orders/${charge.external_order_id.ecommerce}.json`,
-      fields: ["current_total_price", "order_number", "tags", "line_items"]
+      fields: ["current_total_price", "order_number", "tags", "line_items"],
+      title: "Get order",
     });
     if (!order) return {};
     order.delivered = null;

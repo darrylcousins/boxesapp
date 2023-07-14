@@ -58,13 +58,10 @@ export const reconcileGetGrouped = async ({ charge }) => {
         scheduled_at: group.charge.scheduled_at,
         subscription_id: parseInt(box_subscription_id),
       };
-      console.log("reconcile grouped finding pending", query);
+      //console.log("reconcile grouped finding pending", query);
       grouped[box_subscription_id].pending = Boolean(await _mongodb.collection("updates_pending").findOne(query));
-      console.log("reconcile grouped found pending", grouped[box_subscription_id].pending);
+      //console.log("reconcile grouped found pending", grouped[box_subscription_id].pending);
 
-      if (Object.keys(group.box) === "null") {
-        console.log("NO BOX ON GROUPED CHARGE", group.charge.id);
-      };
     };
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
@@ -192,13 +189,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     if (box) previousBox = { ...box };
   };
 
-  // for fucks sake how do I handle not finding a box???
-  if (!fetchBox) {
-    delivered.setDate(delivered.getDate() - days);
-    query.delivered = delivered.toDateString();
-    fetchBox = await _mongodb.collection("boxes").findOne(query);
-  };
-
   // XXX if still no current box then fudge it this can happen for **two week** subscriptions
   if (!fetchBox && previousBox) {
     fetchBox = { ...previousBox };
@@ -217,6 +207,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
       addOnProducts: [],
     };
   };
+
 
   let notIncludedInThisBox = [];
   let newIncludedInThisBox = [];
@@ -252,12 +243,15 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     .map(el => ({ title: el.title, quantity: el.quantity - 1 }));
   // keeping all quantities
   let boxSwappedExtras = boxListArrays["Swapped Items"]
+    .filter(el => el !== "None")
     .map(el => matchNumberedString(el))
     .map(el => ({ title: el.title, quantity: el.quantity - 1 }));
   // XXX Saw a single case where an included subscription did not appear here
   let boxAddOnExtras = boxListArrays["Add on Items"]
+    .filter(el => el !== "None")
     .map(el => matchNumberedString(el));
   let boxRemovedItems = boxListArrays["Removed Items"]
+    .filter(el => el !== "None")
     .map(el => matchNumberedString(el));
 
   // subscribedExtras are subscribed items in the package - should also be in boxListExtras
@@ -280,8 +274,8 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   const addOnProducts = fetchBox.addOnProducts.map(el => el.shopify_title);
   const includedProducts = fetchBox.includedProducts.map(el => el.shopify_title);
 
-  const messages = [];
-  const subscriptionUpdates = [];
+  let messages = [];
+  let subscriptionUpdates = [];
   let item;
   let itemInner;
   let idx;
@@ -292,12 +286,14 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     if (includedProducts.indexOf(item.title) === -1) { // not included this week
       // remove from removedItem list
       boxRemovedItems = boxRemovedItems.filter(el => el.title !== item.title);
+      console.log(`removed message with ${JSON.stringify(item, null, 2)}`);
       messages.push(`Removed item ${item.title} not in this weeks box.`);
       for (itemInner of [ ...boxSwappedExtras ]) {
         quantity = itemInner.quantity;
         if (quantity === 0) {
           // only a swap and no subscribed item
           boxSwappedExtras = boxSwappedExtras.filter(el => el.title !== itemInner.title);
+          console.log(`swapped message with ${JSON.stringify(item, null, 2)}`);
           messages.push(`Swapped item ${itemInner.title} not swapped this week.`);
         } else {
           if (addOnProducts.indexOf(itemInner.title) === -1) { // not included this week
@@ -538,13 +534,19 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
 
   // add the box subscription itself to the updates required
   // can we push this through to the front end when customer, or admin goes to their update
-  const finalProperties = {
-    //"Delivery Date": fetchBox.delivered,
-    "Delivery Date": boxProperties["Delivery Date"],
-    "Including": makeItemString(boxIncludes, ","),
-    "Add on Items": makeItemString(boxAddOnExtras, ","),
-    "Swapped Items": makeItemString(boxSwappedExtras, ","),
-    "Removed Items": makeItemString(boxRemovedItems, ","),
+  let finalProperties;
+  // no fetchBox found
+  if (fetchBox.shopify_title === "") {
+    finalProperties = { ...boxProperties };
+  } else {
+    finalProperties = {
+      //"Delivery Date": fetchBox.delivered,
+      "Delivery Date": boxProperties["Delivery Date"],
+      "Including": makeItemString(boxIncludes, ","),
+      "Add on Items": makeItemString(boxAddOnExtras, ","),
+      "Swapped Items": makeItemString(boxSwappedExtras, ","),
+      "Removed Items": makeItemString(boxRemovedItems, ","),
+    };
   };
 
   const updateProperties = { ...finalProperties };
@@ -579,10 +581,17 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   const lastOrder = await getLastOrder({
     customer_id: subscription.customer_id,
     address_id: subscription.address_id,
-    //product_id: fetchBox.shopify_product_id,
     product_id: parseInt(subscription.external_product_id.ecommerce),
     subscription_id: subscription.id,
   });
+
+  // XXX FUDGING it til I make it
+  // actually this seems to be enough to make the front end display ok
+  // probable could avoid a lot of the above alortith though
+  if (fetchBox.shopify_title === "") {
+    messages = [];
+    subscriptionUpdates = [];
+  };
 
   return {
     fetchBox,
@@ -622,7 +631,6 @@ export const gatherData = async ({ grouped, result }) => {
     let subscription;
     // XXX in order to get the frequency I need to get the actual subscription
     if (!Object.hasOwnProperty.call(group, "subscription")) {
-      console.log("GROUP HAS NO SUBSCRIPTION");
       const item_id = Object.hasOwnProperty.call(group.box, "purchase_item_id")
         ? group.box.purchase_item_id : group.box.id;
 
@@ -634,7 +642,6 @@ export const gatherData = async ({ grouped, result }) => {
       subscription = res.subscription;
     } else {
       subscription = group.subscription;
-      console.log("GROUP HAS SUBSCRIPTION");
     };
 
     // subscription.purchase_item_id === actual subscription.id

@@ -6,12 +6,15 @@ import { MongoStore } from "../mongo/mongo.js";
 import Context from "./context.js";
 import Registry from "./registry.js";
 
+import { getMongo } from "../mongo/mongo.js";
+
 export const Shopify = {
   Context,
   Registry: null,
   initialize: async function () {
     let accessToken = null;
-    const session = await _mongodb.collection("shopify_sessions").findOne({shop: process.env.SHOP});
+    const { mongo, client } = await getMongo();
+    const session = await mongo.collection("shopify_sessions").findOne({shop: process.env.SHOP});
     if (session) accessToken = session.access_token;
 
     const context = {
@@ -27,7 +30,7 @@ export const Shopify = {
     this.Context.initialize(context);
     this.Registry = new Registry({
       store: new MongoStore({
-        mongodb: _mongodb,
+        mongodb: mongo,
         collection: "registry"
       }),
     });

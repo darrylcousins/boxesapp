@@ -4,12 +4,21 @@
 import "dotenv/config";
 
 import { Shopify } from "./index.js";
+import { makeApiJob } from "../../bull/job.js";
+import { winstonLogger } from "../../../config/winston.js"
+import { getMongo } from "../mongo/mongo.js";
 /**
   * Helpers for shopify interactions
   *
  */
 
-export const makeShopQuery = async ({path, limit, query, fields}) => {
+export const makeShopQuery = async (opts) => {
+  opts.processorName = "makeShopQuery";
+  return await makeApiJob(opts);
+};
+
+export const doShopQuery = async (opts) => {
+  const { path, limit, query, fields, title } = opts;
   const fieldString = fields ? `?fields=${fields.join(',')}` : "";
   const start = fields ? "&" : "?";
   const searchString = query ? start + query.reduce((acc, curr, idx) => {
@@ -19,16 +28,27 @@ export const makeShopQuery = async ({path, limit, query, fields}) => {
   const count = limit ? `&limit=${limit}` : "";
   
   const url = `https://${process.env.SHOP_NAME}.myshopify.com/admin/api/${process.env.SHOPIFY_API_VERSION}/${path}${fieldString}${searchString}${count}`;
-  _logger.info(`${_filename(import.meta)} Query store: ${url}`);
+  const http_method = "GET";
+  //
+  // if this is a new connection then we need to close it too this is because
+  // we also run in a separate worker process so do not have the persistent
+  // global._mongodb variable
+  const { mongo, client } = await getMongo();
+  const session = await mongo.collection("shopify_sessions").findOne({shop: process.env.SHOP});
+  if (Boolean(client)) {
+    await client.close();
+  };
+
   return await fetch(encodeURI(url), {
-    method: 'GET',
+    method: http_method,
     headers: {
-      'X-Shopify-Access-Token': Shopify.Context.ACCESS_TOKEN 
+      //"X-Shopify-Access-Token": Shopify.Context.ACCESS_TOKEN 
+      "X-Shopify-Access-Token": session.access_token  // can I guarantee the presence?
     }
-  }).then(response => {
+  }).then(async (response) => {
     // I don't recall if they come in "errors" or "error"
     // XXX Fix me when you remember - same too for recharge api query
-    const json = response.json();
+    const json = await response.json();
     if (Object.hasOwnProperty.call(json, "errors")) {
       const meta = {
         shopify: {
@@ -37,7 +57,7 @@ export const makeShopQuery = async ({path, limit, query, fields}) => {
           errors: json.errors,
         },
       };
-      _logger.notice(`Shopify fetch errors.`, { meta });
+      winstonLogger.error(`Shopify fetch errors.`, { meta });
     };
     if (Object.hasOwnProperty.call(json, "error")) {
       const meta = {
@@ -47,8 +67,17 @@ export const makeShopQuery = async ({path, limit, query, fields}) => {
           error: json.errors,
         },
       };
-      _logger.notice(`Shopify fetch error.`, { meta });
+      winstonLogger.error(`Shopify fetch error.`, { meta });
     };
+    json.status = response.status;
+    json.statusText = response.statusText;
+    json.title = title || "shopify no title";
+    json.method = http_method;
+
+    if (parseInt(response.status) > 299) {
+      throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}"`);
+    };
+
     return json;
   })
 };
@@ -68,7 +97,7 @@ export const queryStoreProducts = async function (search, product_type) {
     ["status", "active"],
   ];
 
-  return await makeShopQuery({path, limit, query, fields})
+  return await makeShopQuery({path, limit, query, fields, title: "Search products"})
     .then(async ({products}) => {
       const regexp = new RegExp(search, 'i');
       const filtered = products.filter(({title}) => regexp.test(title));
@@ -95,7 +124,7 @@ export const updateStoreObject = async (id, objName, data) => {
     body: JSON.stringify(body),
   })
     .then(response => {
-      //_logger.info(`${_filename(import.meta)} Updated store ${objName} with id ${id} with data ${JSON.stringify(data, null, 2)}`);
+      //winstonLogger.info(`${_filename(import.meta)} Updated store ${objName} with id ${id} with data ${JSON.stringify(data, null, 2)}`);
       return response.status;
     });
 };
@@ -126,7 +155,7 @@ export const queryStoreGraphQL = async ({ body }) => {
           errors: json.errors,
         },
       };
-      _logger.notice(`Shopify graphql errors.`, { meta });
+      winstonLogger.notice(`Shopify graphql errors.`, { meta });
     };
     if (Object.hasOwnProperty.call(json, "error")) {
       const meta = {
@@ -136,7 +165,7 @@ export const queryStoreGraphQL = async ({ body }) => {
           errors: json.errors,
         },
       };
-      _logger.notice(`Shopify graphql error.`, { meta });
+      winstonLogger.notice(`Shopify graphql error.`, { meta });
     };
     return json;
   })

@@ -89,7 +89,9 @@ export default class Registry {
               return reject(err);
             };
           } else {
-            return reject(new Error(`Shopify webhook ${topic} unknown handler.`));
+            const err = new Error(`Shopify webhook ${topic} unknown handler.`);
+            _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+            return reject(error);
           };
           return resolve();
         };

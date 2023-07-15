@@ -11,7 +11,9 @@
     "preserve": "npm run build",
     "serve": "cross-env NODE_ENV=production node src/index.js",
     "start": "npm run serve",
-    "worker": "node -r dotenv/config src/bull/worker.js",
+    "worker": "concurrently --kill-others \"npm run worker:api\" \"npm run worker:mail\"",
+    "worker:api": "node --trace-warnings -r dotenv/config src/bull/api-worker.js",
+    "worker:mail": "node -r dotenv/config src/bull/mail-worker.js",
     "test": "SHOP=test-shop.myshopify.com vitest --config config/vite.js --reporter=verbose"
   },
   "nodemonConfig": {
@@ -39,6 +41,7 @@
     "body-parser": "^1.20.0",
     "colors": "^1.4.0",
     "compression": "^1.7.4",
+    "concurrently": "^8.2.0",
     "cookie-parser": "^1.4.6",
     "cookie-session": "^2.0.0",
     "cross-env": "^7.0.3",
@@ -58,7 +61,7 @@
     "morgan": "^1.10.0",
     "msw": "^0.44.2",
     "nodemailer": "^6.7.7",
-    "nodemon": "^2.0.19",
+    "nodemon": "^3.0.1",
     "promise-throttle": "^1.1.2",
     "sass": "^1.54.0",
     "serve-static": "^1.15.0",

@@ -63,7 +63,7 @@ export default async function subscriptionUpdated(topic, shop, body) {
       meta.recharge.updates_pending = "NOT FOUND";
     };
 
-    _logger.notice(`Query to update pending for ${subscription.product_title}`, { meta: { recharge: query} });
+    //_logger.notice(`Query to update pending for ${subscription.product_title}`, { meta: { recharge: query} });
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };

@@ -245,24 +245,6 @@ export default async function chargeCreated(topic, shop, body) {
         });
       };
 
-      for (const update of updates) {
-        const opts = {
-          id: update.id,
-          title: update.title,
-          body: update.body,
-        };
-        await updateSubscription(opts);
-      };
-
-      for (const update of updates) {
-        const opts = {
-          id: update.id,
-          title: update.title,
-          date: update.date,
-        };
-        await updateChargeDate(opts);
-      };
-
       // create a mock charge including only these items
       const updatedCharge = { ...charge };
 
@@ -274,7 +256,6 @@ export default async function chargeCreated(topic, shop, body) {
 
       const updatedSubscription = { ...subscription };
       updatedSubscription.properties = [ ...boxSubscription.properties ];
-
       try {
         updatedCharge.scheduled_at = nextChargeScheduledAt;
         updatedCharge.line_items = updatedLineItems;
@@ -298,34 +279,63 @@ export default async function chargeCreated(topic, shop, body) {
       meta = getMetaForCharge(updatedCharge, "charge/created via first order");
       meta.recharge = sortObjectByKeys(meta.recharge);
       _logger.notice(`Charge created, subsciptions updated, and email sent ${topicLower}.`, { meta });
-    };
 
-    /*
-     * Everything got done, now register this subscription as updating - ie awaiting webhooks
-     */
-    const update = {
-      label: "NEW SUBSCRIPTION",
-      charge_id: charge.id,
-      customer_id: charge.customer.id,
-      address_id: charge.address_id,
-      subscription_id: boxSubscription.purchase_item_id,
-      scheduled_at: nextChargeScheduledAt,
-      rc_subscription_ids: subscription_ids,
-      updated_charge_date: false,
-      title: boxSubscription.product_title,
-      timestamp: new Date(),
-    };
-    delete boxSubscription.properties.Likes;
-    delete boxSubscription.properties.Dislikes;
-    for (const [key, value] of Object.entries(boxSubscription.properties)) {
-      doc[key] = value;
-    };
-    const result = await _mongodb.collection("updates_pending").updateOne(
-      { charge_id: charge.id },
-      { "$set" : doc },
-      { "upsert": true }
-    );
+      /*
+       * Register this subscription as updating - ie awaiting webhooks
+       * Now as the updates are run this should be resolved and put aside
+       */
+      const subscription_ids = meta.recharge.rc_subscription_ids.map(el => {
+        return { ...el, updated: false };
+      });
+      const update = {
+        label: "NEW SUBSCRIPTION",
+        charge_id: updatedCharge.id,
+        customer_id: updatedCharge.customer.id,
+        address_id: updatedCharge.address_id,
+        subscription_id: boxSubscription.purchase_item_id,
+        scheduled_at: nextChargeScheduledAt,
+        rc_subscription_ids: subscription_ids,
+        updated_charge_date: false,
+        title: boxSubscription.title,
+        timestamp: new Date(),
+      };
+      delete boxSubscription.properties.Likes;
+      delete boxSubscription.properties.Dislikes;
+      const props = boxSubscription.properties.reduce(
+        (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
+        {});
+      for (const [key, value] of Object.entries(props)) {
+        update[key] = value;
+      };
+      const result = await _mongodb.collection("updates_pending").updateOne(
+        { charge_id: updatedCharge.id },
+        { "$set" : update },
+        { "upsert": true }
+      );
 
+      /*
+       * do all the work and now run the updates
+       */
+      for (const update of updates) {
+        const opts = {
+          id: update.id,
+          title: update.title,
+          body: update.body,
+        };
+        await updateSubscription(opts);
+      };
+
+      for (const update of updates) {
+        const opts = {
+          id: update.id,
+          title: update.title,
+          date: update.date,
+        };
+        await updateChargeDate(opts);
+      };
+
+
+    };
 
     /* verify that customer is in local mongodb */
     // Farm this out to another process that collects the customer and add to other updates: dleted etc

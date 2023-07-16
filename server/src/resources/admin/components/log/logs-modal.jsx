@@ -19,7 +19,7 @@ import ModalTemplate from "../lib/modal-template";
  * @param {object} props Property object
  * @param {object} props.order The order to be displayed
  */
-async function* LogsModal({ logs, box_title }) {
+async function* LogsModal({ logs, box_title, admin }) {
   /**
    * Hold visibility state.
    *
@@ -48,6 +48,7 @@ async function* LogsModal({ logs, box_title }) {
    * Helper method to render log.meta
    */
   const formatMeta = (el) => {
+    const user = [ "Delivery Date", "title", "topic", "charge_status", "subscription_id", "scheduled_at" ];
     if (!Object.hasOwnProperty.call(el, 'meta')) {
       return <div>&nbsp;</div>;
     };
@@ -57,9 +58,17 @@ async function* LogsModal({ logs, box_title }) {
     // expecting just one object on meta 'order', 'product', 'customer', 'subscription'?
     const obj = Object.keys(el.meta)[0];
     if (possibleObjects.includes(obj)) {
+      let mapper;
+      if (admin) {
+        mapper = Object.entries(el.meta[obj]);
+      } else {
+        mapper = Object.entries(el.meta[obj]).filter(([title, str]) => {
+          return user.includes(title) ? [title, str] : false;
+        });
+      };
       return (
         <div class="dt w-100 mv1">
-          { Object.entries(el.meta[obj]).map(([title, str]) => (
+          { mapper.map(([title, str]) => (
               <div class="dt-row w-100">
                 <div class="dtc w-30 gray tr pr2">
                   { title }:

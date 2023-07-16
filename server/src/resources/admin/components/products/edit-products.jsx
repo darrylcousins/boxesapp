@@ -267,6 +267,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
    * @param {object} props.idx The list index
    */
   const QuantityInput = ({ el, id, idx }) => {
+    const inputId = `${Math.random()}`.split(".")[1];
     return (
       <input
         class="input-reset br1 ba b--silver dib"
@@ -276,7 +277,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
         name="quantity"
         data-id={id}
         data-idx={idx}
-        id={el.shopify_product_id}
+        id={inputId}
         value={el.quantity}
         autocomplete="off"
         style="font-size: 1.2rem; width: 3.5em; border-color: silver; padding: 0 3px; margin: 0"
@@ -504,12 +505,14 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     let orphanedItems = []; // XXX for adding or editing an order?
     // XXX There is another algorithm webhooks/recharge/charge-upcoming to be used here instead
     const possibleAddons = [ ...box.addOnProducts ];
+    /*
     const setOfLikes = (typeof boxProperties["Likes"] === "string") // can be null when first created
       ? new Set(boxProperties["Likes"].split(",").map(el => el.trim()))
       : new Set();
     const setOfDislikes = (typeof boxProperties["Dislikes"] === "string") // can be null when first created
       ? new Set(boxProperties["Dislikes"].split(",").map(el => el.trim()))
       : new Set();
+    */
     Object.entries(boxLists).forEach(([name, str]) => {
       if (str === null) {
         boxLists[name] = [];
@@ -527,9 +530,11 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
               orphanedItems.push({list: name, ...el}); // in boxLists but not available in box
             };
           };
+          /*
           // may as well update Likes and Dislikes
           if (["Swapped Items", "Add on Items"].includes(name)) setOfLikes.add(el.str);
           if (name === "Removed Items") setOfDislikes.add(el.str);
+          */
           if (!product) return null;
           return { ...product, quantity: el.count };
         });
@@ -538,8 +543,10 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     });
     // filtered from addOnProducts, renamed here to possibleAddons quantity helps later
     boxLists["possibleAddons"] = possibleAddons.map(el => ({ ...el, quantity: 1 }))
+    /*
     if (setOfLikes.size) boxProperties["Likes"] = Array.from(setOfLikes).join(",");
     if (setOfDislikes.size) boxProperties["Dislikes"] = Array.from(setOfDislikes).join(",");
+    */
 
     orphanedItems = orphanedItems.filter(el => el.str !== "");
     if (orphanedItems.length > 0) {
@@ -745,11 +752,17 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
   };
 
   const getLeftBorder = (name, idx) => {
+    if (window.innerWidth <= 780) return "";
     if (boxLists["Including"].length === 0) return "";
-    if (idx > 0) return "bl-0";
+    if (name === "Including") return "ba";
+    if (idx > 0) return "ba bl-0";
     return "";
   };
 
+  const getTopBorder = (name, idx) => {
+    if (window.innerWidth <= 780) return "";
+    return idx > 0 ? "bt" : "";
+  };
   const getWrapperBottomBorder = (name, idx) => {
     if (boxLists["Including"].length === 0) return "bb-0";
     return "";
@@ -760,6 +773,11 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     if (idx > 0) return "pb2";
     return "";
   };
+
+  const lineHeightStyle = { height: "40px", "line-height": "40px" }
+  const lineImageStyle = { height: "40px", width: "40px" };
+
+  window.addEventListener("resize", (event) => this.refresh() );
 
   for (const { box, properties, nextChargeDate, images, isEditable, key } of this) { // eslint-disable-line no-unused-vars
 
@@ -776,7 +794,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
           <div class="tc center">
             <h6 class="fw4 tl mb0 fg-streamside-maroon">{box.shopify_title}</h6>
           </div>
-          <div class="flex-container-reverse w-100">
+          <div class="flex-container w-100">
             <div class="mb2 w-100">
               { !loading && getListData().map(([title, value]) => (
                 <div class="dt">
@@ -795,9 +813,9 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
             </div>
             <div id="pricedItems" class="mr2 w-100">
               <div class="ml2 mb1 pt1 flex bt">
-                <div class="w-10">
+                <div class="w-20">
                   { loading && (
-                    <div class="skeleton mr1 w-100 h-100" style="width: 40px; height: 40px" />
+                    <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
                   )}
                   { !loading && box.image && (
                     <Image src={ box.image } id={`image-${key}`} />
@@ -810,10 +828,10 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                     />
                   )}
                 </div>
-                <div class="w-70 bold" style="height: 40px; line-height: 40px;">
+                <div class="w-60 bold" style={ lineHeightStyle }>
                   { box.shopify_title }
                 </div>
-                <div class="pricing w-20 tr" style="height: 40px; line-height: 40px;">
+                <div class="pricing w-20 tr" style={ lineHeightStyle }>
                   { loading ? (
                     <div class="skeleton mr1" />
                   ) : (
@@ -823,9 +841,9 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
               </div>
               { pricedItems.map((el, idx) => (
                 <div class="ml2 mb1 flex">
-                  <div class="w-10">
+                  <div class="w-20">
                     { loading && (
-                      <div class="skeleton mr1 w-100 h-100" style="width: 40px; height: 40px" />
+                      <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
                     )}
                     { !loading && el.image && (
                       <Image src={ el.image } id={`image-${key}-${idx}`} />
@@ -838,20 +856,19 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                       />
                     )}
                   </div>
-                  <div class="w-60 bold" style={{
+                  <div class="w-50 bold" style={{
                     "text-overflow": "ellipsis",
                     "white-space": "nowrap",
                     "overflow": "hidden",
-                    "height": "40px",
-                    "line-height": "40px",
+                    ...lineHeightStyle
                   }}>
                     { el.name }
                   </div>
-                  <div class="pricing w-10 tr" style="height: 40px; line-height: 40px;">
+                  <div class="pricing w-10 tr" style={ lineHeightStyle }>
                     <span>{ toPrice(el.price) }</span>
                   </div>
-                  <div class="w-10 tc" style="height: 40px; line-height: 40px;">({ el.count })</div>
-                  <div class="pricing w-10 tr" style="height: 40px; line-height: 40px;">
+                  <div class="w-10 tc" style={ lineHeightStyle }>({ el.count })</div>
+                  <div class="pricing w-10 tr" style={ lineHeightStyle }>
                     <span>{ toPrice(el.count * el.price) }</span>
                   </div>
                 </div>
@@ -872,9 +889,9 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
             { sortedListNames.map((name, idx) => (
               <Fragment>
                 { Array.isArray(name) && testVisibility(name) ? (
-                  <div class={`flex flex-column w-100 ba b--silver ${ getLeftBorder(name, idx) }`}>
+                  <div class={`flex flex-column w-100 b--silver ${ getLeftBorder(name, idx) }`}>
                     { name.map((item, index) => (
-                      <div class={`w-100 h-100 flex flex-column b--silver ${ index > 0 && "bt" }`}>
+                      <div class={`w-100 h-100 flex flex-column b--silver ${ getTopBorder(name, index) }`}>
                         <Title name={ item } idx={ idx } />
                         <div class="w-100">
                           <Body properties={ boxLists } name={ item } idx={ idx } />
@@ -884,7 +901,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
                   </div>
                 ) : (
                   testVisibility(name) && (
-                    <div id={ name } class={`w-100 flex flex-column ba ${ getWrapperBottomBorder(name, idx) } b--silver ${ getLeftBorder(name, idx) }`}>
+                    <div id={ name } class={`w-100 flex flex-column ${ getLeftBorder(name, idx) } ${ getWrapperBottomBorder(name, idx) } b--silver`}>
                       <Title name={ name } idx={ idx } />
                       <div class={ `w-100 ${ getTableBottomPadding(name, idx) }` }>
                         <Body properties={ boxLists } name={ name } idx={ idx } />

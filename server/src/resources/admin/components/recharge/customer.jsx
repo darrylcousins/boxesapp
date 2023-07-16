@@ -187,7 +187,6 @@ async function *Customer({ customer, admin }) {
    * @listen subscription.deleted event
    */
   const removeSubscription = (ev) => {
-    console.log(ev.detail);
     const { subscription, subscription_id } = ev.detail
     const deleted = cancelledGroups.find(el => el.box.id === subscription_id);
     const idx = cancelledGroups.indexOf(deleted);
@@ -257,11 +256,9 @@ async function *Customer({ customer, admin }) {
    * @listen subscription.editing event
    */
   const disableEvents = async (ev) => {
-    console.log(ev.detail);
     const { subscription_id } = ev.detail;
     let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
     subscription_ids = subscription_ids.filter(el => el !== subscription_id);
-    console.log(subscription_ids);
     for (const id of subscription_ids) {
       const div = document.querySelector(`#subscription-${id}`);
       div.classList.add("disableevents");
@@ -276,11 +273,9 @@ async function *Customer({ customer, admin }) {
    * @listen subscription.editing event
    */
   const enableEvents = async (ev) => {
-    console.log(ev.detail);
     const { subscription_id } = ev.detail;
     let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
     subscription_ids = subscription_ids.filter(el => el !== subscription_id);
-    console.log(subscription_ids);
     for (const id of subscription_ids) {
       const div = document.querySelector(`#subscription-${id}`);
       div.classList.remove("disableevents");

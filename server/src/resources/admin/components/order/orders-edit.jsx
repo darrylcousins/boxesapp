@@ -248,7 +248,7 @@ function* EditOrders({selectedOrders}) {
                   </div>
                   <div class="w-100 tr">
                     <Button type="primary" onclick={savePickupDate}>
-                      Apply Filter
+                      Apply
                     </Button>
                     <Button type="secondary" onclick={closeModal}>
                       Cancel

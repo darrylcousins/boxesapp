@@ -189,7 +189,19 @@ async function* Cancelled({ subscription, idx, admin }) {
       };
     };
 
-    // only do this on deleted action
+  };
+
+  const listingReload = async (ev) => {
+    const result = ev.detail.json; // success, action, subscription_id
+    console.log("listing reload:", result);
+
+    reactivatedResult = result;
+    // { action, customer_id, address_id, subscription_id, scheduled_at }
+
+    ev.stopPropagation();
+    // this means that the timer will start and reload
+    eventAction = `${result.action}`;
+
     if (eventAction === "deleted") {
       // if this is a cancel or delete then we need to ask customer to reload all
       const event = `subscription.deleted`;
@@ -200,12 +212,11 @@ async function* Cancelled({ subscription, idx, admin }) {
       setTimeout(() => {
         animateFadeForAction(subdiv, () => {
           this.dispatchEvent(
-            new CustomEvent(event, {
+            new CustomEvent("subscription.deleted", {
               bubbles: true,
               detail: {
-                subscription
-                //list: "cancelGroups",
-                //subscription_id: subscription.box.id
+                subscription,
+                subscription_id: subscription.box.id
               },
             })
           );
@@ -214,21 +225,8 @@ async function* Cancelled({ subscription, idx, admin }) {
       return;
     };
 
-  };
-
-  const listingReload = async (ev) => {
-    const result = ev.detail.json; // success, action, subscription_id
-    console.log("listing reload:", result);
-
-    reactivatedResult = result;
-    // { action, customer_id, address_id, subscription_id, scheduled_at }
-
-    // this means that the timer will start and reload
-    editsPending = true;
-    if (result.action) eventAction = `${result.action}`;
+    editsPending = true; // on deletes no need to start timer for reload
     await this.refresh();
-
-    ev.stopPropagation();
     return;
   };
 

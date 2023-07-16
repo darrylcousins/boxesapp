@@ -26,7 +26,11 @@ export default async (req, res, next) => {
         } else {
           variant = product.variants.find(el => el.id === variant_id);
         };
-        return { price: variant.price };
+        if (variant) {
+          return { price: variant.price };
+        } else {
+          return { price: "0" };
+        };
       });
     res.status(200).json(result);
   } catch(err) {

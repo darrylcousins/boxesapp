@@ -187,17 +187,23 @@ async function *Subscription({ subscription, idx, admin }) {
   const toggleCollapse = async () => {
     collapsed = !collapsed;
     await this.refresh();
-    /*
-    if (changed.length > 0) {
-      setTimeout(() => {
-          const bar = document.querySelector(`#saveBar-${subscription.attributes.subscription_id}`);
-          bar.classList.add("open");
-          const el = document.querySelector(`#skip_cancel-${subscription.attributes.subscription_id}`);
-          el.classList.add("dn");
-        }, 
-        1000);
-    };
-    */
+    setTimeout(() => {
+      if (!collapsed) {
+        this.dispatchEvent(
+          new CustomEvent("customer.disableevents", {
+            bubbles: true,
+            detail: { subscription_id: subscription.attributes.subscription_id },
+          })
+        );
+      } else {
+        this.dispatchEvent(
+          new CustomEvent("customer.enableevents", {
+            bubbles: true,
+            detail: { subscription_id: subscription.attributes.subscription_id },
+          })
+        );
+      };
+    }, 500);
   };
 
   /*
@@ -252,12 +258,14 @@ async function *Subscription({ subscription, idx, admin }) {
   const saveChanges = async (key) => {
     editsPending = true;
     CollapsibleProducts = CollapseWrapper(EditProducts);
+    /*
     this.dispatchEvent(
       new CustomEvent("customer.disableevents", {
         bubbles: true,
         detail: { subscription_id: subscription.attributes.subscription_id },
       })
     );
+    */
     await this.refresh();
     await doChanges({ key });
 
@@ -627,7 +635,6 @@ async function *Subscription({ subscription, idx, admin }) {
     loading = true;
     await this.refresh();
 
-    console.log(eventAction);
     //
     // duplicated in the Cancelled component - surely should figure out
     if (eventAction === "cancelled") {
@@ -698,7 +705,8 @@ async function *Subscription({ subscription, idx, admin }) {
         attempts = 0;
         changed = [];
         await getLogs();  // refresh the logs
-        const notice = `Updated ${subscription.attributes.title} - ${subscription.attributes.variant}`;
+        let notice = (restartTimer) ? "Updated" : "Reloaded";
+        notice = `${notice} ${subscription.attributes.title} - ${subscription.attributes.variant}`;
         this.dispatchEvent(toastEvent({
           notice,
           bgColour: "black",
@@ -718,12 +726,14 @@ async function *Subscription({ subscription, idx, admin }) {
     if ( charge === "PENDING" || pending) {
       if (restartTimer) restartTimer(timerSeconds);
     } else {
-      this.dispatchEvent(
-        new CustomEvent("customer.enableevents", {
-          bubbles: true,
-          detail: { subscription_id: subscription.attributes.subscription_id },
-        })
-      );
+      if (collapsed) {
+        this.dispatchEvent(
+          new CustomEvent("customer.enableevents", {
+            bubbles: true,
+            detail: { subscription_id: subscription.attributes.subscription_id },
+          })
+        );
+      };
     };
   };
 
@@ -959,7 +969,7 @@ async function *Subscription({ subscription, idx, admin }) {
       ) : (
         <Fragment>
           <h6 class="tl mb0 w-100 fg-streamside-maroon">
-            {subscription.box.shopify_title} - {subscription.attributes.variant}
+            {subscription.attributes.title} - {subscription.attributes.variant}
           </h6>
           { (!subscription.attributes.hasNextBox && !editsPending) && (
             <div class="pv2 orange">Box items not yet loaded for <span class="b">
@@ -985,15 +995,18 @@ async function *Subscription({ subscription, idx, admin }) {
             <div id={`skip_cancel-${subscription.attributes.subscription_id}`} class="cf w-100 pv2">
               <div class="fl w-30">
                 <LogsModal logs={ subscriptionLogs }
-                    box_title={ `${subscription.box.shopify_title} - ${subscription.attributes.variant}` } />
-                <Button type="success-reverse"
-                  onclick={reloadCharge}
-                  title="Reload"
-                >
-                  <span class="b">
-                    Reload
-                  </span>
-                </Button>
+                    admin={ admin }
+                    box_title={ `${subscription.attributes.title} - ${subscription.attributes.variant}` } />
+                { true && (
+                  <Button type="success-reverse"
+                    onclick={() => reloadCharge(null, null)}
+                    title="Reload"
+                  >
+                    <span class="b">
+                      Reload
+                    </span>
+                  </Button>
+                )}
               </div>
               <div class="fl w-70 tr">
                 { ( !editsPending ) && collapsed && (
@@ -1096,7 +1109,7 @@ async function *Subscription({ subscription, idx, admin }) {
           </div>
           <div class="mb2 bb b--black-80">
             <div id={ `products-${idx}` }>
-              { subscription.box.shopify_title !== "" && (
+              { subscription.attributes.title !== "" && (
                 <CollapsibleProducts
                   collapsed={ collapsed }
                   properties={ subscription.properties }

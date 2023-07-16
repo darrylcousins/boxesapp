@@ -68,6 +68,7 @@ export default async (req, res, next) => {
   const meta = {
     recharge: {
       topic: topicLower,
+      title: `${attributes.title} - ${attributes.variant}`,
       label: `${label}-PRODUCT-UPDATE`,
       charge_id,
       customer_id: customer.id,

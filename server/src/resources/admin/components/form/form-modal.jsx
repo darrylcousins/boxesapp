@@ -170,10 +170,19 @@ function FormModalWrapper(Component, options) {
       if (session_id) {
         uri = `${uri}?session_id=${session_id}`;
       };
-      /*
+      /* Dev logging
       console.log(uri);
       console.log(data);
       console.warn('Posting saved successfully but disabled for development');
+      setTimeout(() => {
+        closeModal();
+        this.dispatchEvent(
+          new CustomEvent("listing.reload", {
+            bubbles: true,
+            detail: { src: uri, json: {action: "deleted"} },
+          })
+        );
+      }, 2000);
       return;
       */
 

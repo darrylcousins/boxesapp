@@ -70,7 +70,7 @@ export default async (ev) => {
   const content = document.querySelector("#app");
   const contentTop = content.getBoundingClientRect().top;
   //const screenBottom = window.innerHeight - contentTop + 100;
-  const screenBottom = window.innerHeight - 50;
+  const screenBottom = window.innerHeight - 50 + window.scrollY;
   content.appendChild(notice);
   notice.style.right = "20px";
   notice.style.top = `${screenBottom}px`;

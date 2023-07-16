@@ -56,7 +56,7 @@ export default () => {
           Boxes App
         </h4>
         <div class="pa4">You are at the Boxes App Admin Portal.
-          <span class="pl3 dib b">Select an option from the header menu.</span>
+          <span id="getEm" class="pl3 dib b">Select an option from the header menu.</span>
         </div>
       </div>
     </div>

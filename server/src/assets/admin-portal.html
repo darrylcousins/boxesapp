@@ -17,7 +17,7 @@
                   class="link bg-transparent outline-0 dim white dib mr1 ml3 bn"
                   title="Toggle Screen">&#x2303;</button>
             </li>
-            <li class="ph2 di pv2 tl">
+            <li id="getEm" class="ph2 di pv2 tl">
               <a class="link dim white dib mr1 ml3" href="{{ proxy_path }}/admin-portal/orders{{ qs }}" title="Orders">Orders</a>
             </li>
             <li class="ph2 di pv2 tl">
@@ -79,6 +79,8 @@
         makeFullScreen();
       });
 
+      const getEm = document.getElementById("getEm");
+      const emSize = parseFloat(getComputedStyle(getEm).fontSize);
     </script>
     {% raw %}
 

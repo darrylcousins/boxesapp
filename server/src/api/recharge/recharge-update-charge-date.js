@@ -105,6 +105,7 @@ export default async (req, res, next) => {
     recharge: {
       label: "CHARGE_DATE",
       topic: topicLower,
+      title: `${attributes.title} - ${attributes.variant}`,
       charge_id: attributes.charge_id,
       customer_id: attributes.customer.id,
       shopify_customer_id: attributes.customer.external_customer_id.ecommerce,

@@ -46,6 +46,7 @@ export const reconcileGetGrouped = async ({ charge }) => {
         shopify_product_id: parseInt(line_item.external_product_id.ecommerce),
         subscription_id: parseInt(line_item.purchase_item_id),
         quantity: parseInt(line_item.quantity),
+        title: line_item.title,
       });
       grouped[box_subscription_id].charge = charge;
 
@@ -237,6 +238,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     boxListArrays[name] = product_string.split(",").map(el => el.trim()).filter(el => el !== "");
   });
   // should I just get the strings here and ignore the counts because after all I can find the counts again
+  // use includes to get the extra data required: subscription_id, properties, shopify_product_id, and price
   let boxIncludedExtras = boxListArrays["Including"]
     .map(el => matchNumberedString(el))
     .filter(el => el.quantity > 1)
@@ -281,164 +283,164 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   let idx;
   let quantity;
 
-  /* REMOVED ITEMS one only is allowed with the matching swap */
-  for  (item of [ ...boxRemovedItems ]) {
-    if (includedProducts.indexOf(item.title) === -1) { // not included this week
-      // remove from removedItem list
-      boxRemovedItems = boxRemovedItems.filter(el => el.title !== item.title);
-      console.log(`removed message with ${JSON.stringify(item, null, 2)}`);
-      messages.push(`Removed item ${item.title} not in this weeks box.`);
-      for (itemInner of [ ...boxSwappedExtras ]) {
-        quantity = itemInner.quantity;
-        if (quantity === 0) {
-          // only a swap and no subscribed item
-          boxSwappedExtras = boxSwappedExtras.filter(el => el.title !== itemInner.title);
-          console.log(`swapped message with ${JSON.stringify(item, null, 2)}`);
-          messages.push(`Swapped item ${itemInner.title} not swapped this week.`);
-        } else {
-          if (addOnProducts.indexOf(itemInner.title) === -1) { // not included this week
-            // drop the subscription altogether
-            messages.push(`Extra swapped item ${itemInner.title} not available this week.`);
+  if (hasNextBox) {
+    /* REMOVED ITEMS one only is allowed with the matching swap */
+    for  (const item of [ ...boxRemovedItems ]) {
+      if (includedProducts.indexOf(item.title) === -1) { // not included this week
+        // remove from removedItem list
+        boxRemovedItems = boxRemovedItems.filter(el => el.title !== item.title);
+        messages.push(`Removed item ${item.title} not in this weeks box.`);
+        for (itemInner of [ ...boxSwappedExtras ]) {
+          quantity = itemInner.quantity;
+          if (quantity === 0) {
+            // only a swap and no subscribed item
             boxSwappedExtras = boxSwappedExtras.filter(el => el.title !== itemInner.title);
-            itemInner.quantity = 0;
-            if (titledSubscribedExtras.includes(itemInner.title)) {
-              subscriptionUpdates.push(itemInner); // can later read the zero an remove subscription
-            };
+            messages.push(`Swapped item ${itemInner.title} not swapped this week.`);
           } else {
-            // there will be a subscription for this item we can leave as is but remove from swap list
-            if (titledSubscribedExtras.includes(itemInner.title)) {
+            if (addOnProducts.indexOf(itemInner.title) === -1) { // not included this week
+              // drop the subscription altogether
+              messages.push(`Extra swapped item ${itemInner.title} not available this week.`);
               boxSwappedExtras = boxSwappedExtras.filter(el => el.title !== itemInner.title);
-              messages.push(`Extra swapped item ${itemInner.title} included as an add on this week.`);
-              boxAddOnExtras.push(itemInner);
+              itemInner.quantity = 0;
+              if (titledSubscribedExtras.includes(itemInner.title)) {
+                subscriptionUpdates.push(itemInner); // can later read the zero an remove subscription
+              };
             } else {
-              messages.push(`${itemInner.title} removed because has no matching subscription.`);
+              // there will be a subscription for this item we can leave as is but remove from swap list
+              if (titledSubscribedExtras.includes(itemInner.title)) {
+                boxSwappedExtras = boxSwappedExtras.filter(el => el.title !== itemInner.title);
+                messages.push(`Extra swapped item ${itemInner.title} included as an add on this week.`);
+                boxAddOnExtras.push(itemInner);
+              } else {
+                messages.push(`${itemInner.title} removed because has no matching subscription.`);
+              };
             };
           };
         };
       };
     };
-  };
 
-  const tempBoxRemovedItems = [ ...boxRemovedItems ];
+    const tempBoxRemovedItems = [ ...boxRemovedItems ];
 
-  /* SWAPPED ITEMS two only is allowed with the matching swap */
-  for (item of [ ...boxSwappedExtras ]) {
-    if (addOnProducts.indexOf(item.title) === -1) { // not included this week
-      boxSwappedExtras = boxSwappedExtras.filter(el => el.title !== item.title);
-      if (includedProducts.indexOf(item.title) === -1) {
-        // drop the subscription altogether
-        messages.push(`Swapped item ${item.title} not available this week.`);
-        // need to fix the removed items then
-        if (item.quantity > 0) { // has a subscribed item extra
+    /* SWAPPED ITEMS two only is allowed with the matching swap */
+    for (const item of [ ...boxSwappedExtras ]) {
+      if (addOnProducts.indexOf(item.title) === -1) { // not included this week
+        boxSwappedExtras = boxSwappedExtras.filter(el => el.title !== item.title);
+        if (includedProducts.indexOf(item.title) === -1) {
+          // drop the subscription altogether
+          messages.push(`Swapped item ${item.title} not available this week.`);
+          // need to fix the removed items then
+          if (item.quantity > 0) { // has a subscribed item extra
+            item.quantity = 0;
+            if (titledSubscribedExtras.includes(item.title)) {
+              subscriptionUpdates.push(item); // can later read the zero an remove subscription
+            } else {
+              messages.push(`Extra ${item.title} removed because has no matching subscription.`);
+            };
+          };
+        } else {
+          // the swap is in included products, if a subscription move to addons else remove
+          messages.push(`Swapped item ${item.title} already included this week.`);
+          if (item.quantity > 0) { // has a subscribed item extra
+            if (titledSubscribedExtras.includes(item.title)) {
+              if (includedProducts.indexOf(item.title) === -1) { // not included this week
+                messages.push(`Extra swapped item ${item.title} included as an add on this week.`);
+                boxAddOnExtras.push(item);
+              } else {
+                messages.push(`Extra swapped item ${item.title} moved to included extra this week.`);
+                boxIncludedExtras.push(item);
+              };
+            } else {
+              messages.push(`Extra ${item.title} removed because has no matching subscription.`);
+            };
+          };
+        };
+        let removed = tempBoxRemovedItems.pop();
+        let product = fetchBox.includedProducts.find(el => el.shopify_title === removed.title);
+        let swaps = fetchBox.addOnProducts.filter(el => {
+            if (el.shopify_tag === product.shopify_tag) {
+              return ((product.shopify_price - 50 <= el.shopify_price) && (el.shopify_price <= product.shopify_price + 50));
+            } else {
+              return false;
+            };
+          });
+        if (swaps.length) {
+          // if one of these are in subscribed extras then we could substitute for the remove
+          // pick one not already included let difference = arrA.filter(x => !arrB.includes(x));
+          let possible = swaps.map(el => el.shopify_title)
+            .filter(x => !subscribedExtras.map(el => el.title).includes(x))
+            .filter(x => !boxSwappedExtras.map(el => el.title).includes(x));
+          if (possible.length) {
+            let title = possible[Math.floor(Math.random() * possible.length)];
+            boxSwappedExtras.push({title, quantity: 0});
+            messages.push(`Swapped ${title} for your removed item ${removed.title} this week.`);
+          } else {
+            messages.push(`Unable to find a swap item for ${item.title} so it remains in your box this week.`);
+          };
+        };
+      };
+    };
+
+    /* EXTRA INCLUDED ITEMS */
+    for (const item of [ ...boxIncludedExtras ]) {
+      if (includedProducts.indexOf(item.title) === -1) { // not included this week
+        boxIncludedExtras = boxIncludedExtras.filter(el => el.title !== item.title);
+        if (addOnProducts.indexOf(item.title) === -1) {
+          messages.push(`Included extra item ${item.title} unavailable this week.`);
           item.quantity = 0;
           if (titledSubscribedExtras.includes(item.title)) {
             subscriptionUpdates.push(item); // can later read the zero an remove subscription
-          } else {
-            messages.push(`Extra ${item.title} removed because has no matching subscription.`);
           };
-        };
-      } else {
-        // the swap is in included products, if a subscription move to addons else remove
-        messages.push(`Swapped item ${item.title} already included this week.`);
-        if (item.quantity > 0) { // has a subscribed item extra
-          if (titledSubscribedExtras.includes(item.title)) {
-            if (includedProducts.indexOf(item.title) === -1) { // not included this week
-              messages.push(`Extra swapped item ${item.title} included as an add on this week.`);
-              boxAddOnExtras.push(item);
-            } else {
-              messages.push(`Extra swapped item ${item.title} moved to included extra this week.`);
-              boxIncludedExtras.push(item);
-            };
-          } else {
-            messages.push(`Extra ${item.title} removed because has no matching subscription.`);
-          };
-        };
-      };
-      let removed = tempBoxRemovedItems.pop();
-      let product = fetchBox.includedProducts.find(el => el.shopify_title === removed.title);
-      let swaps = fetchBox.addOnProducts.filter(el => {
-          if (el.shopify_tag === product.shopify_tag) {
-            return ((product.shopify_price - 50 <= el.shopify_price) && (el.shopify_price <= product.shopify_price + 50));
-          } else {
-            return false;
-          };
-        });
-      if (swaps.length) {
-        // if one of these are in subscribed extras then we could substitute for the remove
-        // pick one not already included let difference = arrA.filter(x => !arrB.includes(x));
-        let possible = swaps.map(el => el.shopify_title)
-          .filter(x => !subscribedExtras.map(el => el.title).includes(x))
-          .filter(x => !boxSwappedExtras.map(el => el.title).includes(x));
-        if (possible.length) {
-          let title = possible[Math.floor(Math.random() * possible.length)];
-          boxSwappedExtras.push({title, quantity: 0});
-          messages.push(`Swapped ${title} for your removed item ${removed.title} this week.`);
         } else {
-          messages.push(`Unable to find a swap item for ${item.title} so it remains in your box this week.`);
-        };
-      };
-    };
-  };
-
-  /* EXTRA INCLUDED ITEMS */
-  for (item of [ ...boxIncludedExtras ]) {
-    if (includedProducts.indexOf(item.title) === -1) { // not included this week
-      boxIncludedExtras = boxIncludedExtras.filter(el => el.title !== item.title);
-      if (addOnProducts.indexOf(item.title) === -1) {
-        messages.push(`Included extra item ${item.title} unavailable this week.`);
-        item.quantity = 0;
-        if (titledSubscribedExtras.includes(item.title)) {
-          subscriptionUpdates.push(item); // can later read the zero an remove subscription
-        };
-      } else {
-        if (titledSubscribedExtras.includes(item.title)) {
-          boxAddOnExtras.push(item);
-          messages.push(`Included extra item ${item.title} included as an addon this week.`);
-        } else {
-          messages.push(`Add on ${item.title} removed because has no matching subscription.`);
-        };
-      };
-    } else {
-      if (!titledSubscribedExtras.includes(item.title)) {
-        boxIncludedExtras = boxIncludedExtras.filter(el => el.title !== item.title);
-        messages.push(`Extra ${item.title} removed because has no matching subscription.`);
-      };
-    };
-  };
-
-  /* ADD ON ITEMS */
-  for (item of [ ...boxAddOnExtras ]) {
-    if (addOnProducts.indexOf(item.title) === -1) { // not included this week
-      boxAddOnExtras = boxAddOnExtras.filter(el => el.title !== item.title);
-      if (includedProducts.indexOf(item.title) === -1) {
-        messages.push(`Add on item ${item.title} unavailable this week.`);
-        item.quantity = 0;
-        if (titledSubscribedExtras.includes(item.title)) {
-          subscriptionUpdates.push(item); // can later read the zero an remove subscription
-        };
-      } else {
-        if (item.quantity > 1) {
-          item.quantity = item.quantity - 1;
           if (titledSubscribedExtras.includes(item.title)) {
-            boxIncludedExtras.push(item);
-            messages.push(`Add on item ${item.title} included as an extra this week.`);
+            boxAddOnExtras.push(item);
+            messages.push(`Included extra item ${item.title} included as an addon this week.`);
           } else {
             messages.push(`Add on ${item.title} removed because has no matching subscription.`);
           };
-        } else {
-          item.quantity = 0;
-          messages.push(`Add on item ${item.title} already included so removed as an add on.`);
         };
-        if (titledSubscribedExtras.includes(item.title)) {
-          subscriptionUpdates.push(item);
-        } else {
-          messages.push(`Add on ${item.title} removed because has no matching subscription.`);
+      } else {
+        if (!titledSubscribedExtras.includes(item.title)) {
+          boxIncludedExtras = boxIncludedExtras.filter(el => el.title !== item.title);
+          messages.push(`Extra ${item.title} removed because has no matching subscription.`);
         };
       };
-    } else {
-      if (!titledSubscribedExtras.includes(item.title)) {
+    };
+
+    /* ADD ON ITEMS */
+    for (const item of [ ...boxAddOnExtras ]) {
+      if (addOnProducts.indexOf(item.title) === -1) { // not included this week
         boxAddOnExtras = boxAddOnExtras.filter(el => el.title !== item.title);
-        messages.push(`Add on ${item.title} removed because has no matching subscription.`);
+        if (includedProducts.indexOf(item.title) === -1) {
+          messages.push(`Add on item ${item.title} unavailable this week.`);
+          item.quantity = 0;
+          if (titledSubscribedExtras.includes(item.title)) {
+            subscriptionUpdates.push(item); // can later read the zero an remove subscription
+          };
+        } else {
+          if (item.quantity > 1) {
+            item.quantity = item.quantity - 1;
+            if (titledSubscribedExtras.includes(item.title)) {
+              boxIncludedExtras.push(item);
+              messages.push(`Add on item ${item.title} included as an extra this week.`);
+            } else {
+              messages.push(`Add on ${item.title} removed because has no matching subscription.`);
+            };
+          } else {
+            item.quantity = 0;
+            messages.push(`Add on item ${item.title} already included so removed as an add on.`);
+          };
+          if (titledSubscribedExtras.includes(item.title)) {
+            subscriptionUpdates.push(item);
+          } else {
+            messages.push(`Add on ${item.title} removed because has no matching subscription.`);
+          };
+        };
+      } else {
+        if (!titledSubscribedExtras.includes(item.title)) {
+          boxAddOnExtras = boxAddOnExtras.filter(el => el.title !== item.title);
+          messages.push(`Add on ${item.title} removed because has no matching subscription.`);
+        };
       };
     };
   };
@@ -472,36 +474,37 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
       // this just works - see below collecting included items
       boxRemovedItems = boxRemovedItems.slice(0, boxRemovedItems.length - diff); // trim to correct length
     }
-  };
 
-  const priceMap = Object.assign({}, ...([ ...fetchBox.addOnProducts, ...fetchBox.includedProducts ]
-      .map(item => ({ [item.shopify_title]: item.shopify_price }) )));
+    const priceMap = Object.assign({}, ...([ ...fetchBox.addOnProducts, ...fetchBox.includedProducts ]
+        .map(item => ({ [item.shopify_title]: item.shopify_price }) )));
 
-  // work through the subscription updates to update quantities
-  for (const [idx, update] of [ ...subscriptionUpdates ].entries()) {
-    const lineItem = subscribedExtras.find(el => el.title === update.title);
-    if (lineItem) {
-      lineItem.quantity = update.quantity;
-      subscriptionUpdates[idx] = lineItem;
-    } else {
-      // XXX not a subscribed item - remove from updates
-      subscriptionUpdates.slice(idx, 1);
-    };
-  };
-
-  // use the occassion to update price because price changes are picked up by the boxes
-  for (const item of subscribedExtras) {
-    if (item.quantity > 0) {
-      const checkPrice = parseFloat(priceMap[item.title]) * 0.01;
-      const oldPrice = item.price;
-      if (checkPrice !== parseFloat(item.price)) {
-        item.price = `${checkPrice.toFixed(2)}`;
-        //item.total_price = `${(checkPrice * item.quantity).toFixed(2)}`;
-        subscriptionUpdates.push(item);
-        messages.push(`${item.title} price has this week changed from $${oldPrice} to $${item.price}.`);
+    // work through the subscription updates to update quantities
+    for (const [idx, update] of [ ...subscriptionUpdates ].entries()) {
+      const lineItem = subscribedExtras.find(el => el.title === update.title);
+      if (lineItem) {
+        lineItem.quantity = update.quantity;
+        subscriptionUpdates[idx] = lineItem;
+      } else {
+        // XXX not a subscribed item - remove from updates
+        subscriptionUpdates.slice(idx, 1);
       };
     };
-  };
+
+    // use the occassion to update price because price changes are picked up by the boxes
+    for (const item of subscribedExtras) {
+      if (item.quantity > 0) {
+        const checkPrice = parseFloat(priceMap[item.title]) * 0.01;
+        const oldPrice = item.price;
+        if (checkPrice !== parseFloat(item.price)) {
+          item.price = `${checkPrice.toFixed(2)}`;
+          //item.total_price = `${(checkPrice * item.quantity).toFixed(2)}`;
+          subscriptionUpdates.push(item);
+          messages.push(`${item.title} price has this week changed from $${oldPrice} to $${item.price}.`);
+        };
+      };
+    };
+
+  }; /* END hasNextBox = true */
 
   // helper method
   const makeItemString = (list, join) => {
@@ -566,6 +569,13 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   for (const templateKey of templateKeys) {
     templateSubscription[templateKey] = subscription[templateKey];
   };
+  // gather further data into subsciprionUpdates from includes
+  for (const [idx, item] of [ ...subscriptionUpdates ].entries()) {
+    const found = includes.find(el => el.title === item.title);
+    if (found) {
+      subscriptionUpdates[idx] = { ...found, ...item };
+    }
+  };
   if (!isEqual(boxProperties, updateProperties)) {
     subscriptionUpdates.push({
       subscription_id: subscription.id,
@@ -585,16 +595,33 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     subscription_id: subscription.id,
   });
 
-  // XXX FUDGING it til I make it
-  // actually this seems to be enough to make the front end display ok
-  // probable could avoid a lot of the above alortith though
+  // no box so no way we can figure updates
   if (fetchBox.shopify_title === "") {
     messages = [];
     subscriptionUpdates = [];
   };
 
+  // we need a box for ui display, so without a fetchBox we can try again for a previousBox
+  // user can only pause for at most 2 weeks so this should always be successful
+  // but I'll try at least once more
+  if (!previousBox) {
+    delivered.setDate(delivered.getDate() - days);
+    query.delivered = delivered.toDateString();
+    box = await _mongodb.collection("boxes").findOne(query);
+    if (box) {
+      previousBox = { ...box };
+    } else {
+      // one more time
+      delivered.setDate(delivered.getDate() - days);
+      query.delivered = delivered.toDateString();
+      box = await _mongodb.collection("boxes").findOne(query);
+      if (box) previousBox = { ...box };
+    };
+  };
+
   return {
     fetchBox,
+    previousBox,
     hasNextBox,
     nextDeliveryDate,
     boxProperties,
@@ -620,8 +647,6 @@ export const gatherData = async ({ grouped, result }) => {
   for (const group of Object.values(grouped)) {
 
     const charge = group.charge;
-
-    //console.log(JSON.stringify(group, null, 2));
 
     // here just a line_item object
     const includedSubscriptions = group.included;
@@ -668,6 +693,7 @@ export const gatherData = async ({ grouped, result }) => {
 
     const {
       fetchBox,
+      previousBox,
       hasNextBox,
       nextDeliveryDate,
       boxProperties,
@@ -685,14 +711,15 @@ export const gatherData = async ({ grouped, result }) => {
       subscription, includedSubscriptions
     });
 
+    // darn these don't have all the data
     const updates = subscriptionUpdates.map(el => {
       return {
-        subscription_id: el.subscription_id,
+        subscription_id: el.subscription_id, // missing
         quantity: el.quantity,
-        properties: el.properties,
+        properties: el.properties, // missing
         title: el.title,
-        shopify_product_id: el.shopify_product_id,
-        price: el.price,
+        shopify_product_id: el.shopify_product_id, // missingg
+        price: el.price, // missing
       };
     });
 
@@ -701,7 +728,9 @@ export const gatherData = async ({ grouped, result }) => {
       const rc_subscription_ids = [ ...group.rc_subscription_ids ];
       for (const update of updates) {
         const rc_subscription = rc_subscription_ids.find(el => el.subscription_id === update.subscription_id);
-        rc_subscription.quantity = update.quantity;
+        if (rc_subscription) {
+          rc_subscription.quantity = update.quantity;
+        };
       };
       group.rc_subscription_ids = rc_subscription_ids;
     };
@@ -718,7 +747,7 @@ export const gatherData = async ({ grouped, result }) => {
       nextChargeDate,
       nextDeliveryDate,
       hasNextBox,
-      title: fetchBox.shopify_title,
+      title: subscription.product_title,
       variant: subscription.variant_title,
       pending: group.pending,
       frequency,
@@ -736,6 +765,20 @@ export const gatherData = async ({ grouped, result }) => {
       notIncludedInThisBox,
       newIncludedInThisBox,
       nowAvailableAsAddOns,
+    };
+
+    if (!hasNextBox) {
+      // must have a box to render the products display and prices, images etc
+      fetchBox.shopify_title = subscription.product_title;
+      fetchBox.shopify_product_id = parseInt(subscription.external_product_id.ecommerce);
+      fetchBox.delivered = nextDeliveryDate;
+      fetchBox.shopify_price = subscription.price;
+      if (previousBox) {
+        //fetchBox.previousBox = previousBox.delivered;
+        // what to do if this fails
+        fetchBox.includedProducts = previousBox.includedProducts;
+        fetchBox.addOnProducts = previousBox.addOnProducts;
+      };
     };
 
     result.push({

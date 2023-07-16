@@ -106,6 +106,7 @@ export default async (req, res, next) => {
 
     /* REMOVED ITEMS one only is allowed with the matching swap */
     for  ([idx, item] of boxRemovedItems.entries()) {
+      if (item.title === "None") continue;
       if (includedProducts.indexOf(item.title) === -1) { // not included this week
         // remove from removedItem list
         boxRemovedItems.splice(idx, 1);
@@ -134,6 +135,7 @@ export default async (req, res, next) => {
 
     /* SWAPPED ITEMS one only is allowed with the matching swap */
     for ([idx, item] of boxSwappedExtras.entries()) {
+      if (item.title === "None") continue;
       if (addOnProducts.indexOf(item.title) === -1) { // not included this week
         boxSwappedExtras.splice(idx, 1);
         if (includedProducts.indexOf(item.title) === -1) {
@@ -181,6 +183,7 @@ export default async (req, res, next) => {
 
     /* ADD ON ITEMS */
     for ([idx, item] of boxAddOnExtras.entries()) {
+      if (item.title === "None") continue;
       if (addOnProducts.indexOf(item.title) === -1) { // not included this week
         if (includedProducts.indexOf(item.title) === -1) {
           messages.push(`Add on item ${item.title} unavailable in this box.`);
@@ -201,6 +204,7 @@ export default async (req, res, next) => {
 
     /* EXTRA INCLUDED ITEMS */
     for ([idx, item] of boxIncludedExtras.entries()) {
+      if (item.title === "None") continue;
       if (includedProducts.indexOf(item.title) === -1) { // not included this week
         boxIncludedExtras.splice(idx, 1);
         if (addOnProducts.indexOf(item.title) === -1) {

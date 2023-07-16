@@ -11,5 +11,5 @@ NODE="$( which node )"
 
 cd $PARENT_DIR
 
-#$NODE -r dotenv/config $SCRIPT_DIR/pm2-monit.js
+$NODE -r dotenv/config $SCRIPT_DIR/pm2-monit.js
 

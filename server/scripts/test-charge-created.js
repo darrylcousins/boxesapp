@@ -13,7 +13,7 @@ process.env.NODE_ENV = "test";
 
 import chargeCreated from "../src/webhooks/recharge/charge-created.js";
 //import charge from "../json/recharge.charge.created.json" assert { type: "json" };
-import charge from "./recharge.charge.json" assert { type: "json" };
+import charge from "../recharge.charge.json" assert { type: "json" };
 //import charge from "../json/recharge.charge.test2.json" assert { type: "json" };
 
 const run = async () => {
@@ -21,7 +21,7 @@ const run = async () => {
   try {
     console.log('this ran');
     const mytopic = "CHARGE_CREATED";
-    await chargeCreated("CHARGE_CREATED", "recharge", JSON.stringify({ charge }));
+    await chargeCreated("CHARGE_CREATED", "recharge", JSON.stringify(charge));
 
   } catch(e) {
     console.error(e);

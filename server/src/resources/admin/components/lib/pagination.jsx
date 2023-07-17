@@ -32,6 +32,9 @@ function *Pagination({callback, pageCount, pageNumber}) {
     return borders;
   };
 
+  const spaceClass = "ph3 pv1";
+  console.log(pageNumber, pageCount);
+
   const getPageButtons = () => {
     const pageButtons = [];
     let fg, bg;
@@ -49,12 +52,13 @@ function *Pagination({callback, pageCount, pageNumber}) {
           break;
       };
       bg = pageNumber === count ? "bg-moongray" : bgColour;
+      console.log(bg);
       pageButtons.push(
        <button
          title={count}
          name={count}
          type="button"
-         class={`${fgColour} b--${fgColour} ${bg} ph2 pv1 dim pointer ${getBorders(position)}`}
+         class={`${fgColour} b--${fgColour} ${bg} ${spaceClass} dim pointer ${getBorders(position)}`}
        >{ count }</button>
       );
     };
@@ -83,7 +87,7 @@ function *Pagination({callback, pageCount, pageNumber}) {
               title="Previous"
               name={pageNumber - 1}
               type="button"
-              class={`${fgColour} b--${fgColour} ${bgColour} ph2 pv1 dim pointer ${getBorders("left")}`}
+              class={`${fgColour} b--${fgColour} ${bgColour} ${spaceClass} dim pointer ${getBorders("left")}`}
             >Previous</button>
           )}
           {getPageButtons()}
@@ -92,7 +96,7 @@ function *Pagination({callback, pageCount, pageNumber}) {
               title="Next"
               type="button"
               name={parseInt(pageNumber) + 1}
-              class={`${fgColour} b--${fgColour} ${bgColour} ph2 pv1 dim pointer ${getBorders("right")}`}
+              class={`${fgColour} b--${fgColour} ${bgColour} ${spaceClass} dim pointer ${getBorders("right")}`}
             >Next</button>
           )}
         </div>

@@ -25,29 +25,19 @@ const run = async () => {
   try {
 
     const query = {};
-    query[`meta.recharge.customer_id`] = parseInt(customer_id);
-    query[`meta.recharge.subscription_id`] = parseInt(subscription_id);
 
-    const pipeline = [
-      { "$match": query },
-      { "$sort": { timestamp: -1 }},
-    ];
+    const count = await collection.count(query);
 
-    const result = await collection.aggregate(pipeline).toArray();
+    const pageSize = 50;
 
-    // not to many queries are expected so just aggregate in a loop
-    // should be smart enough to add this to the pipeline
-    for (const item of [ ...result ]) {
-      if (item.meta.recharge.shopify_order_id) {
-        const res = await collection.find({"meta.order.shopify_order_id": parseInt(item.meta.recharge.shopify_order_id) }).toArray();
-        for (const item of res) {
-          result.push(item);
-        };
-      }
-    };
+    const currentPage = 4;
+    const pageCount = Math.ceil(count/pageSize);
+    const skip = (currentPage - 1) * pageSize;
 
-    const final = sortObjectArrayByKey(result, "timestamp");
-    console.log(final.reverse());
+    const logs = await collection.find(query).sort({ timestamp: -1 }).limit(pageSize).skip(skip).toArray();
+    console.log(pageCount, logs.length);
+
+
 
   } catch(e) {
     console.error(e);

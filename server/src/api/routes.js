@@ -81,13 +81,13 @@ router.get(
   "/list-download/:timestamp", 
   await import("./download/list-download.js").then(({ default: fn }) => fn));
 router.get(
-  "/current-logs", 
+  "/current-logs/:page", 
   await import("./log/current-logs.js").then(({ default: fn }) => fn));
 router.get(
-  "/current-logs/:timestamp/:level", 
+  "/current-logs/:page/:level", 
   await import("./log/current-logs.js").then(({ default: fn }) => fn));
 router.get(
-  "/current-logs/:timestamp/:level/:object", 
+  "/current-logs/:page/:level/:object", 
   await import("./log/current-logs.js").then(({ default: fn }) => fn));
 router.get(
   "/customer-logs", 

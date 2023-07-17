@@ -10,6 +10,7 @@ import BarLoader from "../lib/bar-loader";
 import Error from "../lib/error";
 import { Fetch } from "../lib/fetch";
 import SelectMenu from "../lib/select-menu";
+import Pagination from "../lib/pagination";
 import { titleCase, animateFadeForAction } from "../helpers";
 
 /**
@@ -72,34 +73,19 @@ function* CurrentLogs() {
    */
   let fetchError = null;
   /**
-   * Capture currentPage
+   * Capture pageNumber
    *
-   * @member currentPage
+   * @member pageNumber
    * @type {object|null}
    */
-  let currentPage = null;
+  let pageNumber = 1;
   /**
-   * Capture nextPage
+   * Capture pageCount
    *
-   * @member nextPage
+   * @member pageCount
    * @type {object|null}
    */
-  let nextPage = null;
-  /**
-   * Capture previousPage
-   *
-   * @member previousPage
-   * @type {object|null}
-   */
-  let previousPage = null;
-  /**
-   * Using a selected date
-   *
-   * @member selectedDate
-   * @type {object|null}
-   */
-  //let selectedDate = "2023-06-25";
-  let selectedDate = null;
+  let pageCount = null;
 
   /*
    * Close menu
@@ -154,14 +140,18 @@ function* CurrentLogs() {
     }
   });
 
+  const movePage = async (page) => {
+    pageNumber = parseInt(page.pageTarget);
+    return await getLogs();
+  };
+
   /**
    * Fetch log data on mounting of component
    *
    * @function getLogs
    */
   const getLogs = () => {
-    const now = selectedDate ? new Date(selectedDate) : new Date();
-    let uri = `/api/current-logs/${now.getTime()}`;
+    let uri = `/api/current-logs/${pageNumber}`;
     uri = logLevel ? `${uri}/${logLevel}` : `${uri}/all`;
     if (selectedObject) {
       uri = `${uri}/${selectedObject}`;
@@ -178,10 +168,9 @@ function* CurrentLogs() {
           loading = false;
           fetchError = false;
           console.log(json);
-          previousPage = json.previous;
-          nextPage = json.next;
-          currentPage = json.current;
-          fetchLogs = json.current.logs;
+          pageCount = json.pageCount;
+          pageNumber = json.pageNumber;
+          fetchLogs = json.logs;
           if (document.getElementById("logs-table")) {
             animateFadeForAction("logs-table", async () => await this.refresh());
           } else {
@@ -217,18 +206,6 @@ function* CurrentLogs() {
   const changeLevel = async (level) => {
     logLevel = level;
     if (logLevel === "error") selectedObject = null;
-    loading = true;
-    await this.refresh();
-    getLogs();
-  };
-
-  /**
-   * Filter collection on a date - used by next/previous
-   *
-   * @function changeDate
-   */
-  const changeDate = async (date) => {
-    selectedDate = date;
     loading = true;
     await this.refresh();
     getLogs();
@@ -348,9 +325,10 @@ function* CurrentLogs() {
 
     yield (
       <div class="w-100 pb2 center">
-        <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
-          { logLevel && formatLevel(logLevel) } Logs for { currentPage && `${ currentPage.date } (${ currentPage.count })` }
+        <h4 class="pt0 lh-title ma0 mb2 fg-streamside-maroon" id="boxes-title">
+          { logLevel && formatLevel(logLevel) } Logs
         </h4>
+        <Pagination callback={ movePage } pageCount={ parseInt(pageCount) } pageNumber={ parseInt(pageNumber) } />
         <div class="relative w-100 tr pr2">
           <Help id="logsInfo" />
           <p id="logsInfo" class="info tr" role="alert">
@@ -358,8 +336,8 @@ function* CurrentLogs() {
           </p>
         </div>
         <div class="w-100 flex">
-          { false && (
-            <div class="w-20 v-bottom center">
+          { true && (
+            <div class="w-20 v-bottom">
                 <SelectMenu
                   id="selectObject"
                   menu={possibleObjects.map(el => ({text: el.toUpperCase(), item: el}))}
@@ -371,40 +349,7 @@ function* CurrentLogs() {
                 </SelectMenu>
             </div>
           )}
-          <div class="w-30 v-bottom tr">
-            { /* need to fix the br (border radius) settings */ }
-            { previousPage && previousPage.count > 0 && (
-              <button
-                class={ `grey bg-white bg-animate hover-bg-light-gray dib w-50 pv1 outline-0 b--grey ba ${ nextPage.count > 0  && "br-0" } br2 br--left mv1 pointer` }
-                title="Previous"
-                type="button"
-                onclick={ () => changeDate(previousPage.date) }
-                >
-                  <div class="v-mid di b">{ `<<` } { previousPage.date } ({ previousPage.count })</div>
-              </button>
-            )}
-            { nextPage && nextPage.count > 0 && (
-              <button
-                class={ `grey bg-white bg-animate hover-bg-light-gray dib w-50  pv1 outline-0 b--grey ba br2 br--right mv1 pointer` }
-                title="Previous"
-                type="button"
-                onclick={ () => changeDate(nextPage.date) }
-                >
-                  <div class="v-mid di b">{ nextPage.date } ({ nextPage.count }) { `>>` }</div>
-              </button>
-            )}
-          </div>
-          <div class="w-20 v-bottom tr mh1">
-            <button
-              class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-50  pv1 outline-0 b--grey ba br2 br--right mv1 pointer` }
-              title="Refresh"
-              type="button"
-              onclick={refreshLogs}
-              >
-                <span class="v-mid di">Refresh</span>
-            </button>
-          </div>
-          <div class="w-50 v-bottom tr">
+          <div class="w-60 v-bottom tr">
             <button
               class={
                 `${
@@ -416,18 +361,6 @@ function* CurrentLogs() {
               onclick={() => changeLevel("notice")}
               >
                 <span class="v-mid di">Notices</span>
-            </button>
-            <button
-              class={
-                `${
-                    logLevel === "warn" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
-                  } dib w-25 pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
-                }
-              title="Debug"
-              type="button"
-              onclick={() => changeLevel("warn")}
-              >
-                <span class="v-mid di">Warn</span>
             </button>
             <button
               class={
@@ -444,14 +377,24 @@ function* CurrentLogs() {
             <button
               class={
                 `${
-                    logLevel === "fatal" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
+                    logLevel === "all" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
                   } dib w-25 pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
                 }
               title="Fatal"
               type="button"
-              onclick={() => changeLevel("fatal")}
+              onclick={() => changeLevel("all")}
               >
-                <span class="v-mid di">Fatal</span>
+                <span class="v-mid di">All</span>
+            </button>
+          </div>
+          <div class="w-20 v-bottom tl mh1">
+            <button
+              class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-50  pv1 outline-0 b--grey ba br2 br--right mv1 pointer` }
+              title="Refresh"
+              type="button"
+              onclick={refreshLogs}
+              >
+                <span class="v-mid di">Refresh</span>
             </button>
           </div>
         </div>

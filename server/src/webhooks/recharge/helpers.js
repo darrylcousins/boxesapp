@@ -47,8 +47,11 @@ export const getMetaForCharge = (charge, topic) => {
     delete properties.Likes;
     delete properties.Dislikes;
     for (const [key, value] of Object.entries(properties)) {
-      if (key === "box_subscription_id") continue;
-      meta.recharge[key] = value;
+      if (key === "box_subscription_id") {
+        meta.recharge["Box Subscription"] = value;
+      } else {
+        meta.recharge[key] = value;
+      };
     };
     if (Object.hasOwnProperty.call(properties, "box_subscription_id")) {
       meta.recharge.subscription_id = parseInt(properties.box_subscription_id);

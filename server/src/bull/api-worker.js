@@ -46,7 +46,8 @@ const apiProcessor = async (job) => {
   };
   const { method, status, statusText, title } = returnvalue;
   winstonLogger.info(`\
-${color(job.name.padEnd(17, " "), "magenta")} \
+${color(process.env.SHOP_NAME.padEnd(17, " "), "magenta")} \
+${color(job.name.padEnd(17, " "), "brightWhite")} \
 ${color(method, "green")} \
 ${color(status, "yellow")} \
 ${color(statusText, "blue")} \

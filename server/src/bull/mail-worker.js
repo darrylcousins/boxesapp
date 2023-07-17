@@ -19,7 +19,8 @@ const workerOptions = {
  * Sandboxing might be a good approach for mail?
  */
 const mailProcessor = async (job) => {
-  winstonLogger.info(`${job.data.to.yellow} ${job.data.subject}`);
+  const shop = process.env.SHOP_NAME.padEnd(17, " ").magenta;
+  winstonLogger.info(`${shop} ${job.data.to.yellow} ${job.data.subject}`);
   return await sendmail(job.data);
 };
 

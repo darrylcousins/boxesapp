@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "build": "npm run build:client",
-    "build:client": "vite build --config config/vite.js --outDir dist/client",
+    "build:client": "vite build --config config/vite.js --outDir dist/client > /dev/null 2>&1",
     "debug": "node --inspect-brk src/index.js",
     "dev": "cross-env NODE_ENV=development nodemon src/index.js --watch ./src",
     "preserve": "npm run build",

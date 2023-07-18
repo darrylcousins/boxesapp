@@ -59,16 +59,6 @@ export const doShopQuery = async (opts) => {
       };
       winstonLogger.error(`Shopify fetch errors.`, { meta });
     };
-    if (Object.hasOwnProperty.call(json, "error")) {
-      const meta = {
-        shopify: {
-          uri: url,
-          method: "GET",
-          error: json.errors,
-        },
-      };
-      winstonLogger.error(`Shopify fetch error.`, { meta });
-    };
     json.status = response.status;
     json.statusText = response.statusText;
     json.title = title || "shopify no title";

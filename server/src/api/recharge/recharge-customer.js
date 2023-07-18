@@ -17,22 +17,11 @@ import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 export default async (req, res, next) => {
   // get recharge customer using shopify customer id
   let shopify_customer_id
-  let recharge_customer_id
   let query;
   let path = "customers";
-  if (Object.hasOwnProperty.call(req.query, "cursor")) {
-    query = [ ["limit", 50 ] ]; // 50 is the default - can go to 250
-    if (req.query.cursor !== "null") {
-      query.push(["cursor", req.query.cursor ]);
-    };
-  } else {
-    if (Object.hasOwnProperty.call(req.params, "shopify_customer_id")) {
-      shopify_customer_id = req.params.shopify_customer_id;
-      query = [ ["external_customer_id", shopify_customer_id ] ];
-    };
-    if (Object.hasOwnProperty.call(req.params, "recharge_customer_id")) {
-      path = `${path}/${req.params.recharge_customer_id}`;
-    };
+  if (Object.hasOwnProperty.call(req.params, "shopify_customer_id")) {
+    shopify_customer_id = req.params.shopify_customer_id;
+    query = [ ["external_customer_id", shopify_customer_id ] ];
   };
 
   try {

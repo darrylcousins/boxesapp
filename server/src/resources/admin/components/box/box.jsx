@@ -5,7 +5,7 @@
  * @exports Box
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
-import { createElement } from "@b9g/crank";
+import { createElement, Fragment } from "@b9g/crank";
 import RemoveBoxModal from "./box-remove";
 import DuplicateBoxModal from "./box-duplicate";
 import Products from "./box-products";
@@ -194,16 +194,20 @@ function* Box({ box, index }) {
           data-title="Actions"
           class="w-10-l pt3 bb b--black-20 rh-copy black-70 v-top"
         >
-          {box.active === true ? (
-            <IconButton color="dark-green" title="Toggle box off" name="toggle-off">
-              <ToggleOnIcon />
-            </IconButton>
-          ) : (
-            <IconButton color="dark-red" title="Toggle box on" name="toggle-on">
-              <ToggleOffIcon />
-            </IconButton>
+          { ( new Date(box.delivered) >= new Date() ) && (
+            <Fragment>
+              {box.active === true ? (
+                <IconButton color="dark-green" title="Toggle box off" name="toggle-off">
+                  <ToggleOnIcon />
+                </IconButton>
+              ) : (
+                <IconButton color="dark-red" title="Toggle box on" name="toggle-on">
+                  <ToggleOffIcon />
+                </IconButton>
+              )}
+              <RemoveBoxModal box={box} />
+            </Fragment>
           )}
-          <RemoveBoxModal box={box} />
           <DuplicateBoxModal box={box} />
         </td>
       </tr>

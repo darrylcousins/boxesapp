@@ -60,12 +60,19 @@ export default async (req, res, next) => {
 
     for (const [subscription_id, group] of Object.entries(grouped)) {
       // removing charge object which duplicates included
-      const lastOrder = await getLastOrder({
-        customer_id: group.box.customer_id,
-        address_id: group.box.address_id,
-        product_id: parseInt(group.box.external_product_id.ecommerce),
-        subscription_id,
-      });
+      let lastOrder = {};
+      // 404 most likely
+      try {
+        const query = {
+          customer_id: group.box.customer_id,
+          address_id: group.box.address_id,
+          product_id: parseInt(group.box.external_product_id.ecommerce),
+          subscription_id: parseInt(subscription_id),
+        };
+        lastOrder = await getLastOrder(query);
+      } catch(err) {
+        lastOrder = {};
+      };
 
       result.push({
         subscription_id,

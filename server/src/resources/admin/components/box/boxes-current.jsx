@@ -409,19 +409,27 @@ function* CurrentBoxes({ timestamp }) {
             {selectedDate && !loading ? (
               <Fragment>
                 <div class="w-20 fl tr v-mid">
-                  {active && (
-                    <IconButton color="dark-green" title="Toggle all boxes off" name="toggle-off">
-                      <ToggleOnIcon />
-                    </IconButton>
-                  )}
-                  {inactive && (
-                    <IconButton color="dark-red" title="Toggle all boxes on" name="toggle-on">
-                      <ToggleOffIcon />
-                    </IconButton>
+                  { ( new Date(selectedDate) >= new Date() )  && (
+                    <Fragment>
+                      {active && (
+                        <IconButton color="dark-green" title="Toggle all boxes off" name="toggle-off">
+                          <ToggleOnIcon />
+                        </IconButton>
+                      )}
+                      {inactive && (
+                        <IconButton color="dark-red" title="Toggle all boxes on" name="toggle-on">
+                          <ToggleOffIcon />
+                        </IconButton>
+                      )}
+                    </Fragment>
                   )}
                   <DuplicateBoxModal currentDate={selectedDate} />
-                  <AddBoxModal delivered={selectedDate} />
-                  <RemoveBoxesModal delivered={selectedDate} />
+                  { ( new Date(selectedDate) >= new Date() )  && (
+                    <Fragment>
+                      <AddBoxModal delivered={selectedDate} />
+                      <RemoveBoxesModal delivered={selectedDate} />
+                    </Fragment>
+                  )}
                   <BoxSettings delivered={selectedDate} settings={fetchSettings} />
                 </div>
               </Fragment>

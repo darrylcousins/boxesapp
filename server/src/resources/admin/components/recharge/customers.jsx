@@ -125,6 +125,7 @@ async function* Customers() {
    * @listens loadAnotherCustomer
    */
   const getNewCustomer = async () => {
+    fetchError = null;
     loading = false;
     searchError = null;
     searchTerm = null;
@@ -177,6 +178,9 @@ async function* Customers() {
    */
   const fetchRechargeCustomer = async (customer_id) => {
     const uri = `/api/recharge-customer/${customer_id}`;
+    fetchError = null;
+    loading = true;
+    this.refresh();
     console.log(uri);
     await Fetch(encodeURI(uri))
       .then((result) => {
@@ -273,7 +277,7 @@ async function* Customers() {
     yield (
       <div class="w-100 pa2 center" id="subscriptions">
         <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
-          Recharge Customers {""}
+          Recharge Customers { rechargeCustomers && rechargeCustomers.length } {""} 
           { fetchCustomer && (
             <span style="font-size: smaller;" class="ml4">
               {fetchCustomer.first_name} {fetchCustomer.last_name} &lt;{fetchCustomer.email}&gt;

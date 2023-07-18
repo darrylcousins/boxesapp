@@ -16,7 +16,7 @@ import "isomorphic-fetch";
 import path from "path";
 import dotenv from "dotenv";    
 
-import { makeShopQuery } from "../src/lib/shopify/helpers.js";
+import { doShopQuery, makeShopQuery } from "../src/lib/shopify/helpers.js";
 import { Shopify } from "../src/lib/shopify/index.js";
 import { getMongoConnection, MongoStore } from "../src/lib/mongo/mongo.js";
 

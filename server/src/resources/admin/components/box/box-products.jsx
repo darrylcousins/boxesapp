@@ -5,7 +5,7 @@
  * @exports Box
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
-import { createElement } from "@b9g/crank";
+import { createElement, Fragment } from "@b9g/crank";
 import CollapseWrapper from "../lib/collapse-animator";
 import { PostFetch } from "../lib/fetch";
 import { CloseIcon } from "../lib/icon";
@@ -199,10 +199,12 @@ function *Products ({box, products, type, allproducts}) {
         id={`${type}-${box._id}`}
         class="mt1"
       >
-        <AddProductToBoxModal
-          type={type}
-          box={box}
-          boxproducts={allproducts.map((el) => el.shopify_product_id)} />
+        { ( new Date(box.delivered) >= new Date() ) && (
+          <AddProductToBoxModal
+            type={type}
+            box={box}
+            boxproducts={allproducts.map((el) => el.shopify_product_id)} />
+        )}
         <div
           name="product-list"
           data-type={type}
@@ -219,19 +221,23 @@ function *Products ({box, products, type, allproducts}) {
               id={el.shopify_product_id}
               data-type={type}
             >
-              <div class="dtc tl hover-dark-red pointer"
-                style="width: 30px"
-                onclick={(e) => removeProduct({
-                  event: e,
-                  shopify_product_id: el.shopify_product_id,
-                  product_type: type,
-                  shopify_title: el.shopify_title,
-                })}
-                title={`Remove ${el.shopify_title}`}>
-                <span class="v-mid">
-                  <CloseIcon />
-                </span>
-              </div>
+              { ( new Date(box.delivered) >= new Date() ) && (
+                <Fragment>
+                  <div class="dtc tl hover-dark-red pointer"
+                    style="width: 30px"
+                    onclick={(e) => removeProduct({
+                      event: e,
+                      shopify_product_id: el.shopify_product_id,
+                      product_type: type,
+                      shopify_title: el.shopify_title,
+                    })}
+                    title={`Remove ${el.shopify_title}`}>
+                    <span class="v-mid">
+                      <CloseIcon />
+                    </span>
+                  </div>
+                </Fragment>
+              )}
               <div
                 class="dtc"
               >

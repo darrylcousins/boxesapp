@@ -118,7 +118,7 @@ export const makeApiJob = async (opts) => {
 
   // this will still go back to the caller
   if (parseInt(finished.returnvalue.status) > 299) {
-    throw new Error(`Recharge request failed with code ${status}: "${statusText}"`);
+    throw new Error(`${job.name} request failed with code ${status}: "${statusText}"`);
   };
 
   return finished.returnvalue;

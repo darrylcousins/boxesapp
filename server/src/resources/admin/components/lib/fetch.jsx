@@ -44,7 +44,7 @@ const Fetch = async (src) => {
       // jun 2023
       if (Object.hasOwnProperty.call(json, "error")) {
         error = json.error;
-        console.log(error);
+        console.log(src, error);
       };
       return { error, json };
     })

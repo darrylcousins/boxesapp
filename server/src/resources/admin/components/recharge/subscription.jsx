@@ -910,7 +910,7 @@ async function *Subscription({ subscription, idx, admin }) {
     if (Boolean(subscription.attributes.lastOrder)
       && Object.hasOwnProperty.call(subscription.attributes.lastOrder, "order_number")) {
       data.push(
-        ["Last Order", `${subscription.attributes.lastOrder.delivered} (#${subscription.attributes.lastOrder.order_number})`],
+        ["Last Order Delivered", `${subscription.attributes.lastOrder.delivered} (#${subscription.attributes.lastOrder.order_number})`],
       );
     };
     return data;

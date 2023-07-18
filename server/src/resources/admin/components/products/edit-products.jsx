@@ -155,7 +155,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
     const lists = { ...boxLists };
     delete lists["possibleAddons"];
     Object.entries(lists).forEach(([name, products]) => {
-      if (products !== null) {
+      if (products !== null && products.trim() !== "") {
         products
           .split(',')
           .map(el => el.trim())
@@ -316,7 +316,6 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
           return null;
         } else { // box is out in the future but still to find a display
           const maybe = rc_subscription_ids.find(e => e.title === el.name)
-          console.warn(maybe);
           product = { shopify_price: maybe.price, shopify_product_id: maybe.shopify_product_id };// may be able to get these from rc_subscription_ids?
         };
       };
@@ -513,7 +512,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
     // XXX There is another algorithm webhooks/recharge/charge-upcoming to be used here instead
     const possibleAddons = [ ...box.addOnProducts ];
     Object.entries(boxLists).forEach(([name, str]) => {
-      if (str === null) {
+      if (str === null || str.toLowerCase() === "none" || str.trim() === "") {
         boxLists[name] = [];
       } else {
         let products = str.split(",").map(el => el.trim()).map(el => matchNumberedString(el));
@@ -701,12 +700,10 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
     };
 
     pricedItems = collectCounts(); // at this point only the count
-    console.log(boxLists);
     const orphanedItems = await updateBoxLists();
     if (orphanedItems.length > 0) {
       console.warn(JSON.stringify(orphanedItems, null, 2));
     };
-    console.log(boxLists);
     await collectPrices(); // updates pricedItems to included prices
     loading = false;
     await getBoxPrice(); // refresh called from getBoxPrice
@@ -807,10 +804,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
                   { loading && (
                     <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
                   )}
-                  { !loading && box.image && (
-                    <Image src={ box.image } id={`image-${key}`} />
-                  )}
-                  { !loading && !box.image && (
+                  { !loading && (
                     <ShopifyProductImage
                       shopify_title={ box.shopify_title }
                       shopify_product_id={ box.shopify_product_id }

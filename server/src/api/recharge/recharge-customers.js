@@ -20,7 +20,9 @@ export default async (req, res, next) => {
 
   const collection = _mongodb.collection("customers");
   try {
-    const customers = await collection.find({}).sort({ last_name: 1 }).toArray();
+    const query = {};
+    query.subscriptions_active_count = { $ne: 0 };
+    const customers = await collection.find(query).sort({ last_name: 1 }).toArray();
 
     res.status(200).json({ customers });
   } catch(err) {

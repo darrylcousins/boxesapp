@@ -65,7 +65,7 @@ export const doShopQuery = async (opts) => {
     json.method = http_method;
 
     if (parseInt(response.status) > 299) {
-      throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}"`);
+      throw new Error(`Shopify request failed with code ${response.status}: "${response.statusText}"`);
     };
 
     return json;

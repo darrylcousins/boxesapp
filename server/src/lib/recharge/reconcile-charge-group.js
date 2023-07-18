@@ -591,12 +591,18 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     });
   };
 
-  const lastOrder = await getLastOrder({
-    customer_id: subscription.customer_id,
-    address_id: subscription.address_id,
-    product_id: parseInt(subscription.external_product_id.ecommerce),
-    subscription_id: subscription.id,
-  });
+  let lastOrder;
+  try {
+    const orderQuery = {
+      customer_id: subscription.customer_id,
+      address_id: subscription.address_id,
+      product_id: parseInt(subscription.external_product_id.ecommerce),
+      subscription_id: subscription.id,
+    };
+    lastOrder = await getLastOrder(orderQuery);
+  } catch(err) {
+    lastOrder = {};
+  };
 
   // no box so no way we can figure updates
   if (fetchBox.shopify_title === "") {

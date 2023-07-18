@@ -91,12 +91,19 @@ export default async (req, res, next) => {
     delete result.charge; // charge.line_items duplicated in result.includes
     result.subscription_id = subscription_id;
 
-    result.lastOrder = await getLastOrder({
-      customer_id: result.box.customer_id,
-      address_id: result.box.address_id,
-      product_id: parseInt(result.box.external_product_id.ecommerce),
-      subscription_id,
-    });
+    let lastOrder;
+    try {
+      const orderQuery = {
+        customer_id: result.box.customer_id,
+        address_id: result.box.address_id,
+        product_id: parseInt(result.box.external_product_id.ecommerce),
+        subscription_id,
+      };
+      lastOrder = await getLastOrder(orderQuery);
+    } catch(err) {
+      lastOrder = {};
+    };
+    result.lastOrder = lastOrder;
 
     return res.status(200).json(result);
 

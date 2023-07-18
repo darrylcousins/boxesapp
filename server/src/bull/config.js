@@ -9,5 +9,5 @@ const password = process.env.REDIS_PASSWORD || "";
 
 export const redisOptions = { host, port, password };
 
-export const apiQueueName = "apiQueue";
-export const mailQueueName = "mailQueue";
+export const apiQueueName = `${process.env.PROCSESS_PREFIX}-apiQueue`;
+export const mailQueueName = `${process.env.PROCSESS_PREFIX}mailQueue`;

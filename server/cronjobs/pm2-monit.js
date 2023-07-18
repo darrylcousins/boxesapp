@@ -25,7 +25,10 @@ const main = async () => {
   const { mongo, client } = await getMongo();
 
   try {
-    const procs = [process.env.PROCESS_NAME, `${process.env.PROCESS_PREFIX}-api-worker`, `${process.env.PROCESS_PREFIX}-mail-worker`];
+    const procs = [
+      `${process.env.PROCESS_PREFIX}-server`,
+      `${process.env.PROCESS_PREFIX}-api-worker`,
+      `${process.env.PROCESS_PREFIX}-mail-worker`];
     const piddir = "/home/cousinsd/.pm2/pids";
 
     const files = fs.readdirSync(piddir).map(el => {

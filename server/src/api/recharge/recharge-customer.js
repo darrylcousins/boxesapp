@@ -35,7 +35,6 @@ export default async (req, res, next) => {
       query,
       title: "Recharge Customer"
     });
-    console.log(result);
     if (result.customer) {
       res.status(200).json(result.customer);
       return;

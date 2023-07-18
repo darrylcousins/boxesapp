@@ -177,7 +177,7 @@ async function* Customers() {
    * @function fetchRechargeCustomer
    */
   const fetchRechargeCustomer = async (customer_id) => {
-    const uri = `/api/recharge-customer/${customer_id}`;
+    const uri = `/api/recharge-customer?recharge_customer_id=${customer_id}`;
     fetchError = null;
     loading = true;
     this.refresh();

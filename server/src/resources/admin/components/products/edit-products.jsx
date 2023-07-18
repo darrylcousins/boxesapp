@@ -702,7 +702,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
     pricedItems = collectCounts(); // at this point only the count
     const orphanedItems = await updateBoxLists();
     if (orphanedItems.length > 0) {
-      console.warn(JSON.stringify(orphanedItems, null, 2));
+      //console.warn(JSON.stringify(orphanedItems, null, 2));
     };
     await collectPrices(); // updates pricedItems to included prices
     loading = false;

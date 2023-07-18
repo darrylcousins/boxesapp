@@ -61,7 +61,6 @@ export const doRechargeQuery = async ({method, path, limit, query, body, title, 
   const searchString = query ? `?${query.reduce(reducer, "")}` : "";
   
   const url = `${process.env.RECHARGE_URL}/${path}${searchString}`;
-  console.log(url);
 
   return await fetch(encodeURI(url), {
     method: http_method,

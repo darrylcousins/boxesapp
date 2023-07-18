@@ -47,6 +47,7 @@ import {
 async function *Subscription({ subscription, idx, admin }) {
 
 
+  /*
   console.log("=======================================");
   console.log("TITLE", subscription.attributes.title);
   console.log("Box", subscription.box);
@@ -57,7 +58,6 @@ async function *Subscription({ subscription, idx, admin }) {
   console.log("Includes", subscription.includes);
   console.log("Updates", subscription.updates);
   console.log("RC_IDS", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
-  /*
   console.log("Ids", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
   console.log(JSON.stringify(
     subscription.attributes.rc_subscription_ids.map(el => {

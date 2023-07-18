@@ -160,7 +160,9 @@ async function *Customer({ customer, admin }) {
    */
   const getRechargeCustomer = async () => {
     // recharge customer id
-    const uri = `/api/recharge-customer/${customer.id}`;
+    const uri = `/api/recharge-customer?shopify_customer_id=${customer.id}`;
+    console.log(customer);
+    console.log(uri);
     return Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;

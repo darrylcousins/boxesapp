@@ -156,7 +156,7 @@ router.get(
   "/recharge-customers/:recharge_customer_id",  // gets all customers
   await import("./recharge/recharge-customers.js").then(({ default: fn }) => fn));
 router.get(
-  "/recharge-customer/:recharge_customer_id", 
+  "/recharge-customer", 
   await import("./recharge/recharge-customer.js").then(({ default: fn }) => fn));
 router.post(
   "/recharge-update", 

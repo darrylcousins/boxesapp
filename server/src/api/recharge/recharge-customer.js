@@ -17,17 +17,14 @@ import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 export default async (req, res, next) => {
   // get recharge customer using shopify customer id
   let shopify_customer_id
-  let query;
   let path = "customers";
-  if (Object.hasOwnProperty.call(req.params, "shopify_customer_id")) {
-    shopify_customer_id = req.params.shopify_customer_id;
-    query = [ ["external_customer_id", shopify_customer_id ] ];
+  if (Object.hasOwnProperty.call(req.params, "recharge_customer_id")) {
+    path = `${path}/${req.params.recharge_customer_id}`;
   };
 
   try {
     const result = await makeRechargeQuery({
       path,
-      query,
       title: "Recharge Customer"
     });
     if (result.customer) {
@@ -38,11 +35,6 @@ export default async (req, res, next) => {
     if (!result.customers || !result.customers.length) {
       res.status(200).json([]);
       return;
-    };
-    if (typeof shopify_customer_id !== "undefined") {
-      res.status(200).json(result.customers[0]);
-    } else {
-      res.status(200).json(result); // includes next_cursor and previous_cursor
     };
   } catch(err) {
     res.status(200).json({ error: err.message });

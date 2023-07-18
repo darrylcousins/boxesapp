@@ -153,7 +153,10 @@ router.get(
   "/recharge-customers",  // gets all customers
   await import("./recharge/recharge-customers.js").then(({ default: fn }) => fn));
 router.get(
-  "/recharge-customer/:shopify_customer_id", 
+  "/recharge-customers/:recharge_customer_id",  // gets all customers
+  await import("./recharge/recharge-customers.js").then(({ default: fn }) => fn));
+router.get(
+  "/recharge-customer/:recharge_customer_id", 
   await import("./recharge/recharge-customer.js").then(({ default: fn }) => fn));
 router.post(
   "/recharge-update", 

@@ -18,8 +18,6 @@ import { sortObjectArrayByKey } from "../../lib/helpers.js";
 
 export default async (req, res, next) => {
 
-  const query = {};
-
   const collection = _mongodb.collection("customers");
   try {
     const customers = await collection.find({}).sort({ last_name: 1 }).toArray();

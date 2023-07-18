@@ -36,7 +36,7 @@ import {
  * import {renderer} from '@b9g/crank/dom';
  * renderer.render(<EditProducts box={box} />, document.querySelector('#app'))
  */
-function *EditProducts({ box, properties, nextChargeDate, images, isEditable, key, id }) {
+function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, images, isEditable, key, id }) {
 
   /**
    * True while loading data from api // box price
@@ -312,7 +312,13 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
         product = box.addOnProducts.find(item => item.shopify_title === el.name);
       };
       if (!product) {
-        return null;
+        if (isEditable) {
+          return null;
+        } else { // box is out in the future but still to find a display
+          const maybe = rc_subscription_ids.find(e => e.title === el.name)
+          console.warn(maybe);
+          product = { shopify_price: maybe.price, shopify_product_id: maybe.shopify_product_id };// may be able to get these from rc_subscription_ids?
+        };
       };
       const { shopify_price, shopify_product_id } = product;
       let image = null;
@@ -497,6 +503,7 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
    * XXX Reminder here that this method initially was used when pass a subscription
    * Performed on load or cancelling actions
    * After this they are then arrays of objects: shopify_title, id, quantity etc
+   * If the box is not editable then we don't have true lists to compare to so must fudge it somewhat
    *
    * @member {object|string} updateBoxLists
    */
@@ -505,14 +512,6 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     let orphanedItems = []; // XXX for adding or editing an order?
     // XXX There is another algorithm webhooks/recharge/charge-upcoming to be used here instead
     const possibleAddons = [ ...box.addOnProducts ];
-    /*
-    const setOfLikes = (typeof boxProperties["Likes"] === "string") // can be null when first created
-      ? new Set(boxProperties["Likes"].split(",").map(el => el.trim()))
-      : new Set();
-    const setOfDislikes = (typeof boxProperties["Dislikes"] === "string") // can be null when first created
-      ? new Set(boxProperties["Dislikes"].split(",").map(el => el.trim()))
-      : new Set();
-    */
     Object.entries(boxLists).forEach(([name, str]) => {
       if (str === null) {
         boxLists[name] = [];
@@ -530,12 +529,13 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
               orphanedItems.push({list: name, ...el}); // in boxLists but not available in box
             };
           };
-          /*
-          // may as well update Likes and Dislikes
-          if (["Swapped Items", "Add on Items"].includes(name)) setOfLikes.add(el.str);
-          if (name === "Removed Items") setOfDislikes.add(el.str);
-          */
-          if (!product) return null;
+          if (!product) {
+            if (isEditable || el.str === "") {
+              return null;
+            } else {
+              return { shopify_title: el.str, quantity: el.count }; // still missing a price
+            };
+          };
           return { ...product, quantity: el.count };
         });
         boxLists[name] = products.filter(el => Boolean(el)); // remove those that returned null
@@ -543,16 +543,8 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     });
     // filtered from addOnProducts, renamed here to possibleAddons quantity helps later
     boxLists["possibleAddons"] = possibleAddons.map(el => ({ ...el, quantity: 1 }))
-    /*
-    if (setOfLikes.size) boxProperties["Likes"] = Array.from(setOfLikes).join(",");
-    if (setOfDislikes.size) boxProperties["Dislikes"] = Array.from(setOfDislikes).join(",");
-    */
 
     orphanedItems = orphanedItems.filter(el => el.str !== "");
-    if (orphanedItems.length > 0) {
-      console.warn(JSON.stringify(orphanedItems, null, 2));
-    };
-    //console.log(boxLists);
 
     return orphanedItems;
   };
@@ -709,20 +701,18 @@ function *EditProducts({ box, properties, nextChargeDate, images, isEditable, ke
     };
 
     pricedItems = collectCounts(); // at this point only the count
+    console.log(boxLists);
     const orphanedItems = await updateBoxLists();
+    if (orphanedItems.length > 0) {
+      console.warn(JSON.stringify(orphanedItems, null, 2));
+    };
+    console.log(boxLists);
     await collectPrices(); // updates pricedItems to included prices
     loading = false;
     await getBoxPrice(); // refresh called from getBoxPrice
   };
 
   const getListData = () => {
-    const oldIdea = [
-      ["Box Price", toPrice(box.shopify_price * 100)],
-      ["Likes", (boxProperties["Likes"] && boxProperties["Likes"].length > 0)
-        ? boxProperties["Likes"] : "None"],
-      ["Dislikes", (boxProperties["Dislikes"] && boxProperties["Dislikes"].length > 0)
-        ? boxProperties["Dislikes"] : "None"],
-    ];
     const list = [
       ["Price (excl. shipping)", toPrice(totalPrice())],
       ["Delivery Date", properties["Delivery Date"]],

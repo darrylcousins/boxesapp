@@ -49,6 +49,7 @@ export const reconcileGetGrouped = async ({ charge }) => {
         subscription_id: parseInt(line_item.purchase_item_id),
         quantity: parseInt(line_item.quantity),
         title: line_item.title,
+        price: parseFloat(line_item.unit_price) * 100,
       });
       grouped[box_subscription_id].charge = charge;
 

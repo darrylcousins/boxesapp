@@ -27,7 +27,7 @@ import {
  */
 async function* Cancelled({ subscription, idx, admin }) {
 
-  console.log(JSON.stringify(subscription, null, 2));
+  //console.log(JSON.stringify(subscription, null, 2));
   /**
    * True while loading data from api
    * Starts false until search term submitted
@@ -105,20 +105,16 @@ async function* Cancelled({ subscription, idx, admin }) {
    */
   const getActivatedSubscription = async () => {
     // this call needs to check updates_pending and return message, otherwise we get the subscription
-    console.log(reactivatedResult);
     const { customer_id, address_id, subscription_id, scheduled_at } = reactivatedResult;
     const uri = `/api/recharge-customer-charges/${customer_id}/${address_id}/${scheduled_at}/${subscription_id}`;
-    console.log(uri);
 
     return await Fetch(encodeURI(uri))
       .then((result) => {
-        console.log(result);
         const { error, json } = result;
         if (error !== null) {
           fetchError = error;
           return null;
         } else {
-          console.log(json);
           return json;
         };
       })
@@ -136,12 +132,10 @@ async function* Cancelled({ subscription, idx, admin }) {
     loading = true;
     await this.refresh();
 
-    console.log(eventAction);
     // duplicated in the Subscription component - surely should figure out
 
     if (eventAction === "reactivated") {
       const json = await getActivatedSubscription();
-      console.log(json);
 
       if (Object.hasOwnProperty.call(json, "message")) {
         // do something with it? Toast?
@@ -193,7 +187,6 @@ async function* Cancelled({ subscription, idx, admin }) {
 
   const listingReload = async (ev) => {
     const result = ev.detail.json; // success, action, subscription_id
-    console.log("listing reload:", result);
 
     reactivatedResult = result;
     // { action, customer_id, address_id, subscription_id, scheduled_at }

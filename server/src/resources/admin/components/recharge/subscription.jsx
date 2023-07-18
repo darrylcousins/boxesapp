@@ -258,14 +258,12 @@ async function *Subscription({ subscription, idx, admin }) {
   const saveChanges = async (key) => {
     editsPending = true;
     CollapsibleProducts = CollapseWrapper(EditProducts);
-    /*
     this.dispatchEvent(
       new CustomEvent("customer.disableevents", {
         bubbles: true,
         detail: { subscription_id: subscription.attributes.subscription_id },
       })
     );
-    */
     await this.refresh();
     await doChanges({ key });
 
@@ -1112,6 +1110,7 @@ async function *Subscription({ subscription, idx, admin }) {
               { subscription.attributes.title !== "" && (
                 <CollapsibleProducts
                   collapsed={ collapsed }
+                  rc_subscription_ids={ subscription.attributes.rc_subscription_ids }
                   properties={ subscription.properties }
                   box={ subscription.box }
                   images={ subscription.attributes.images }

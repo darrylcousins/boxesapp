@@ -94,6 +94,7 @@ export const mongoInsert = async (collection, data) => {
 
 /*
  * @class mongoStore
+ * Used by Shopify and Recharge to manage access keys
  */
 export class MongoStore {
 

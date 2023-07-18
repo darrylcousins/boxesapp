@@ -208,7 +208,6 @@ async function *Customer({ customer, admin }) {
    * @listen subscription.deleted event
    */
   const reactivateSubscription = async (ev) => {
-    console.log(ev.detail);
     const { subscription, subscription_id } = ev.detail
     const cancelled = cancelledGroups.find(el => el.box.id === subscription_id);
     const idx = cancelledGroups.indexOf(cancelled);
@@ -232,7 +231,6 @@ async function *Customer({ customer, admin }) {
    * @listen subscription.cancelled event
    */
   const cancelSubscription = async (ev) => {
-    console.log(ev.detail);
     const { subscription, subscription_id } = ev.detail
     const charge = chargeGroups.find(el => el.attributes.subscription_id === subscription_id);
     const idx = chargeGroups.indexOf(charge);
@@ -304,105 +302,6 @@ async function *Customer({ customer, admin }) {
   };
 
   this.addEventListener("customer.reload", reloadAll);
-
-  /*
-   * @function getCharge
-   * Fetch the charge as a "subscription" object
-   */
-  /*
-  const getCharge = async (charge_id) => {
-    const uri = `/api/recharge-customer-charge/${charge_id}`;
-    return Fetch(encodeURI(uri))
-      .then((result) => {
-        const { error, json } = result;
-        if (error !== null) {
-          fetchError = error;
-        };
-        console.log(json.subscription);
-        return json.subscription;
-      })
-      .catch((err) => {
-        fetchError = err;
-      });
-  };
-  */
-
-  /**
-   * For reloading a specific charge
-   *
-   * @listens charge.reload From Subscription
-   *
-   * The subscription itself handles this, but we should update the chargeGroups!
-   */
-  /*
-  const reloadCharge = async (ev) => {
-
-    loading = true;
-    this.refresh();
-
-    const { charge_id } = ev.detail;
-    const charge = await getCharge(charge_id);
-    console.log(charge);
-    // insert into chargeGroups and update OriginalChargeGroups
-    Object.assign(
-      chargeGroups.find(el => el.attributes.charge_id === parseInt(charge_id)), // which element
-      charge // new object
-    );
-    originalChargeGroups = cloneDeep(chargeGroups);
-
-    loading = false;
-    this.refresh();
-  };
-
-  this.addEventListener("charge.reload", reloadCharge);
-
-  /**
-   * When subscription dates have been changed
-   * Update the updated subscription in chargeGroups
-   * We need to do it this way because of time delay from recharge api
-   * @function chargeUpdated
-   * @listen subscription.updated event
-   *
-   * XXX not used? No
-   */
-  /*
-  const chargeUpdated = async (ev) => {
-
-    const result = ev.detail.result;
-    const { charge } = result;
-    loading = true;
-    this.refresh();
-    let headers = { "Content-Type": "application/json" };
-    const src = "/api/recharge-updated-charge-date";
-    const data = { charge };
-    await PostFetch({ src, data, headers })
-      .then((res) => {
-        const { error, json } = res;
-        if (error !== null) {
-          fetchError = error;
-          chargeGroups = [];
-          loading = false;
-          this.refresh();
-        } else {
-          const subscription = chargeGroups.find(el => el.attributes.subscription_id === result.subscription_id);
-          const idx = chargeGroups.indexOf(subscription);
-          chargeGroups[idx] = json.subscription;
-          sortChargeGroups();
-          originalChargeGroups = cloneDeep(chargeGroups);
-          loading = false;
-          const subdiv = document.querySelector(`#customer`);
-          animateFadeForAction(subdiv, () => this.refresh(), 800);
-        }
-      })
-      .catch((err) => {
-        fetchError = err;
-        loading = false;
-        this.refresh();
-      });
-  };
-
-  this.addEventListener("subscription.updated", chargeUpdated);
-  */
 
   if (!Object.hasOwnProperty.call(customer, "external_customer_id")) {
     await getRechargeCustomer().then(res => {

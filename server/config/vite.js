@@ -1,6 +1,6 @@
-//import react from "@vitejs/plugin-react";
-//import "dotenv/config";
-//
+/*
+ * @author Darryl Cousins <darryljcousins@gmail.com>
+ */
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 dotenv.config();

@@ -159,6 +159,7 @@ async function *Customer({ customer, admin }) {
    *
    */
   const getRechargeCustomer = async () => {
+    // recharge customer id
     const uri = `/api/recharge-customer/${customer.id}`;
     return Fetch(encodeURI(uri))
       .then((result) => {

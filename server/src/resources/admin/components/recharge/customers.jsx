@@ -172,11 +172,12 @@ async function* Customers() {
   /**
    * Fetch recharge customer
    *
-   * @param {string} id The shopify customer id
+   * @param {string} id The recharge customer id
    * @function fetchRechargeCustomer
    */
   const fetchRechargeCustomer = async (customer_id) => {
-    const uri = `/api/recharge-customers/${customer_id}`;
+    const uri = `/api/recharge-customer/${customer_id}`;
+    console.log(uri);
     await Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
@@ -186,6 +187,7 @@ async function* Customers() {
           this.refresh();
           return null;
         };
+        console.log(json);
         fetchCustomer = json;
         loading = false;
         this.refresh();

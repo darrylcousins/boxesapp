@@ -43,7 +43,8 @@ export default async ({ orphans}) => {
 </mjml>
 `, options);
         sendmail({
-          to: `${process.env.ADMIN_EMAIL}, ${process.env.SERVER_EMAIL}`,
+          //to: `${process.env.ADMIN_EMAIL}, ${process.env.SERVER_EMAIL}`,
+          to: `${process.env.SERVER_EMAIL}`,
           subject: `\[${process.env.SHOP_NAME}\] Clean subscriptions`,
           html: htmlOutput.html
         });

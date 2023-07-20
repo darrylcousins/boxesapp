@@ -26,11 +26,24 @@ export default `
         text-align: right;
         font-weight: bold;
         color: grey;
+                      ">Product title</dt>
+                      <dd style="
+        margin: 0 0 0 110px;
+        padding: 0 0 0.5em 0;
+                      ">{{ orphaned.title }}</dd>
+                      <dt style="
+        float: left;
+        clear: left;
+        width: 100px;
+        text-align: right;
+        font-weight: bold;
+        color: grey;
                       ">Subscription ID</dt>
                       <dd style="
         margin: 0 0 0 110px;
         padding: 0 0 0.5em 0;
-                      ">{{ orphaned.subscription_id }}</d>
+                      ">{{ orphaned.subscription_id }}</dd>
+                      {% if orphaned.next_charge_scheduled_at %}
                       <dt style="
         float: left;
         clear: left;
@@ -42,7 +55,25 @@ export default `
                       <dd style="
         margin: 0 0 0 110px;
         padding: 0 0 0.5em 0;
-                      ">{{ orphaned.next_charge_scheduled_at }}</d>
+                      ">
+                      {{ orphaned.next_charge_scheduled_at }}
+                      {% endif %}
+                      {% if orphaned.cancelled_at %}
+                      <dt style="
+        float: left;
+        clear: left;
+        width: 100px;
+        text-align: right;
+        font-weight: bold;
+        color: grey;
+                      ">Cancelled at</dt>
+                      <dd style="
+        margin: 0 0 0 110px;
+        padding: 0 0 0.5em 0;
+                      ">
+                      {{ orphaned.next_cancelled_at }}
+                      {% endif %}
+                      </dd>
                       <dt style="
         float: left;
         clear: left;
@@ -54,7 +85,7 @@ export default `
                       <dd style="
         margin: 0 0 0 110px;
         padding: 0 0 0.5em 0;
-                      ">{{ orphaned.updated_at }}</d>
+                      ">{{ orphaned.updated_at }}</dd>
                     </dl>
                   </li>
                 {% endfor %}

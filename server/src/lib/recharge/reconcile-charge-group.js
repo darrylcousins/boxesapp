@@ -41,7 +41,7 @@ export const reconcileGetGrouped = async ({ charge }) => {
         // should never happen! But what to do if it does? Maybe run the subscription-create webhook script?
         // Jun 2023 Switching to updating box_subscription_id on first charge created webhook
         // Gosh 16 Jul 2023 made an order and this threw without any downstream problems
-        console.log("NO BOX SUBSCRIPTION PROPERTY", charge.id, line_item.title);
+        console.log("NO BOX SUBSCRIPTION PROPERTY", charge.id, line_item.title, line_item.purchase_item_id);
         continue; // so we don't throw an error
       };
       const box_subscription_id = parseInt(box_subscription_property.value);
@@ -66,6 +66,9 @@ export const reconcileGetGrouped = async ({ charge }) => {
       };
       if (Object.hasOwnProperty.call(line_item, "updated_at")) {
         rc_subscription_id.updated_at = line_item.updated_at;
+      };
+      if (Object.hasOwnProperty.call(line_item, "cancelled_at")) {
+        rc_subscription_id.updated_at = line_item.cancelled_at;
       };
       grouped[box_subscription_id].rc_subscription_ids.push(rc_subscription_id);
       grouped[box_subscription_id].charge = charge;

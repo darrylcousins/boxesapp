@@ -39,6 +39,7 @@ const main = async () => {
       console.log(`Collect customers, got more than 250 ${customers.length}`);
     };
 
+    // want also to delete stale customers
     for (const el of customers) {
       const doc = {
         first_name: el.first_name,

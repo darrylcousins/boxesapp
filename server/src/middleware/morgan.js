@@ -20,7 +20,7 @@ export const morganMiddleware = morgan((tokens, req, res) =>  {
     }
   });
   return [
-    `${tokens.method(req, res)}`.green,
+    `${tokens.method(req, res)}`.padEnd(4, " ").green,
     `${tokens.status(req, res)}`.yellow,
     `${tokens['response-time'](req, res)} ms`.cyan,
     `${tokens.url(req, res)}${topic ? `-webhook/${topic}` : ""}`,

@@ -6,6 +6,15 @@ import { sortObjectByKeys, matchNumberedString } from "../helpers.js";
 import { getNZDeliveryDay } from "../dates.js";
 import { getLastOrder, makeRechargeQuery } from "./helpers.js";
 import isEqual from "lodash.isequal";
+import { winstonLogger } from "../../../config/winston.js";
+
+const getLogger = () => {
+  if (typeof _logger === "undefined") {
+    return winstonLogger;
+  } else {
+    return _logger;
+  };
+};
 
 /*
  * @function reconcileGetGrouped
@@ -44,13 +53,21 @@ export const reconcileGetGrouped = async ({ charge }) => {
       } else {
         grouped[box_subscription_id].included.push(line_item);
       };
-      grouped[box_subscription_id].rc_subscription_ids.push({
+      const rc_subscription_id = {
         shopify_product_id: parseInt(line_item.external_product_id.ecommerce),
         subscription_id: parseInt(line_item.purchase_item_id),
         quantity: parseInt(line_item.quantity),
         title: line_item.title,
         price: parseFloat(line_item.unit_price) * 100,
-      });
+      };
+      // e.g. cronjobs.clean-subscriptoins.js
+      if (Object.hasOwnProperty.call(line_item, "next_charge_scheduled_at")) {
+        rc_subscription_id.next_charge_scheduled_at = line_item.next_charge_scheduled_at;
+      };
+      if (Object.hasOwnProperty.call(line_item, "updated_at")) {
+        rc_subscription_id.updated_at = line_item.updated_at;
+      };
+      grouped[box_subscription_id].rc_subscription_ids.push(rc_subscription_id);
       grouped[box_subscription_id].charge = charge;
 
     };
@@ -68,7 +85,7 @@ export const reconcileGetGrouped = async ({ charge }) => {
 
     };
   } catch(err) {
-    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    getLogger().error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 
   return sortObjectByKeys(grouped);
@@ -240,8 +257,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     if (product_string === null) boxLists[name] = ""; // may be null from recharge
     boxListArrays[name] = product_string.split(",").map(el => el.trim()).filter(el => el !== "");
   });
-  // should I just get the strings here and ignore the counts because after all I can find the counts again
-  // use includes to get the extra data required: subscription_id, properties, shopify_product_id, and price
+  // figure out what extras should be/are in the box
   let boxIncludedExtras = boxListArrays["Including"]
     .map(el => matchNumberedString(el))
     .filter(el => el.quantity > 1)

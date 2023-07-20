@@ -45,9 +45,7 @@ export default async function chargeUpcoming(topic, shop, body) {
     for (const [idx, subscription] of result.entries()) {
       if (subscription.updates && subscription.updates.length) {
 
-        // need to set data in updates_pending to prevent user from editing subscription in this timeframe
-        //
-        //
+        // XXX need to set data in updates_pending to prevent user from editing subscription in this timeframe
         // Reconcile the items in the subscription with the new box
         await updateSubscriptions({ updates: subscription.updates });
 

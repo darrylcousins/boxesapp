@@ -17,7 +17,12 @@ _logger.notice = (e) => console.log(e);
 
 const run = async () => {
 
-  global._mongodb = await getMongoConnection(); // if mongo connection required
+  //global._mongodb = await getMongoConnection(); // if mongo connection required
+  // for winstonLogger to store to mongo we need a client in the process
+  // regardless whether it is actually used in the script
+  const { mongo: mongodb, client: dbClient } = await getMongo();
+  global._mongodb = mongodb;
+
   await Shopify.initialize(); // if shopify query required
 
   try {
@@ -26,7 +31,8 @@ const run = async () => {
   } catch(e) {
     console.error(e);
   } finally {
-    process.emit('SIGINT'); // will close mongo connection
+    dbClient.close();
+    //process.emit('SIGINT'); // will close mongo connection
   };
 };
 

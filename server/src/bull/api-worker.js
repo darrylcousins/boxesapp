@@ -13,6 +13,10 @@ import { winstonLogger } from "../../config/winston.js";
 const workerOptions = {
   connection: redisOptions,
   autorun: true,
+  limiter: {
+    max: 3, // limit the queue to a maximum of 3 jobs per 1 second
+    duration: 1000, // limit the queue to a maximum of 3 jobs per 1 second
+  },
 };
 
 /* process the data */

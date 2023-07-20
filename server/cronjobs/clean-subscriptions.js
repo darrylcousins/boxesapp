@@ -52,10 +52,11 @@ const main = async () => {
           query: [
             ["limit", 250 ],
             ["customer_id", `${customer.recharge_id}` ],
-          ]
+          ],
+          title: "Clean subscriptions",
         });
         const line_items = subscriptions
-          .filter(el => `${el.cancelled_at}` !== "null")
+          .filter(el => `${el.next_charge_scheduled_at}` !== "null")
           .map(el => {
             return {
               ...el,
@@ -117,16 +118,18 @@ const main = async () => {
           return collected_subscription_ids.includes(el.id) ? false : true;
         })) {
           const { product_title: title, next_charge_scheduled_at, updated_at, cancelled_at } = subscription;
-          orphans.push({
-            shopify_product_id: parseInt(subscription.external_product_id.ecommerce),
-            subscription_id: parseInt(subscription.id),
-            quantity: parseInt(subscription.quantity),
-            price: subscription.price * 100,
-            title,
-            next_charge_scheduled_at,
-            updated_at,
-            cancelled_at,
-          });
+          if (`${next_charge_scheduled_at}` !== null) {
+            orphans.push({
+              shopify_product_id: parseInt(subscription.external_product_id.ecommerce),
+              subscription_id: parseInt(subscription.id),
+              quantity: parseInt(subscription.quantity),
+              price: subscription.price * 100,
+              title,
+              next_charge_scheduled_at,
+              updated_at,
+              cancelled_at,
+            });
+          };
         };
       } catch(err) {
         winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
@@ -143,10 +146,10 @@ const main = async () => {
       };
     };
 
-    console.log(JSON.stringify(customer_orphans, null, 2));
+    //console.log(JSON.stringify(customer_orphans, null, 2));
     // actually confident that I can delete all the orphans
     // but for now build a report to email to self
-    await cleanSubscriptionsMail({ orphans: customer_orphans });
+    //await cleanSubscriptionsMail({ orphans: customer_orphans });
 
   } catch(err) {
     winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

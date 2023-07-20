@@ -113,10 +113,14 @@ const main = async () => {
           };
         };
         // now collect the other orphans, i.e. not tied to a subscription box
-        const collected_subscription_ids = collected_rc_subscription_ids.map(el => el.subscription_id);
-        for (const subscription of subscriptions.filter(el => {
-          return collected_subscription_ids.includes(el.id) ? false : true;
-        })) {
+        // provided they have a charge, the others I can certainly delete
+        const collected_subscription_ids = collected_rc_subscription_ids
+          .map(el => el.subscription_id);
+        for (const subscription of subscriptions
+          .filter(el => `${el.next_charge_scheduled_at}` !== "null")
+          .filter(el => {
+            return collected_subscription_ids.includes(el.id) ? false : true;
+          })) {
           const { product_title: title, next_charge_scheduled_at, updated_at, cancelled_at } = subscription;
           if (`${next_charge_scheduled_at}` !== null) {
             orphans.push({

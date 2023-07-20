@@ -57,14 +57,14 @@ export const doShopQuery = async (opts) => {
           errors: json.errors,
         },
       };
-      winstonLogger.error(`Shopify fetch errors.`, { meta });
+      winstonLogger.notice(`Shopify fetch error.`, { meta });
     };
     json.status = response.status;
     json.statusText = response.statusText;
     json.title = title || "shopify no title";
     json.method = http_method;
 
-    if (parseInt(response.status) > 299) {
+    if (parseInt(response.status) > 299 && parseInt(response.status) !== 404) {
       throw new Error(`Shopify request failed with code ${response.status}: "${response.statusText}"`);
     };
 

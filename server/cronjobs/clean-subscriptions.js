@@ -149,7 +149,7 @@ const main = async () => {
     //console.log(JSON.stringify(customer_orphans, null, 2));
     // actually confident that I can delete all the orphans
     // but for now build a report to email to self
-    //await cleanSubscriptionsMail({ orphans: customer_orphans });
+    await cleanSubscriptionsMail({ orphans: customer_orphans });
 
   } catch(err) {
     winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

@@ -19,9 +19,15 @@ import { sortObjectArrayByKey } from "../../lib/helpers.js";
 export default async (req, res, next) => {
 
   const collection = _mongodb.collection("customers");
+  // active, none-active, all
+  const selectActive = req.query.selectActive;
   try {
     const query = {};
-    query.subscriptions_active_count = { $ne: 0 };
+    if (selectActive === "active") {
+      query.subscriptions_active_count = { $ne: 0 };
+    } else if (selectActive === "none-active") {
+      query.subscriptions_active_count = { $eq: 0 };
+    };
     const customers = await collection.find(query).sort({ last_name: 1 }).toArray();
 
     res.status(200).json({ customers });

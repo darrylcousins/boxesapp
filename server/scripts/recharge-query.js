@@ -104,11 +104,13 @@ const run = async () => {
         console.log(JSON.stringify(data, null, 2));
        writeFileSync("recharge.charge.json", JSON.stringify(data, null, 2));
       };
+      process.exit(1);
     })
 };
 
 try {
-  run();
+  await run();
+  //process.exit(1);
 } catch(e) {
   console.log('Bleh'.red);
 };

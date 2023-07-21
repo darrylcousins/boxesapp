@@ -42,20 +42,27 @@ const main = async () => {
 
     for (const el of customers) {
 
-      const res = await makeRechargeQuery({
-        path: `charges`,
-        query: [
-          ["customer_id", el.id ],
-          ["status", "queued" ],
-          ["sort_by", "scheduled_at-asc" ],
-        ]
-      });
       const charge_list = [];
 
-      if (res.charges) {
-        for (const c of res.charges) {
-          console.log(c.id, c.scheduled_at, c.status);
-          charge_list.push([c.id, c.scheduled_at]);
+      if (el.subscriptions_active_count > 0) {
+        try {
+          const res = await makeRechargeQuery({
+            path: `charges`,
+            query: [
+              ["customer_id", el.id ],
+              ["status", "queued" ],
+              ["sort_by", "scheduled_at-asc" ],
+            ]
+          });
+
+          if (res.charges) {
+            for (const c of res.charges) {
+              console.log(c.id, c.scheduled_at, c.status);
+              charge_list.push([c.id, c.scheduled_at]);
+            };
+          };
+        } catch(err) {
+          winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
         };
       };
 

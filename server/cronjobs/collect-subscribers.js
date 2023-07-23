@@ -15,6 +15,7 @@ import path from "path";
 import { getMongo } from "../src/lib/mongo/mongo.js";
 import { winstonLogger } from "../config/winston.js";
 import { makeRechargeQuery } from "../src/lib/recharge/helpers.js";
+import collectSubscribersMail from "../src/mail/collect-subscribers.js";
 
 dotenv.config({ path: path.resolve("..", ".env") });
 
@@ -27,6 +28,7 @@ const main = async () => {
   try {
 
     const collection = mongodb.collection("customers");
+    const existingCount = await collection.countDocuments({}, { hint: "_id_" });
     const result = await makeRechargeQuery({
       path: `customers`,
       query: [
@@ -82,6 +84,38 @@ const main = async () => {
         { "upsert": true }
       );
     };
+    const updatedCount = await collection.countDocuments({}, { hint: "_id_" });
+    const activeCount = await collection.countDocuments({
+      subscriptions_active_count : { "$ne": 0 }
+    }, { hint: "_id_" });
+    const inactiveCount = await collection.countDocuments({
+      subscriptions_active_count : { "$eq": 0 }
+    }, { hint: "_id_" });
+    const activeNoChargeCount = await collection.countDocuments({
+      subscriptions_active_count : { "$ne": 0 },
+      charge_list: { "$eq": [] }
+    }, { hint: "_id_" });
+    let activeNoCharges = [];
+    if (activeNoChargeCount > 0) {
+      const withoutCharges = await collection.find({
+        subscriptions_active_count : { "$ne": 0 },
+        charge_list: { "$eq": [] }
+      }).sort({ last_name: 1 }).toArray();
+      activeNoCharges = withoutCharges.map(el => {
+        return {
+          name: `${el.first_name} ${el.last_name} &lt;${el.email}&gt;`,
+          recharge_id: el.recharge_id,
+        };
+      });
+    };
+    await collectSubscribersMail({
+      existingCount,
+      updatedCount,
+      activeCount,
+      inactiveCount,
+      activeNoChargeCount,
+      activeNoCharges,
+    });
   } catch(err) {
     winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   } finally {

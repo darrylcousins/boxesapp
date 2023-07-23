@@ -120,7 +120,10 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   // this is the box
   // make properties into easily accessible object
   const boxProperties = subscription.properties.reduce(
-    (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
+    (acc, curr) => Object.assign(acc,
+      {
+        [`${curr.name}`]: (curr.value === null || curr.value === "None") ? "" : curr.value
+      }),
     {});
 
   delete boxProperties["Likes"];

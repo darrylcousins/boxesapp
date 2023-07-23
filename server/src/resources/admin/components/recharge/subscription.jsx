@@ -48,23 +48,22 @@ async function *Subscription({ subscription, idx, admin }) {
 
 
   /*
-  console.log("=======================================");
   console.log("TITLE", subscription.attributes.title);
   console.log("Box", subscription.box);
   console.log("Address", subscription.address);
-  console.log("Attributes", subscription.attributes);
   console.log("Messages", subscription.messages);
   console.log("Properties", subscription.properties);
   console.log("Includes", subscription.includes);
   console.log("Updates", subscription.updates);
   console.log("RC_IDS", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
-  console.log("Ids", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
   console.log(JSON.stringify(
     subscription.attributes.rc_subscription_ids.map(el => {
       return [ el.subscription_id, el.shopify_product_id, el.quantity ].sort();
     }).sort()
     ,null, 2));
-    */
+  console.log("Ids", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
+  console.log("Attributes", subscription.attributes);
+  */
 
   let CollapsibleProducts = CollapseWrapper(EditProducts);
   /**
@@ -465,6 +464,7 @@ async function *Subscription({ subscription, idx, admin }) {
       rc_subscription_ids.push({
         shopify_product_id: parseInt(product.shopify_product_id),
         subscription_id: null,
+        title: product.shopify_title,
         quantity: parseInt(quantity),
       });
     };
@@ -481,8 +481,6 @@ async function *Subscription({ subscription, idx, admin }) {
     */
     // update these in place
     subscription.attributes.rc_subscription_ids = [ ...rc_subscription_ids ];
-
-
 
     /* REMOVE BELOW _ DEV */
     //console.log(JSON.stringify(subscription.includes, null, 2));
@@ -630,6 +628,7 @@ async function *Subscription({ subscription, idx, admin }) {
    */
   const reloadCharge = async (restartTimer, killTimer) => {
 
+    collapsed = true;
     loading = true;
     await this.refresh();
 
@@ -854,6 +853,7 @@ async function *Subscription({ subscription, idx, admin }) {
    * Cannot pause if within timeframe of frequency
    */
   const isSkippable = () => {
+    return true;
     const now = new Date();
     const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
     const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));

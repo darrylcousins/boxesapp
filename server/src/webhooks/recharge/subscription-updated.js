@@ -31,8 +31,8 @@ export default async function subscriptionUpdated(topic, shop, body) {
     
     const query = {
       subscription_id: parseInt(properties.box_subscription_id),
-      customer_id: subscription.customer_id,
-      address_id: subscription.address_id,
+      customer_id: parseInt(subscription.customer_id),
+      address_id: parseInt(subscription.address_id),
       rc_subscription_ids:
         { $elemMatch: {
           $and: [

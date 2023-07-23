@@ -45,9 +45,9 @@ export default async function chargeUpcoming(topic, shop, body) {
     for (const [idx, subscription] of result.entries()) {
       if (subscription.updates && subscription.updates.length) {
 
-        // need to set data in updates_pending to prevent user from editing subscription in this timeframe
-        // from updates
-        // and figure the deletions?
+        // need to set data in updates_pending to prevent user from editing
+        // subscription in this timeframe from updates and figure the
+        // deletions?
         const update_shopify_ids = subscription.updates.map(el => el.shopify_product_id);
         let updated;
         const rc_subscription_ids = subscription.attributes.rc_subscription_ids.map(el => {
@@ -72,15 +72,6 @@ export default async function chargeUpcoming(topic, shop, body) {
         for (const [key, value] of Object.entries(props)) {
           doc[key] = value;
         };
-        /*
-        console.log("==========================================");
-        console.log(JSON.stringify(subscription.updates, null, 2));
-        console.log(boxSubscription);
-        console.log(JSON.stringify(doc, null, 2));
-        console.log(JSON.stringify(subscription.updates, null, 2));
-        console.log("==========================================");
-        continue;
-        */
         const result = await _mongodb.collection("updates_pending").updateOne(
           { charge_id: meta.recharge.charge_id },
           { "$set" : doc },

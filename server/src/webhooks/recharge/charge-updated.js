@@ -63,9 +63,9 @@ export default async function chargeUpdated(topic, shop, body) {
     for (const box_subscription_id of box_subscription_ids) {
       meta = buildMetaForBox(box_subscription_id, charge);
       const query = {
-        subscription_id: box_subscription_id,
-        customer_id: charge.customer.id,
-        address_id: charge.address_id,
+        subscription_id: parseInt(box_subscription_id),
+        customer_id: parseInt(charge.customer.id),
+        address_id: parseInt(charge.address_id),
         scheduled_at: charge.scheduled_at,
       };
       // all rc_subscription_ids are true for this query
@@ -82,7 +82,10 @@ export default async function chargeUpdated(topic, shop, body) {
         //const countMatch = updates_pending.rc_subscription_ids.length === meta.recharge.rc_subscription_ids.length;
         const countMatch = rc_ids_removed.length === meta.recharge.rc_subscription_ids.length;
         if (allUpdated && countMatch) {
-          if (updates_pending.charge_id === charge.id) {
+          // on a new subscription updated via webhooks/charge-created then we
+          // don't get a second update on the new id so we can check for the
+          // label
+          if (updates_pending.charge_id === charge.id || updates_pending.label === "NEW SUBSCRIPTION") {
             meta.recharge.updates_pending = "COMPLETED";
             _logger.info(`charge-updated completed`);
             await _mongodb.collection("updates_pending").deleteOne({ _id: ObjectID(updates_pending._id) });

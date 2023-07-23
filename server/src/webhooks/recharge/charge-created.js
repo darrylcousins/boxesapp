@@ -261,12 +261,21 @@ export default async function chargeCreated(topic, shop, body) {
         updatedCharge.line_items = updatedLineItems;
         updatedCharge.subscription = updatedSubscription;
 
-        const grouped = await reconcileGetGrouped({ charge: updatedCharge });
-        grouped[boxSubscription.purchase_item_id].subscription = updatedSubscription; // pass subscription to avoid api call
+        /* Initially I was wrong here for the email template
+         * It has created properties on the next box and messages on the next box
+         * I need to gatherData differently
+         */
+        //const grouped = await reconcileGetGrouped({ charge: updatedCharge });
+        //grouped[boxSubscription.purchase_item_id].subscription = updatedSubscription; // pass subscription to avoid api call
+
+        const grouped = await reconcileGetGrouped({ charge });
+        grouped[boxSubscription.purchase_item_id].subscription = subscription; // pass subscription to avoid api call
 
         let result = [];
         result = await gatherData({ grouped, result });
         result[0].attributes.charge_id = null;
+        //console.log(JSON.stringify(result[0], null, 2));
+        //console.log(result.length);
 
         let admin_email = _mongodb.collection("settings").findOne({handle: "admin-email"});
         if (admin_email) admin_email = admin_email.value;

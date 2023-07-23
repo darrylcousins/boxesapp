@@ -34,6 +34,15 @@ export default async (req, res, next) => {
     });
 
     if (!charges || !charges.length) {
+      // so we'll check here against local db (updated nightly), perhaps a failed re-charge
+      const customer = await _mongodb.collection("customers").findOne({
+        recharge_id: parseInt(customer_id)
+      });
+      if (customer) {
+        if (customer.subscriptions_active_count > 0 && customer.charge_list.length === 0) {
+          return res.status(200).json({ message: "Charge error, this may mean that Recharge was unable to process a charge and your subscriptions have been paused." });
+        };
+      };
       // return a result of none
       return res.status(200).json({ message: "No charges found" });
     };

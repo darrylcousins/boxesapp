@@ -38,6 +38,12 @@ async function *Customer({ customer, admin }) {
    */
   let loading = true;
   /**
+   * Messages received from api customer-charges
+   *
+   * @member {string} messages
+   */
+  let messages = "";
+  /**
    * Fetch errors
    *
    * @member {boolean} fetchError
@@ -110,8 +116,12 @@ async function *Customer({ customer, admin }) {
           this.refresh();
           return null;
         };
-        chargeGroups = json.result;
-        originalChargeGroups = cloneDeep(json.result);
+        if (Object.hasOwnProperty.call(json, "message")) {
+          messages = json.message;
+        } else {
+          chargeGroups = json.result;
+          originalChargeGroups = cloneDeep(json.result);
+        };
         loading = false;
         this.refresh();
         return true;
@@ -350,6 +360,11 @@ async function *Customer({ customer, admin }) {
                   View customer in Shopify
                 </a>
               </Fragment>
+            )}
+            { messages.length > 0 && (
+              <div class="dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+                <p class="">{ messages }</p>
+              </div>
             )}
             { chargeGroups && chargeGroups.length > 0 ? (
               <Fragment>

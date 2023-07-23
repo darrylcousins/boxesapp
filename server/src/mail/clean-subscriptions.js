@@ -34,7 +34,7 @@ export default async ({ orphans}) => {
         <mj-section padding-bottom="0px">
           <mj-column>
             <mj-text align="center" font-size="20px" font-style="bold">
-            Clean subscriptions
+            Clean subscriptions (runs nightly)
             </mj-text>
           </mj-column>
         </mj-section>

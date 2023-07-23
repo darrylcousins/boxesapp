@@ -45,7 +45,49 @@ export default async function chargeUpcoming(topic, shop, body) {
     for (const [idx, subscription] of result.entries()) {
       if (subscription.updates && subscription.updates.length) {
 
-        // XXX need to set data in updates_pending to prevent user from editing subscription in this timeframe
+        // need to set data in updates_pending to prevent user from editing subscription in this timeframe
+        // from updates
+        // and figure the deletions?
+        const update_shopify_ids = subscription.updates.map(el => el.shopify_product_id);
+        let updated;
+        const rc_subscription_ids = subscription.attributes.rc_subscription_ids.map(el => {
+          updated = update_shopify_ids.indexOf(el.shopify_product_id) === -1;
+          return { ...el, updated };
+        });
+        const boxSubscription = subscription.updates.find(el => el.properties.some(e => e.name === "Including"));
+        const props = boxSubscription.properties.reduce(
+          (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
+          {});
+        const doc= {
+          subscription_id: boxSubscription.subscription_id,
+          address_id: meta.recharge.address_id,
+          customer_id: meta.recharge.customer_id,
+          charge_id: meta.recharge.charge_id,
+          scheduled_at: meta.recharge.scheduled_at,
+          title: meta.recharge.title,
+          label: `CHARGE-UPCOMING-UPDATE`,
+          rc_subscription_ids,
+          timestamp: new Date(),
+        };
+        for (const [key, value] of Object.entries(props)) {
+          doc[key] = value;
+        };
+        /*
+        console.log("==========================================");
+        console.log(JSON.stringify(subscription.updates, null, 2));
+        console.log(boxSubscription);
+        console.log(JSON.stringify(doc, null, 2));
+        console.log(JSON.stringify(subscription.updates, null, 2));
+        console.log("==========================================");
+        continue;
+        */
+        const result = await _mongodb.collection("updates_pending").updateOne(
+          { charge_id: meta.recharge.charge_id },
+          { "$set" : doc },
+          { "upsert": true }
+        );
+        _logger.notice(`Recharge charge upcoming updates.`, { meta: { recharge: doc } });
+
         // Reconcile the items in the subscription with the new box
         await updateSubscriptions({ updates: subscription.updates });
 

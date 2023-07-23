@@ -52,7 +52,7 @@ export default async function subscriptionCreated(topic, shop, body) {
     };
     const update = { $set: {
       "rc_subscription_ids.$[i].updated": true,
-      "rc_subscription_ids.$[i].subscription_id": subscription.id,
+      "rc_subscription_ids.$[i].subscription_id": subscription_id,
     }};
     const options = {
       arrayFilters: [

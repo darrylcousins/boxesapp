@@ -11,6 +11,7 @@ import { matchNumberedString } from "../../lib/helpers.js";
  * @ function getMetaForCharge
  */
 export const getMetaForCharge = (charge, topic) => {
+  // XXX not grouping for different boxes
   /* Start logging all details */
   const rc_subscription_ids = [];
   let properties;
@@ -26,6 +27,7 @@ export const getMetaForCharge = (charge, topic) => {
       shopify_product_id: parseInt(line_item.external_product_id.ecommerce),
       subscription_id: parseInt(line_item.purchase_item_id),
       quantity: parseInt(line_item.quantity),
+      title: line_item.title,
     });
   };
   const meta = {

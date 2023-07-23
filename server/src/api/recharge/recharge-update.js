@@ -29,6 +29,7 @@ export default async (req, res, next) => {
   };
 
   const { updates, attributes, properties } = req.body;
+
   const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
   const label = req.query.label;
 
@@ -89,7 +90,6 @@ export default async (req, res, next) => {
 
   try {
 
-    // using sockets
     await updateSubscriptions({ updates, io, session_id });
     const response = { message: "Updates scheduled" };
 

@@ -33,8 +33,8 @@ export default async function subscriptionDeleted(topic, shop, body) {
     // I've got good confidence that this will still be robust enough
     const query = {
       subscription_id: parseInt(properties.box_subscription_id),
-      customer_id: subscription.customer_id,
-      address_id: subscription.address_id,
+      customer_id: parseInt(subscription.customer_id),
+      address_id: parseInt(subscription.address_id),
       //scheduled_at: subscription.next_charge_scheduled_at,
       rc_subscription_ids:
         { $elemMatch: {
@@ -64,6 +64,7 @@ export default async function subscriptionDeleted(topic, shop, body) {
     } else {
       meta.recharge.updates_pending = "NOT FOUND";
     };
+
     meta.recharge = sortObjectByKeys(meta.recharge);
     _logger.notice(`Subscription deleted.`, { meta });
 

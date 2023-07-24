@@ -346,14 +346,19 @@ export default async function chargeCreated(topic, shop, body) {
 
     };
 
-    /* verify that customer is in local mongodb */
-    // Farm this out to another process that collects the customer and add to other updates: dleted etc
+    /* verify that customer is in local mongodb, just adding current charge
+      * here. It may overwrite existing charge_list but the db is updated
+      * nightly through a cronjob and charge_list is an indicator only and not
+      * used for anything important - mainly because it can be out of sync
+      * during the course of a 24 hour period 
+      */
     const doc = {
       first_name: charge.billing_address.first_name,
       last_name: charge.billing_address.last_name,
       email: charge.customer.email,
       recharge_id: parseInt(charge.customer.id),
       shopify_id: parseInt(charge.customer.external_customer_id.ecommerce),
+      charge_list: [[ charge.id, charge.scheduled_at ]],
     };
     await _mongodb.collection("customers").updateOne(
       { recharge_id: parseInt(charge.customer.id) },

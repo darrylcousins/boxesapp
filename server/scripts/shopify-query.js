@@ -33,6 +33,7 @@ _logger.notice = (e) => console.log(e);
 const paths = [
   'products',
   'variants',
+  'images', // searches on product_id
   'customers',
   'webhooks',
   'orders',
@@ -71,7 +72,11 @@ const run = async () => {
 
       let path = `${result.path}`;
       if (result.id !== 'null') {
-        path = `${path}/${result.id}`;
+        if (path === "images") {
+          path = `products/${result.id}/${path}`;
+        } else {
+          path = `${path}/${result.id}`;
+        };
       };
       path = `${path}.json`;
 
@@ -80,8 +85,7 @@ const run = async () => {
       console.log(path);
       console.log(queryResult);
       //console.log(JSON.stringify(queryResults, null, 2));
-      writeFileSync("shopify.order.json", JSON.stringify(queryResult, null, 2));
-
+      //writeFileSync("shopify.order.json", JSON.stringify(queryResult, null, 2));
     })
 };
 

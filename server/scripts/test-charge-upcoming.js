@@ -23,7 +23,7 @@ const run = async () => {
     console.error(e);
   } finally {
     // hold this open if you need to see api calls and webhooks happen
-    process.emit('SIGINT'); // should close mongo connection
+    //process.emit('SIGINT'); // should close mongo connection
   };
 };
 

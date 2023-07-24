@@ -24,6 +24,25 @@ const run = async () => {
   global._mongodb = mongodb;
 
   await Shopify.initialize(); // if shopify query required
+  const collect = await mongodb.collection("boxes").find({}).project({
+    _id: 0,
+    shopify_product_id: 1,
+    "includedProducts.shopify_product_id": 1,
+    "addOnProducts.shopify_product_id": 1
+  }).toArray();
+  console.log(collect);
+  const product_ids = [];
+  for (const item of collect) {
+    product_ids.push(item.shopify_product_id);
+    for (const el of item.addOnProducts) {
+      product_ids.push(el.shopify_product_id);
+    };
+    for (const el of item.includedProducts) {
+      product_ids.push(el.shopify_product_id);
+    };
+  };
+  const shopify_product_ids = new Set(product_ids.filter(el => typeof el !== "undefined"));
+  console.log(shopify_product_ids);
 
   try {
     console.log('this ran');
@@ -32,16 +51,12 @@ const run = async () => {
     console.error(e);
   } finally {
     dbClient.close();
-    //process.emit('SIGINT'); // will close mongo connection
   };
 };
 
 const main = async () => {
   await run();
+  process.exit(1);
 };
 
 main().catch(console.error);
-
-
-
-

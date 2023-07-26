@@ -30,9 +30,6 @@ global._logger;
 
 const main = async () => {
 
-  //global._mongodb = await getMongoConnection(); // if mongo connection required
-  // for winstonLogger to store to mongo we need a client in the process
-  // regardless whether it is actually used in the script
   const { mongo: mongodb, client: dbClient } = await getMongo();
   global._mongodb = mongodb;
   global._logger = winstonLogger;

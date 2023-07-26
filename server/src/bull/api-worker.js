@@ -14,25 +14,11 @@ const workerOptions = {
   connection: redisOptions,
   autorun: true,
   limiter: {
-    max: 3, // limit the queue to a maximum of 3 jobs per 1 second
-    duration: 1000, // limit the queue to a maximum of 3 jobs per 1 second
+    max: 1, // limit the queue to a maximum of 1 jobs per 330 milliseconds
+    duration: 330, // this avoids a burst of 3 calls then idle 1 second
   },
 };
 
-/* process the data */
-/* Need to perform charge processes
- * All calls need to on the same queue !?
- *
- * 1. updateDeliveryDate: On webhook order_processed, update each subscription with new delivery date
- *
- *
- * Note that a processor can optionally return a value. This value can be
- * retrieved either by getting the job and accessing the "returnvalue" property
- * or by listening to the "completed" event:
- *
- * Also check https://docs.bullmq.io/guide/workers/sandboxed-processors
- * Sandboxing might be a good approach for mail?
- */
 const color = (str, color) => {
   if (typeof str === "undefined") {
     return "undefined".grey;
@@ -40,6 +26,7 @@ const color = (str, color) => {
   return `${str}`[color];
 };
 
+/* process the data */
 const apiProcessor = async (job) => {
   let returnvalue;
   if (job.name === "makeRechargeQuery") {

@@ -3,17 +3,20 @@
  */
 import { Queue, QueueEvents } from "bullmq";
 
-import { redisOptions, apiQueueName, mailQueueName } from "./config.js";
+import {
+  redisOptions,
+  apiQueueName,
+  mailQueueName,
+  imageQueueName,
+} from "./config.js";
 
-/* Queue */
+const queue = new Queue('Paint', { defaultJobOptions: {
+    removeOnComplete: true, removeOnFail: 1000
+}});
+
+/* Queues and QueueEvents */
 export const apiQueue = new Queue(apiQueueName, {
   connection: redisOptions,
-  /*
-  limiter: {
-    max: 3, // limit the queue to a maximum of 3 jobs per 1 second
-    duration: 1000, // limit the queue to a maximum of 3 jobs per 1 second
-  },
-  */
 });
 
 export const apiQueueEvents = new QueueEvents(apiQueueName, {
@@ -25,5 +28,13 @@ export const mailQueue = new Queue(mailQueueName, {
 });
 
 export const mailQueueEvents = new QueueEvents(mailQueueName, {
+  connection: redisOptions,
+});
+
+export const imageQueue = new Queue(imageQueueName, {
+  connection: redisOptions,
+});
+
+export const imageQueueEvents = new QueueEvents(imageQueueName, {
   connection: redisOptions,
 });

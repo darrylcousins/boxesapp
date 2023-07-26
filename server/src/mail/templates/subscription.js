@@ -198,7 +198,7 @@ export default `
           <tr>
             <td width="45px" style="padding: 3px 0px">
               <div
-                style="background-image:url('{{ subscription.attributes.images[product.title] }}');background-size:cover;width:40px;height:40px;border:1px solid #ccc"></div>
+                style="background-image:url('{{ env.HOST }}/product-images/{{ product.shopify_product_id }}.jpg');background-size:cover;width:40px;height:40px;border:1px solid #ccc"></div>
             </td>
             <td>
               {{ product.title }}

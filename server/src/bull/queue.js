@@ -10,10 +10,6 @@ import {
   imageQueueName,
 } from "./config.js";
 
-const queue = new Queue('Paint', { defaultJobOptions: {
-    removeOnComplete: true, removeOnFail: 1000
-}});
-
 /* Queues and QueueEvents */
 export const apiQueue = new Queue(apiQueueName, {
   connection: redisOptions,

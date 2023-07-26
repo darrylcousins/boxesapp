@@ -165,7 +165,7 @@ function* Box({ box, index }) {
             collapsed={collapsed}
             type="includedProducts"
             box={box}
-            id={`included-${box.shopify_product_id}`}
+            id={`included-${box.shopify_product_id}-${new Date(box.delivered).getTime()}`}
           />
         </td>
         <td
@@ -187,7 +187,7 @@ function* Box({ box, index }) {
             collapsed={collapsed}
             type="addOnProducts"
             box={box}
-            id={`addons-${box.shopify_product_id}`}
+            id={`addons-${box.shopify_product_id}-${new Date(box.delivered).getTime()}`}
           />
         </td>
         <td

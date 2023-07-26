@@ -12,6 +12,7 @@ import { CloseIcon } from "../lib/icon";
 import AddProductToBoxModal from "./product-add";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
+import ShopifyProductImage from "../lib/shopify-image";
 import { titleCase, camelCaseToWords } from "../helpers";
 
 /**
@@ -21,8 +22,12 @@ import { titleCase, camelCaseToWords } from "../helpers";
  * @param {string} type included or addon
  * @generator Products
  */
-function *Products ({box, products, type, allproducts}) {
+function *Products ({box, products, type, allproducts, id}) {
 
+  /**
+   * for product image
+   */
+  const getImageUrl = (product_id) => `${localStorage.getItem("host")}/product-images/${product_id}.jpg`;
   /**
    * Save removal of product from product list
    *
@@ -138,7 +143,7 @@ function *Products ({box, products, type, allproducts}) {
    */
   const dragEnd = (ev) => {
     const shopify_product_id = ev.target.getAttribute("data-id");
-    document.getElementById(`${shopify_product_id}`).classList.remove("o-30");
+    document.getElementById(`${id}-${shopify_product_id}`).classList.remove("o-30");
     [...document.getElementsByClassName("b--gold")].forEach(el => el.classList.remove("bb", "b--gold"));
   };
 
@@ -151,7 +156,7 @@ function *Products ({box, products, type, allproducts}) {
     const shopify_product_id = ev.target.getAttribute("data-id");
     const product_type = ev.target.getAttribute("data-type");
     const shopify_title = ev.target.getAttribute("data-title");
-    document.getElementById(`${shopify_product_id}`).classList.add("o-30");
+    document.getElementById(`${id}-${shopify_product_id}`).classList.add("o-30");
     ev.dataTransfer.setData("text", `${product_type}:${shopify_product_id}:${shopify_title}`);
   };
 
@@ -164,7 +169,12 @@ function *Products ({box, products, type, allproducts}) {
     ev.preventDefault();
     const [product_type, product_id, shopify_title] = ev.dataTransfer.getData("text").split(":");
 
-    const nearest = ev.target.querySelector("div[draggable=true]");
+    let nearest;
+    if (ev.target.parentElement.getAttribute("draggable")) {
+      nearest = ev.target.parentElement;
+    } else {
+      nearest = ev.target.parentElement.parentElement.querySelector("div[draggable=true]");
+    };
     const target = nearest ? nearest : ev.target;
     const target_type = target.getAttribute("data-type");
 
@@ -214,11 +224,11 @@ function *Products ({box, products, type, allproducts}) {
           ondragleave={dragLeave}
           style={{height: products.length ? "auto" : "100px"}}
         >
-        {products.map((el) => (
+        {products.map((el, idx) => (
             <div
               class="w-100 dt hover-dark-blue"
               name="product-item"
-              id={el.shopify_product_id}
+              id={`${id}-${el.shopify_product_id}`}
               data-type={type}
             >
               { ( new Date(box.delivered) >= new Date() ) && (
@@ -250,7 +260,12 @@ function *Products ({box, products, type, allproducts}) {
                   data-id={el.shopify_product_id}
                   data-title={el.shopify_title}
                   data-type={type}
-                >{el.shopify_title}</div>
+                >
+                    <div class="cover mr1 ba dib v-mid"
+                      title={ el.shopify_title }
+                      style={ `width: 2em; height: 2em;background-image: url("${getImageUrl(el.shopify_product_id)}");` } />
+                    <div class="dib ml2">{el.shopify_title}</div>
+                </div>
               </div>
             </div>
           ))}

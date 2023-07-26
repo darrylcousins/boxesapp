@@ -829,10 +829,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
                     { loading && (
                       <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
                     )}
-                    { !loading && el.image && (
-                      <Image src={ el.image } id={`image-${key}-${idx}`} />
-                    )}
-                    { !loading && !el.image && (
+                    { !loading && (
                       <ShopifyProductImage
                         shopify_title={ el.name }
                         shopify_product_id={ el.shopify_product_id }

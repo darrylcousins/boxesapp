@@ -14,6 +14,7 @@
     "worker": "concurrently --kill-others \"npm run worker:api\" \"npm run worker:mail\"",
     "worker:api": "node --trace-warnings -r dotenv/config src/bull/api-worker.js",
     "worker:mail": "node --trace-warnings -r dotenv/config src/bull/mail-worker.js",
+    "worker:image": "node --trace-warnings -r dotenv/config src/bull/image-worker.js",
     "test": "SHOP=test-shop.myshopify.com vitest --config config/vite.js --reporter=verbose"
   },
   "nodemonConfig": {

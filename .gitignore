@@ -8,6 +8,10 @@
 # dkimKey for mail
 .dkimKey
 
+# static assets
+# in this case generated product thumbnails
+assets
+
 # testing files and broken tests
 recharge.*.json
 shopify.*.json

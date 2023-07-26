@@ -5,6 +5,7 @@
 
 import path from "path";
 import { queryStoreGraphQL } from "../../lib/shopify/helpers.js";
+import { makeImageJob } from "../../bull/job.js";
 import { ObjectID } from "mongodb";
 
 /*
@@ -16,7 +17,7 @@ import { ObjectID } from "mongodb";
 export default async (req, res, next) => {
 
   const {box_id, shopify_product_id, product_type} = req.body;
-  _logger.info(`adding product with id ${shopify_product_id} to type: ${product_type}`);
+  //_logger.info(`adding product with id ${shopify_product_id} to type: ${product_type}`);
 
   if (!product_type) {
     res.status(200).json({ error: "No product type" });
@@ -49,6 +50,9 @@ export default async (req, res, next) => {
           title
           displayName
         }
+      }
+      featuredImage {
+        url
       }
     }
   }`;
@@ -92,6 +96,10 @@ export default async (req, res, next) => {
         return "Unable to match a tag for the product";
       } else {
         product.tag = tag;
+        // fetch the image data, convert to 40px and save as id.jpg not
+        // checking for its presence because this is the only place for now
+        // that it is updated - this goes to another process worker
+        makeImageJob({ id: product.id, url: product.featuredImage.url });
         return makeDoc(product);
       }
     });

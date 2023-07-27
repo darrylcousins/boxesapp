@@ -26,11 +26,10 @@ async function *ShopifyProductImage({ shopify_title, shopify_product_id, size, i
   const getImage = async () => {
     const host = localStorage.getItem("host");
     src = `${host}/product-images/${shopify_product_id}.jpg`;
-    //console.log("fetching", `${proxy}${src}`);
     let error = null;
     fetch(src).then(data => {
       let target;
-      target = target ? target : document.querySelector(`#${id}`);
+      target = target ? target : document.querySelector(`#${key}`);
       loading = false;
       if (target) {
         animateFadeForAction(target, () => this.refresh());

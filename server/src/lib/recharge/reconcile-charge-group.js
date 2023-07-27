@@ -291,7 +291,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
       quantity: el.quantity,
       price: el.unit_price,
       properties: el.properties,
-      image: el.images.small,
     };
   });
 
@@ -766,13 +765,6 @@ export const gatherData = async ({ grouped, result }) => {
       group.rc_subscription_ids = rc_subscription_ids;
     };
 
-    const images = {
-      [`${subscription.product_title}`]: group.box.images.small
-    };
-    for (const extra of subscribedExtras) {
-      images[`${extra.title}`] = extra.image;
-    };
-
     const totalPrice = includes.map(el => parseFloat(el.price) * el.quantity).reduce((sum, el) => sum + el, 0);
     const attributes = {
       nextChargeDate,
@@ -783,7 +775,6 @@ export const gatherData = async ({ grouped, result }) => {
       pending: group.pending,
       frequency,
       days,
-      images,
       scheduled_at: group.charge.scheduled_at,
       subscription_id: subscription.id,
       templateSubscription,

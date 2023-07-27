@@ -8,7 +8,6 @@
 import { createElement, Fragment } from "@b9g/crank";
 import Error from "../lib/error";
 import Image from "../lib/image";
-import ShopifyProductImage from "../lib/shopify-image";
 import SelectModal from "./select-modal";
 import { CloseIcon } from "../lib/icon";
 import { groupProducts, weekdays } from "../helpers";
@@ -36,8 +35,9 @@ import {
  * import {renderer} from '@b9g/crank/dom';
  * renderer.render(<EditProducts box={box} />, document.querySelector('#app'))
  */
-function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, images, isEditable, key, id }) {
+function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, isEditable, key, id }) {
 
+  const host = localStorage.getItem("host");
   /**
    * True while loading data from api // box price
    *
@@ -320,11 +320,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
         };
       };
       const { shopify_price, shopify_product_id } = product;
-      let image = null;
-      if (images && Object.hasOwnProperty.call(images, el.name)) {
-        image = images[el.name];
-      };
-      return {...el, price: shopify_price, shopify_product_id, image };
+      return {...el, price: shopify_price, shopify_product_id };
     }).filter(el => Boolean(el));
     pricedItems = sortObjectByKey(pricedItems, "name");
   };
@@ -342,13 +338,8 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
     let pricedProduct = pricedItems.find(el => el.shopify_product_id === product.shopify_product_id);
     if (!pricedProduct) {
       if (count !== 0) {
-        let image = null;
-        if (Object.hasOwnProperty.call(images, product.shopify_title)) {
-          image = images[product.shopify_title];
-        };
         pricedProduct = {
           count,
-          image,
           price: product.shopify_price,
           name: product.shopify_title,
           shopify_product_id: product.shopify_product_id,
@@ -381,6 +372,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
    * @param {object} props.id The id of the item to be moved
    */
   const moveItem = async ({from, to, id}) => {
+    console.log("moveItem", from , to, id);
     const fromList = boxLists[from];
     let toList = boxLists[to];
     let toName = to; // may be changed below
@@ -677,9 +669,6 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
    * @function init
    */
   const init = async () => {
-    if (images && Object.hasOwnProperty.call(images, box.shopify_title)) {
-      box.image = images[box.shopify_title];
-    };
     if (properties) {
       boxProperties = properties;
     };
@@ -766,7 +755,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
 
   window.addEventListener("resize", (event) => this.refresh() );
 
-  for (const { box, properties, nextChargeDate, images, isEditable, key } of this) { // eslint-disable-line no-unused-vars
+  for (const { box, properties, nextChargeDate, isEditable, key } of this) { // eslint-disable-line no-unused-vars
 
     yield (
       <Fragment>
@@ -805,10 +794,12 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
                     <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
                   )}
                   { !loading && (
-                    <ShopifyProductImage
-                      shopify_title={ box.shopify_title }
+                    <Image
+                      src={ `${host}/product-images/${box.shopify_product_id}.jpg` }
+                      title={ box.shopify_title }
                       shopify_product_id={ box.shopify_product_id }
-                      crank-key={`image-${key}}`}
+                      id={`image-${key}-${box.shopify_title.toLowerCase().replace(/ /g, "-")}`}
+                      crank-key={`image-${key}-${box.shopify_title.toLowerCase().replace(/ /g, "-")}`}
                     />
                   )}
                 </div>
@@ -830,10 +821,11 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
                       <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
                     )}
                     { !loading && (
-                      <ShopifyProductImage
-                        shopify_title={ el.name }
-                        shopify_product_id={ el.shopify_product_id }
+                      <Image
+                        title={ el.name }
+                        id={`image-${key}-${el.name.toLowerCase().replace(/ /g, "-")}`}
                         crank-key={`image-${key}-${el.name.toLowerCase().replace(/ /g, "-")}`}
+                        src={ `${host}/product-images/${el.shopify_product_id}.jpg` }
                       />
                     )}
                   </div>

@@ -50,7 +50,8 @@ const main = async () => {
     const shopify_product_ids = Array.from(new Set(product_ids.filter(el => typeof el !== "undefined")));
 
     const image_urls = [];
-    for (const product_id of shopify_product_ids) {
+    const trunc = [ shopify_product_ids[0] ];
+    for (const product_id of trunc) {
       const path = `products/${product_id}/images.json`;
       const result = await makeShopQuery({path, fields: ["product_id", "src", "id"] })
       if (result.images && result.images.length > 0) {
@@ -71,7 +72,6 @@ const main = async () => {
     winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   } finally {
     await dbClient.close();
-    process.exit(1);
   };
 };
 

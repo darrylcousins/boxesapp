@@ -25,6 +25,7 @@ const imageProcessor = async (job) => {
   const path = `${process.env.SERVER_ROOT}/assets/product-images/${job.data.id}.jpg`;
 
   if (fs.existsSync(path)) {
+    winstonLogger(`${path} exists, exiting`);
     return `${path} exists, exiting`;
   };
 
@@ -36,6 +37,7 @@ const imageProcessor = async (job) => {
   sharp(buffer)
     .resize(40, 40, { fit: "cover" })
     .toFile(path);
+  winstonLogger.info(`Fetched and saved ${path}`);
   return `Fetched and saved ${path}`;
 };
 

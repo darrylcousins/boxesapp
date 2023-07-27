@@ -53,9 +53,7 @@ async function *Subscription({ subscription, idx, admin }) {
   console.log("Address", subscription.address);
   console.log("Messages", subscription.messages);
   console.log("Properties", subscription.properties);
-  console.log("Includes", subscription.includes);
   console.log("Updates", subscription.updates);
-  console.log("RC_IDS", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
   console.log(JSON.stringify(
     subscription.attributes.rc_subscription_ids.map(el => {
       return [ el.subscription_id, el.shopify_product_id, el.quantity ].sort();
@@ -63,6 +61,8 @@ async function *Subscription({ subscription, idx, admin }) {
     ,null, 2));
   console.log("Ids", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
   console.log("Attributes", subscription.attributes);
+  console.log("Includes", subscription.includes);
+  console.log("RC_IDS", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
   */
 
   let CollapsibleProducts = CollapseWrapper(EditProducts);
@@ -282,18 +282,6 @@ async function *Subscription({ subscription, idx, admin }) {
     let updates;
     let label;
     if (key === "includes") {
-      // find the loaded image for the added items (loaded from shopify)
-      for (const item of subscription.includes) {
-        if (Object.hasOwnProperty.call(item, "external_product_id")) {
-          const div = document.getElementById(`image-${item.product_title.replace(/ /g, "-")}`);
-          if (div) {
-            const img = div.firstChild;
-            const style = img.currentStyle || window.getComputedStyle(img, false);
-            const url = style.backgroundImage.slice(4, -1).replace(/['"]/g, "");
-            item.images = { small: url }
-          };
-        };
-      };
       updates = getUpdatesFromIncludes();
       label = "USER";
     } else {
@@ -350,7 +338,6 @@ async function *Subscription({ subscription, idx, admin }) {
     // type shape is "to": the to list, "from: the from list, "count?": a quantity change
     // props are lists of { shopify_title, quantity } entries
 
-    console.log(type);
 
     let rc_subscription_ids = [ ...subscription.attributes.rc_subscription_ids ];
     changed.push(product.shopify_product_id); // used to figure product toggling
@@ -392,6 +379,43 @@ async function *Subscription({ subscription, idx, admin }) {
             rc_subscription.quantity = 0;
           } else {
             rc_subscription_ids.splice(rc_subscription_ids.indexOf(rc_subscription), 1);
+          };
+        };
+      };
+
+      if (type.from === "Available Products" && type.to === "Swapped Items") {
+      };
+
+      if (type.from === "Including" && type.to === "Removed Items") {
+        // was added in this sessioin
+        rc_subscription = rc_subscription_ids.find(el => el.shopify_product_id === parseInt(product.shopify_product_id));
+        if (rc_subscription) {
+          if (!Number.isInteger(rc_subscription.subscription_id)) {
+            // remove it
+            rc_subscription_ids.splice(rc_subscription_ids.indexOf(rc_subscription), 1);
+          } else {
+            // set quantity to zero
+            rc_subscription_ids[rc_subscription_ids.indexOf(rc_subscription)].quantity = 0;
+          };
+        };
+      };
+      // this swap only happens when a swap has been incremented so no change to rc_ids is necessary
+      // unless it was already moved from elsewhere
+      if (type.from === "Swapped Items" && type.to === "Add on Items") {
+        // here a bug exists that the item quantity has been increased yet I'm not removing the new subscription from rc_ids
+        rc_subscription = rc_subscription_ids.find(el => el.shopify_product_id === parseInt(product.shopify_product_id));
+      };
+      if (type.from === "Removed Items" && type.to === "Including") {
+        // here a bug exists that the item quantity has been increased yet I'm not removing the new subscription from rc_ids
+        rc_subscription = rc_subscription_ids.find(el => el.shopify_product_id === parseInt(product.shopify_product_id));
+        if (rc_subscription) {
+          if (!Number.isInteger(rc_subscription.subscription_id)) {
+            // remove it
+            rc_subscription_ids.splice(rc_subscription_ids.indexOf(rc_subscription), 1);
+          } else {
+            // set quantity to zero
+            rc_subscription.quantity = 0;
+            rc_subscription_ids.splice(rc_subscription_ids.indexOf(rc_subscription), 1, rc_subscription);
           };
         };
       };
@@ -439,6 +463,9 @@ async function *Subscription({ subscription, idx, admin }) {
               rc_subscription.quantity = quantity;
             }
           };
+        } else {
+          quantity = 1;
+          addingProduct = true;
         };
       } else {
         // rc_subscription_ids will be updated below
@@ -474,11 +501,9 @@ async function *Subscription({ subscription, idx, admin }) {
     const el = document.querySelector(`#skip_cancel-${subscription.attributes.subscription_id}`);
     el.classList.add("dn");
 
-    /*
-    console.log("Original", JSON.stringify(rc_subscription_ids_orig, null, 2));
-    console.log("Attributes", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
-    console.log("Updates", JSON.stringify(rc_subscription_ids, null, 2));
-    */
+    //console.log("Original", JSON.stringify(rc_subscription_ids_orig, null, 2));
+    //console.log("Attributes", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
+    //console.log("Updates", JSON.stringify(rc_subscription_ids, null, 2));
     // update these in place
     subscription.attributes.rc_subscription_ids = [ ...rc_subscription_ids ];
 
@@ -486,7 +511,7 @@ async function *Subscription({ subscription, idx, admin }) {
     //console.log(JSON.stringify(subscription.includes, null, 2));
     // was using "changed" but now comparing rc original with updated
     const updates = getUpdatesFromIncludes();
-    console.log(JSON.stringify(updates, null, 2));
+    //console.log("UPDATES", JSON.stringify(updates, null, 2));
   };
 
   /**
@@ -504,18 +529,13 @@ async function *Subscription({ subscription, idx, admin }) {
     let updates = [];
     let found;
     let subscriptionBox = subscription.includes.find(el => el.subscription_id === subscription.attributes.subscription_id);
-    console.log("RC ORIG", JSON.stringify(rc_subscription_ids_orig, null, 2));
-    console.log("RC CURRENT", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
     for (const item of subscription.attributes.rc_subscription_ids) {
       let updateItem = null;
       found = rc_subscription_ids_orig.find(el => el.shopify_product_id === item.shopify_product_id);
       if (found && found.quantity !== item.quantity) {
         console.log("FOUND", found);
-        console.log("UPDATE", item);
         const removed = subscription.removed.some(el => el.shopify_product_id === item.shopify_product_id);
-        console.log("IN REMOVED?", removed);
         const included = subscription.includes.some(el => el.shopify_product_id === item.shopify_product_id);
-        console.log("IN INCLUDED?", included);
         if (item.quantity === 0) {
           if (removed) {
             // i.e. was in Add on Items
@@ -523,6 +543,7 @@ async function *Subscription({ subscription, idx, admin }) {
           } else {
             // i.e. was in Including with an extra
             updateItem = subscription.includes.find(el => el.shopify_product_id === item.shopify_product_id);
+            updateItem.quantity = item.quantity; // namely zero
           };
         } else {
           updateItem = subscription.includes.find(el => el.shopify_product_id === item.shopify_product_id);
@@ -532,16 +553,11 @@ async function *Subscription({ subscription, idx, admin }) {
       };
       if (updateItem) {
         updates.push(updateItem);
+        console.log("updateItem", updateItem);
       };
     };
     let updateBox = false;
     // the box subscription will be picked up when rc_subscription_ids change but not when making a single swap
-    /*
-    console.log("box removed", subscription.properties["Removed Items"]);
-    console.log("orig removed", subscriptionSwaps_orig["Removed Items"]);
-    console.log("box swapped", subscription.properties["Swapped Items"]);
-    console.log("orig swapped", subscriptionSwaps_orig["Swapped Items"]);
-    */
     // also need to pick up if swaps have been made which won't show up in rc_subscription_ids
     if (subscription.properties["Removed Items"]
         !== subscriptionSwaps_orig["Removed Items"]
@@ -1113,7 +1129,6 @@ async function *Subscription({ subscription, idx, admin }) {
                   rc_subscription_ids={ subscription.attributes.rc_subscription_ids }
                   properties={ subscription.properties }
                   box={ subscription.box }
-                  images={ subscription.attributes.images }
                   nextChargeDate={ subscription.attributes.nextChargeDate }
                   isEditable={ subscription.attributes.hasNextBox && !editsPending }
                   key={ idx }

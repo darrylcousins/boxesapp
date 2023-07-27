@@ -25,7 +25,7 @@ export const makeImageJob = async (opts) => {
       },
       removeOnComplete: 10, removeOnFail: 50
     },
-  )
+  );
 };
 
 export const makeMailJob = async (opts) => {

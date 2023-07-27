@@ -511,7 +511,7 @@ async function *Subscription({ subscription, idx, admin }) {
     //console.log(JSON.stringify(subscription.includes, null, 2));
     // was using "changed" but now comparing rc original with updated
     const updates = getUpdatesFromIncludes();
-    //console.log("UPDATES", JSON.stringify(updates, null, 2));
+    console.log("UPDATES", JSON.stringify(updates, null, 2));
   };
 
   /**

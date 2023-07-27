@@ -236,17 +236,21 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   };
 
 
-  let notIncludedInThisBox = [];
   let newIncludedInThisBox = [];
+  let notIncludedInThisBox = [];
   let nowAvailableAsAddOns = [];
 
   if (previousBox) {
     newIncludedInThisBox = fetchBox.includedProducts.map(el => el.shopify_title)
       .filter(x => !previousBox.includedProducts.map(el => el.shopify_title).includes(x));
+    // filter again from new addons
     notIncludedInThisBox = previousBox.includedProducts.map(el => el.shopify_title)
-      .filter(x => !fetchBox.includedProducts.map(el => el.shopify_title).includes(x));
+      .filter(x => !fetchBox.includedProducts.map(el => el.shopify_title).includes(x))
+      .filter(x => !fetchBox.addOnProducts.map(el => el.shopify_title).includes(x));
+    // filter again from old includes
     nowAvailableAsAddOns = fetchBox.addOnProducts.map(el => el.shopify_title)
-      .filter(x => !previousBox.addOnProducts.map(el => el.shopify_title).includes(x));
+      .filter(x => !previousBox.addOnProducts.map(el => el.shopify_title).includes(x))
+      .filter(x => !fetchBox.includedProducts.map(el => el.shopify_title).includes(x));
   };
 
   // init the boxLists for the subscription

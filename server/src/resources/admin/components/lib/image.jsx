@@ -10,7 +10,6 @@ import { animateFadeForAction } from "../helpers";
 
 async function *Image({ src, id, size, title }) {
 
-  console.log(id);
   let loading = true;
   let uri = null;
   let width = size ? size : "3em";

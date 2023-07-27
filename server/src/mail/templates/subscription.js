@@ -236,20 +236,15 @@ export default `
               </td>
             </tr>
           {% endif %}
-          {% if false %}
-            {% comment %}
-              not included often duplicates notIncluded so is wierd
-            {% endcomment %}
-            {% if subscription.attributes.notIncludedInThisBox.size > 0 %}
-              <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-                <td valign="top" width="120px">
-                  Not included in this weeks box:
-                </td>
-                <td valign="top" style="padding: 5px 0px 5px 20px">
-                  {{ subscription.attributes.notIncludedInThisBox | join: ", " }}
-                </td>
-              </tr>
-            {% endif %}
+          {% if subscription.attributes.notIncludedInThisBox.size > 0 %}
+            <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
+              <td valign="top" width="120px">
+                Not included in this weeks box:
+              </td>
+              <td valign="top" style="padding: 5px 0px 5px 20px">
+                {{ subscription.attributes.notIncludedInThisBox | join: ", " }}
+              </td>
+            </tr>
           {% endif %}
           {% if subscription.attributes.nowAvailableAsAddOns.size > 0 %}
             <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">

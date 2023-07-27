@@ -798,8 +798,8 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
                       src={ `${host}/product-images/${box.shopify_product_id}.jpg` }
                       title={ box.shopify_title }
                       shopify_product_id={ box.shopify_product_id }
-                      id={`image-${key}-${box.shopify_title.toLowerCase().replace(/ /g, "-")}`}
-                      crank-key={`image-${key}-${box.shopify_title.toLowerCase().replace(/ /g, "-")}`}
+                      id={`image-${key}-${box.shopify_product_id}`}
+                      crank-key={`image-${key}-${box.shopify_product_id}`}
                     />
                   )}
                 </div>
@@ -824,7 +824,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
                       <Image
                         title={ el.name }
                         id={`image-${key}-${el.name.toLowerCase().replace(/ /g, "-")}`}
-                        crank-key={`image-${key}-${el.name.toLowerCase().replace(/ /g, "-")}`}
+                        crank-key={`image-${key}-${el.shopify_product_id}`}
                         src={ `${host}/product-images/${el.shopify_product_id}.jpg` }
                       />
                     )}

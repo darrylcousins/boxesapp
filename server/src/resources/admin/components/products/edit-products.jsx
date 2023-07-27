@@ -823,7 +823,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
                     { !loading && (
                       <Image
                         title={ el.name }
-                        id={`image-${key}-${el.name.toLowerCase().replace(/ /g, "-")}`}
+                        id={`image-${key}-${el.shopify_product_id}`}
                         crank-key={`image-${key}-${el.shopify_product_id}`}
                         src={ `${host}/product-images/${el.shopify_product_id}.jpg` }
                       />

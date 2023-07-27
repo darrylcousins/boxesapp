@@ -22,7 +22,7 @@ const workerOptions = {
 
 /* process the data */
 const imageProcessor = async (job) => {
-  const path = `${process.env.SERVER_ROOT}/assets/${job.data.id}.jpg`;
+  const path = `${process.env.SERVER_ROOT}/assets/product-images/${job.data.id}.jpg`;
 
   if (fs.existsSync(path)) {
     return `${path} exists, exiting`;

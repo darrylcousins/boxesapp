@@ -22,6 +22,7 @@ function *Pagination({callback, pageCount, pageNumber}) {
   const fgColour = "dark-gray";
   const range = 5;
   const maxRange = 15;
+  const spaceClass = "ph4 pv1";
 
   const getBorders = (position) => {
     let borders = "ba";
@@ -33,8 +34,6 @@ function *Pagination({callback, pageCount, pageNumber}) {
     if (position === "single") borders = "ba br2";
     return borders;
   };
-
-  const spaceClass = "ph4 pv1";
 
   const getButtons = ({start, end}) => {
     const buttons = [];
@@ -67,8 +66,8 @@ function *Pagination({callback, pageCount, pageNumber}) {
   };
 
   const getPageButtons = () => {
-    // if pageCount > 15, only show first and last 5 buttons, with ellipses between
-    // if pageNumber between 5 and pageCount -5 then show first and last and the 5 between
+    // if pageCount > maxRange, only show first and last 5 buttons, with ellipses between
+    // if pageNumber between range and pageCount - range then show first and last and the 5 between
     if (pageCount < maxRange) {
       return getButtons({ start: 1, end: pageCount});
     } else {
@@ -111,6 +110,10 @@ function *Pagination({callback, pageCount, pageNumber}) {
 
   this.addEventListener("click", clickEvent);
 
+  const nextPreviousClass = (direction) => {
+    return `${fgColour} b--${fgColour} ${bgColour} ${spaceClass} dim pointer ${getBorders(direction)}`;
+  };
+
   for ({pageCount, pageNumber} of this) {
     yield (
       pageCount === 1 ? "" : (
@@ -121,7 +124,7 @@ function *Pagination({callback, pageCount, pageNumber}) {
               title="Previous"
               name={pageNumber - 1}
               type="button"
-              class={`${fgColour} b--${fgColour} ${bgColour} ${spaceClass} dim pointer ${getBorders("left")}`}
+              class={nextPreviousClass("left")}
             >Previous</button>
           )}
           {getPageButtons()}
@@ -130,7 +133,7 @@ function *Pagination({callback, pageCount, pageNumber}) {
               title="Next"
               type="button"
               name={parseInt(pageNumber) + 1}
-              class={`${fgColour} b--${fgColour} ${bgColour} ${spaceClass} dim pointer ${getBorders("right")}`}
+              class={nextPreviousClass("right")}
             >Next</button>
           )}
         </div>

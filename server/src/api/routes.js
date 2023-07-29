@@ -150,7 +150,7 @@ router.get(
   "/recharge-customer-charges/:customer_id/:address_id/:scheduled_at/:subscription_id", 
   await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
 router.get(
-  "/recharge-customers-update",  // gets all customers
+  "/recharge-customers-update/:recharge_id",
   await import("./recharge/recharge-customers-update.js").then(({ default: fn }) => fn));
 router.get(
   "/recharge-customers",  // gets all customers

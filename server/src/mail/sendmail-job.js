@@ -17,7 +17,7 @@ const getLogger = () => {
   };
 };
 
-export default async ({to, subject, text, html, attachments}) => {
+export default async ({to, bcc, cc, subject, text, html, attachments}) => {
 
   const logger = getLogger();
   let dkimKey;
@@ -63,6 +63,8 @@ export default async ({to, subject, text, html, attachments}) => {
     html,
     attachments,
   };
+  if (cc) options.cc = cc;
+  if (bcc) options.bcc = bcc;
   return transporter.sendMail(options);
 };
 

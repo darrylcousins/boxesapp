@@ -50,7 +50,8 @@ export default async ({ subscription_id, attributes, includes, nextChargeDate, n
 `, options);
         sendmail({
           to: attributes.customer.email,
-          subject: `\[${process.env.SHOP_NAME}\] Box subscription updated ${box}`,
+          bcc: `${process.env.BCC_EMAIL}`,
+          subject: `${process.env.EMAIL_SUBJECT} Box subscription updated ${box}`.trim(),
           html: htmlOutput.html
         });
         const meta = {

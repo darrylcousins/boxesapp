@@ -54,9 +54,9 @@ export default async ({ subscriptions, admin_email }) => {
 </mjml>
 `, options);
         sendmail({
-          //to: email,
-          to: `${email}, ${process.env.SERVER_EMAIL}`,
-          subject: `\[${process.env.SHOP_NAME}\] Charge upcoming`,
+          to: `${email}`,
+          bcc: `${process.env.BCC_EMAIL}`,
+          subject: `${process.env.EMAIL_SUBJECT} Charge upcoming`.trim(),
           html: htmlOutput.html
         });
         const meta = {

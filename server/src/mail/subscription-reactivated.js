@@ -56,7 +56,8 @@ export default async ({ subscription_id, box, included, nextChargeDate, nextDeli
 `, options);
         sendmail({
           to: customer.email,
-          subject: `\[${process.env.SHOP_NAME}\] Box subscription reactivated ${box.product_title} - ${box.variant_title}`,
+          bcc: `${process.env.BCC_EMAIL}`,
+          subject: `${process.env.EMAIL_SUBJECT} Box subscription reactivated ${box.product_title} - ${box.variant_title}`.trim(),
           html: htmlOutput.html
         });
         const meta = {

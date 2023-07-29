@@ -31,11 +31,12 @@ export default async (req, res, next) => {
     };
 
     if (search && search.length > 0) {
+      const regex = new RegExp(search, "i");
       query["$or"] = [
         { shopify_id: { "$eq": parseInt(search) } },
         { recharge_id: { "$eq": parseInt(search) } },
-        { first_name: { "$eq": search } },
-        { last_name: { "$eq": search } },
+        { first_name: { "$regex": regex } },
+        { last_name: { "$regex":  regex } },
       ];
     };
 

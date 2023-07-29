@@ -306,9 +306,10 @@ async function* Customers() {
         { fetchError && <Error msg={fetchError} /> }
         { !fetchCustomer && (
           <Fragment>
-            <div class="cf dark-blue pa2 mv2 br3 ba b--dark-blue bg-washed-blue">
+            <div class="cf dark-blue pa2 mt2 mb3 br3 ba b--dark-blue bg-washed-blue">
               <Fragment>
                 Customers here may not be synchronised to Recharge customers. They are updated nightly, but may also be re-sychronised here.
+                For example if they have cancelled or reactivated charges since last night's update.
               </Fragment>
             </div>
             <div class="w-100 flex-container">
@@ -393,18 +394,27 @@ async function* Customers() {
           <Fragment>
             { rechargeCustomers && (
               <Fragment>
-                <Pagination callback={ movePage } pageCount={ parseInt(pageCount) } pageNumber={ parseInt(pageNumber) } />
+                { rechargeCustomers.length > 0 && (
+                  <Pagination callback={ movePage } pageCount={ parseInt(pageCount) } pageNumber={ parseInt(pageNumber) } />
+                )}
+                { rechargeCustomers.length === 0 && searchTerm && (
+                  <div class="orange pa2 mv2 br3 ba b--orange bg-light-yellow">
+                    None found for your search term <b>{ searchTerm }</b>.
+                  </div>
+                )}
                 <table id="customer-table" class="mt4 w-100 center" cellspacing="10">
-                  <thead>
-                    <tr>
-                      <th class="fw6 bb b--black-20 tl pb3 pr1 bg-white">{ "" }</th>
-                      <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Customer</th>
-                      <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Email</th>
-                      <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Recharge</th>
-                      <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Shopify</th>
-                      <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Upcoming</th>
-                    </tr>
-                  </thead>
+                  { rechargeCustomers.length > 0 && (
+                    <thead>
+                      <tr>
+                        <th class="fw6 bb b--black-20 tl pb3 pr1 bg-white">{ "" }</th>
+                        <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Customer</th>
+                        <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Email</th>
+                        <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Recharge</th>
+                        <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Shopify</th>
+                        <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Upcoming</th>
+                      </tr>
+                    </thead>
+                  )}
                 { rechargeCustomers.map((customer, idx) => (
                   <tr crank-key={ `${ customer.last_name }-${ idx }` }>
                     <td class="pr1 bb b--black-20 v-top">

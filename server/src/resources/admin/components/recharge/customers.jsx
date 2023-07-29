@@ -10,9 +10,12 @@ import { createElement, Fragment } from "@b9g/crank";
 import BarLoader from "../lib/bar-loader";
 import Error from "../lib/error";
 import Button from "../lib/button";
-import { Fetch } from "../lib/fetch";
 import IconButton from "../lib/icon-button";
+import { SearchIcon, ClearSearchIcon, SyncIcon } from "../lib/icon";
+import Pagination from "../lib/pagination";
+import { Fetch } from "../lib/fetch";
 import PushMenu from "../lib/push-menu";
+import { animateFadeForAction } from "../helpers";
 import Customer from "./customer";
 
 /**
@@ -49,18 +52,6 @@ async function* Customers() {
    */
   let searchTerm = null;
   /**
-   * The previous cursor
-   *
-   * @member {object|string} previousCursor
-   */
-  let previousCursor = null;
-  /**
-   * The nex cursor
-   *
-   * @member {object|string} nextCursor
-   */
-  let nextCursor = null;
-  /**
    * If the search term is invalid
    *
    * @member {object|string} searchError
@@ -84,48 +75,28 @@ async function* Customers() {
    * @member {object|string} rechargeCustomers
    */
   let rechargeCustomers = null;
-
   /**
-   * Helper method
+   * Capture full count across all pages
    *
-   * @function getBorders
+   * @member customerCount
+   * @type {object|null}
    */
-  const getBorders = (cursor) => {
-    let borders = "ba";
-    if (cursor === "previous") {
-      if (!nextCursor) return "ba br2";
-      return "ba br2 br--left";
-    };
-    if (cursor === "next") {
-      if (!previousCursor) return "ba br2";
-      return "bb br bt bl-0 br2 br--right";
-    };
-    if (position === "left") borders = "bb bl bt br-0 br2 br--left";
-    if (position === "middle") borders = "bb br bt bl-0";
-    if (position === "middle-left") borders = "ba";
-    if (position === "middle-right") borders = "bb br bt bl-0";
-    if (position === "right") borders = "br bt bb bl-0 br2 br--right";
-    if (position === "single") borders = "ba br2";
-    return borders;
-  };
-
+  let customerCount = null;
   /**
-   * Handle next/previous buttons
+   * Capture pageNumber
    *
-   * @function clickEvent
+   * @member pageNumber
+   * @type {object|null}
    */
-  const clickEvent = async (ev) => {
-    let target = ev.target;
-    const name = target.tagName.toUpperCase();
-    if (name === "BUTTON") {
-      target.blur();
-      loading = true;
-      await this.refresh();
-      fetchCustomers();
-    };
-  };
+  let pageNumber = 1;
+  /**
+   * Capture pageCount
+   *
+   * @member pageCount
+   * @type {object|null}
+   */
+  let pageCount = null;
 
-  this.addEventListener("click", clickEvent);
   /**
    * Handle the event calling to load another customer
    *
@@ -158,15 +129,27 @@ async function* Customers() {
   };
 
   /**
+   * Change page number
+   *
+   * @function movePage
+   */
+  const movePage = async (page) => {
+    pageNumber = parseInt(page.pageTarget);
+    return await fetchCustomers();
+  };
+
+  /**
    * Fetch all customers on start
    *
    * @param {string} id The shopify customer id
    * @function fetchCustomers
    */
   const fetchCustomers = async () => {
-    let cursor = nextCursor || previousCursor;
-    //const uri = `/api/recharge-customers?cursor=${cursor}`;
-    const uri = `/api/recharge-customers?selectActive=${selectActive}`;
+    let uri = `/api/recharge-customers?selectActive=${selectActive}&page=${pageNumber}`;
+    if (searchTerm) {
+      uri = `${uri}&search=${searchTerm}`;
+    };
+    console.log(uri);
     await Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
@@ -176,11 +159,16 @@ async function* Customers() {
           this.refresh();
           return null;
         };
-        nextCursor = json.next_cursor;
-        previousCursor = json.previous_cursor;
+        pageCount = json.pageCount;
+        pageNumber = json.pageNumber;
+        customerCount = json.customerCount;
         rechargeCustomers = json.customers;
         loading = false;
-        this.refresh();
+        if (document.getElementById("customer-table")) {
+          animateFadeForAction("customer-table", async () => await this.refresh());
+        } else {
+          this.refresh();
+        };
       })
       .catch((err) => {
         fetchError = err;
@@ -226,14 +214,18 @@ async function* Customers() {
 
   /**
    * update local mongodb store of customers with recharge
+   * change to reload single customer
    *
    * @param {string} id The recharge customer id
    * @function fetchRechargeCustomer
    */
-  const updateRechargeCustomers = async () => {
-    const uri = `/api/recharge-customers-update`;
+  const updateRechargeCustomer = async (recharge_id) => {
+    const uri = `/api/recharge-customers-update/${recharge_id}`;
     fetchError = null;
     loading = true;
+    const button = document.querySelector(`#sync-${recharge_id}`);
+    console.log(button);
+    if (button) button.blur();
     this.refresh();
     await Fetch(encodeURI(uri))
       .then((result) => {
@@ -254,54 +246,24 @@ async function* Customers() {
   };
 
   /**
-   * Fetch customer on search
+   * Clear search from button icon
    *
-   * @param {string} id The shopify customer id
-   * @function getCustomer
+   * @function clearSearchTerm
    */
-  const getCustomer = async (id) => {
-    // const id = 242071498;
-    const parsed = parseInt(id, 10);
-    if (Number.isNaN(parsed)) {
-      searchError = "Not a valid number, the subscription id must be a number.";
-      searchTerm = id;
-      this.refresh();
-      return;
+  const clearSearchTerm = async () => {
+    const button = document.querySelector("button[name='Clear Search'");
+    if (button) button.blur();
+    const input = document.querySelector("#searchTerm");
+    if (input) {
+      input.value = "";
+      input.focus();
     };
-    loading = true;
-    await this.refresh();
-    const customer_id = parsed;
-    const uri = `/api/shopify-customer/${customer_id}`;
-    const customer = await Fetch(uri)
-      .then(async (result) => {
-        const { error, json } = result;
-        if (error !== null) {
-          fetchError = error;
-          loading = false;
-          this.refresh();
-        } else {
-          if (json.errors) {
-            searchError = `No customer found with the given id. ${json.errors}`;
-            return null;
-          } else {
-
-            const result = json.customer;
-            if (!result) {
-              searchError = "No customer found with the given id";
-              return null;
-            };
-            return result;
-          };
-        }
-      })
-      .catch((err) => {
-        fetchError = err;
-        loading = false;
-        this.refresh();
-      });
-    fetchCustomer = customer;
-    loading = false;
-    await this.refresh();
+    if (!searchTerm || searchTerm.length === 0) return;
+    searchError = null;
+    searchTerm = null;
+    fetchCustomer = null;
+    selectActive = "active";
+    await fetchCustomers();
   };
 
   /**
@@ -312,14 +274,16 @@ async function* Customers() {
    */
   const handleSearchTerm = async (ev) => {
     const input = document.querySelector("#searchTerm");
-    searchTerm = input.value;
+    searchTerm = input.value.trim();
     searchError = null;
-    /*
-    await this.refresh();
-    if(ev.key === 'Enter') {
-      await getCustomer(input.value);
+    const button = document.querySelector("button[name='Search'");
+    if (button) button.blur();
+    if (searchTerm.length > 0 && ev.key === "Enter") {
+      selectActive = "all";
+      await fetchCustomers();
+      return;
     };
-    */
+    await this.refresh();
   };
 
   fetchCustomers();
@@ -335,7 +299,7 @@ async function* Customers() {
             </span>
           ) : (
             <span style="font-size: smaller;" class="ml4">
-              ({rechargeCustomers && rechargeCustomers.length})
+              { rechargeCustomers && `(${ customerCount })` }
             </span>
           )}
         </h4>
@@ -344,41 +308,44 @@ async function* Customers() {
           <Fragment>
             <div class="cf dark-blue pa2 mv2 br3 ba b--dark-blue bg-washed-blue">
               <Fragment>
-                Customers here may not be synchronised to Recharge customers. They are updated nightly.
-                { false && (
-                <div class="tr mb2 mr3 fr">
-                  <Button type="primary-reverse"
-                    title="Update Customers"
-                    onclick={updateRechargeCustomers}>
-                    <span class="b">
-                      Update Customers
-                    </span>
-                  </Button>
-                </div>
-                )}
+                Customers here may not be synchronised to Recharge customers. They are updated nightly, but may also be re-sychronised here.
               </Fragment>
             </div>
             <div class="w-100 flex-container">
-              <div class="w-40 v-bottom tl flex">
-                { false && (
-                  <input 
-                    class="dib pa0 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
-                    style="padding: 0 6px"
-                    type="text"
-                    valid={ !searchError }
-                    id="searchTerm"
-                    onkeydown={ (ev) => handleSearchTerm(ev) }
-                    value={ searchTerm && searchTerm }
-                    placeholder={`Search: recharge_id, shopify_kid, first name, last name`}
-                    name="searchTerm" />
-                )}
+              <div class="w-20 v-bottom tl flex">
+                <div class="w-100 flex-container">
+                  <div class="w-70 flex">
+                    <input 
+                      class="dib pa0 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
+                      style="padding: 0 6px"
+                      type="text"
+                      valid={ !searchError }
+                      id="searchTerm"
+                      onkeydown={ (ev) => handleSearchTerm(ev) }
+                      value={ searchTerm && searchTerm }
+                      placeholder={`id, first or last name`}
+                      name="searchTerm" />
+                  </div>
+                  <div class="w-30 flex" style="height: 1.8em">
+                    <div onclick={ () => handleSearchTerm({key: "Enter"}) }>
+                      <IconButton color="dark-gray" title="Search" name="Search">
+                        <SearchIcon />
+                      </IconButton>
+                    </div>
+                    <div onclick={ () => clearSearchTerm() }>
+                      <IconButton color="dark-gray" title="Clear Search" name="Clear Search">
+                        <ClearSearchIcon />
+                      </IconButton>
+                    </div>
+                  </div>
+                </div>
                 { searchError && (
                   <div class="dark-blue ma2 br3 ba b--dark-blue bg-washed-blue">
                     <p class="tc">{ searchError }</p>
                   </div>
                 )}
               </div>
-              <div class="w-60 v-bottom tr">
+              <div class="w-80 v-bottom tr">
                 <button
                   class={
                     `${
@@ -424,29 +391,13 @@ async function* Customers() {
             <Customer customer={ fetchCustomer } admin={ true } /> 
         ) : (
           <Fragment>
-            <div class="db tr">
-              { previousCursor && (
-                <button
-                  title="Previous"
-                  name="previous"
-                  type="button"
-                  class={`dark-grey b--dark-grey bg-transparent ph2 pv1 dim pointer ${getBorders("previous")}`}
-                >Previous</button>
-              )}
-              { nextCursor && (
-                <button
-                  title="Next"
-                  type="button"
-                  name="next"
-                  class={`dark-grey b--dark-grey bg-transparent ph2 pv1 dim pointer ${getBorders("next")}`}
-                >Next</button>
-              )}
-            </div>
             { rechargeCustomers && (
               <Fragment>
-                <table class="mt4 w-100 center" cellspacing="10">
+                <Pagination callback={ movePage } pageCount={ parseInt(pageCount) } pageNumber={ parseInt(pageNumber) } />
+                <table id="customer-table" class="mt4 w-100 center" cellspacing="10">
                   <thead>
                     <tr>
+                      <th class="fw6 bb b--black-20 tl pb3 pr1 bg-white">{ "" }</th>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Customer</th>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Email</th>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Recharge</th>
@@ -456,6 +407,14 @@ async function* Customers() {
                   </thead>
                 { rechargeCustomers.map((customer, idx) => (
                   <tr crank-key={ `${ customer.last_name }-${ idx }` }>
+                    <td class="pr1 bb b--black-20 v-top">
+                      <div onclick={ () => updateRechargeCustomer(customer.recharge_id) }>
+                        <IconButton color="fg-streamside-blue" title="Sync"
+                          name="Sync" id={`sync-${customer.recharge_id}`}>
+                          <SyncIcon />
+                        </IconButton>
+                      </div>
+                    </td>
                     <td class="pr3 bb b--black-20 v-top">
                       <div class="dt w-100">
                         <div class="ml2 dt-row pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"

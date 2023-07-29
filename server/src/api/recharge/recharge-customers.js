@@ -18,9 +18,10 @@ import { sortObjectArrayByKey } from "../../lib/helpers.js";
 
 export default async (req, res, next) => {
 
+  const { selectActive, page, search } = req.query;
+
   const collection = _mongodb.collection("customers");
-  // active, none-active, all
-  const selectActive = req.query.selectActive;
+
   try {
     const query = {};
     if (selectActive === "active") {
@@ -28,9 +29,33 @@ export default async (req, res, next) => {
     } else if (selectActive === "none-active") {
       query.subscriptions_active_count = { $eq: 0 };
     };
-    const customers = await collection.find(query).sort({ last_name: 1 }).toArray();
 
-    res.status(200).json({ customers });
+    if (search && search.length > 0) {
+      query["$or"] = [
+        { shopify_id: { "$eq": parseInt(search) } },
+        { recharge_id: { "$eq": parseInt(search) } },
+        { first_name: { "$eq": search } },
+        { last_name: { "$eq": search } },
+      ];
+    };
+
+    const count = await collection.count(query);
+    //const pageSize = 50;
+    const pageSize = 2;
+
+    const currentPage = page;
+    const pageCount = Math.ceil(count/pageSize);
+    const skip = (currentPage - 1) * pageSize;
+
+    const customers = await collection.find(query).sort({ last_name: 1 }).limit(pageSize).skip(skip).toArray();
+
+    const response = {
+      pageCount,
+      pageNumber: currentPage,
+      customerCount: count,
+      customers,
+    };
+    res.status(200).json(response);
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

@@ -156,7 +156,6 @@ function* CurrentLogs() {
     if (selectedObject) {
       uri = `${uri}/${selectedObject}`;
     };
-    console.log(uri);
     Fetch(uri)
       .then((result) => {
         const { error, json } = result;
@@ -167,7 +166,6 @@ function* CurrentLogs() {
         } else {
           loading = false;
           fetchError = false;
-          console.log(json);
           pageCount = json.pageCount;
           pageNumber = json.pageNumber;
           fetchLogs = json.logs;
@@ -328,7 +326,9 @@ function* CurrentLogs() {
         <h4 class="pt0 lh-title ma0 mb2 fg-streamside-maroon" id="boxes-title">
           { logLevel && formatLevel(logLevel) } Logs
         </h4>
-        <Pagination callback={ movePage } pageCount={ parseInt(pageCount) } pageNumber={ parseInt(pageNumber) } />
+        {fetchLogs.length > 0 && (
+          <Pagination callback={ movePage } pageCount={ parseInt(pageCount) } pageNumber={ parseInt(pageNumber) } />
+        )}
         <div class="relative w-100 tr pr2">
           <Help id="logsInfo" />
           <p id="logsInfo" class="info tr" role="alert">

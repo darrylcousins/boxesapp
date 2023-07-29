@@ -106,8 +106,6 @@ async function* Customers() {
   const getNewCustomer = async () => {
     fetchError = null;
     loading = false;
-    searchError = null;
-    searchTerm = null;
     fetchCustomer = null;
     await this.refresh();
     if (document.getElementById("searchTerm")) {

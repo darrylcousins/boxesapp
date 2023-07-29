@@ -43,7 +43,7 @@ function *Pagination({callback, pageCount, pageNumber}) {
       let position;
       switch(count) {
         case 1:
-          position = pageNumber === 1 ? "left" : "middle-left";
+          position = pageNumber === 1 && pageCount > 2 ? "left" : "middle-left";
           break;
         case pageCount:
           position = pageNumber === pageCount ? "right" : "middle-right";

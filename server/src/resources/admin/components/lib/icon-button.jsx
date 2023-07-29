@@ -32,13 +32,15 @@ import { createElement } from "@b9g/crank";
  * </IconButton>
  */
 const IconButton = (props) => {
-  const { children, color, title, name } = props;
+  const { children, color, title, name, id } = props;
+  const elId = id ? id : `${name.toLowerCase().replace(/ /g, "-")}${`${Math.random()}`.split(".")[1]}`;
   return (
     <button
       class={`pointer bn bg-transparent outline-0 ${color} dib dim pa0`}
       name={name}
       title={title}
       type="button"
+      id={elId}
     >
       {children}
       <span class="dn">{title}</span>

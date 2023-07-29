@@ -36,6 +36,45 @@ const Icon = ({ children, styleSize }) => {
 };
 
 /**
+ * SearchIcon component, path borrowed from
+ * {@link https://material.io/icons/|Material Design}. Intended to be wrapped by
+ * {@link module:app/lib/icon~Icon|Icon}
+ *
+ * @returns {Element} DOM component
+ */
+const SearchIcon = () => (
+  <Icon>
+    <path d="M0 0h24v24H0z" fill="none"/><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+  </Icon>
+);
+
+/**
+ * ClearSearchIcon component, path borrowed from
+ * {@link https://material.io/icons/|Material Design}. Intended to be wrapped by
+ * {@link module:app/lib/icon~Icon|Icon}
+ *
+ * @returns {Element} DOM component
+ */
+const ClearSearchIcon = () => (
+  <Icon>
+    <g><g><path d="M15.5,14h-0.79l-0.28-0.27C15.41,12.59,16,11.11,16,9.5C16,5.91,13.09,3,9.5,3C6.08,3,3.28,5.64,3.03,9h2.02 C5.3,6.75,7.18,5,9.5,5C11.99,5,14,7.01,14,9.5S11.99,14,9.5,14c-0.17,0-0.33-0.03-0.5-0.05v2.02C9.17,15.99,9.33,16,9.5,16 c1.61,0,3.09-0.59,4.23-1.57L14,14.71v0.79l5,4.99L20.49,19L15.5,14z"/><polygon points="6.47,10.82 4,13.29 1.53,10.82 0.82,11.53 3.29,14 0.82,16.47 1.53,17.18 4,14.71 6.47,17.18 7.18,16.47 4.71,14 7.18,11.53"/></g></g>
+  </Icon>
+);
+
+/**
+ * SyncIcon component, path borrowed from
+ * {@link https://material.io/icons/|Material Design}. Intended to be wrapped by
+ * {@link module:app/lib/icon~Icon|Icon}
+ *
+ * @returns {Element} DOM component
+ */
+const SyncIcon = () => (
+  <Icon>
+    <path d="M0 0h24v24H0z" fill="none"/><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+  </Icon>
+);
+
+/**
  * ToggleOnIcon component, excel symbol, path borrowed from
  * {@link https://material.io/icons/|Material Design}. Intended to be wrapped by
  * {@link module:app/lib/icon~Icon|Icon}
@@ -362,4 +401,7 @@ export {
   CheckBoxOnIcon,
   PreviewIcon,
   SettingsIcon,
+  SearchIcon,
+  ClearSearchIcon,
+  SyncIcon,
 };

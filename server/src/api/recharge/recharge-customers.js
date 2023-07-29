@@ -40,8 +40,7 @@ export default async (req, res, next) => {
     };
 
     const count = await collection.count(query);
-    //const pageSize = 50;
-    const pageSize = 2;
+    const pageSize = 50;
 
     const currentPage = page;
     const pageCount = Math.ceil(count/pageSize);

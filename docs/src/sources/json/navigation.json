@@ -44,6 +44,21 @@
       "title":"System Administrator",
       "link":"/sysadmin",
       "description":"Instructions for the sysadmin of the app server"
+    },
+    {
+      "title":"Change Log",
+      "subnav":[
+        {
+          "title":"Winter 2022",
+          "link":"/changelog-winter-2022",
+          "description":"Winter 2022"
+        },
+        {
+          "title":"Winter 2023",
+          "link":"/changelog-winter-2023",
+          "description":"Winter 2023"
+        }
+      ]
     }
   ]
 }

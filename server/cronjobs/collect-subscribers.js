@@ -59,7 +59,6 @@ const main = async () => {
 
           if (res.charges) {
             for (const c of res.charges) {
-              console.log(c.id, c.scheduled_at, c.status);
               charge_list.push([c.id, c.scheduled_at]);
             };
           };

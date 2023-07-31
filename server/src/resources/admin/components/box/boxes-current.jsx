@@ -356,12 +356,14 @@ function* CurrentBoxes({ timestamp }) {
   const sideMenu = [
     <div onclick={() => window.location = coreBoxPath}>
       <IconButton
+         name="Edit Core Box"
          title="Edit Core Box">
         <span style="width: 250px" class="db tl link white pv1 pl3 pr2">Edit core box</span>
       </IconButton>
     </div>,
     <div onclick={() => window.location = boxRulesPath}>
       <IconButton
+         name="Box Rules"
          title="Box Rules">
         <span style="width: 250px" class="db tl link white pv1 pl3 pr2">Box rules</span>
       </IconButton>

@@ -99,7 +99,13 @@ export default async (req, res, next) => {
         // fetch the image data, convert to 40px and save as id.jpg not
         // checking for its presence because this is the only place for now
         // that it is updated - this goes to another process worker
-        makeImageJob({ id: product.id, url: product.featuredImage.url });
+        try {
+          if (product.featuredImage && Object.hasOwnProperty(product.featuredImage, "url")) {
+            makeImageJob({ id: product.id, url: product.featuredImage.url });
+          };
+        } catch(err) {
+          _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+        };
         return makeDoc(product);
       }
     });

@@ -1,0 +1,29 @@
+{% if false %}
+<mj-section padding-bottom="0px">
+  <mj-column>
+    <mj-text align="right">
+      {% if boxesLogo %}
+        <img src="{{ env.HOST }}/logos/boxes.png" width="40px" />
+      {% endif %}
+    </mj-text>
+  </mj-column>
+</mj-section>
+{% endif %}
+
+<mj-section padding-bottom="0px">
+  <mj-column>
+    <mj-text align="center">
+      {% if siteLogo %}
+        <img src="{{ env.HOST }}/logos/logo.jpg" border="1" />
+      {% endif %}
+    </mj-text>
+  </mj-column>
+</mj-section>
+<mj-section padding-bottom="0px">
+  <mj-column>
+    <mj-text align="center" font-size="25px" font-style="bold">
+      {{ title }}
+    </mj-text>
+  </mj-column>
+</mj-section>
+

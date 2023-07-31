@@ -33,7 +33,15 @@ import { createElement } from "@b9g/crank";
  */
 const IconButton = (props) => {
   const { children, color, title, name, id } = props;
-  const elId = id ? id : `${name.toLowerCase().replace(/ /g, "-")}${`${Math.random()}`.split(".")[1]}`;
+  let elId;
+  if (typeof id !== "undefined") {
+    elId = id;
+  } else if (typeof name !== "undefined") {
+    elId = `${name.toLowerCase().replace(/ /g, "-")}${`${Math.random()}`.split(".")[1]}`;
+  } else {
+    elId = `icon-button-${`${Math.random()}`.split(".")[1]}`;
+  };
+
   return (
     <button
       class={`pointer bn bg-transparent outline-0 ${color} dib dim pa0`}

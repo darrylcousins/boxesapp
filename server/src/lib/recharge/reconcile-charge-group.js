@@ -33,9 +33,11 @@ export const reconcileGetGrouped = async ({ charge }) => {
    * { box: the box line item, includes: the other line items, charge: the parsed charge }
    */
 
+  const line_items = [ ...charge.line_items ];
+  for(var x in line_items) line_items[x].properties.some(el => el.name === "Including") ? line_items.unshift(line_items.splice(x,1)[0]) : 0;
   try {
-    for (const line_item of charge.line_items) {
-      //console.log(line_item);
+    // ensure the box is at the start to pick up the box subscription
+    for (const line_item of line_items) {
       const box_subscription_property = line_item.properties.find(el => el.name === "box_subscription_id");
       if (!box_subscription_property) {
         // should never happen! But what to do if it does? Maybe run the subscription-create webhook script?
@@ -690,14 +692,21 @@ export const gatherData = async ({ grouped, result }) => {
     let subscription;
     // XXX in order to get the frequency I need to get the actual subscription
     if (!Object.hasOwnProperty.call(group, "subscription")) {
-      const item_id = Object.hasOwnProperty.call(group.box, "purchase_item_id")
-        ? group.box.purchase_item_id : group.box.id;
+      let res;
+      try {
+        const item_id = Object.hasOwnProperty.call(group.box, "purchase_item_id")
+          ? group.box.purchase_item_id : group.box.id;
 
-      // XXX try/catch?
-      const res = await makeRechargeQuery({
-        path: `subscriptions/${item_id}`,
-        title: group.box.title
-      });
+        // XXX try/catch? This can fail with 404 when subscriptions have been
+        // orphaned so the box_subscription_id value is dead
+        res = await makeRechargeQuery({
+          path: `subscriptions/${item_id}`,
+          title: group.box.title
+        });
+      } catch(err) {
+        getLogger().error({message: `gatherData ${err.message}`, level: err.level, stack: err.stack, meta: err});
+        continue;
+      };
       subscription = res.subscription;
     } else {
       subscription = group.subscription;

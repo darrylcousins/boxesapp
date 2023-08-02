@@ -168,9 +168,6 @@ router.post(
   "/recharge-update-charge-date", 
   await import("./recharge/recharge-update-charge-date.js").then(({ default: fn }) => fn));
 router.post(
-  "/recharge-updated-charge-date", 
-  await import("./recharge/recharge-updated-charge-date.js").then(({ default: fn }) => fn));
-router.post(
   "/recharge-cancel-subscription", 
   await import("./recharge/recharge-cancel-subscription.js").then(({ default: fn }) => fn));
 router.post(
@@ -179,9 +176,6 @@ router.post(
 router.post(
   "/recharge-reactivate-subscription", 
   await import("./recharge/recharge-reactivate-subscription.js").then(({ default: fn }) => fn));
-router.post(
-  "/recharge-reactivated-subscription", 
-  await import("./recharge/recharge-reactivated-subscription.js").then(({ default: fn }) => fn));
 router.post(
   "/recharge-subscription-update", 
   await import("./recharge/recharge-subscription-update.js").then(({ default: fn }) => fn));

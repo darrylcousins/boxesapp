@@ -173,6 +173,9 @@ function FormModalWrapper(Component, options) {
       /* Dev logging
       console.log(uri);
       console.log(data);
+      console.log(JSON.parse(data.box));
+      console.log(JSON.parse(data.includes));
+      console.log(JSON.parse(data.attributes));
       console.warn('Posting saved successfully but disabled for development');
       setTimeout(() => {
         closeModal();

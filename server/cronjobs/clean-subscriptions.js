@@ -156,7 +156,6 @@ const main = async () => {
     winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   } finally {
     await dbClient.close();
-    process.exit(1);
   };
 };
 

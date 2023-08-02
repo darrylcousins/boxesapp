@@ -19,11 +19,16 @@ import collectSubscribersMail from "../src/mail/collect-subscribers.js";
 
 dotenv.config({ path: path.resolve("..", ".env") });
 
+global._mongodb;
+global._logger;
+
 const main = async () => {
 
   // for winstonLogger to store to mongo we need a client in the process
   // regardless whether it is actually used in the script
   const { mongo: mongodb, client: dbClient } = await getMongo();
+  global._mongodb = mongodb;
+  global._logger = winstonLogger;
 
   try {
 
@@ -119,12 +124,12 @@ const main = async () => {
     winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   } finally {
     await dbClient.close();
-    process.exit(1);
   };
 };
 
 try {
   await main();
+  process.exit(1);
 } catch(err) {
   winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
 };

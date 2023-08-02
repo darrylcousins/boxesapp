@@ -41,6 +41,7 @@ export function verifyProxy({ app }) {
           res.locals.shop = process.env.SHOP;
           res.locals.recharge = process.env.RECHARGE_SHOP_NAME;
           res.locals.proxy_path = process.env.PROXY_PATH;
+          res.locals.admin_email = process.env.ADMIN_EMAIL;
 
           return next();
         };

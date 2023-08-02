@@ -10,10 +10,19 @@ import buildMail from "./build-mail.js";
  */
 export default async ({ subscriptions }) => {
   const subscription = subscriptions[0];
-  const email = subscription.attributes.customer.email;
+  const attributes = subscription.attributes;
+  const email = attributes.customer.email;
   const title = "Box Subscription Created";
-  const subject = `${title} ${subscription.attributes.title} - ${subscription.attributes.variant}`;
+  const subject = `${title} ${attributes.title} - ${attributes.variant}`;
   const templateFile = "subscription-created";
+
+  // logging meta data - becomes meta.recharge for notices
+  const meta = {
+    customer_id: subscription.attributes.customer.id,
+    charge_id: subscription.attributes.charge_id,
+    subject,
+    email,
+  };
 
   const opts = {
     to: email,
@@ -21,7 +30,9 @@ export default async ({ subscriptions }) => {
     subject,
     templateFile,
     subscriptions,
+    attributes,
     type: "created",
+    meta,
   };
 
   return await buildMail(opts);

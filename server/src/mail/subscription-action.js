@@ -1,5 +1,5 @@
-/*
- * @module mail/charge-upcoming.js
+/**
+ * @module mail/subscripton-action
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import buildMail from "./build-mail.js";
@@ -8,20 +8,20 @@ import buildMail from "./build-mail.js";
  * @function mail/charge-upcoming.js
  * @param (object) data
  */
-export default async ({ subscriptions }) => {
-  const subscription = subscriptions[0];
-  const attributes = subscription.attributes;
+export default async ({ type, descriptiveType, attributes, includes }) => {
   const email = attributes.customer.email;
-  const title = "Charge Upcoming";
+  const title = `Subscription ${type.charAt(0).toUpperCase()}${type.substring(1).toLowerCase()}`;
   const subject = `${title} ${attributes.title} - ${attributes.variant}`;
-  const templateFile = "charge-upcoming";
+  const templateFile = "subscription-action";
 
   // logging meta data - becomes meta.recharge for notices
   const meta = {
-    customer_id: subscription.attributes.customer.id,
-    charge_id: subscription.attributes.charge_id,
+    customer_id: attributes.customer.id,
+    charge_id: attributes.charge_id,
+    subscription_id: attributes.subscription_id,
     subject,
     email,
+    type,
   };
 
   const opts = {
@@ -29,11 +29,13 @@ export default async ({ subscriptions }) => {
     title,
     subject,
     templateFile,
-    subscriptions,
     attributes,
-    type: "upcoming",
+    includes,
+    type,
+    descriptiveType: descriptiveType ? descriptiveType : type,
     meta,
   };
 
   return await buildMail(opts);
 };
+

@@ -25,9 +25,9 @@ import {
  * Render a cancelled subscription
  *
  */
-async function* Cancelled({ subscription, idx, admin }) {
+async function* Cancelled({ subscription, customer, idx, admin }) {
 
-  //console.log(JSON.stringify(subscription, null, 2));
+  console.log(subscription);
   /**
    * True while loading data from api
    * Starts false until search term submitted
@@ -298,8 +298,8 @@ async function* Cancelled({ subscription, idx, admin }) {
             </div>
             { !editsPending && (
               <div id={`reactivate-${subscription.box.id}`} class="w-100 pv2 tr">
-                <DeleteSubscriptionModal subscription={ subscription } />
-                <ReactivateSubscriptionModal subscription={ subscription } />
+                <DeleteSubscriptionModal subscription={ subscription } customer={ customer } />
+                <ReactivateSubscriptionModal subscription={ subscription } customer={ customer } />
               </div>
             )}
             { editsPending && (

@@ -44,6 +44,12 @@ async function *Customer({ customer, admin }) {
    */
   let messages = "";
   /**
+   * Messages received from api customer-charges
+   *
+   * @member {string} messages
+   */
+  let errors = "";
+  /**
    * Fetch errors
    *
    * @member {boolean} fetchError
@@ -118,7 +124,11 @@ async function *Customer({ customer, admin }) {
         };
         if (Object.hasOwnProperty.call(json, "message")) {
           messages = json.message;
-        } else {
+        };
+        if (Object.hasOwnProperty.call(json, "errors")) {
+          errors = json.errors;
+        };
+        if (Object.hasOwnProperty.call(json, "result")) {
           chargeGroups = json.result;
           originalChargeGroups = cloneDeep(json.result);
         };
@@ -363,7 +373,21 @@ async function *Customer({ customer, admin }) {
             )}
             { messages.length > 0 && (
               <div class="dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
-                <p class="">{ messages }</p>
+                  <p>{ messages }</p>
+              </div>
+            )}
+            { errors.length > 0 && (
+              <div class="dark-red mv2 pt2 pl2 br3 ba b--dark-red bg-washed-red">
+                { errors.split("\n").map(el => el.trim()).filter(el => el !== "").map(message => (
+                  <p style="margin-bottom:5px">{ message }</p>
+                ))}
+                { errors.split("\n").map(el => el.trim()).filter(el => el !== "").length > 1 && (
+                  <p class="" style="margin-bottom:5px">
+                    We have a problem! This may be because updates are still pending, { " " }
+                    but if you continue to see this message then please contact the <a
+                      class="b link dark-red underline"
+                      href={ `mailto:${localStorage.getItem("admin_email")}` }>shop administrator</a></p>
+                )}
               </div>
             )}
             { chargeGroups && chargeGroups.length > 0 ? (
@@ -398,7 +422,7 @@ async function *Customer({ customer, admin }) {
                   </h6>
                   { cancelledGroups.map((group, idx) => (
                     <div id={`subscription-${group.subscription_id}`}>
-                      <Cancelled subscription={ group } idx={ idx } />
+                      <Cancelled subscription={ group } customer={ customer } idx={ idx } />
                     </div>
                   ))}
                 </Fragment>

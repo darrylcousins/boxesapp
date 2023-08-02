@@ -60,10 +60,10 @@ async function *Subscription({ subscription, idx, admin }) {
     }).sort()
     ,null, 2));
   console.log("Ids", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
-  console.log("Attributes", subscription.attributes);
-  console.log("Includes", subscription.includes);
   console.log("RC_IDS", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
   */
+  console.log("Attributes", subscription.attributes);
+  console.log("Includes", subscription.includes);
 
   let CollapsibleProducts = CollapseWrapper(EditProducts);
   /**

@@ -61,7 +61,7 @@ const options = {
  * @param {string} props.formId - The unique form indentifier
  */
 async function* ReactivateSubscription(props) {
-  const { doSave, closeModal, title, subscription, formId } = props;
+  const { doSave, closeModal, title, subscription, customer, formId } = props;
 
   /**
    * The next delivery date that will be created
@@ -82,6 +82,10 @@ async function* ReactivateSubscription(props) {
       datatype: "string",
     },
     includes: {
+      type: "hidden",
+      datatype: "string",
+    },
+    attributes: {
       type: "hidden",
       datatype: "string",
     },
@@ -155,9 +159,16 @@ async function* ReactivateSubscription(props) {
     const getInitialData = () => {
       return {
         box: JSON.stringify(subscription.box),
-        includes: JSON.stringify(subscription.included),
+        includes: JSON.stringify([ subscription.box, ...subscription.included ]),
         nextchargedate: nextCharge.toDateString(),
         nextdeliverydate: nextDelivery.toDateString(),
+        attributes: JSON.stringify({
+          customer,
+          subscription_id: subscription.box.id,
+          title: subscription.box.product_title,
+          variant: subscription.box.variant_title,
+          lastOrder: subscription.lastOrder,
+        }),
       };
     };
 
@@ -189,16 +200,16 @@ async function* ReactivateSubscription(props) {
         </div>
         <div class="cf">
           <div class="fl w-50 gray tr pr3 pv1 b">
-            Next delivery date:
-          </div>
-          <div class="fl w-50 pv1 b">
-            { nextDelivery.toDateString() }
-          </div>
-          <div class="fl w-50 gray tr pr3 pv1 b">
             Next charge date:
           </div>
           <div class="fl w-50 pv1 b">
             { nextCharge.toDateString() }
+          </div>
+          <div class="fl w-50 gray tr pr3 pv1 b">
+            Next delivery date:
+          </div>
+          <div class="fl w-50 pv1 b">
+            { nextDelivery.toDateString() }
           </div>
         </div>
         <Form

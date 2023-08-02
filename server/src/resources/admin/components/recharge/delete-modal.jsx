@@ -60,7 +60,7 @@ const options = {
  * @param {string} props.formId - The unique form indentifier
  */
 async function* DeleteSubscription(props) {
-  const { doSave, closeModal, title, subscription, formId } = props;
+  const { doSave, closeModal, title, subscription, customer, formId } = props;
 
   /**
    * The form fields - required by {@link module:app/form/form~Form|Form}.
@@ -72,7 +72,11 @@ async function* DeleteSubscription(props) {
       type: "hidden",
       datatype: "string",
     },
-    included: {
+    includes: {
+      type: "hidden",
+      datatype: "string",
+    },
+    attributes: {
       type: "hidden",
       datatype: "string",
     },
@@ -106,7 +110,14 @@ async function* DeleteSubscription(props) {
     const getInitialData = () => {
       return {
         box: JSON.stringify(subscription.box),
-        included: JSON.stringify(subscription.included),
+        includes: JSON.stringify([ subscription.box, ...subscription.included ]),
+        attributes: JSON.stringify({
+          customer,
+          subscription_id: subscription.box.id,
+          title: subscription.box.product_title,
+          variant: subscription.box.variant_title,
+          lastOrder: subscription.lastOrder,
+        }),
       };
     };
 

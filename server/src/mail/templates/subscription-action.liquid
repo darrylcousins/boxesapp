@@ -1,0 +1,75 @@
+{% layout "layout" %}
+{% block content %}
+<mj-section full-width="true">
+  <mj-column width="100%">
+    <mj-text align="left" color="#666">
+      <p style="padding:5px 0;margin:0">
+      You are receiving this email because you {{ descriptiveType }} a box subscription with <a href="https://{{ env.SHOP }}">{{ env.SHOP_TITLE }}</a>.
+      </p>
+      <p style="padding:5px 0;margin:0">
+        If you have any queries about this email please contact <a href="mailto:{{ admin_email }}">{{ admin_email }}</a>.
+      </p>
+      <p style="padding:5px 0;margin:0">
+        Your subscriptions can be viewed and edited
+        <a
+            href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{attributes.customer.external_customer_id.ecommerce}}">here</a>.
+      </p>
+    </mj-text>
+  </mj-column>
+</mj-section>
+{% if attributes.nextChargeDate and type == "reactivated" or type == "updated" %}
+  <mj-section padding="0px">
+    <mj-column>
+      <mj-table align="center" width="300px">
+        <tr>
+          <td style="color:#777;text-align:right;padding-right:20px;">Next Order Date</td>
+          <td>{{ attributes.nextChargeDate }}</td>
+        </tr>
+        <tr>
+          <td style="color:#777;text-align:right;padding-right:20px;">Next Scheduled Delivery</td>
+          <td style="font-weight:bold">{{ attributes.nextDeliveryDate }}</td>
+        </tr>
+      </mj-table>
+    </mj-column>
+  </mj-section>
+{% endif %}
+<mj-section padding-bottom="0px" full-width="true">
+  <mj-divider border-width="1px" color="#333" />
+  <mj-column width="100%">
+    <mj-text align="left" color="#666">
+      <p style="padding:5px 0px;margin:0">
+        The {{ descriptiveType }} subscription includes:
+      </p>
+    </mj-text>
+    <mj-table padding="20px 0px 0px 0px">
+      {% for product in includes %}
+        <tr>
+          <td width="50px" style="padding: 3px 0px">
+            <img src="{{ env.HOST }}/product-images/{{ product.shopify_product_id }}.jpg" 
+                width="40px" style="border:1px solid #666;border-radius:2px;" align="left" />
+          </td>
+          <td>
+            {{ product.title }}
+          </td>
+          <td>
+            {{ product.quantity }}
+          </td>
+        </tr>
+      {% endfor %}
+    </mj-table>
+  </mj-column>
+</mj-section>
+<mj-section padding-bottom="0px" full-width="true">
+  <mj-divider border-width="1px" color="#333" />
+  <mj-column width="100%">
+    {% if attributes.lastOrder.order_number %}
+      <mj-text align="left" color="#666">
+        <p style="padding:5px 0;margin:0">
+          Your last order, <strong>#{{ attributes.lastOrder.order_number }}</strong>, was delivered on {{ attributes.lastOrder.delivered }}.
+        </p>
+      </mj-text>
+    {% endif %}
+  </mj-column>
+</mj-section>
+{% endblock %}
+

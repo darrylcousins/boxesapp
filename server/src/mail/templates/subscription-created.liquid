@@ -6,32 +6,32 @@
         <p style="font-weight:bold;padding:5px 0;margin:0">
           Thanks for subscribing!
         </p>
-        <p style="padding:5px 0;margin:0">
+        <p style="padding:5px 0;margin:0;line-height:1.5">
           You are receiving this email because you have just subscribed to a Veggie Box from <a href="https://{{ env.SHOP }}">{{ env.SHOP_TITLE }}</a>. We are so happy you've decided to make your veggie box a regular thing!
         </p>
-        <p style="padding:5px 0;margin:0">
+        <p style="padding:5px 0;margin:0;line-height:1.5">
           You are joining over 250 households across Canterbury that chose to eat delicious, nutrient dense, locally grown veggies from Streamside Organics each week. In doing so you are not only supporting the health of your family and enjoying the incredible taste of organics, you are also supporting regenerative agriculture and local farmers - that's us!
         </p>
         <p style="font-weight:bold;padding:5px 0;margin:0">
           Now, a little bit of housekeeping:
         </p>
-        <p style="padding:5px 0;margin:0">
+        <p style="padding:5px 0;margin:0;line-height:1.5">
         If you don't already have an account with us please complete account set up <a
      href="https://{{env.SHOP}}/tools/recurring/get-subscription-access">here.</a>.
     Once your account is active you can manage details like payment methods from the <a
      href="https://{{ env.SHOP }}/account">account page</a> and make changes to upcoming orders from the <a
      href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{subscriptions[0].attributes.customer.external_customer_id.ecommerce}}">edit/pause next box</a> page.
         </p>
-        <p style="padding:5px 0;margin:0">
+        <p style="padding:5px 0;margin:0;line-height:1.5">
         You will receive a `charge upcoming` email three days before payment is charged, the week prior to delivery. Your next box can be customised anytime prior to the payment being charged.
         </p>
-        <p style="padding:0;margin:0">
+        <p style="padding:0;margin:0;line-height:1.5">
         Payment will be charged to your nominated payment method three days prior to delivery. Please make sure you have sufficient funds available on that day.
         </p>
-        <p style="padding:0;margin:0">
+        <p style="padding:0;margin:0;line-height:1.5">
         You will receive a weekly order confirmation email once your payment has been successfully processed.
         </p>
-        <p style="padding:5px 0;margin:0">
+        <p style="padding:5px 0;margin:0;line-height:1.5">
           If you have any questions or concerns regarding your order please email <a href="mailto:{{ admin_email }}">{{ admin_email }}</a>.
         </p>
       </mj-text>
@@ -39,6 +39,3 @@
   </mj-section>
   {% include "subscription" %}
 {% endblock %}
-
-
-

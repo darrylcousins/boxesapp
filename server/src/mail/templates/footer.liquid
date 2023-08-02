@@ -1,4 +1,29 @@
-<mj-text align="center" font-size="25px" font-style="bold" color="#4e1018">
-  Footer
-</mj-text>
+{% if attributes and attributes.customer %}
+  <mj-section padding="0px 0px">
+    <mj-column width="100%">
+        <mj-button
+          background-color="#162842"
+          href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{attributes.customer.external_customer_id.ecommerce}}">
+          View or edit your subscription
+        </mj-button>
+    </mj-column>
+  </mj-section>
+{% endif %}
+<mj-section padding="10px 0px" full-width="true">
+  <mj-column>
+    <mj-text align="right" font-size="11px" color="#777">
+      Boxes App
+    </mj-text>
+  </mj-column>
+  <mj-column width="60px">
+    <mj-text align="right">
+      {% if boxesLogo %}
+      <a href="https://boxesapp.nz">
+        <img src="{{ env.HOST }}/logos/boxes.png" width="60px" />
+      </a>
+      {% endif %}
+    </mj-text>
+  </mj-column>
+</mj-section>
+
 

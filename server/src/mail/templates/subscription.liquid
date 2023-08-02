@@ -1,5 +1,5 @@
 {% for subscription in subscriptions %}
-  <mj-section padding-bottom="0px">
+  <mj-section>
     <mj-column>
       <mj-text align="center" font-size="25px" font-style="bold">
       {{ subscription.box.shopify_title }} - {{ subscription.attributes.variant }}
@@ -8,7 +8,7 @@
   </mj-section>
   <mj-section padding="0px">
     <mj-column>
-      <mj-table align="center" width="300px">
+      <mj-table align="center">
         {% if type == "upcoming" %}
           <tr>
             <td style="color:#777;text-align:right;padding-right:20px;">Next Order Date</td>
@@ -131,9 +131,9 @@
       <mj-table>
         {% for product in subscription.includes %}
           <tr>
-            <td width="45px" style="padding: 3px 0px">
-              <div
-                style="background-image:url('{{ env.HOST }}/product-images/{{ product.shopify_product_id }}.jpg');background-size:cover;width:40px;height:40px;border:1px solid #ccc"></div>
+            <td width="50px" style="padding: 3px 0px">
+              <img src="{{ env.HOST }}/product-images/{{ product.shopify_product_id }}.jpg" 
+                width="40px" style="border:1px solid #666;border-radius:2px;" align="left" />
             </td>
             <td>
               {{ product.title }}
@@ -158,7 +158,7 @@
     </mj-column>
   </mj-section>
   {% if type == "upcoming" %}
-    <mj-section padding-top="0px">
+    <mj-section padding="0px 0px">
       <mj-column>
         <mj-table>
           {% if subscription.attributes.newIncludedInThisBox.size > 0 %}

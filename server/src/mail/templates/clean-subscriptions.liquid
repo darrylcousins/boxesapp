@@ -1,9 +1,7 @@
-export default `
+{% layout "layout" %}
+{% block content %}
 <mj-section padding-bottom="0px">
   <mj-column>
-    <mj-text align="center" font-size="25px" font-style="bold" color="#4e1018">
-    {{ env.SHOP }}
-    </mj-text>
     <mj-text align="left">
       <p style="color:#666;padding:5px 0;margin:0">
         The service that does some of the work has found the following orphaned subscriptions:
@@ -103,4 +101,4 @@ export default `
     </mj-text>
   </mj-column>
 </mj-section>
-`;
+{% endblock %}

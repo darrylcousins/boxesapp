@@ -4,7 +4,7 @@
  */
 
 //import fs from "fs";
-import subscriptionCancelledMail from "../../mail/subscription-cancelled.js";
+import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
 
@@ -32,11 +32,9 @@ export default async (req, res, next) => {
 
   const cancellation_reason = req.body.cancellation_reason;
 
-  const { includes: includesStr, attributes: attributesStr, properties: propertiesStr } = req.body;
-
-  const includes = JSON.parse(includesStr);
-  const attributes = JSON.parse(attributesStr);
-  const properties = JSON.parse(propertiesStr);
+  const properties = JSON.parse(req.body.properties);
+  const includes = JSON.parse(req.body.includes);
+  const attributes = JSON.parse(req.body.attributes);
 
   const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
 
@@ -112,7 +110,7 @@ export default async (req, res, next) => {
       });
     };
 
-    await subscriptionCancelledMail({ subscription_id, attributes, includes });
+    await subscriptionActionMail({ type: "cancelled", attributes, includes });
 
     res.status(200).json({ success: true, action: "cancelled", subscription_id });
 

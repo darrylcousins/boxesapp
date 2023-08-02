@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import subscriptionUpdatedMail from "../../mail/subscription-updated.js";
+import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
 import fs from "fs";
@@ -152,14 +152,15 @@ export default async (req, res, next) => {
       await updateChargeDate(opts);
     };
 
+    attributes.nextChargeDate = nextchargedate;
+    attributes.nextDeliveryDate = nextdeliverydate;
     const mail = {
-      subscription_id: attributes.subscription_id,
+      type: "updated",
+      descriptiveType: "paused or rescheduled",
       attributes,
       includes,
-      nextChargeDate: nextchargedate,
-      nextDeliveryDate: nextdeliverydate,
     };
-    await subscriptionUpdatedMail(mail);
+    await subscriptionActionMail(mail);
 
     // res.status(200).json({ success: true, nextchargedate: data.nextchargedate, nextdeliverydate: data.nextdeliverydate });
     // This data is passed by form-modal back to initiator using 'listing.reload' event

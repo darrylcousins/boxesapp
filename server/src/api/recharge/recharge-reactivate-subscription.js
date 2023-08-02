@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import subscriptionReactivatedMail from "../../mail/subscription-reactivated.js";
+import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
 
@@ -32,21 +32,14 @@ export default async (req, res, next) => {
   const nextchargedate = req.body.nextchargedate;
   const nextdeliverydate = req.body.nextdeliverydate;
 
-  const { box: boxStr, includes: includesStr } = req.body;
-
-  const includes = JSON.parse(includesStr); // note that here includes are subscription objects
-  const box = JSON.parse(boxStr); // the parent subscription
+  const box = JSON.parse(req.body.box);
+  const includes = JSON.parse(req.body.includes);
+  const attributes = JSON.parse(req.body.attributes);
 
   const { product_title: title, properties: propertyList, customer_id, address_id, id: subscription_id } = box;
   const properties = propertyList.reduce(
     (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
     {});
-
-  /*
-  console.log("INCLUDES",includes);
-  console.log(box);
-  console.log(properties);
-  */
 
   // add updated flag to rc_subscription_ids
   // rc_subscription_ids should have everything in includes
@@ -59,12 +52,14 @@ export default async (req, res, next) => {
     };
   });
   // add the parent box subscription
+  /*
   subscription_ids.push({
     subscription_id: box.id,
     shopify_product_id: parseInt(box.external_product_id.ecommerce),
     quantity: box.quantity,
     updated: false
   });
+  */
 
   // set dates
   let chargeDate = new Date(Date.parse(nextchargedate));
@@ -135,7 +130,7 @@ export default async (req, res, next) => {
   const updates = [];
   // box subscription is not included in the includes
   // put it at the end initially
-  for (const subscription of [ ...includes, box ]) {
+  for (const subscription of includes) {
     const props = (subscription.id === subscription_id) ? parent_properties : child_properties;
     updates.push({
       id: subscription.id,
@@ -146,7 +141,7 @@ export default async (req, res, next) => {
 
   try {
 
-    // first activated the subscription, curious to see what charge date it gives
+    // first activated the subscription, curious to see what charge date it gives, still don't know
     for (const update of updates) {
       await makeRechargeQuery({
         method: "POST",
@@ -183,21 +178,28 @@ export default async (req, res, next) => {
       await updateChargeDate(opts);
     };
 
-    const mail = {
-      subscription_id: box.id,
-      box,
-      includes,
-      nextChargeDate: nextchargedate,
-      nextDeliveryDate: nextdeliverydate,
+    // update for email template
+    for (const el of includes) {
+      el.title = el.product_title;
+      el.shopify_product_id = el.external_product_id.ecommerce;
     };
-    await subscriptionReactivatedMail(mail);
+
+    const type = "reactivated";
+    attributes.nextChargeDate = nextchargedate;
+    attributes.nextDeliveryDate = nextdeliverydate;
+    const mail = {
+      type,
+      includes,
+      attributes,
+    };
+    await subscriptionActionMail(mail);
 
     meta.recharge = sortObjectByKeys(meta.recharge);
     _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
 
     res.status(200).json({
       success: true,
-      action: "reactivated",
+      action: type,
       subscription_id: box.id,
       address_id,
       customer_id,

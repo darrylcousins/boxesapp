@@ -26,13 +26,19 @@ export default async (req, res, next) => {
     query.push(["scheduled_at", req.params.scheduled_at]); // match scheduled
   };
 
+  let charges;
   try {
-    const { charges } = await makeRechargeQuery({
+    const queryResult = await makeRechargeQuery({
       path: `charges`,
       query,
       title: "Charges",
     });
+    charges = queryResult.charges;
+  } catch(err) { // may be a 404;
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
 
+  try {
     if (!charges || !charges.length) {
       // so we'll check here against local db (updated nightly), perhaps a failed re-charge
       const customer = await _mongodb.collection("customers").findOne({
@@ -96,17 +102,38 @@ export default async (req, res, next) => {
     const groups = await reconcileGetGroups({ charges });
     let result = [];
 
+    const errors = [];
+    const revisedGroups = [];
+    // here we can catch orphaned subscriptions without causing too much trouble to the user
     for (const grouped of groups) {
-      // run through each of these groups
+      // this can be due to orphaned subscriptions so removed it from the listing and advise errors
+      let error = false;
+      for (const [id, group] of Object.entries(grouped)) {
+        if (!group.box) {
+          errors.push(`Orphaned items for box subscription id ${id}:`);
+          for (const sub of group.charge.line_items) {
+            const addonto = sub.properties.find(el => el.name.toLowerCase() === "add on product to");
+            const delivery = sub.properties.find(el => el.name.toLowerCase() === "delivery date");
+            errors.push(`\n${sub.title} ${sub.purchase_item_id} ${delivery && `${delivery.value}`} ${addonto && `Add on to ${addonto.value}`}`);
+          };
+          error = true;
+        };
+      };
+      if (!error) {
+        revisedGroups.push(grouped);
+      };
+    };
+
+    // we may still have some healthy subscriptions
+    for (const grouped of revisedGroups) {
       result = await gatherData({ grouped, result });
-      // if anything to new then the page will force a reload
     };
 
     if (subscription_id) {
       const subscription = result.find(el => el.attributes.subscription_id === parseInt(subscription_id));
-      return res.status(200).json({ subscription });
+      return res.status(200).json({ subscription, errors: errors.join("\n") });
     } else {
-      return res.status(200).json({ result });
+      return res.status(200).json({ result, errors: errors.join("\n") });
     };
 
   } catch(err) {

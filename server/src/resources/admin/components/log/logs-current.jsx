@@ -275,7 +275,7 @@ function* CurrentLogs() {
     };
     // expecting just one object on meta 'order', 'product', 'customer', 'subscription'?
     const obj = Object.keys(el.meta)[0];
-    if (possibleObjects.includes(obj)) {
+    if (possibleObjects.includes(obj) && el.meta[obj]) {
       return (
         <div class="dt w-100 mv1">
           { Object.entries(el.meta[obj]).map(([title, str]) => (

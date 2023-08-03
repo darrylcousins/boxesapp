@@ -23,7 +23,7 @@ const ErrorMsg = ({ msg }) => {
     </div>
   );
 
-  //console.log('UGH', msg, typeof msg, isElement(msg), typeof msg.message, msg.error);
+  //console.log('UGH', msg, typeof msg, isElement(msg), typeof msg.message, msg.error, msg.message);
 
   if (typeof msg === "string" || isElement(msg)) {
     return <Template>{ msg }</Template>

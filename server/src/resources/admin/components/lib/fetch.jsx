@@ -33,7 +33,7 @@ const Fetch = async (src) => {
       try {
         json = await response.json();
       } catch (e) {
-        throw new Error(response.statusText);
+        throw new Error(`Unable to fetch ${src}`);
       };
       if (response.status !== 200) {
         throw new Error(JSON.stringify(json, null, 2));

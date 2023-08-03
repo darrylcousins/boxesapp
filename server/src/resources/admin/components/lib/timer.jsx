@@ -25,7 +25,7 @@ function* Timer({seconds, callback}) {
    * End timer
    */
   const endInterval = () => {
-    console.log("endInterval");
+    //console.log("endInterval");
     if (interval) clearInterval(interval);
   };
 
@@ -33,7 +33,7 @@ function* Timer({seconds, callback}) {
    * Start timer
    */
   const startInterval = (seconds) => {
-    console.log("startInterval");
+    //console.log("startInterval");
     count = seconds;
     interval = setInterval(() => {
       count--;

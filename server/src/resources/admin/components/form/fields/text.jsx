@@ -20,7 +20,7 @@ import FieldWrapper from "./field-wrapper";
  * @param {string} props.value The current value
  * @yields {Element} DOM component to render input text field
  */
-function* TextField({ label, id, value, size, valid, datatype, disabled, hideLabel, ...props}) {
+function* TextField({ label, id, index, value, size, valid, datatype, disabled, hideLabel, ...props}) {
 
   /**
    * Event handler when {@link
@@ -63,12 +63,12 @@ function* TextField({ label, id, value, size, valid, datatype, disabled, hideLab
           disabled={disabled}
           value={value}
           id={id}
+          data-idx={index}
           {...props}
         />
-        <span class={`small mt1 fg-streamside-orange ${valid ? "hidden" : ""}`}>
+        <span class={`small mt1 fg-streamside-orange ${valid ? "dn" : ""}`}>
           * required
         </span>
-        &nbsp;
       </FieldWrapper>
     );
   };

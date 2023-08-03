@@ -158,6 +158,7 @@ function *Field({ index, label, hideLabel, options, data, formElements, ...props
           name={id}
           label={label}
           id={id}
+          index={index}
           size={size}
           required={required}
           valid={valid}

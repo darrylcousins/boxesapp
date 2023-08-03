@@ -21,6 +21,7 @@ import {
   toPrice,
   LABELKEYS,
   transitionElementHeight,
+  getImageUrl,
 } from "../helpers";
 
 /**
@@ -101,15 +102,6 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
     modalNote: null, // helpful info to display to user
     hideModal: null,
     multiple: false, // can we select multiple products - used only for addProduct
-  };
-
-  /**
-   * for product image forcing reload by tagging a random version number
-   * so that the 'default' is not returned
-   */
-  const getImageUrl = (product_id) => {
-    const randomId = new Date().getTime();
-    return `${localStorage.getItem("host")}/product-images/${product_id}.jpg?version=${randomId}`;
   };
 
   /**

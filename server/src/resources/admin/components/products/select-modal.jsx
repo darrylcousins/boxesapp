@@ -9,10 +9,11 @@ import { createElement, Fragment, Portal} from "@b9g/crank";
 import BarLoader from "../lib/bar-loader";
 import Error from "../lib/error";
 import Button from "../lib/button";
+import Image from "../lib/image";
 import { Fetch } from "../lib/fetch";
 import ModalTemplate from "../lib/modal-template";
 import { selectProductEvent } from "../lib/events";
-import { sortObjectByKeys, toPrice } from "../helpers";
+import { sortObjectByKeys, toPrice, getImageUrl } from "../helpers";
 
 /**
  *
@@ -146,6 +147,16 @@ function* SelectModal({ modalNote, modalType, modalSelectList, hideModal, multip
                             id={ product.shopify_product_id }
                             value={ product.shopify_product_id }
                             name={ product.shopify_title } />
+                            <div class="ma1 mr3 dib">
+                              <Image
+                                src={ getImageUrl(product.shopify_product_id) }
+                                size="2em"
+                                title={ product.shopify_title }
+                                shopify_product_id={ product.shopify_product_id }
+                                id={`image-${product.shopify_product_id}`}
+                                crank-key={`image-${product.shopify_product_id}`}
+                              />
+                            </div>
                             { product.shopify_title } { product.quantity > 1 && `(${product.quantity})` }
                         </label>
                         { modalType === "add" && (

@@ -12,7 +12,7 @@ import { CloseIcon } from "../lib/icon";
 import AddProductToBoxModal from "./product-add";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
-import { titleCase, camelCaseToWords } from "../helpers";
+import { titleCase, camelCaseToWords, getImageUrl } from "../helpers";
 
 /**
  * Products component - will be wrapped in collapsible component
@@ -22,15 +22,6 @@ import { titleCase, camelCaseToWords } from "../helpers";
  * @generator Products
  */
 function *Products ({box, products, type, allproducts, id}) {
-
-  /**
-   * for product image forcing reload by tagging a random version number
-   * so that the 'default' is not returned
-   */
-  const getImageUrl = (product_id) => {
-    const randomId = new Date().getTime();
-    return `${localStorage.getItem("host")}/product-images/${product_id}.jpg?version=${randomId}`;
-  };
 
   /**
    * Save removal of product from product list

@@ -34,6 +34,15 @@ export const parseStringTemplate = (template, args) => {
   return result;
 };
 
+/**
+ * for product image forcing reload by tagging a random version number
+ * so that the 'default' is not returned
+ */
+export const getImageUrl = (product_id) => {
+  const randomId = new Date().getTime();
+  return `${localStorage.getItem("host")}/product-images/${product_id}.jpg?version=${randomId}`;
+};
+
 /* 
  * Group a list products by tag
  */

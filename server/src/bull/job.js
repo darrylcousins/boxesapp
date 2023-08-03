@@ -14,6 +14,7 @@ import {
 
 export const makeImageJob = async (opts) => {
   // opts is the job data passed to sendmail
+  console.log(opts);
   const job = await imageQueue.add(
     "Store Product Image",
     opts,
@@ -141,7 +142,7 @@ export const makeApiJob = async (opts) => {
 
   // this will still go back to the caller
   if (parseInt(finished.returnvalue.status) > 299) {
-    throw new Error(`${job.name} request failed with code ${status}: "${statusText}"`);
+    throw new Error(`${job.name} request failed with code ${finished.returnvalue.status}: "${finished.returnvalue.statusText}"`);
   };
 
   return finished.returnvalue;

@@ -79,7 +79,7 @@ export default async function ordersCreate(topic, shop, body) {
 
   /*
   try {
-    fs.writeFileSync(`shopify.order-${orderJson.id}.json`, JSON.stringify(orderJson, null, 2));
+    fs.writeFileSync(`shopify.order.json`, JSON.stringify(orderJson, null, 2));
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };

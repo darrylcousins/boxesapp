@@ -37,7 +37,6 @@ import {
  */
 function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, isEditable, key, id }) {
 
-  const host = localStorage.getItem("host");
   /**
    * True while loading data from api // box price
    *
@@ -102,6 +101,15 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
     modalNote: null, // helpful info to display to user
     hideModal: null,
     multiple: false, // can we select multiple products - used only for addProduct
+  };
+
+  /**
+   * for product image forcing reload by tagging a random version number
+   * so that the 'default' is not returned
+   */
+  const getImageUrl = (product_id) => {
+    const randomId = new Date().getTime();
+    return `${localStorage.getItem("host")}/product-images/${product_id}.jpg?version=${randomId}`;
   };
 
   /**
@@ -795,7 +803,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
                   )}
                   { !loading && (
                     <Image
-                      src={ `${host}/product-images/${box.shopify_product_id}.jpg` }
+                      src={ getImageUrl(box.shopify_product_id) }
                       title={ box.shopify_title }
                       shopify_product_id={ box.shopify_product_id }
                       id={`image-${key}-${box.shopify_product_id}`}
@@ -825,7 +833,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
                         title={ el.name }
                         id={`image-${key}-${el.shopify_product_id}`}
                         crank-key={`image-${key}-${el.shopify_product_id}`}
-                        src={ `${host}/product-images/${el.shopify_product_id}.jpg` }
+                        src={ getImageUrl(el.shopify_product_id) }
                       />
                     )}
                   </div>

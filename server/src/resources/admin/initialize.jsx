@@ -28,6 +28,9 @@ crossroads.addRoute("/orders", () => import(`/src/resources/admin/components/rou
 crossroads.addRoute("/recharge", () => import(`/src/resources/admin/components/routes/recharge`).then(({ default: Recharge }) => {
   return renderer.render(<Recharge />, document.getElementById("app"));
 }));
+crossroads.addRoute("/recharge/cancel-options", () => import(`/src/resources/admin/components/routes/cancel-options`).then(({ default: CancelOptions }) => {
+  return renderer.render(<CancelOptions />, document.getElementById("app"));
+}));
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Initialized app");

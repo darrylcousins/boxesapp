@@ -11,6 +11,9 @@ import { createElement, Fragment } from "@b9g/crank";
 import Button from "../lib/button";
 import FormModalWrapper from "../form/form-modal";
 import Form from "../form";
+import { Fetch } from "../lib/fetch";
+import Error from "../lib/error";
+import BarLoader from "../lib/bar-loader";
 import { animateFadeForAction } from "../helpers";
 
 /**
@@ -50,6 +53,7 @@ const options = {
   useSession: false, // set up socket.io to get feedback
 };
 
+
 /**
  * Create a modal to cancel a box subscription and all its included items
  *
@@ -65,40 +69,80 @@ const options = {
 async function* CancelSubscription(props) {
   const { doSave, closeModal, title, subscription, formId } = props;
 
-  /**
-   * The form fields - required by {@link module:app/form/form~Form|Form}.
-   *
-   * @member {object} fields The form fields keyed by field title string
+  /*
+   * Admin editable list of reason for cancellation
    */
-  const fields = {
-    subscription_id: {
-      type: "hidden",
-      datatype: "string",
-    },
-    includes: {
-      type: "hidden",
-      datatype: "string",
-    },
-    properties: {
-      type: "hidden",
-      datatype: "string",
-    },
-    attributes: {
-      type: "hidden",
-      datatype: "string",
-    },
-    updates: {
-      type: "hidden",
-      datatype: "string",
-    },
-    cancellation_reason: {
-      label: "Please provide a short note for the cancellation",
-      placeholder: `I no longer requires ${subscription.box.shopify_title} on ${subscription.attributes.variant}s.`,
-      type: "text",
-      required: true,
-      valid: false,
-      size: 100,
-    },
+  let cancelOptions = [];
+  /**
+   * Hold selected option
+   *
+   * @member {integer} selectedOptionId
+   */
+  let selectedOptionId = null;
+  /**
+   * Hold loading state.
+   *
+   * @member {boolean} loading
+   */
+  let loading = true;
+  /**
+   * Fetch errors
+   *
+   * @member {string} fetchError
+   */
+  let fetchError = false;
+  /**
+   * Form errors
+   *
+   * @member {string} formError
+   */
+  let formError = false;
+
+  /**
+   * Fetch current cancel options
+   *
+   * @function getBoxes
+   */
+  const getCancelOptions = async () => {
+    let uri = `/api/recharge-get-cancel-options`;
+    await Fetch(uri)
+      .then(async (result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          this.refresh();
+        } else {
+          cancelOptions = json.options ? json.options : [];
+          if (cancelOptions.length > 0) {
+            cancelOptions.push("Or provide your own short reason ...");
+          } else {
+            cancelOptions.push("Please provide a short reason for cancellation");
+            selectedOptionId = 0;
+          }
+          loading = false;
+          await this.refresh();
+        }
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+      });
+  };
+
+  getCancelOptions();
+
+  /**
+   * Pick up selection on cancel options
+   *
+   * @function handleClick
+   * @returns {null}
+   */
+  const handleClick = async (ev) => {
+    formError = false;
+    selectedOptionId = parseInt(ev.target.value);
+    await this.refresh();
   };
 
   /**
@@ -108,6 +152,15 @@ async function* CancelSubscription(props) {
    * @returns {null}
    */
   const thisSave = () => {
+    const form = document.forms[formId];
+    if (selectedOptionId < cancelOptions.length - 1) {
+      form.elements["cancellation_reason"].value = cancelOptions[selectedOptionId];
+    };
+    if (form.elements["cancellation_reason"].value === "") {
+      formError = "Please provide a reason for cancellation.";
+      this.refresh();
+      return;
+    };
     this.dispatchEvent(
       new CustomEvent("customer.disableevents", {
         bubbles: true,
@@ -118,6 +171,46 @@ async function* CancelSubscription(props) {
   };
 
   for await (const _ of this) { // eslint-disable-line no-unused-vars
+
+    /**
+     * The form fields - required by {@link module:app/form/form~Form|Form}.
+     *
+     * @member {object} fields The form fields keyed by field title string
+     */
+    const getFields = () => {
+      return {
+        subscription_id: {
+          type: "hidden",
+          datatype: "string",
+        },
+        includes: {
+          type: "hidden",
+          datatype: "string",
+        },
+        properties: {
+          type: "hidden",
+          datatype: "string",
+        },
+        attributes: {
+          type: "hidden",
+          datatype: "string",
+        },
+        updates: {
+          type: "hidden",
+          datatype: "string",
+        },
+        // keep hidden unless own entry is selected
+        cancellation_reason: {
+          label: "Please provide a short note for the cancellation",
+          placeholder: `I no longer requires ${subscription.box.shopify_title} on ${subscription.attributes.variant}s.`,
+          type: "text",
+          required: selectedOptionId === cancelOptions.length - 1,
+          valid: selectedOptionId !== cancelOptions.length - 1,
+          size: 100,
+          disabled: selectedOptionId !== cancelOptions.length - 1,
+        },
+      };
+    };
 
     /**
      * The initial data of the form
@@ -147,25 +240,50 @@ async function* CancelSubscription(props) {
 
     yield (
       <Fragment>
+        { loading && <BarLoader /> }
+        { fetchError && <Error msg={fetchError} /> }
         <p class="lh-copy tl">
-          Are you sure you want to cancel this box subscription?<br />
+          Are you sure you want to cancel this box subscription? You will be able to reactivate it at any time.<br />
           Perhaps you would prefer to pause the subscription instead?<br />
         </p>
-        <Form
-          data={getInitialData()}
-          fields={fields}
-          title={title}
-          id={formId}
-          meta={toastTemplate}
-        />
-        <div class="tr">
-          <Button type="primary" onclick={thisSave}>
-            Yes, Remove Subscription
-          </Button>
-          <Button type="secondary" onclick={closeModal}>
-            Cancel
-          </Button>
-        </div>
+        { !loading && (
+          <Fragment>
+            { formError && <Error msg={formError} /> }
+            <ul class="list">
+              { cancelOptions.map((option, idx) => (
+                <li>
+                  <label class="pointer items-center" style="font-size: 1em; margin-bottom: 0px;">
+                    <input 
+                      onclick={ handleClick }
+                      checked={ selectedOptionId === idx }
+                      class="mr2 ml3"
+                      type="radio"
+                      id={ `option-${idx}` }
+                      value={ idx }
+                      name={ `option-${idx}` } />
+                      { option }
+                  </label>
+                </li>
+              ))}
+            </ul>
+            <Form
+              data={getInitialData()}
+              fields={getFields(selectedOptionId)}
+              title={title}
+              id={formId}
+              meta={toastTemplate}
+              hideLabel={ true }
+            />
+            <div class="tr">
+              <Button type="primary" onclick={thisSave}>
+                Yes, Cancel Subscription
+              </Button>
+              <Button type="secondary" onclick={closeModal}>
+                Cancel
+              </Button>
+            </div>
+          </Fragment>
+        )}
       </Fragment>
     );
   }

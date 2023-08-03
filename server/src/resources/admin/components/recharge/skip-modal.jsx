@@ -178,7 +178,6 @@ async function* SkipCharge(props) {
    * @returns {null}
    */
   const thisSave = () => {
-    console.log("YES HERE");
     this.dispatchEvent(
       new CustomEvent("customer.disableevents", {
         bubbles: true,

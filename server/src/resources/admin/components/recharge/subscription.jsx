@@ -61,9 +61,9 @@ async function *Subscription({ subscription, idx, admin }) {
     ,null, 2));
   console.log("Ids", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
   console.log("RC_IDS", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
-  */
   console.log("Attributes", subscription.attributes);
   console.log("Includes", subscription.includes);
+  */
 
   let CollapsibleProducts = CollapseWrapper(EditProducts);
   /**
@@ -317,8 +317,14 @@ async function *Subscription({ subscription, idx, admin }) {
           this.refresh();
         } else {
           // events handle the rest
-          console.log("returned json: ", json);
-        }
+          if (Object.hasOwnProperty.call(json, "message")) {
+            this.dispatchEvent(toastEvent({
+              notice: json.message,
+              bgColour: "black",
+              borderColour: "black"
+            }));
+          };
+        };
       })
       .catch((err) => {
         fetchError = err;
@@ -511,7 +517,6 @@ async function *Subscription({ subscription, idx, admin }) {
     //console.log(JSON.stringify(subscription.includes, null, 2));
     // was using "changed" but now comparing rc original with updated
     const updates = getUpdatesFromIncludes();
-    console.log("UPDATES", JSON.stringify(updates, null, 2));
   };
 
   /**
@@ -533,7 +538,6 @@ async function *Subscription({ subscription, idx, admin }) {
       let updateItem = null;
       found = rc_subscription_ids_orig.find(el => el.shopify_product_id === item.shopify_product_id);
       if (found && found.quantity !== item.quantity) {
-        console.log("FOUND", found);
         const removed = subscription.removed.some(el => el.shopify_product_id === item.shopify_product_id);
         const included = subscription.includes.some(el => el.shopify_product_id === item.shopify_product_id);
         if (item.quantity === 0) {
@@ -553,7 +557,6 @@ async function *Subscription({ subscription, idx, admin }) {
       };
       if (updateItem) {
         updates.push(updateItem);
-        console.log("updateItem", updateItem);
       };
     };
     let updateBox = false;
@@ -616,17 +619,19 @@ async function *Subscription({ subscription, idx, admin }) {
     uri = `${uri}&address_id=${subscription.attributes.address_id}`;
     uri = `${uri}&subscription_id=${subscription.attributes.subscription_id}`;
     uri = `${uri}&scheduled_at=${subscription.attributes.scheduled_at}`;
-    console.log(uri);
     return Fetch(encodeURI(uri))
       .then((result) => {
-        console.log(result);
         const { error, json } = result;
         if (error !== null) {
           fetchError = error;
           return null;
         } else {
           if (json.message) {
-            console.log(json.message);
+            this.dispatchEvent(toastEvent({
+              notice: json.message,
+              bgColour: "black",
+              borderColour: "black"
+            }));
             return null;
           } else {
             return json.subscription;
@@ -651,11 +656,13 @@ async function *Subscription({ subscription, idx, admin }) {
     //
     // duplicated in the Cancelled component - surely should figure out
     if (eventAction === "cancelled") {
-      console.log("got cancelled action so need to reload the cancelled subscription");
       const json = await getCancelledSubscription();
-      console.log(json);
       if (Object.hasOwnProperty.call(json, "message")) {
-        // do something with it? Toast?
+        this.dispatchEvent(toastEvent({
+          notice: json.message,
+          bgColour: "black",
+          borderColour: "black"
+        }));
         attempts += 1; // force Timer reload and count attempts
         editsPending = true;
         loading = false;
@@ -704,7 +711,6 @@ async function *Subscription({ subscription, idx, admin }) {
     const charge = await getCharge(subscription.attributes.charge_id);
     let pending = false;
     if (charge) {
-      console.log("reloaded charge:", charge);
       if (charge.attributes.pending) {
         pending = true;
       } else {
@@ -759,7 +765,6 @@ async function *Subscription({ subscription, idx, admin }) {
     uri = `${uri}/${subscription.attributes.customer.id}/${subscription.attributes.address_id}`;
     uri = `${uri}?ids=${ subscription.includes.map(el => el.subscription_id).join(",") }`;
     uri = `${uri}&subscription_id=${subscription.attributes.subscription_id}`;
-    console.log(uri);
     return Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
@@ -781,7 +786,6 @@ async function *Subscription({ subscription, idx, admin }) {
 
   const listingReload = async (ev) => {
     const result = ev.detail.json; // success, action, subscription_id
-    console.log("listing reload:", result);
 
     const subscription_id = result.subscription_id;
     // update attributes nextChargeDate, nextDeliveryDate, scheduled_at

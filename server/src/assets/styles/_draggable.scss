@@ -1,0 +1,17 @@
+.draggable {
+}
+
+/* draggabel input fields, e.g recarge/cancel-options */
+.draggable.hint  > div > div > input {
+  border: 1px solid #ffc49a;
+  background: #feffb4;
+}
+
+.draggable.active  > div > div > input {
+  border: 1px solid #ffa5a5;
+  background: #ffe7e7;
+}
+
+.handle {
+  cursor: move;
+}

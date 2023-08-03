@@ -257,6 +257,7 @@ export const processOrderJson = async (json) => {
     id,
     order_number,
     subtotal_price,
+    total_price,
     contact_email,
     shipping_address,
     note,

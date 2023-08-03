@@ -95,7 +95,7 @@ export default async (req, res, next) => {
         };
         // still pending
         if (!allUpdated || !countMatch) {
-          return res.status(200).json({ message: "Updates pending" });
+          return res.status(200).json({ message: "Updates pending ..." });
         };
       };
     };
@@ -114,7 +114,7 @@ export default async (req, res, next) => {
           for (const sub of group.charge.line_items) {
             const addonto = sub.properties.find(el => el.name.toLowerCase() === "add on product to");
             const delivery = sub.properties.find(el => el.name.toLowerCase() === "delivery date");
-            errors.push(`\n${sub.title} ${sub.purchase_item_id} ${delivery && `${delivery.value}`} ${addonto && `Add on to ${addonto.value}`}`);
+            errors.push(`\n${sub.title}; ${sub.purchase_item_id}; ${delivery && `${delivery.value}`}; ${addonto && `Add on to ${addonto.value}`}`);
           };
           error = true;
         };

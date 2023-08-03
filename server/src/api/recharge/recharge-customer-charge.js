@@ -39,7 +39,7 @@ export default async (req, res, next) => {
       } else {
         // return something here while waiting for charge date to be fully updated
         // because the charge will be gone or no longer containing this subscription
-        return res.status(200).json({ message: "updates pending" });
+        return res.status(200).json({ message: "Updates pending ..." });
       };
     };
   };
@@ -49,7 +49,10 @@ export default async (req, res, next) => {
     try {
       result = await makeRechargeQuery({
         path: `charges/${charge_id}`,
-        title: "Charge"
+        title: "Charge",
+        // debugging
+        customer_id: parseInt(customer_id),
+        subscription_id: parseInt(subscription_id),
       });
 
     } catch(err) {

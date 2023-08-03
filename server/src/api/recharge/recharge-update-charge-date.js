@@ -36,11 +36,11 @@ export default async (req, res, next) => {
     };
   };
 
-  const { nextchargedate, nextdeliverydate, includes: includesStr, attributes: attributesStr, properties: propertiesStr } = req.body;
+  const { nextchargedate, nextdeliverydate } = req.body;
 
-  const includes = JSON.parse(includesStr);
-  const attributes = JSON.parse(attributesStr);
-  const properties = JSON.parse(propertiesStr);
+  const includes = JSON.parse(req.body.includes);
+  const attributes = JSON.parse(req.body.attributes);
+  const properties = JSON.parse(req.body.properties);
 
   const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
 

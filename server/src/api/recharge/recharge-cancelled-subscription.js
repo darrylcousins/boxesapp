@@ -53,7 +53,7 @@ export default async (req, res, next) => {
 
 
   if (!completed) {
-    return res.status(200).json({ message: "updates pending" });
+    return res.status(200).json({ message: "Updates pending ..." });
   };
 
   const query = [

@@ -200,6 +200,12 @@ router.get(
 router.get(
   "/recharge-subscriptions/:customer_id/:next_charge_scheduled_at/:address_id/:box_subscription_id", 
   await import("./recharge/recharge-subscriptions.js").then(({ default: fn }) => fn));
+router.get(
+  "/recharge-get-cancel-options", 
+  await import("./recharge/recharge-get-cancel-options.js").then(({ default: fn }) => fn));
+router.post(
+  "/recharge-update-cancel-options", 
+  await import("./recharge/recharge-update-cancel-options.js").then(({ default: fn }) => fn));
 router.post(
   "/add-setting", 
   await import("./setting/add-setting.js").then(({ default: fn }) => fn));

@@ -1,5 +1,5 @@
 /**
- * Creates element to render a modal to edit the core box
+ * Creates element to render a page to edit the core box
  *
  * @module app/components/box-core
  * @exports CoreBoxModal

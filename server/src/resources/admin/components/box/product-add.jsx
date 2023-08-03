@@ -177,7 +177,7 @@ async function* AddProductToBox(props) {
   const getSettings = async () => {
     let uri = "/api/current-settings/General";
     await Fetch(uri)
-      .then((result) => {
+      .then(async (result) => {
         if (result.error !== null) {
           error = result.error;
           loading = false;

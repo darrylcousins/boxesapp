@@ -12,7 +12,6 @@ import { CloseIcon } from "../lib/icon";
 import AddProductToBoxModal from "./product-add";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
-import ShopifyProductImage from "../lib/shopify-image";
 import { titleCase, camelCaseToWords } from "../helpers";
 
 /**
@@ -25,9 +24,14 @@ import { titleCase, camelCaseToWords } from "../helpers";
 function *Products ({box, products, type, allproducts, id}) {
 
   /**
-   * for product image
+   * for product image forcing reload by tagging a random version number
+   * so that the 'default' is not returned
    */
-  const getImageUrl = (product_id) => `${localStorage.getItem("host")}/product-images/${product_id}.jpg`;
+  const getImageUrl = (product_id) => {
+    const randomId = new Date().getTime();
+    return `${localStorage.getItem("host")}/product-images/${product_id}.jpg?version=${randomId}`;
+  };
+
   /**
    * Save removal of product from product list
    *
@@ -209,7 +213,7 @@ function *Products ({box, products, type, allproducts, id}) {
         id={`${type}-${box._id}`}
         class="mt1"
       >
-        { ( new Date(box.delivered) >= new Date() ) && (
+        { ( box.delivered === "Core Box" || new Date(box.delivered) >= new Date() ) && (
           <AddProductToBoxModal
             type={type}
             box={box}
@@ -231,7 +235,7 @@ function *Products ({box, products, type, allproducts, id}) {
               id={`${id}-${el.shopify_product_id}`}
               data-type={type}
             >
-              { ( new Date(box.delivered) >= new Date() ) && (
+              { ( box.delivered === "Core Box" || new Date(box.delivered) >= new Date() ) && (
                 <Fragment>
                   <div class="dtc tl hover-dark-red pointer"
                     style="width: 30px"
@@ -261,7 +265,7 @@ function *Products ({box, products, type, allproducts, id}) {
                   data-title={el.shopify_title}
                   data-type={type}
                 >
-                    <div class="cover mr1 ba dib v-mid"
+                    <div class="cover ma1 ba dib v-mid"
                       title={ el.shopify_title }
                       style={ `width: 2em; height: 2em;background-image: url("${getImageUrl(el.shopify_product_id)}");` } />
                     <div class="dib ml2">{el.shopify_title}</div>

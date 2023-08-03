@@ -79,10 +79,10 @@ const run = async () => {
         };
       };
       path = `${path}.json`;
+      console.log(path);
 
       const fields = [];
       const queryResult = await makeShopQuery({path, fields})
-      console.log(path);
       console.log(queryResult);
       //console.log(JSON.stringify(queryResults, null, 2));
       //writeFileSync("shopify.order.json", JSON.stringify(queryResult, null, 2));

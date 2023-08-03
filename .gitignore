@@ -10,7 +10,8 @@
 
 # static assets
 # in this case generated product thumbnails
-assets
+assets/product-images
+assets/logos
 
 # testing files and broken tests
 recharge.*.json

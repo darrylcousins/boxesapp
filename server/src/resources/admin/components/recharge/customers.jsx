@@ -187,7 +187,6 @@ async function* Customers() {
     fetchError = null;
     loading = true;
     this.refresh();
-    console.log(uri);
     await Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
@@ -197,7 +196,6 @@ async function* Customers() {
           this.refresh();
           return null;
         };
-        console.log(json);
         fetchCustomer = json;
         loading = false;
         this.refresh();
@@ -286,21 +284,43 @@ async function* Customers() {
 
   fetchCustomers();
 
+  const proxy_path = localStorage.getItem("proxy-path");
+  const qs = localStorage.getItem("qs"); // query string to maintain access
+  const cancelOptionsPath = `${proxy_path}/admin-portal/recharge/cancel-options${ qs }`;
+  /**
+   * Side navigation menu
+   *
+   * @member sideMenu
+   * @type {array}
+   */
+  const sideMenu = [
+    <div onclick={() => window.location = cancelOptionsPath}>
+      <IconButton
+         name="Cancel Options"
+         title="Cancel Options">
+        <span style="width: 250px" class="db tl link white pv1 pl3 pr2">Cancel Options</span>
+      </IconButton>
+    </div>,
+  ];
+
   for await (const props of this) { // eslint-disable-line no-unused-vars
     yield (
       <div class="w-100 pa2 center" id="subscriptions">
-        <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
-          Recharge Customers {""}
-          { fetchCustomer ? (
-            <span style="font-size: smaller;" class="ml4">
-              {fetchCustomer.first_name} {fetchCustomer.last_name} &lt;{fetchCustomer.email}&gt;
-            </span>
-          ) : (
-            <span style="font-size: smaller;" class="ml4">
-              { rechargeCustomers && `(${ customerCount })` }
-            </span>
-          )}
-        </h4>
+        <PushMenu children={sideMenu} />
+        <div class="pl5" style="margin-top: -35px">
+          <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
+            Recharge Customers {""}
+            { fetchCustomer ? (
+              <span style="font-size: smaller;" class="ml4">
+                {fetchCustomer.first_name} {fetchCustomer.last_name} &lt;{fetchCustomer.email}&gt;
+              </span>
+            ) : (
+              <span style="font-size: smaller;" class="ml4">
+                { rechargeCustomers && `(${ customerCount })` }
+              </span>
+            )}
+          </h4>
+        </div>
         { fetchError && <Error msg={fetchError} /> }
         { !fetchCustomer && (
           <Fragment>

@@ -253,20 +253,12 @@ ${ `${ fence }` }
         <Navigation pathname={ pathname } mode={ mode } />
         <div class="cf"></div>
         <div id="page-wrapper" role="document">
-          <Alert>
-            This documentation is still under construction, incomplete, and
-            already a little out of date. The
-            application itself is running successfully on a
-            <a href="https://www.streamsideorganics.co.nz/collections/veggie-boxes-1"
-              class="link mh1 b black-60 dim"
-              title="Streamside Organics">production site</a>
-            but a list of improvements and features are waiting in the wings
-            until such a time when the
-                <a href="https://cousinsd.net"
-              class="link mh1 b black-60 dim"
-              title="Darryl Cousins">developer</a>
-                has time to resume work on it.
-          </Alert>
+          { false && (
+            <Alert>
+              This documentation is still under construction, incomplete, and
+              already a little out of date.
+            </Alert>
+          )}
           <div id="page-content" role="main" class={ `markdown-body ${mode}-mode` }>
             { parsed ? (
               <Raw value={ html } />

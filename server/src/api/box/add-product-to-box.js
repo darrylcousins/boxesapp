@@ -100,8 +100,8 @@ export default async (req, res, next) => {
         // checking for its presence because this is the only place for now
         // that it is updated - this goes to another process worker
         try {
-          if (product.featuredImage && Object.hasOwnProperty(product.featuredImage, "url")) {
-            makeImageJob({ id: product.id, url: product.featuredImage.url });
+          if (product.featuredImage && Object.hasOwnProperty.call(product.featuredImage, "url")) {
+            await makeImageJob({ id: shopify_product_id, url: product.featuredImage.url });
           };
         } catch(err) {
           _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

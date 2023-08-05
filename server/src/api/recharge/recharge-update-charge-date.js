@@ -53,12 +53,6 @@ export default async (req, res, next) => {
     return { ...el, updated };
   });
 
-  /*
-  console.log("Attributes", JSON.stringify(attributes, null, 2));
-  console.log("Includes", JSON.stringify(includes, null, 2));
-  console.log("Properties", JSON.stringify(properties, null, 2));
-  */
-
   let chargeDate = new Date(Date.parse(nextchargedate));
   // store as ISO date
   const offset = chargeDate.getTimezoneOffset()

@@ -7,7 +7,7 @@
  */
 import { createElement, Fragment } from "@b9g/crank";
 import { toPrice, animateFadeForAction, animateFade } from "../helpers";
-import { PostFetch, Fetch } from "../lib/fetch";
+import { Fetch } from "../lib/fetch";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
 import Timer from "../lib/timer";
@@ -27,7 +27,6 @@ import {
  */
 async function* Cancelled({ subscription, customer, idx, admin }) {
 
-  console.log(subscription);
   /**
    * True while loading data from api
    * Starts false until search term submitted

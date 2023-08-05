@@ -3,6 +3,9 @@
   <mj-section padding-bottom="0px">
     <mj-column>
       <mj-text align="left">
+        <p style="padding:5px 0;margin:0">
+        Hi {{ attributes.customer.first_name }} {{ attributes.customer.last_name }},
+        </p>
         <p style="font-weight:bold;padding:5px 0;margin:0">
           Thanks for subscribing!
         </p>
@@ -20,7 +23,7 @@
      href="https://{{env.SHOP}}/tools/recurring/get-subscription-access">here.</a>.
     Once your account is active you can manage details like payment methods from the <a
      href="https://{{ env.SHOP }}/account">account page</a> and make changes to upcoming orders from the <a
-     href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{subscriptions[0].attributes.customer.external_customer_id.ecommerce}}">edit/pause next box</a> page.
+     href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{attributes.customer.external_customer_id.ecommerce}}">edit/pause next box</a> page.
         </p>
         <p style="padding:5px 0;margin:0;line-height:1.5">
         You will receive a `charge upcoming` email three days before payment is charged, the week prior to delivery. Your next box can be customised anytime prior to the payment being charged.

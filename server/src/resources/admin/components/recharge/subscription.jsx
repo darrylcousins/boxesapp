@@ -44,8 +44,7 @@ import {
  * import {renderer} from '@b9g/crank/dom';
  * renderer.render(<Subscription subscription={subscription} />, document.querySelector('#app'))
  */
-async function *Subscription({ subscription, idx, admin }) {
-
+async function *Subscription({ subscription, customer, idx, admin }) {
 
   /*
   console.log("TITLE", subscription.attributes.title);
@@ -61,8 +60,8 @@ async function *Subscription({ subscription, idx, admin }) {
     ,null, 2));
   console.log("Ids", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
   console.log("RC_IDS", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
-  console.log("Attributes", subscription.attributes);
   console.log("Includes", subscription.includes);
+  console.log("Attributes", subscription.attributes);
   */
 
   let CollapsibleProducts = CollapseWrapper(EditProducts);
@@ -210,7 +209,10 @@ async function *Subscription({ subscription, idx, admin }) {
    * data then call the submission method 'callback'
    * @function getSessionId
    *
-   * This is disabled at the moment see saveChanges method
+   * This is disabled at the moment see saveChanges method for registration.
+   * But the idea was instead of using Timer to reload every 30 seconds until
+   * complete, we could wait for a signal via a socket that would indicate the
+   * the server side process had been completed.
    */
   const getSessionId = async (callback, data) => {
     const proxy = localStorage.getItem("proxy-path");
@@ -507,15 +509,8 @@ async function *Subscription({ subscription, idx, admin }) {
     const el = document.querySelector(`#skip_cancel-${subscription.attributes.subscription_id}`);
     el.classList.add("dn");
 
-    //console.log("Original", JSON.stringify(rc_subscription_ids_orig, null, 2));
-    //console.log("Attributes", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
-    //console.log("Updates", JSON.stringify(rc_subscription_ids, null, 2));
-    // update these in place
     subscription.attributes.rc_subscription_ids = [ ...rc_subscription_ids ];
 
-    /* REMOVE BELOW _ DEV */
-    //console.log(JSON.stringify(subscription.includes, null, 2));
-    // was using "changed" but now comparing rc original with updated
     const updates = getUpdatesFromIncludes();
   };
 

@@ -728,10 +728,6 @@ export const gatherData = async ({ grouped, result }) => {
       days = subscription.order_interval_frequency;
     };
 
-    const address = charge.shipping_address;
-    address.name = `${charge.shipping_address.first_name} ${charge.shipping_address.last_name}`;
-    //address.name = `${charge.billing_address.first_name} ${charge.billing_address.last_name}`;
-
     const isEditable = chargeDate > new Date();
 
     const {
@@ -778,6 +774,14 @@ export const gatherData = async ({ grouped, result }) => {
       group.rc_subscription_ids = rc_subscription_ids;
     };
 
+    const address = charge.shipping_address;
+    address.name = `${charge.shipping_address.first_name} ${charge.shipping_address.last_name}`;
+    //address.name = `${charge.billing_address.first_name} ${charge.billing_address.last_name}`;
+    const customer = charge.customer;
+    customer.first_name = charge.shipping_address.first_name;
+    customer.last_name = charge.shipping_address.last_name;
+    customer.name = `${charge.shipping_address.first_name} ${charge.shipping_address.last_name}`;
+
     const totalPrice = includes.map(el => parseFloat(el.price) * el.quantity).reduce((sum, el) => sum + el, 0);
     const attributes = {
       nextChargeDate,
@@ -788,13 +792,13 @@ export const gatherData = async ({ grouped, result }) => {
       pending: group.pending,
       frequency,
       days,
-      scheduled_at: group.charge.scheduled_at,
+      scheduled_at: charge.scheduled_at,
       subscription_id: subscription.id,
       templateSubscription,
       rc_subscription_ids: group.rc_subscription_ids.sort(),
-      charge_id: group.charge.id,
-      address_id: group.charge.address_id,
-      customer: group.charge.customer,
+      charge_id: charge.id,
+      address_id: charge.address_id,
+      customer: charge.customer,
       lastOrder,
       totalPrice: `${totalPrice.toFixed(2)}`,
       notIncludedInThisBox,

@@ -147,7 +147,6 @@ async function* Customers() {
     if (searchTerm) {
       uri = `${uri}&search=${searchTerm}`;
     };
-    console.log(uri);
     await Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
@@ -220,7 +219,6 @@ async function* Customers() {
     fetchError = null;
     loading = true;
     const button = document.querySelector(`#sync-${recharge_id}`);
-    console.log(button);
     if (button) button.blur();
     this.refresh();
     await Fetch(encodeURI(uri))

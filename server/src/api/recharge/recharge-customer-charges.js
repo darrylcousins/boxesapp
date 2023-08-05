@@ -50,7 +50,7 @@ export default async (req, res, next) => {
         };
       };
       // return a result of none
-      return res.status(200).json({ message: "No charges found" });
+      return res.status(200).json({ message: "No upcoming charges found" });
     };
 
     // need to check for pending and return updates_pending

@@ -41,6 +41,8 @@ export default async (req, res, next) => {
         // because the charge will be gone or no longer containing this subscription
         return res.status(200).json({ message: "Updates pending ..." });
       };
+    } else {;
+      return res.status(200).json({ message: "Updates pending ..." });
     };
   };
 

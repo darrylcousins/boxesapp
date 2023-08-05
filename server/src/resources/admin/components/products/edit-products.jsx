@@ -372,7 +372,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
    * @param {object} props.id The id of the item to be moved
    */
   const moveItem = async ({from, to, id}) => {
-    console.log("moveItem", from , to, id);
+    //console.log("moveItem", from , to, id);
     const fromList = boxLists[from];
     let toList = boxLists[to];
     let toName = to; // may be changed below

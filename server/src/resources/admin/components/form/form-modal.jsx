@@ -241,6 +241,11 @@ function FormModalWrapper(Component, options) {
      * Get and connect to socket.io, on connect insert the sessionId into the
      * data then call the submission method 'callback'
      * @function getSessionId
+     *
+     * This currently disabled but the idea was instead of using Timer to
+     * reload every 30 seconds until complete, we could wait for a signal via a
+     * socket that would indicate the the server side process had been
+     * completed.
      */
     const getSessionId = async (callback, data) => {
       const proxy = localStorage.getItem("proxy-path");

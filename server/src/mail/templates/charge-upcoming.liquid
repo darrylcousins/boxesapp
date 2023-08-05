@@ -3,6 +3,9 @@
   <mj-section padding-bottom="0px">
     <mj-column>
       <mj-text align="left">
+        <p style="padding:5px 0;margin:0">
+        Hi {{ attributes.customer.first_name }} {{ attributes.customer.last_name }},
+        </p>
         <p style="padding:5px 0;margin:0;line-height:1.5">
           You are receiving this email because you have a box subscription with <a href="https://{{ env.SHOP }}">{{ env.SHOP_TITLE }}</a>.
         </p>
@@ -13,11 +16,11 @@
           You can view your subscriptions from your <a href="https://{{ env.SHOP }}/account"
           >account page</a> and edit, pause or cancel 
               your subscribed box{% if subscriptions.size > 1 %}es{% endif %}
-          <a href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{subscriptions[0].attributes.customer.external_customer_id.ecommerce}}">here</a>.
+          <a href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{attributes.customer.external_customer_id.ecommerce}}">here</a>.
         </p>
         <p style="padding:5px 0;padding-top:15px;margin:0;line-height:1.5">
           You have until the next order date in which to add items or otherwise
-        <a href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{subscriptions[0].attributes.customer.external_customer_id.ecommerce}}">update your box</a>.
+        <a href="https://{{env.SHOP}}{{env.PROXY_PATH}}/customer-portal?cid={{attributes.customer.external_customer_id.ecommerce}}">update your box</a>.
         </p>
       </mj-text>
     </mj-column>

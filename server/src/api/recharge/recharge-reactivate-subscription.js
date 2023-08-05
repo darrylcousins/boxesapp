@@ -192,6 +192,8 @@ export default async (req, res, next) => {
       includes,
       attributes,
     };
+    console.log("api", attributes.customer);
+    console.log("api", JSON.stringify(attributes, null, 2));
     await subscriptionActionMail(mail);
 
     meta.recharge = sortObjectByKeys(meta.recharge);

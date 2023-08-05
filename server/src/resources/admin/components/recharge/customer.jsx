@@ -179,8 +179,6 @@ async function *Customer({ customer, admin }) {
   const getRechargeCustomer = async () => {
     // recharge customer id
     const uri = `/api/recharge-customer?shopify_customer_id=${customer.id}`;
-    console.log(customer);
-    console.log(uri);
     return Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
@@ -191,6 +189,12 @@ async function *Customer({ customer, admin }) {
           return null;
         };
         rechargeCustomer = json;
+        if (!Object.hasOwnProperty.call(customer, "email")) {
+          // in customer portal we only have the shopify customer id
+          customer.email = rechargeCustomer.email;
+          customer.first_name = rechargeCustomer.first_name;
+          customer.last_name = rechargeCustomer.last_name;
+        };
         return rechargeCustomer
       })
       .catch((err) => {
@@ -397,6 +401,7 @@ async function *Customer({ customer, admin }) {
                   <div id={`subscription-${group.attributes.subscription_id}`}>
                     <Subscription
                       subscription={ group } idx={ idx }
+                      customer={ customer }
                       admin={ admin }
                       crank-key={ `${group.attributes.nextChargeDate.replace(/ /g, "_")}-${idx}` }
                     />

@@ -882,15 +882,28 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    * july 2023 Changed this to allow unskippable provided there is still time
    * before the charge upcoming webhook is received
    */
+
   const isUnSkippable = () => {
+    /*
     const ts = Date.parse(subscription.attributes.lastOrder.delivered);
     if (isNaN(ts)) return false; // can happen if the order is not completed
     const lastDeliveryDate = new Date(ts);
     const delivered = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
     const diffDays = Math.ceil(Math.abs(delivered - lastDeliveryDate) / (1000 * 60 * 60 * 24));
-    //const interval = subscription.attributes.days; //i.e. 7 or 14
+    */
+
+    // but still should take into account lastOrder
+
+    // however this is the calculation used in the modal
+    const now = new Date();
+    const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
+    const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
+
+    // so this modal only shows if diffDays in greater than 8 days
     const interval = 7; // allow fortnightly subscriptions to also reschedule by a week
+    const diffDays = getDiffDays(subscripion);
     return diffDays > interval;
+
   };
 
   /*

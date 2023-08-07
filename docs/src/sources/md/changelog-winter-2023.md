@@ -31,7 +31,7 @@ but did not appear in the box.
 
 Aside from the changes that (fingers crossed) will prevent this occurring we
 now have a nightly [script][cron] that locates orphaned subscriptions and
-emails the shopt administrator a report.
+emails the shop administrator a report.
 
 ## Customer Subscription Interface
 

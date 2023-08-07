@@ -235,22 +235,52 @@ ${ `${ fence }` }
             class="ba bw1 br2 b--white b--solid pointer" />
         </div>
         { loading ? <BarLoader /> : <div class="bar-placeholder"></div> }
+        <div class="cf w-100 db">
           <a class={ `link contain ${ mode } db fl mt2 mr4` }
             href="/"
             id="boxes-logo" style="width: 80px; height:80px;">
-          &nbsp;
-        </a>
-        <div onclick={ (e) => showSource() }
-          title={ `${parsed ? "Show" : "Hide" } markdown source` }
-          class="pointer dib fr">
-          <PreviewIcon />
+            &nbsp;
+          </a>
+          <div onclick={ (e) => showSource() }
+            title={ `${parsed ? "Show" : "Hide" } markdown source` }
+            class="pointer dib fr">
+            <PreviewIcon />
+          </div>
+          <div onclick={ (e) => toggleMode(mode === "dark" ? "light" : "dark") }
+            title={ `Switch to ${mode === "dark" ? "light" : "dark"} mode` }
+            class="pointer dib fr mr2">
+            { mode === "dark" ? <LightModeIcon /> : <DarkModeIcon /> }
+          </div>
+          <Navigation pathname={ pathname } mode={ mode } />
         </div>
-        <div onclick={ (e) => toggleMode(mode === "dark" ? "light" : "dark") }
-          title={ `Switch to ${mode === "dark" ? "light" : "dark"} mode` }
-          class="pointer dib fr mr2">
-          { mode === "dark" ? <LightModeIcon /> : <DarkModeIcon /> }
+
+        <div class="cf w-100 db">
+          <div class="w-10 fl pa0 ma0"
+            style="height: 25px;overflow: hidden">
+            <a
+              href="https://responsibleaidisclosure.com/"
+              title="RAID: Responsible Ai Disclosure">
+            <img src="no-ai.png"
+              class="outline-0"
+              style="height: 25px;"
+              height="25px"
+              alt="RAID: Responsible Ai Disclosure" />
+            </a>
+          </div>
+          <div class="w-90 fl pa0 ma0 tr"
+            style="height: 25px;overflow: hidden">
+            <a
+              href="https://showyourstripes.info"
+              title="ShowYourStripes">
+            <img src="stripes-global-trimmed.png"
+              title="ShowYourStripes"
+              class="outline-0"
+              style="overflow: none"
+              alt="ShowYourStripes" />
+            </a>
+          </div>
         </div>
-        <Navigation pathname={ pathname } mode={ mode } />
+
         <div class="cf"></div>
         <div id="page-wrapper" role="document">
           { false && (

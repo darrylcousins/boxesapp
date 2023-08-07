@@ -59,6 +59,11 @@
           "description":"Winter 2023"
         }
       ]
+    },
+    {
+      "title":"Thoughts",
+      "link":"/thoughts",
+      "description":"A wishlist, todo, and ramblings"
     }
   ]
 }

@@ -2,4 +2,6 @@
 
 A story told retrospectively a year after the event.
 
-For now please refer to [BoxesApp](https://cousinsd.net/boxes).
+Copping out of this for now.
+
+[recharge]: https://rechargepayments.com/

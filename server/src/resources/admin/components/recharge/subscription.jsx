@@ -892,16 +892,25 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     const diffDays = Math.ceil(Math.abs(delivered - lastDeliveryDate) / (1000 * 60 * 60 * 24));
     */
 
-    // but still should take into account lastOrder
+    // but still should take into account lastOrder - well that is a question
 
-    // however this is the calculation used in the modal
-    const now = new Date();
-    const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
-    const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
+    /*
+     * Determine if pausable
+     * however this is the method used in the modal
+     * otherwise no dates are selectable
+     */
+    const getDiffDays = (subscription) => {
+      const now = new Date();
+      const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
+      const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
+      // so this modal only shows if diffDays in greater than 8 days
+      return diffDays;
+    };
+
 
     // so this modal only shows if diffDays in greater than 8 days
     const interval = 7; // allow fortnightly subscriptions to also reschedule by a week
-    const diffDays = getDiffDays(subscripion);
+    const diffDays = getDiffDays(subscription);
     return diffDays > interval;
 
   };

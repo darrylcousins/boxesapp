@@ -167,13 +167,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    */
   let swapMap = {"selectedSwaps": [], "selectedIncludes": []};
   /**
-   * The total price TODO here in development udating on refresh - production
-   * may actuall use priceElement as above
    *
-   * XXX allow selection of variant before loading box
-   *
-   * @member priceElement
-   * @type {Element}
+   * @member showBoxActive
+   * @type {boolean}
    */
   let showBoxActive = false;
   /**
@@ -1075,16 +1071,12 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
         this.schedule(() => {
           setTimeout(() => { // helps to keep things smooth on load
             showBoxActive = true;
-            editBoxActive = customizingBox;
-            this.refresh();
-            if (customizingBox) {
-              setTimeout(() => { // helps to keep things smooth on load
-                editBoxActive = customizingBox;
-                this.refresh();
-              }, 1500);
-            };
+            setTimeout(() => { // helps to keep things smooth on load
+              editBoxActive = true;
+              this.refresh();
+            }, 500);
             updatePriceElement(true);
-          }, 500);
+          }, 200);
         });
       }
 
@@ -1170,54 +1162,29 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               </div>
             )}
             { showBoxActive && selectedDate && !boxIsEmpty && (
-              <Fragment>
-                <div id="toggleInput" class="pointer flex-row" style="margin-bottom: 1em">
-                  <div class="flex-left">
-                    <label
-                      for="toggleEditBox"
-                      htmlFor="toggleEditBox"
-                      class="db pointer"
-                      style="margin: .5em 0 0 0;"
-                    >
-                      <input
-                        class="checkbox"
-                        type="checkbox"
-                        id="toggleEditBox"
-                        checked={editBoxActive}
-                      />
-                        {getSetting("Translation", "customize-box")}
-                    </label>
-                  </div>
-                  <div class="flex-right">
-                    <div class="button-wrapper">
-                      <button
-                        title="Change product quantities"
-                        id="qtyForm"
-                        type="button"
-                        style={{
-                          color: getSetting("Colour", "button-foreground"),
-                          "background-color": getSetting("Colour", "button-background"),
-                          "border-color": getSetting("Colour", "button-background"),
-                          "font-size": "1em",
-                          }}
-                        >
-                        {getSetting("Translation", "edit-quantities")}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </Fragment>
+              <div class="button-wrapper" style="margin-bottom: 0.5em">
+                <button
+                  title="Change product quantities"
+                  id="qtyForm"
+                  type="button"
+                  style={{
+                    color: getSetting("Colour", "button-foreground"),
+                    "background-color": getSetting("Colour", "button-background"),
+                    "border-color": getSetting("Colour", "button-background"),
+                    }}
+                  >
+                  {getSetting("Translation", "edit-quantities")}
+                </button>
+              </div>
             )}
             <div id="customize-box">
-              <div style={{
-                  "display": editBoxActive ? 'block' : 'none',
-                }}>
+              { showBoxActive && selectedDate && (
                 <ProductSelector
                   selectedIncludes={selectedIncludes}
                   possibleAddons={possibleAddons}
                   selectedExcludes={selectedExcludes}
                 />
-              </div>
+              )}
               { showBoxActive && selectedDate && (
                 <div class="button-wrapper" id="add-button-wrapper">
                   { cartBoxId && (selectedBox.shopify_product_id !== cartBoxId) && (
@@ -1274,7 +1241,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
         )}
       </div>
     );
-  }
-}
+  };
+};
 
 export default ContainerBoxApp;

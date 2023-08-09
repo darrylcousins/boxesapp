@@ -2,7 +2,7 @@
  * Build script for Southbridge Boxes to ensure that local values are correct.
  * Depends on variables set in brunch-config and app/base_url
  *
- * Run the script using `npm run build`
+ * Run the script using `node build.js`
  *
  * @author Darryl Cousins <darryljcousins@gmail.com>
  * @module brunch-build

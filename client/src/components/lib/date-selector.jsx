@@ -22,7 +22,7 @@ function* DateSelector({fetchDates, selectedDate}) {
    * @member selectDateOpen
    * @type {boolean}
    */
-  let selectDateOpen = false;
+  let selectDateOpen = true;
   /**
    * Selector id for select menu
    *
@@ -95,6 +95,7 @@ function* DateSelector({fetchDates, selectedDate}) {
                   menu={getDates().map(el => ({text: el, item: el}))}
                   title="Select Date"
                   active={selectDateOpen}
+                  hideButton={!selectedDate}
                 >
                   { selectedDate 
                       ? selectedDate 

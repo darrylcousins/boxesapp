@@ -41,7 +41,7 @@ export default async (opts) => {
   const options = {
     keepComments: false,
   };
-  
+
   try {
     await engine
       .renderFile(opts.templateFile, {

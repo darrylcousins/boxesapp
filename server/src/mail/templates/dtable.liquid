@@ -1,0 +1,102 @@
+
+            {% for item in items %}
+              <li style="list-style: none; padding: 10px 0 0 0; margin: 0;">
+                {{ item.customer.first_name }} {{ item.customer.last_name }} &lt;{{ item.customer.email }}&gt;
+                <ul style="padding: 10px 0;">
+                  {% for thing in item.items %}
+                    <li style="list-style: none; padding: 3px 0; margin: 0">
+                      {{ thing.title }}
+                      <dl style="
+          border: 1px solid grey;
+          padding: 0.5em;
+                      ">
+                        <dt style="
+          float: left;
+          clear: left;
+          width: 150px;
+          text-align: right;
+          font-weight: bold;
+          color: grey;
+                        ">Product title</dt>
+                        <dd style="
+          margin: 0 0 0 160px;
+          padding: 0 0 0.5em 0;
+                        ">{{ thing.title }}</dd>
+                        <dt style="
+          float: left;
+          clear: left;
+          width: 150px;
+          text-align: right;
+          font-weight: bold;
+          color: grey;
+                        ">Subscription ID</dt>
+                        <dd style="
+          margin: 0 0 0 160px;
+          padding: 0 0 0.5em 0;
+                        ">{{ thing.subscription_id }}</dd>
+                        {% if thing.next_charge_scheduled_at %}
+                          <dt style="
+            float: left;
+            clear: left;
+            width: 150px;
+            text-align: right;
+            font-weight: bold;
+            color: grey;
+                          ">Next charge</dt>
+                          <dd style="
+            margin: 0 0 0 160px;
+            padding: 0 0 0.5em 0;
+                          ">
+                          {{ thing.next_charge_scheduled_at }}
+                        {% endif %}
+                        {% if thing.delivery_at %}
+                          <dt style="
+            float: left;
+            clear: left;
+            width: 150px;
+            text-align: right;
+            font-weight: bold;
+            color: grey;
+                          ">Next Delivery</dt>
+                          <dd style="
+            margin: 0 0 0 160px;
+            padding: 0 0 0.5em 0;
+                          ">
+                          {{ thing.delivery_at }}
+                        {% endif %}
+                        {% if thing.cancelled_at %}
+                          <dt style="
+            float: left;
+            clear: left;
+            width: 150px;
+            text-align: right;
+            font-weight: bold;
+            color: grey;
+                          ">Cancelled at</dt>
+                          <dd style="
+            margin: 0 0 0 160px;
+            padding: 0 0 0.5em 0;
+                          ">
+                          {{ thing.cancelled_at }}
+                        </dd>
+                        {% endif %}
+                        {% if thing.updated_at %}
+                          <dt style="
+            float: left;
+            clear: left;
+            width: 150px;
+            text-align: right;
+            font-weight: bold;
+            color: grey;
+                          ">Last updated</dt>
+                          <dd style="
+            margin: 0 0 0 160px;
+            padding: 0 0 0.5em 0;
+                          ">{{ thing.updated_at }}</dd>
+                        {% endif %}
+                      </dl>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </li>
+            {% endfor %}

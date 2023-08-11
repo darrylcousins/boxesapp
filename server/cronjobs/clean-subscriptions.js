@@ -1,6 +1,7 @@
 /**
  * Collect and update subscribers locally
  * This is simply to ensure that we keep active subscriptions up to date
+ * Added Aug 2023: check that dates align correctly
  *
  * Set as a cron job to run nightly
  * 
@@ -39,9 +40,11 @@ const main = async () => {
     // collect customers
     const customers = await mongodb.collection("customers").find({}).toArray();
     const customer_orphans = [];
+    const customer_date_mismatch = [];
 
     for (const customer of customers ) {
       let orphans = []; // collect as rc_subscription objects
+      let date_mismatch = []; // collected as groups currently
       let collected_rc_subscription_ids = [];
       try {
         const { subscriptions } = await makeRechargeQuery({
@@ -62,55 +65,96 @@ const main = async () => {
               unit_price: el.price.toString(),
             };
         });
-        // customer id for finding lost items
-        const grouped = await reconcileGetGrouped({ charge: { line_items, customer, id: customer.recharge_id } });
-        for (const [id, group] of Object.entries(grouped)) {
-          // rc_subscription_ids, all grouped to the box
-          // need to compare the count to actual extras
-          // from properties figure out which extra subscriptions we need, or not.
-          if (group.box) { // XXX what to do here
-            const properties = group.box.properties.reduce(
-              (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
-              {});
+        // gut feeling here is I need to group the line_items by
+        // next_charge_scheduled_at so that I can add next_scheduled_at to the
+        // stub charge I create
+        const line_item_groups = {};
+        for (const line_item of line_items) {
+          if (!Object.hasOwnProperty.call(line_item_groups, line_item.next_charge_scheduled_at)) {
+            line_item_groups[line_item.next_charge_scheduled_at] = [];
+          };
+          line_item_groups[line_item.next_charge_scheduled_at].push(line_item);
+        };
 
-            const included = properties["Including"]
-              .split(",").map(el => el.trim())
-              .filter(el => el !== "")
-              .map(el => matchNumberedString(el))
-              .filter(el => el.quantity > 1)
-              .map(el => ({ title: el.title, quantity: el.quantity - 1 }));
-            // keeping all quantities
-            const swapped = properties["Swapped Items"]
-              .split(",").map(el => el.trim())
-              .filter(el => el !== "")
-              .filter(el => el !== "None")
-              .map(el => matchNumberedString(el))
-              .map(el => ({ title: el.title, quantity: el.quantity - 1 }))
-              .filter(el => el.quantity > 0);
-            // XXX Saw a single case where an included subscription did not appear here
-            const addons = properties["Add on Items"]
-              .split(",").map(el => el.trim())
-              .filter(el => el !== "")
-              .filter(el => el !== "None")
-              .map(el => matchNumberedString(el));
-            const extras = [ ...included, ...swapped, ...addons, { title: group.box.product_title, quantity: 1 } ];
-            let extra_count = extras.length;
-            collected_rc_subscription_ids = [ ...collected_rc_subscription_ids, ...group.rc_subscription_ids ];
-            if (group.rc_subscription_ids.length !== extras.length) {
-              const extra_titles = extras.map(el => el.title).sort();
-              for (const extra of group.rc_subscription_ids.filter(el => {
-                return extra_titles.includes(el.title) ? false : true;
-              })) {
-                orphans.push({
-                  ...extra, box: { title: group.box.product_title, id: group.box.id }
-                }); // grab the orphan that is attached to a subscription
-                extra_count++; // this orphan accounted for
+        for (const [scheduled_at, line_items] of Object.entries(line_item_groups)) {
+
+          const grouped = await reconcileGetGrouped({
+            charge: {
+              line_items,
+              customer,
+              id: customer.recharge_id,
+              scheduled_at,
+            }
+          });
+          for (const [id, group] of Object.entries(grouped)) {
+            // rc_subscription_ids, all grouped to the box
+            // need to compare the count to actual extras
+            // from properties figure out which extra subscriptions we need, or not.
+            if (group.box) { // XXX what to do here if no box
+              const properties = group.box.properties.reduce(
+                (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
+                {});
+
+              const scheduled = new Date(group.charge.scheduled_at);
+              const delivered = new Date(properties["Delivery Date"]);
+              let diff = delivered.getTime() - scheduled.getTime();
+              let dayDiff = Math. ceil(diff / (1000 * 3600 * 24));
+
+              // trying to pick up when charge and delivery day has been put out of sync
+              if (dayDiff !== 3) {
+                // we can push the whole group because we have already grouped by scheduled_at
+                let d = new Date(group.box.updated_at);
+                date_mismatch.push({
+                  subscription_id: group.box.id,
+                  title: group.box.product_title,
+                  next_charge_scheduled_at: new Date(group.charge.scheduled_at).toDateString(),
+                  delivery_at: properties["Delivery Date"],
+                  updated_at: `${d.toDateString()} ${d.toLocaleTimeString()}`,
+                  cancelled_at: group.box.cancelled_at,
+                });
+              };
+
+              const included = properties["Including"]
+                .split(",").map(el => el.trim())
+                .filter(el => el !== "")
+                .map(el => matchNumberedString(el))
+                .filter(el => el.quantity > 1)
+                .map(el => ({ title: el.title, quantity: el.quantity - 1 }));
+              // keeping all quantities
+              const swapped = properties["Swapped Items"]
+                .split(",").map(el => el.trim())
+                .filter(el => el !== "")
+                .filter(el => el !== "None")
+                .map(el => matchNumberedString(el))
+                .map(el => ({ title: el.title, quantity: el.quantity - 1 }))
+                .filter(el => el.quantity > 0);
+              // XXX Saw a single case where an included subscription did not appear here
+              const addons = properties["Add on Items"]
+                .split(",").map(el => el.trim())
+                .filter(el => el !== "")
+                .filter(el => el !== "None")
+                .map(el => matchNumberedString(el));
+              const extras = [ ...included, ...swapped, ...addons, { title: group.box.product_title, quantity: 1 } ];
+              let extra_count = extras.length;
+              collected_rc_subscription_ids = [ ...collected_rc_subscription_ids, ...group.rc_subscription_ids ];
+              if (group.rc_subscription_ids.length !== extras.length) {
+                const extra_titles = extras.map(el => el.title).sort();
+                for (const extra of group.rc_subscription_ids.filter(el => {
+                  return extra_titles.includes(el.title) ? false : true;
+                })) {
+                  orphans.push({
+                    ...extra, box: { title: group.box.product_title, id: group.box.id }
+                  }); // grab the orphan that is attached to a subscription
+                  extra_count++; // this orphan accounted for
+                };
               };
             };
           };
         };
+
         // now collect the other orphans, i.e. not tied to a subscription box
         // provided they have a charge, the others I can certainly delete
+        //
         const collected_subscription_ids = collected_rc_subscription_ids
           .map(el => el.subscription_id);
         for (const subscription of subscriptions
@@ -120,14 +164,21 @@ const main = async () => {
           })) {
           const { product_title: title, next_charge_scheduled_at, updated_at, cancelled_at } = subscription;
           if (`${next_charge_scheduled_at}` !== null) {
+            const deliveryProp = subscription.properties.find(el => el.name === "Delivery Date");
+            let deliveryDate = "";
+            if (deliveryProp) {
+              deliveryDate = deliveryProp.value;
+            };
+            let d = new Date(updated_at);
             orphans.push({
-              shopify_product_id: parseInt(subscription.external_product_id.ecommerce),
+              shopify_product_id: parseInt(subscription.external_product_id.ecommerce), // unused
               subscription_id: parseInt(subscription.id),
-              quantity: parseInt(subscription.quantity),
-              price: subscription.price * 100,
+              quantity: parseInt(subscription.quantity), // unused
+              price: subscription.price * 100, // unused
               title,
-              next_charge_scheduled_at,
-              updated_at,
+              next_charge_scheduled_at: new Date(next_charge_scheduled_at).toDateString(),
+              delivery_at: deliveryDate,
+              updated_at: `${d.toDateString()} ${d.toLocaleTimeString()}`,
               cancelled_at,
             });
           };
@@ -142,15 +193,25 @@ const main = async () => {
         delete customer.subscriptions_total_count;
         customer_orphans.push({
           customer,
-          orphans
+          items: orphans
+        });
+      };
+      if (date_mismatch.length) {
+        delete customer._id;
+        delete customer.subscriptions_active_count;
+        delete customer.subscriptions_total_count;
+        customer_date_mismatch.push({
+          customer,
+          items: date_mismatch,
         });
       };
     };
 
+    //console.log(JSON.stringify(customer_date_mismatch, null, 2));
     //console.log(JSON.stringify(customer_orphans, null, 2));
     // actually confident that I can delete all the orphans
     // but for now build a report to email to self
-    await cleanSubscriptionsMail({ orphans: customer_orphans });
+    await cleanSubscriptionsMail({ orphans: customer_orphans, date_mismatch: customer_date_mismatch });
 
   } catch(err) {
     winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

@@ -409,6 +409,11 @@ async function* UpsertOrderModal(props) {
     if (order_id) {
       uri += `/${order_id}`;
     };
+    // first thought for not reconciling unless agreed upon
+    let updating = false; // so can allow an reconciliation update to occur, default is not.
+    if (updating) {
+      uri += `?update=true`;
+    };
     return await Fetch(uri)
       .then(({error, json}) => {
         loading = false;

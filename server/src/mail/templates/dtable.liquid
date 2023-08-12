@@ -1,9 +1,5 @@
 
-            {% for item in items %}
-              <li style="list-style: none; padding: 10px 0 0 0; margin: 0;">
-                {{ item.customer.first_name }} {{ item.customer.last_name }} &lt;{{ item.customer.email }}&gt;
-                <ul style="padding: 10px 0;">
-                  {% for thing in item.items %}
+            {% for thing in items %}
                     <li style="list-style: none; padding: 3px 0; margin: 0">
                       {{ thing.title }}
                       <dl style="
@@ -96,7 +92,4 @@
                         {% endif %}
                       </dl>
                     </li>
-                  {% endfor %}
-                </ul>
-              </li>
             {% endfor %}

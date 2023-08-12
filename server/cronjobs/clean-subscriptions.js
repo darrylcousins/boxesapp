@@ -26,9 +26,8 @@ global._mongodb;
 global._logger;
 
 /**
- * Simple template for node script
+ * Nightly cron
  */
-
 const main = async () => {
 
   const { mongo: mongodb, client: dbClient } = await getMongo();
@@ -39,13 +38,27 @@ const main = async () => {
 
     // collect customers
     const customers = await mongodb.collection("customers").find({}).toArray();
-    const customer_orphans = [];
-    const customer_date_mismatch = [];
+
+    const result = [];
 
     for (const customer of customers ) {
       let orphans = []; // collect as rc_subscription objects
       let date_mismatch = []; // collected as groups currently
+      let updates_pending = [];
       let collected_rc_subscription_ids = [];
+      let tempDate;
+      let pending = await mongodb.collection("updates_pending").find({customer_id: customer.recharge_id}).toArray();
+      for (const entry of pending) {
+        tempDate = new Date(entry.timestamp);
+        updates_pending.push({
+          subscription_id: parseInt(entry.subscription_id),
+          title: entry.title,
+          next_charge_scheduled_at: new Date(entry.scheduled_at).toDateString(),
+          delivery_at: entry["Delivery Date"],
+          updated_at: `${tempDate.toDateString()} ${tempDate.toLocaleTimeString()}`,
+          cancelled_at: null,
+        });
+      };
       try {
         const { subscriptions } = await makeRechargeQuery({
           path: `subscriptions`,
@@ -103,13 +116,13 @@ const main = async () => {
               // trying to pick up when charge and delivery day has been put out of sync
               if (dayDiff !== 3) {
                 // we can push the whole group because we have already grouped by scheduled_at
-                let d = new Date(group.box.updated_at);
+                tempDate = new Date(group.box.updated_at);
                 date_mismatch.push({
                   subscription_id: group.box.id,
                   title: group.box.product_title,
                   next_charge_scheduled_at: new Date(group.charge.scheduled_at).toDateString(),
                   delivery_at: properties["Delivery Date"],
-                  updated_at: `${d.toDateString()} ${d.toLocaleTimeString()}`,
+                  updated_at: `${tempDate.toDateString()} ${tempDate.toLocaleTimeString()}`,
                   cancelled_at: group.box.cancelled_at,
                 });
               };
@@ -142,9 +155,15 @@ const main = async () => {
                 for (const extra of group.rc_subscription_ids.filter(el => {
                   return extra_titles.includes(el.title) ? false : true;
                 })) {
+                  tempDate = new Date(extra.updated_at);
                   orphans.push({
-                    ...extra, box: { title: group.box.product_title, id: group.box.id }
-                  }); // grab the orphan that is attached to a subscription
+                    subscription_id: extra.subsciption_id,
+                    title: extra.title,
+                    next_charge_scheduled_at: new Date(extra.next_charge_scheduled_at).toDateString(),
+                    delivery_at: null, // data unavailable??? see rc_subscription_ids
+                    updated_at: extra.updated_at ? `${tempDate.toDateString()} ${tempDate.toLocaleTimeString()}` : null,
+                    cancelled_at: null, // data unavailable??? see rc_subscription_ids
+                  });
                   extra_count++; // this orphan accounted for
                 };
               };
@@ -169,16 +188,13 @@ const main = async () => {
             if (deliveryProp) {
               deliveryDate = deliveryProp.value;
             };
-            let d = new Date(updated_at);
+            tempDate = new Date(updated_at);
             orphans.push({
-              shopify_product_id: parseInt(subscription.external_product_id.ecommerce), // unused
               subscription_id: parseInt(subscription.id),
-              quantity: parseInt(subscription.quantity), // unused
-              price: subscription.price * 100, // unused
               title,
               next_charge_scheduled_at: new Date(next_charge_scheduled_at).toDateString(),
               delivery_at: deliveryDate,
-              updated_at: `${d.toDateString()} ${d.toLocaleTimeString()}`,
+              updated_at: `${tempDate.toDateString()} ${tempDate.toLocaleTimeString()}`,
               cancelled_at,
             });
           };
@@ -187,31 +203,25 @@ const main = async () => {
         winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
         continue;
       };
-      if (orphans.length) {
+      if (orphans.length || date_mismatch.length || updates_pending.length) {
         delete customer._id;
         delete customer.subscriptions_active_count;
         delete customer.subscriptions_total_count;
-        customer_orphans.push({
+        result.push({
           customer,
-          items: orphans
-        });
-      };
-      if (date_mismatch.length) {
-        delete customer._id;
-        delete customer.subscriptions_active_count;
-        delete customer.subscriptions_total_count;
-        customer_date_mismatch.push({
-          customer,
-          items: date_mismatch,
+          orphans,
+          date_mismatch,
+          updates_pending,
         });
       };
     };
 
-    //console.log(JSON.stringify(customer_date_mismatch, null, 2));
-    //console.log(JSON.stringify(customer_orphans, null, 2));
+    //console.log(JSON.stringify(result, null, 2));
     // actually confident that I can delete all the orphans
     // but for now build a report to email to self
-    await cleanSubscriptionsMail({ orphans: customer_orphans, date_mismatch: customer_date_mismatch });
+    await cleanSubscriptionsMail({
+      result,
+    });
 
   } catch(err) {
     winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

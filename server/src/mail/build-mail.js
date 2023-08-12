@@ -36,10 +36,11 @@ export default async (opts) => {
 
   const engine = new Liquid({
     root: path.resolve(__dirname, 'templates/'),  // root for layouts/includes lookup
-    extname: '.liquid'
+    extname: '.liquid',
   });
   const options = {
     keepComments: false,
+    jsTruthy: true,
   };
 
   try {

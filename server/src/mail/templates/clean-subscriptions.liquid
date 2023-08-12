@@ -1,40 +1,65 @@
 {% layout "layout" %}
 {% block content %}
 <mj-section padding-bottom="0px">
-  <mj-divider border-width="1px" color="#aaa" />
   <mj-column width="100%">
-    <mj-text align="left" font-size="15px" font-style="bold" padding-bottom="10px" padding-top="5px">
-      Orphaned Subscriptions
-    </mj-text>
-    <mj-text align="left">
-      <p style="color:#666;padding:5px 0;margin:0">
-        The service that does some of the work has found the following orphaned subscriptions:
-        {% if orphans.length == 0 %}
-          <p> No orphans found </p>
-        {% else %}
-          <ul style="list-style: none; padding: 10px 0; font-style:normal; margin: 0px">
-            {% render "dtable", items: orphans %}
-          </ul>
-        {% endif %}
-    </mj-text>
-  </mj-column>
-  <mj-divider border-width="1px" color="#aaa" />
-  <mj-column width="100%">
-    <mj-text align="left" font-size="15px" font-style="bold" padding-bottom="10px" padding-top="5px">
-      Date Mismatches
-    </mj-text>
-    <mj-text align="left">
-      <p style="color:#666;padding:5px 0;margin:0">
-        The service that does some of the work has found the following subscriptions where the dates do not match:
-        {% if date_mismatch.length == 0 %}
-          <p> No date mismatches found </p>
-        {% else %}
-          <ul style="list-style: none; padding: 10px 0; font-style:normal; margin: 0px">
-            {% render "dtable", items: date_mismatch %}
-          </ul>
-        {% endif %}
+    <mj-text align="left" padding-bottom="10px" padding-top="5px">
+      <p>This nightly script attempts to identify any problems among the subscriptions. It checks for:
+      <ol>
+        <li>Any orphaned subscriptions, i.e. not connected to a box subscription.</li>
+        <li>Date mismatches between the charge date and the delivery date.</li>
+        <li>Entries in the updates pending table.</li>
+      </ol>
       </p>
     </mj-text>
   </mj-column>
+  {% if result.length == 0 %}
+    <mj-column width="100%">
+      <mj-text align="left" padding-bottom="10px" padding-top="5px">
+        <p> No problems have been found</p>
+      </mj-text>
+    </mj-column>
+  {% else %}
+    {% for item in result %}
+      <mj-divider border-width="1px" border-color="#000" width="100%" />
+      <mj-column width="100%">
+        <mj-text align="left" font-size="15px" font-style="bold" padding-top="5px" padding-bottom="10px">
+          {{ item.customer.first_name }} {{ item.customer.last_name }} &lt;{{ item.customer.email }}&gt;
+        </mj-text>
+      </mj-column>
+      {% if item.orphans.length > 0 %}
+        <mj-divider border-width="1px" border-color="#ddd" width="100%" />
+        <mj-column width="100%" padding-top="10px">
+          <mj-text align="left">
+            <span style="padding-left: 10px; font-weight: bold">Orphaned items</span>
+            <ul style="list-style: none; padding: 0; padding-top: 5px; font-style:normal; margin: 0px">
+              {% render "dtable", items: item.orphans %}
+            </ul>
+          </mj-text>
+        </mj-column>
+      {% endif %}
+      {% if item.date_mismatch.length > 0 %}
+        <mj-divider border-width="1px" border-color="#ddd" width="100%" />
+        <mj-column width="100%" padding-top="10px">
+          <mj-text align="left">
+            <span style="padding-left: 10px; font-weight: bold">Date mismatches</span>
+            <ul style="list-style: none; padding: 0; padding-top: 5px; font-style:normal; margin: 0px">
+              {% render "dtable", items: item.date_mismatch %}
+            </ul>
+          </mj-text>
+        </mj-column>
+      {% endif %}
+      {% if item.updates_pending.length > 0 %}
+        <mj-divider border-width="1px" border-color="#ddd" width="100%" />
+        <mj-column width="100%" padding-top="10px">
+          <mj-text align="left">
+            <span style="padding-left: 10px; font-weight: bold">Pending update entries</span>
+            <ul style="list-style: none; padding: 0; padding-top: 5px; font-style:normal; margin: 0px">
+              {% render "dtable", items: item.updates_pending %}
+            </ul>
+          </mj-text>
+        </mj-column>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
 </mj-section>
 {% endblock %}

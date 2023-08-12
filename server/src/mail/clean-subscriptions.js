@@ -9,7 +9,7 @@ import "dotenv/config";
  * @function mail/clean-subscriptions.js
  * @param (object) data
  */
-export default async ({ orphans, date_mismatch }) => {
+export default async ({ orphans, date_mismatch, result }) => {
   const email = `${process.env.ADMIN_EMAIL}, ${process.env.SERVER_EMAIL}`;
   const title = "Verify Subscriptions";
   const subject = `${title} (runs nightly)`;
@@ -20,6 +20,7 @@ export default async ({ orphans, date_mismatch }) => {
     title,
     subject,
     templateFile,
+    result,
     orphans,
     date_mismatch,
   };

@@ -20,6 +20,20 @@
     </mj-text>
   </mj-column>
 </mj-section>
+{% if attributes.cancellation_reason and type == "cancelled" %}
+  <mj-section padding="0px">
+    <mj-column>
+      <mj-text align="left" color="#666">
+        <p style="padding:5px 0;margin:0">
+          Your reason given for cancellation was:
+        </p>
+        <p style="padding:5px 0;margin:0;font-weight:bold;color:#000">
+          {{ attributes.cancellation_reason }}
+        </p>
+      </mj-text>
+    </mj-column>
+  </mj-section>
+{% endif %}
 {% if attributes.nextChargeDate and type == "reactivated" or type == "updated" %}
   <mj-section padding="0px">
     <mj-column>

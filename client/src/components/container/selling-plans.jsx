@@ -45,13 +45,19 @@ function* SellingPlans({ productJson, selectedVariant, selectedSellingPlanId }) 
 
   const Help = () => {
     const showHelp = (e) => {
-      document.querySelector("#subHelp").style.display = "block";
-      window.addEventListener('click', (e) => {
-        document.querySelector("#subHelp").style.display = "none";
-      });
+      const subHelp = document.querySelector("#subHelp");
+      if (subHelp) {
+        subHelp.style.display = "block";
+        window.addEventListener("click", (e) => {
+          document.querySelector("#subHelp").style.display = "none";
+        });
+      };
     };
     const hideHelp = (e) => {
-      document.querySelector("#subHelp").style.display = "none";
+      const subHelp = document.querySelector("#subHelp");
+      if (subHelp) {
+        document.querySelector("#subHelp").style.display = "none";
+      };
     };
     return (
       <div

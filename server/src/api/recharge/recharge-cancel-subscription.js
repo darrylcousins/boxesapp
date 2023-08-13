@@ -82,6 +82,7 @@ export default async (req, res, next) => {
       customer_id: customer.id,
       address_id,
       subscription_id,
+      cancellation_reason,
       email: customer.email,
       next_delivery: attributes.nextDeliveryDate,
       next_charge_date: attributes.nextChargeDate,
@@ -110,6 +111,7 @@ export default async (req, res, next) => {
       });
     };
 
+    attributes.cancellation_reason = cancellation_reason;
     await subscriptionActionMail({ type: "cancelled", attributes, includes });
 
     res.status(200).json({ success: true, action: "cancelled", subscription_id });

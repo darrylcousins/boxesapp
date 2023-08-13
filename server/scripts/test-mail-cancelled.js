@@ -100,6 +100,7 @@ const attributes = {
 "order_interval_frequency": 1,
 "order_interval_unit": "week"
 },
+"cancellation_reason": "I no longer require the subscription",
 "rc_subscription_ids": [
 {
 "shopify_product_id": 7517242917014,
@@ -113,7 +114,7 @@ const attributes = {
 "address_id": 127883610,
 "customer": {
 "id": 84185810,
-"email": "cousinsd@proton.me",
+"email": "darryljcousins@gmail.com",
 "external_customer_id": {
 "ecommerce": "3895947395222"
 },

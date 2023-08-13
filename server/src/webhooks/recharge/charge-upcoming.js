@@ -55,6 +55,8 @@ export default async function chargeUpcoming(topic, shop, body) {
           return { ...el, updated };
         });
         const boxSubscription = subscription.updates.find(el => el.properties.some(e => e.name === "Including"));
+        // save this for later because it is lost on updates
+        const box_shopify_id = parseInt(boxSubscription.shopify_product_id);
         const props = boxSubscription.properties.reduce(
           (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
           {});
@@ -72,7 +74,8 @@ export default async function chargeUpcoming(topic, shop, body) {
         for (const [key, value] of Object.entries(props)) {
           doc[key] = value;
         };
-        const result = await _mongodb.collection("updates_pending").updateOne(
+        // set up the pending flag
+        await _mongodb.collection("updates_pending").updateOne(
           { charge_id: meta.recharge.charge_id },
           { "$set" : doc },
           { "upsert": true }
@@ -97,6 +100,12 @@ export default async function chargeUpcoming(topic, shop, body) {
         stayers = subscription.includes.filter(el => stayers.includes(el.subscription_id));
 
         subscription.includes = stayers.concat(keepers);
+        // ensure the box subscription is the first to create a new charge
+        for(var x in subscription.includes) subscription.includes[x].properties.some(el => el.name === "Including")
+          ? subscription.includes.unshift(subscription.includes.splice(x,1)[0])
+          : 0;
+        // now the first update the shopify id
+        subscription.includes[0].shopify_product_id = box_shopify_id;
 
         // add in the total price for each
         for (const included of subscription.includes) {
@@ -112,7 +121,7 @@ export default async function chargeUpcoming(topic, shop, body) {
       };
 
     };
-    
+
     await chargeUpcomingMail({ subscriptions: result });
 
   } catch(err) {

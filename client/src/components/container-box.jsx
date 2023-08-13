@@ -167,13 +167,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    */
   let swapMap = {"selectedSwaps": [], "selectedIncludes": []};
   /**
-   * The total price TODO here in development udating on refresh - production
-   * may actuall use priceElement as above
    *
-   * XXX allow selection of variant before loading box
-   *
-   * @member priceElement
-   * @type {Element}
+   * @member showBoxActive
+   * @type {boolean}
    */
   let showBoxActive = false;
   /**
@@ -284,8 +280,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
         const found = checkIncludePresence(el);
         if (found) {
           // locate any incremented items that were in includes and now in addons
-          item.quantity = found.quantity - 1;
-          selectedAddons.push(item);
+          if (found.quantity > 1) {
+            selectedAddons.push({ ...item, quantity: found.quantity - 1 });
+          };
         };
         return item;
       })
@@ -401,6 +398,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       const selling_plans = product.selling_plan_groups[0].selling_plans;
       const selling_plan = selling_plans.find(el => el.name === selling_plan_name);
       const selling_plan_id = selling_plan ? selling_plan.id : null;
+      if (selling_plan) console.log(selling_plan);
       return selling_plan_id;
     };
     return null;
@@ -413,10 +411,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    */
   const submitCart = async () => {
 
-    const url = "/cart";
     if (!boxHasChanged && loadedFromCart) {
       // redirect to cart if loaded from cart and no changes made
-      window.location = url;
+      window.location = "/cart";
     };
 
     let selling_plans;
@@ -489,6 +486,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     });
 
     const data = {items};
+    //console.log("Posting", data);
 
     const headers = {"Content-Type": "application/json"};
     const {error: clearError, json: clearJson} = await PostFetch({src: "/cart/clear.js", headers});
@@ -500,10 +498,11 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     // add extra items to the cart
     if (data.items.length) {
       const {error, json} = await PostFetch({src: "/cart/add.js", data, headers});
+      //console.log("Response", error, json);
     };
 
     // redirect to cart
-    window.location = url;
+    window.location = "/cart";
 
   };
 
@@ -1075,16 +1074,12 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
         this.schedule(() => {
           setTimeout(() => { // helps to keep things smooth on load
             showBoxActive = true;
-            editBoxActive = customizingBox;
-            this.refresh();
-            if (customizingBox) {
-              setTimeout(() => { // helps to keep things smooth on load
-                editBoxActive = customizingBox;
-                this.refresh();
-              }, 1500);
-            };
+            setTimeout(() => { // helps to keep things smooth on load
+              editBoxActive = true;
+              this.refresh();
+            }, 500);
             updatePriceElement(true);
-          }, 500);
+          }, 200);
         });
       }
 
@@ -1135,6 +1130,12 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 selectedSwaps={selectedSwaps}
               />
             )}
+            <div class="notice"
+                  style={{
+                    "background-color": getSetting("Colour", "notice-bg")
+                  }}>
+              <p>Choose a day of the week</p>
+            </div>
             <VariantSelector boxVariants={getVariants()} selectedVariant={selectedVariant} />
             <DateSelector fetchDates={fetchDates} selectedDate={selectedDate} />
             { selectedDate && boxRules.length > 0 && (
@@ -1170,54 +1171,29 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               </div>
             )}
             { showBoxActive && selectedDate && !boxIsEmpty && (
-              <Fragment>
-                <div id="toggleInput" class="pointer flex-row" style="margin-bottom: 1em">
-                  <div class="flex-left">
-                    <label
-                      for="toggleEditBox"
-                      htmlFor="toggleEditBox"
-                      class="db pointer"
-                      style="margin: .5em 0 0 0;"
-                    >
-                      <input
-                        class="checkbox"
-                        type="checkbox"
-                        id="toggleEditBox"
-                        checked={editBoxActive}
-                      />
-                        {getSetting("Translation", "customize-box")}
-                    </label>
-                  </div>
-                  <div class="flex-right">
-                    <div class="button-wrapper">
-                      <button
-                        title="Change product quantities"
-                        id="qtyForm"
-                        type="button"
-                        style={{
-                          color: getSetting("Colour", "button-foreground"),
-                          "background-color": getSetting("Colour", "button-background"),
-                          "border-color": getSetting("Colour", "button-background"),
-                          "font-size": "1em",
-                          }}
-                        >
-                        {getSetting("Translation", "edit-quantities")}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </Fragment>
+              <div class="button-wrapper" style="margin-bottom: 0.5em">
+                <button
+                  title="Change product quantities"
+                  id="qtyForm"
+                  type="button"
+                  style={{
+                    color: getSetting("Colour", "button-foreground"),
+                    "background-color": getSetting("Colour", "button-background"),
+                    "border-color": getSetting("Colour", "button-background"),
+                    }}
+                  >
+                  {getSetting("Translation", "edit-quantities")}
+                </button>
+              </div>
             )}
             <div id="customize-box">
-              <div style={{
-                  "display": editBoxActive ? 'block' : 'none',
-                }}>
+              { showBoxActive && selectedDate && (
                 <ProductSelector
                   selectedIncludes={selectedIncludes}
                   possibleAddons={possibleAddons}
                   selectedExcludes={selectedExcludes}
                 />
-              </div>
+              )}
               { showBoxActive && selectedDate && (
                 <div class="button-wrapper" id="add-button-wrapper">
                   { cartBoxId && (selectedBox.shopify_product_id !== cartBoxId) && (
@@ -1274,7 +1250,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
         )}
       </div>
     );
-  }
-}
+  };
+};
 
 export default ContainerBoxApp;

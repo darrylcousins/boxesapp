@@ -15,22 +15,24 @@ import CollapseWrapper from "./collapse-animator";
  * @returns {Element} DOM component
  * <SelectMenu id="selectDate" menu={fetchDates} title="Select Date" active={menuSelectDate} />
  */
-function *SelectMenu ({ id, active, title, menu, children, style }) {
+function *SelectMenu ({ id, active, title, menu, children, style, hideButton }) {
   const type = (id.startsWith("selectDate")) ? "ttu tracked" : "";
 
-  for ({ id, active, title, menu, children, style } of this) {
+  for ({ id, active, title, menu, children, style, hideButton } of this) {
     yield (
       <Fragment>
         <div class="relative">
-          <button
-            class="select-dropdown-button"
-            title={title}
-            id={id}
-            type="button"
-            style={style}
-            >
-            { children }
-          </button>
+          { !hideButton && (
+            <button
+              class="select-dropdown-button"
+              title={title}
+              id={id}
+              type="button"
+              style={style}
+              >
+              { children }
+            </button>
+          )}
           { active && (
             <div class="select-dropdown-wrapper">
             {menu.map((el, idx, arr) => (

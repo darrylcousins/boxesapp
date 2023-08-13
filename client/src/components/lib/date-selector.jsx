@@ -95,6 +95,7 @@ function* DateSelector({fetchDates, selectedDate}) {
                   menu={getDates().map(el => ({text: el, item: el}))}
                   title="Select Date"
                   active={selectDateOpen}
+                  hideButton={false}
                 >
                   { selectedDate 
                       ? selectedDate 

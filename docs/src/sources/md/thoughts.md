@@ -76,6 +76,10 @@ other clients then this copy will be needed to be customised. It is therefore
 imperative that templates can be edited. No further thoughts here, write files,
 use [database][mongo] or whatever.
 
+## Analytics
+
+Maybe analyse cancel/edit/delete emails to look for patterns and customer behaviours.
+
 [bullmq]: https://bullmq.com
 [bull-board]: https://github.com/felixmosh/bull-board
 [redis]: https://redis.com

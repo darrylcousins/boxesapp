@@ -45,37 +45,39 @@ const run = async () => {
   };
   const shopify_product_ids = Array.from(new Set(product_ids.filter(el => typeof el !== "undefined")));
 
-  const trunc_ids = [ shopify_product_ids[0] ];
-  console.log(trunc_ids);
+  const trunc_ids = [ ...shopify_product_ids ];
 
   const image_urls = [];
   for (const product_id of trunc_ids) {
-    const path = `products/${product_id}/images.json`;
-    const result = await makeShopQuery({path, fields: ["product_id", "src", "id"] })
-    if (result.images && result.images.length > 0) {
-      const image = result.images[0];
-      image_urls.push({
-        id: image.product_id,
-        url: image.src,
-      });
+    const img = `${process.env.SERVER_ROOT}/assets/product-images/${product_id}.jpg`;
+    if (!fs.existsSync(img)) {
+      const path = `products/${product_id}/images.json`;
+      const result = await makeShopQuery({path, fields: ["product_id", "src", "id"] })
+      if (result.images && result.images.length > 0) {
+        const image = result.images[0];
+        image_urls.push({
+          id: image.product_id,
+          url: image.src,
+        });
+      };
     };
   };
 
-  const trunc = [ image_urls[0] ];
-  console.log(trunc);
-  for (const { id, url } of trunc) {
+  console.log(image_urls);
+  for (const { id, url } of image_urls) {
     // fetch the image data, convert to 40px and save as id.jpg
-    const result = await makeImageJob({ id, url });
-    /*
-    const image_data = await fetch(src);
+    //const result = await makeImageJob({ id, url });
+    const img = `${process.env.SERVER_ROOT}/assets/product-images/${id}.jpg`;
+    console.log(id, url);
+
+    const image_data = await fetch(url);
     const blob = await image_data.blob();
     const arrayBuffer = await blob.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     sharp(buffer)
       .resize(40, 40, { fit: "cover" })
-      .toFile(`assets/${product_id}.jpg`);
-      */
+      .toFile(img);
 
   };
   try {

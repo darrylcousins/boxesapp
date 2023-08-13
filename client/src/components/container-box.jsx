@@ -280,8 +280,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
         const found = checkIncludePresence(el);
         if (found) {
           // locate any incremented items that were in includes and now in addons
-          item.quantity = found.quantity - 1;
-          selectedAddons.push(item);
+          if (found.quantity > 1) {
+            selectedAddons.push({ ...item, quantity: found.quantity - 1 });
+          };
         };
         return item;
       })
@@ -397,6 +398,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       const selling_plans = product.selling_plan_groups[0].selling_plans;
       const selling_plan = selling_plans.find(el => el.name === selling_plan_name);
       const selling_plan_id = selling_plan ? selling_plan.id : null;
+      if (selling_plan) console.log(selling_plan);
       return selling_plan_id;
     };
     return null;
@@ -409,10 +411,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    */
   const submitCart = async () => {
 
-    const url = "/cart";
     if (!boxHasChanged && loadedFromCart) {
       // redirect to cart if loaded from cart and no changes made
-      window.location = url;
+      window.location = "/cart";
     };
 
     let selling_plans;
@@ -485,6 +486,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     });
 
     const data = {items};
+    //console.log("Posting", data);
 
     const headers = {"Content-Type": "application/json"};
     const {error: clearError, json: clearJson} = await PostFetch({src: "/cart/clear.js", headers});
@@ -496,10 +498,11 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     // add extra items to the cart
     if (data.items.length) {
       const {error, json} = await PostFetch({src: "/cart/add.js", data, headers});
+      //console.log("Response", error, json);
     };
 
     // redirect to cart
-    window.location = url;
+    window.location = "/cart";
 
   };
 
@@ -1127,6 +1130,12 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 selectedSwaps={selectedSwaps}
               />
             )}
+            <div class="notice"
+                  style={{
+                    "background-color": getSetting("Colour", "notice-bg")
+                  }}>
+              <p>Choose a day of the week</p>
+            </div>
             <VariantSelector boxVariants={getVariants()} selectedVariant={selectedVariant} />
             <DateSelector fetchDates={fetchDates} selectedDate={selectedDate} />
             { selectedDate && boxRules.length > 0 && (

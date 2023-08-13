@@ -1132,6 +1132,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
             )}
             <div class="notice"
                   style={{
+                    "color": getSetting("Colour", "notice-fg"),
                     "background-color": getSetting("Colour", "notice-bg")
                   }}>
               <p>Choose a day of the week</p>

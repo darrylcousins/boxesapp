@@ -51,7 +51,9 @@ function Popup ({ id, active, text, buttons, callback }) {
         id={`popup-${id}`}
         class="popup-container"
         style={{
-          "background-color": getSetting("Colour", "warn-bg")
+          "font-weight": "bold",
+          "background-color": "#FEEFB3",
+          "color": "#9F6000",
         }}>
         <button
           class="close-button"

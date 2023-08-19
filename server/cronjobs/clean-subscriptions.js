@@ -157,7 +157,7 @@ const main = async () => {
                 })) {
                   tempDate = new Date(extra.updated_at);
                   orphans.push({
-                    subscription_id: extra.subsciption_id,
+                    subscription_id: extra.subscription_id,
                     title: extra.title,
                     next_charge_scheduled_at: new Date(extra.next_charge_scheduled_at).toDateString(),
                     delivery_at: null, // data unavailable??? see rc_subscription_ids

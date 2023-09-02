@@ -85,12 +85,15 @@ const getBoxes = async ({search, delivered}) => {
  */
 const getAddFields = async (delivered, onDeliveredChange) => {
   const uri = "/api/get-core-box";
-  const { error, json } = await Fetch(uri)
+  let { error, json } = await Fetch(uri)
     .then((result) => result)
     .catch((e) => ({
       error: e,
       json: null,
     }));
+  if (error.message === "Not found") {
+    error = null;
+  };
   const fields = {};
   if (!error) {
     fields.Box = { // selected from product list

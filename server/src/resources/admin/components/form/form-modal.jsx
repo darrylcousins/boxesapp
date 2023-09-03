@@ -43,7 +43,7 @@ function FormModalWrapper(Component, options) {
    * @param {object} props Property object
    */
   return function* (props) {
-    const { id, title, linkTitle, src, ShowLink, color, saveMsg, successMsg, maxWidth, portal, useSession } = options;
+    const { id, title, linkTitle, src, ShowLink, color, saveMsg, successMsg, maxWidth, portal, useSession, withClose, withCloseButton } = options;
     const name = title.toLowerCase().replace(/ /g, "-");
     let visible = false;
     let loading = false;
@@ -404,8 +404,8 @@ function FormModalWrapper(Component, options) {
                 loading={ loading }
                 error={ null }
                 maxWidth={ maxWidth }
-                withCloseButton={ false }
-                withClose={ false }>
+                withCloseButton={ withCloseButton }
+                withClose={ withClose }>
                 <div class="tc center">
                   <h6 class="fw4 tl fg-streamside-maroon">{title}</h6>
                 </div>

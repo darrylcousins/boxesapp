@@ -53,6 +53,7 @@ const options = {
   saveMsg: "Updating order ...", // message on saving
   successMsg: "Successfully updated order, reloading page.", // message on success
   maxWidth: "mw9",
+  withCloseButton: true,
 };
 
 /**

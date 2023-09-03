@@ -6,7 +6,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment, Portal} from "@b9g/crank";
-import { CloseIcon, SettingsIcon } from "../lib/icon";
+import { SettingsIcon } from "../lib/icon";
 import { PostFetch } from "../lib/fetch";
 import { animateFadeForAction, weekdays } from "../helpers";
 import { toastEvent } from "../lib/events";

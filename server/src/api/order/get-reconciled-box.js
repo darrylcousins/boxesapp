@@ -22,6 +22,7 @@ export default async (req, res, next) => {
   // product_id(entifier) can be shopify_title or shopify_product_id
   const product_identifier = parseInt(req.params.product_id);
   const order_id = req.params.order_id ? ObjectID(req.params.order_id) : null;
+  const update = req.query.update;
   const query = {
     delivered: deliveryDay
   };
@@ -37,14 +38,15 @@ export default async (req, res, next) => {
     let boxLists;
     if (order_id) {
       order = await _mongodb.collection("orders").findOne({ _id: order_id });
-      // reconcile box with the order
+      // reconcile box with the order or return the box
       boxLists = {
-        "Including": order.including, 
-        "Add on Items": order.addons, 
-        "Removed Items": order.removed, 
-        "Swapped Items": order.swaps, 
+        "Including": [ ...order.including ], 
+        "Add on Items": [ ...order.addons ], 
+        "Removed Items": [ ...order.removed ], 
+        "Swapped Items": [ ...order.swaps ], 
       };
     } else {
+      // creating and order: just return the box, will reconcile without changes
       boxLists = {
         //"Including": [], 
         "Including": box.includedProducts.map(el => el.shopify_title), 
@@ -57,14 +59,12 @@ export default async (req, res, next) => {
     // need to get the variant for the box
     const day = new Date(parseInt(req.params.timestamp));
     const path = `products/${box.shopify_product_id}.json`;
-    const fields = ["id", "variants", "images"];
-    const { variant, images } = await makeShopQuery({path, fields, title: "Product detail"})
+    const fields = ["id", "variants"];
+    const { variant } = await makeShopQuery({path, fields, title: "Product detail"})
       .then(async ({product}) => {
         const title = weekdays[day.getDay()];
-        const src = product.images[0].src;
         return {
           variant: product.variants.find(el => el.title === title),
-          images: { [box.shopify_title]: src }
         };
       });
     box.variant_id = variant.id;
@@ -89,20 +89,14 @@ export default async (req, res, next) => {
     const boxRemovedItems = boxListArrays["Removed Items"]
       .map(el => matchNumberedString(el));
 
-    /* Not using these now
-    const setOfLikes = new Set();
-    const setOfDislikes = new Set();
-
-    for (const el of boxAddOnExtras) setOfLikes.add(el.title);
-    for (const el of boxRemovedItems) setOfDislikes.add(el.title);
-    */
-    
     const addOnProducts = box.addOnProducts.map(el => el.shopify_title);
     const includedProducts = box.includedProducts.map(el => el.shopify_title);
 
     const messages = [];
     let item;
     let idx;
+
+    // this where I need to break the algorithm if we haven't been asked for an update
 
     /* REMOVED ITEMS one only is allowed with the matching swap */
     for  ([idx, item] of boxRemovedItems.entries()) {
@@ -236,6 +230,7 @@ export default async (req, res, next) => {
 
     // merge the includedextras with the actual listing
     const tempIncludedExtras = boxIncludedExtras.map(el => el.title);
+
     const boxIncludes = includedProducts.map(el => {
       let item;
       if (tempIncludedExtras.includes(el)) {
@@ -247,28 +242,25 @@ export default async (req, res, next) => {
       return item;
     }).filter(el => !boxRemovedItems.map(el => el.title).includes(el.title));;
 
-    // to get all the images will need to use api/shopify/shopify-product-image
-    // code to collect the images for each extra
-    // At this point is { "box title": image_src }
-    // Find all those that should have an image - i.e. those which will be in price table
-    // XXX Ain't gonna work without the shopify_id
-    // XXX Maybe store the image url with the order itself?
-    const collectTitles = [
-      ...boxIncludes.filter(el => el.quantity > 1).map(el => el.title),
-      ...boxSwappedExtras.filter(el => el.quantity > 1).map(el => el.title),
-      ...boxAddOnExtras.map(el => el.title),
-    ];
-    const attributes = { images };
+    const attributes = {}; // was passing images here
 
     // can we push this through to the front end when customer, or admin goes to their update
-    const properties = {
-      "Delivery Date": box.delivered,
-      "Including": makeItemString(boxIncludes, ","),
-      "Add on Items": makeItemString(boxAddOnExtras, ","),
-      "Swapped Items": makeItemString(boxSwappedExtras, ","),
-      "Removed Items": makeItemString(boxRemovedItems, ","),
-      //"Likes": Array.from(setOfLikes).sort().join(","),
-      //"Dislikes": Array.from(setOfDislikes).sort().join(","),
+    // if we're not updating then return the order, else the reconciled box
+    // XXX easy switch to miss when reading the code
+   console.log("wtf", update);
+    const properties =  !update
+      ? {
+        "Delivery Date": order.delivered,
+        "Including": order.including.join(","), 
+        "Add on Items": order.addons.join(","), 
+        "Removed Items": order.removed.join(","), 
+        "Swapped Items": order.swaps.join(","), 
+      } : {
+        "Delivery Date": box.delivered,
+        "Including": makeItemString(boxIncludes, ","),
+        "Add on Items": makeItemString(boxAddOnExtras, ","),
+        "Swapped Items": makeItemString(boxSwappedExtras, ","),
+        "Removed Items": makeItemString(boxRemovedItems, ","),
     };
     res.status(200).json({ box, properties, messages, attributes });
   } catch(err) {

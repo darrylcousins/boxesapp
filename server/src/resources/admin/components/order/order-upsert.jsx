@@ -21,7 +21,7 @@ import Toaster from "../lib/toaster";
 import BarLoader from "../lib/bar-loader";
 import Form from "../form";
 import getOrderFields from "./order-fields";
-import { capWords, dateStringForInput, animateFadeForAction } from "../helpers";
+import { getLoader, capWords, dateStringForInput, animateFadeForAction } from "../helpers";
 
 /**
  * Create a modal to add or edit an order..
@@ -121,6 +121,22 @@ async function* UpsertOrderModal(props) {
    * @member {object} fields
    */
   let fields = null;
+  /**
+   * Is the box reconciled?
+   * If not then the products cannot be edited.
+   * However other order attributes can be.
+   * The default is false until the box has been reconciled
+   *
+   * @member {boolean} isBoxEditable
+   */
+  let isBoxEditable = false;
+  /**
+   * Is the box reconciled or are we ignoring the unreconciled box
+   * The default is false until the box has been reconciled or 'ignore' choosen
+   *
+   * @member {boolean} isBoxReconciled
+   */
+  let isBoxReconciled = false;
 
   /*
    * Get the boxes for the selected date
@@ -158,13 +174,6 @@ async function* UpsertOrderModal(props) {
   };
 
   /*
-   * Create a loader element
-   */
-  const getLoader = () => {
-    return `<div class="lds-ellipsis" style="height: 10px"><div></div><div></div><div></div><div></div></div></div>`;
-  };
-
-  /*
    * Update pickup input on delivered change
    * Check for date difference and maintain that difference
    * Provide select options for 3 days prior to delivert
@@ -182,18 +191,6 @@ async function* UpsertOrderModal(props) {
       fields["Pickup Date"].datalist.unshift(delivered.toDateString());
     };
 
-    /*
-    if (order) {
-      const orderPickup = new Date(Date.parse(order.pickup));
-      const orderDelivered = new Date(Date.parse(order.delivered));
-      const deltaDay = orderDelivered.getDate() - orderPickup.getDate();
-      currentDelivered.setDate(currentDelivered.getDate() - deltaDay);
-      // set pickup to same delta day as the original order
-      formData.pickup = currentDelivered.toDateString();
-    } else {
-      formData.pickup = currentDelivered.toDateString();
-    };
-    */
   };
 
   /*
@@ -292,10 +289,8 @@ async function* UpsertOrderModal(props) {
   const onChange = (ev) => {
     if (ev.target) {
       formData[ev.target.id] = ev.target.value.toString();
-      //getFields();
     } else if (hasOwnProp.call(ev, 'value')) {
       formData[ev.id] = ev.value;
-      //getFields();
     };
   };
 
@@ -409,9 +404,8 @@ async function* UpsertOrderModal(props) {
     if (order_id) {
       uri += `/${order_id}`;
     };
-    // first thought for not reconciling unless agreed upon
-    let updating = false; // so can allow an reconciliation update to occur, default is not.
-    if (updating) {
+    // yes reconcile the box
+    if (options.updating) {
       uri += `?update=true`;
     };
     return await Fetch(uri)
@@ -421,6 +415,7 @@ async function* UpsertOrderModal(props) {
           box = json.box;
           properties = json.properties;
           messages = json.messages;
+          isBoxEditable = messages.length === 0; // no messages, no updates required
           attributes = json.attributes;
           formData.including = properties["Including"].split(",").filter(el => Boolean(el));
           formData.addons = properties["Add on Items"].split(",").filter(el => Boolean(el));
@@ -483,6 +478,37 @@ async function* UpsertOrderModal(props) {
     doSave(ev);
   };
 
+  /**
+   * Reconclie the box by recalling fetch method with update=true.
+   * Then we can allow editing of the box and include in save method
+   * Needs to reload a reconciled box (update=true) and allow editing of products
+   *
+   * @function doReconcileBox
+   */
+  const doReconcileBox = async () => {
+    // reload box with update to reconcile box
+    const options = { ...order };
+    options.updating = true;
+    await getBox(order);
+    this.refresh();
+  };
+
+  /**
+   * Do not reconcile the box, but allow editing of other order properties.
+   * Do not allow editing of products, but show the save button on other edits.
+   * 
+   * @function ignoreReconcileBox
+   */
+  const ignoreReconcileBox = () => {
+    // leave box uneditable
+    isBoxEditable = false;
+    // it's not but we let it pass by choice
+    isBoxReconciled = true;
+    // clear the messages
+    messages = [];
+    this.refresh();
+  };
+
   await getFields(delivered);
 
   for await (const _ of this) { // eslint-disable-line no-unused-vars
@@ -505,6 +531,15 @@ async function* UpsertOrderModal(props) {
                 { messages.map(message => (
                   <p>{message}</p> 
                 ))}
+                <div class="fr">
+                  <Button type="primary" onclick={async () => await doReconcileBox() }>
+                    Reconcile box
+                  </Button>
+                  <Button type="secondary" onclick={ignoreReconcileBox}>
+                    Ignore
+                  </Button>
+                </div>
+                <div class="cf" />
               </div>
             )}
             <div class="tr pr2 pb2">
@@ -513,12 +548,16 @@ async function* UpsertOrderModal(props) {
                   { collapsed ? "Edit products" : "Hide products" }
                 </Button>
               )}
-              <Button type="primary" onclick={saveData}>
-                Save Order
-              </Button>
-              <Button type="secondary" onclick={closeModal}>
-                Cancel
-              </Button>
+              { ( isBoxEditable || isBoxReconciled ) && (
+                <Fragment>
+                  <Button type="primary" onclick={saveData}>
+                    Save Order
+                  </Button>
+                  <Button type="secondary" onclick={closeModal}>
+                    Cancel
+                  </Button>
+                </Fragment>
+              )}
             </div>
             { !loading && box && !boxLoading && (
               <Fragment>
@@ -528,7 +567,7 @@ async function* UpsertOrderModal(props) {
                   images={attributes.images}
                   id="edit-products"
                   key="order"
-                  isEditable={ true }
+                  isEditable={ isBoxEditable }
                 />
               </Fragment>
             )}
@@ -538,15 +577,5 @@ async function* UpsertOrderModal(props) {
     );
   };
 };
-/*
-<CollapsibleProducts
-collapsed={ collapsed }
-properties={ properties }
-box={box}
-images={attributes.images}
-id="edit-products"
-isEditable={ true }
-/>
-*/
 
 export default UpsertOrderModal;

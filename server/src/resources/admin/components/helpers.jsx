@@ -34,6 +34,13 @@ export const parseStringTemplate = (template, args) => {
   return result;
 };
 
+/*
+ * Create a loader element
+ */
+export const getLoader = () => {
+  return `<div class="lds-ellipsis" style="height: 10px"><div></div><div></div><div></div><div></div></div></div>`;
+};
+
 /**
  * for product image forcing reload by tagging a random version number
  * so that the 'default' is not returned

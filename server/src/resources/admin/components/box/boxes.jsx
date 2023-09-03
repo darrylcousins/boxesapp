@@ -33,7 +33,7 @@ function* Boxes({ boxes }) {
               ))}
             </tr>
           </thead>
-          <tbody class="lh-copy" id="boxes-table">
+          <tbody class="lh-copy tl" id="boxes-table">
             {boxes.map(
               (box, idx) => (
                 <Box index={idx} box={box} />

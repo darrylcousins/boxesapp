@@ -386,17 +386,17 @@ function *Settings() {
                 </div>
                 <div class="w-60-ns fl ph3">
                   <div class="pb3">
-                    <h6 class="fw3 bb b--black-30 pointer"
+                    <h5 class="fw3 black bb b--black-30 pointer mb0"
                       onclick={toggleCollapse}
                       >
                       General Settings
                       <span class="v-mid">
                         {collapsedSettings ? <CaretDownIcon /> : <CaretUpIcon />}
                       </span>
-                    </h6>
+                    </h5>
                     <CollapsibleSettings collapsed={collapsedSettings} id="general-settings" />
                   </div>
-                  <h6 class="fw3 bb b--black-30">Other Settings</h6>
+                  <h5 class="fw3 bb b--black-30 black">Other Settings</h5>
                   <div id="other-settings">
                     <div class="bold fw3 pv2 fg-streamside-maroon">
                       Hover over the pictured box app to find and change available settings. Click to edit.

@@ -202,7 +202,7 @@ function* CoreBox() {
           )}
           { box && (
             <Fragment>
-              <div class="tc center">
+              <div>
                 <h4 class="pt0 lh-title ma0 fg-streamside-maroon">
                   Edit The Core Box
                 </h4>

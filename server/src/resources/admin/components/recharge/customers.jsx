@@ -303,7 +303,7 @@ async function* Customers() {
 
   for await (const props of this) { // eslint-disable-line no-unused-vars
     yield (
-      <div class="w-100 pa2 center" id="subscriptions">
+      <div class="w-100 pa2" id="subscriptions">
         <PushMenu children={sideMenu} />
         <div class="pl5" style="margin-top: -35px">
           <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
@@ -333,7 +333,7 @@ async function* Customers() {
                 <div class="w-100 flex-container">
                   <div class="w-70 flex">
                     <input 
-                      class="dib pa0 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
+                      class="dib pa0 mr2 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
                       style="padding: 0 6px"
                       type="text"
                       valid={ !searchError }
@@ -420,88 +420,92 @@ async function* Customers() {
                 )}
                 <table id="customer-table" class="mt4 w-100 center" cellspacing="10">
                   { rechargeCustomers.length > 0 && (
-                    <thead>
-                      <tr>
-                        <th class="fw6 bb b--black-20 tl pb3 pr1 bg-white">{ "" }</th>
-                        <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Customer</th>
-                        <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Email</th>
-                        <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Recharge</th>
-                        <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Shopify</th>
-                        <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Upcoming</th>
-                      </tr>
-                    </thead>
-                  )}
-                { rechargeCustomers.map((customer, idx) => (
-                  <tr crank-key={ `${ customer.last_name }-${ idx }` }>
-                    <td class="pr1 bb b--black-20 v-top">
-                      <div onclick={ () => updateRechargeCustomer(customer.recharge_id) }>
-                        <IconButton color="fg-streamside-blue" title="Sync"
-                          name="Sync" id={`sync-${customer.recharge_id}`}>
-                          <SyncIcon />
-                        </IconButton>
-                      </div>
-                    </td>
-                    <td class="pr3 bb b--black-20 v-top">
-                      <div class="dt w-100">
-                        <div class="ml2 dt-row pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
-                          title="Show customer subscriptions"
-                          onclick={ () => fetchRechargeCustomer(customer.recharge_id) }>
-                          <div class="dtc w-100">
-                            <div class="dib w-50 mv2 pl2">
-                              { customer.last_name }
-                            </div>
-                            <div class="dib w-50 mv2 pl2">
-                              { customer.first_name }
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="pr3 bb b--black-20 v-top">
-                      <div class="dt w-100">
-                        <div class="ml2 dt-row pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
-                          title="Show customer subscriptions"
-                          onclick={ () => fetchRechargeCustomer(customer.recharge_id) }>
-                          <div class="">
-                            <div class="mv2 pl2">
-                              { customer.email }
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="pv2 pr3 bb b--black-20 v-top">
-                      <a href={ `${ rechargeAdminUrl }/${ customer.recharge_id }` }
-                        class="dim fg-streamside-blue no-underline"
-                        target="_blank"
-                        title="View customer in recharge admin">
-                        { customer.recharge_id }
-                      </a>
-                    </td>
-                    <td class="pv2 pr3 bb b--black-20 v-top">
-                      <a href={ `${ shopAdminUrl }/${ customer.shopify_id }` }
-                        class="dim fg-streamside-blue no-underline"
-                        target="_blank"
-                        title="View customer in shopify admin">
-                        { customer.shopify_id }
-                      </a>
-                    </td>
-                    <td class="pr3 bb b--black-20 v-top">
-                      <div class="dt mv2 w-100">
-                        { customer.charge_list.map((charge, idx) => (
-                          <div class="dt-row">
-                            <div class="dtc mv2 pl2">
-                              { charge[0] }
-                            </div>
-                            <div class="dtc mv2 pl2 dark-grey">
-                              { charge[1] }
-                            </div>
-                          </div>
+                    <Fragment>
+                      <thead>
+                        <tr>
+                          <th class="fw6 bb b--black-20 tl pb3 pr1 bg-white">{ "" }</th>
+                          <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Customer</th>
+                          <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Email</th>
+                          <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Recharge</th>
+                          <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Shopify</th>
+                          <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Upcoming</th>
+                        </tr>
+                      </thead>
+                      <tbody class="tl">
+                        { rechargeCustomers.map((customer, idx) => (
+                          <tr crank-key={ `${ customer.last_name }-${ idx }` }>
+                            <td class="pr1 bb b--black-20 v-top">
+                              <div onclick={ () => updateRechargeCustomer(customer.recharge_id) }>
+                                <IconButton color="fg-streamside-blue" title="Sync"
+                                  name="Sync" id={`sync-${customer.recharge_id}`}>
+                                  <SyncIcon />
+                                </IconButton>
+                              </div>
+                            </td>
+                            <td class="pr3 bb b--black-20 v-top">
+                              <div class="dt w-100">
+                                <div class="ml2 dt-row pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
+                                  title="Show customer subscriptions"
+                                  onclick={ () => fetchRechargeCustomer(customer.recharge_id) }>
+                                  <div class="dtc w-100">
+                                    <div class="dib w-50 mv2 pl2">
+                                      { customer.last_name }
+                                    </div>
+                                    <div class="dib w-50 mv2 pl2">
+                                      { customer.first_name }
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td class="pr3 bb b--black-20 v-top">
+                              <div class="dt w-100">
+                                <div class="ml2 dt-row pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
+                                  title="Show customer subscriptions"
+                                  onclick={ () => fetchRechargeCustomer(customer.recharge_id) }>
+                                  <div class="">
+                                    <div class="mv2 pl2">
+                                      { customer.email }
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td class="pv2 pr3 bb b--black-20 v-top">
+                              <a href={ `${ rechargeAdminUrl }/${ customer.recharge_id }` }
+                                class="dim fg-streamside-blue no-underline"
+                                target="_blank"
+                                title="View customer in recharge admin">
+                                { customer.recharge_id }
+                              </a>
+                            </td>
+                            <td class="pv2 pr3 bb b--black-20 v-top">
+                              <a href={ `${ shopAdminUrl }/${ customer.shopify_id }` }
+                                class="dim fg-streamside-blue no-underline"
+                                target="_blank"
+                                title="View customer in shopify admin">
+                                { customer.shopify_id }
+                              </a>
+                            </td>
+                            <td class="pr3 bb b--black-20 v-top">
+                              <div class="dt mv2 w-100">
+                                { customer.charge_list.map((charge, idx) => (
+                                  <div class="dt-row">
+                                    <div class="dtc mv2 pl2">
+                                      { charge[0] }
+                                    </div>
+                                    <div class="dtc mv2 pl2 dark-grey">
+                                      { charge[1] }
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
                         ))}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </tbody>
+                    </Fragment>
+                  )}
                 </table>
               </Fragment>
             )}

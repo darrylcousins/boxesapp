@@ -408,7 +408,7 @@ function* CurrentBoxes({ timestamp }) {
             )}
             {selectedDate && !loading ? (
               <Fragment>
-                <div class="w-20 fl tr v-mid">
+                <div class="w-70 fl tr v-mid">
                   { ( new Date(selectedDate) >= new Date() )  && (
                     <Fragment>
                       {active && (

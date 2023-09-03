@@ -280,10 +280,10 @@ function* CurrentLogs() {
         <div class="dt w-100 mv1">
           { Object.entries(el.meta[obj]).map(([title, str]) => (
               <div class="dt-row w-100">
-                <div class="dtc w-50 gray tr pr2">
+                <div class="dtc w-20 gray tr pr2">
                   { title }:
                 </div>
-                <div class="dtc w-50">
+                <div class="dtc w-80">
                   { (typeof str === "string") ? `${ str }` : `${JSON.stringify(str)}` }
                 </div>
               </div>
@@ -295,10 +295,10 @@ function* CurrentLogs() {
         <div class="dt w-100 mv1">
           { Object.entries(el.meta).map(([title, str]) => (
               <div class="dt-row w-100">
-                <div class="dtc w-20 gray tr pr2">
+                <div class="dtc w-30 gray tr pr2">
                   { title }:
                 </div>
-                <div class="dtc w-50">
+                <div class="dtc w-70">
                   { str }
                 </div>
               </div>
@@ -401,44 +401,39 @@ function* CurrentLogs() {
         {loading && <BarLoader />}
         <Fragment>
           {fetchError && <Error msg={fetchError} />}
-          <div id="logs-table" class="mt2">
-            {fetchLogs.length > 0 ? (
-              <Fragment>
-                <div class="dt w-100 bb pv2">
-                  <div class="dtc w-20 bold">
-                    Timestamp
-                  </div>
-                  <div class="dtc w-10 tl bold">
-                    Object
-                  </div>
-                  <div class={`dtc ${logLevel === "notice" ? "w-30" : "w-20"} bold`}>
-                    Message
-                  </div>
-                  <div class={`dtc ${logLevel === "notice" ? "w-40" : "w-50"} bold`}>
-                    Details
-                  </div>
-                </div>
+          {fetchLogs.length > 0 ? (
+            <table id="logs-table" class="mt2 w-100 center" cellSpacing="0" style="border-collapse: separate;">
+              <thead>
+                <tr>
+                  {["Timestamp", "Object", "Message", "Details"].map(el => (
+                    <th class="fw6 bb b--black-30 tl pv3 pr3 bg-white sticky z-99">
+                      {el}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody class="lh-copy tl" id="boxes-table">
                 { fetchLogs.map((el, idx) => (
-                  <div class={`dt w-100 bb ${idx %2 ? "bg-transparent" : "bg-near-white"} `}>
-                    <div class="dtc w-20">
+                  <tr class={`w-100 ${idx %2 ? "bg-transparent" : "bg-near-white"} `}>
+                    <td class="w-20 v-top">
                       { dateString(el) }
-                    </div>
-                    <div class="dtc w-10 tl">
+                    </td>
+                    <td class="w-10 v-top">
                       { getMetaObject(el) }
-                    </div>
-                    <div class={`dtc ${logLevel === "notice" ? "w-30" : "w-20"}`}>
+                    </td>
+                    <td class="w-20 v-top">
                       { el.message }
-                    </div>
-                    <div class={`dtc ${logLevel === "notice" ? "w-40" : "w-50"}`}>
+                    </td>
+                    <td class="w-50 v-top">
                       { formatMeta(el) }
-                    </div>
-                  </div>
+                    </td>
+                  </tr>
                 ))}
-              </Fragment>
-            ) : (
-              <div>None</div>
-            )}
-          </div>
+              </tbody>
+            </table>
+          ) : (
+            <div>None</div>
+          )}
         </Fragment>
       </div>
     );

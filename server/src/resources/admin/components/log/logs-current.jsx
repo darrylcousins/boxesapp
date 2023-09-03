@@ -322,7 +322,7 @@ function* CurrentLogs() {
   for (const _ of this) { // eslint-disable-line no-unused-vars
 
     yield (
-      <div class="w-100 pb2 center">
+      <div class="w-100 pb2">
         <h4 class="pt0 lh-title ma0 mb2 fg-streamside-maroon" id="boxes-title">
           { logLevel && formatLevel(logLevel) } Logs
         </h4>

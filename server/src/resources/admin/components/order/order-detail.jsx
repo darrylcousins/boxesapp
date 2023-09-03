@@ -19,17 +19,17 @@ import { capWords } from "../helpers";
 function OrderDetail({ order }) {
   return (
     <Fragment>
-      <h5 class="fw4 tl fg-streamside-maroon mb0">
+      <h3 class="fw4 tl fg-streamside-maroon mb0">
         <span class="mr3">
           #{order.order_number}
         </span>
         <span>
           {order.name}
         </span>
-      </h5>
-      <h6 class="dib fg-streamside-maroon mb1">
+      </h3>
+      <h4 class="dib fg-streamside-maroon mb1">
       {order.variant_name} - {order.delivered}
-      </h6>
+      </h4>
       <div class="fg-streamside-maroon mb2">
       Created: {order.inserted}
       </div>

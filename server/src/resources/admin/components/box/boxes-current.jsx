@@ -376,7 +376,7 @@ function* CurrentBoxes({ timestamp }) {
     const inactive = fetchBoxes.find(el => el.active === false);
 
     yield (
-      <div class="w-100 pb2 center">
+      <div class="w-100 pb2">
         {loading && <BarLoader />}
         <PushMenu children={sideMenu} />
         <div class="pl5" style="margin-top: -35px">
@@ -394,18 +394,16 @@ function* CurrentBoxes({ timestamp }) {
           {fetchError && <Error msg={fetchError} />}
           <div class="w-100 flex fg-streamside-maroon">
             { !loading && (
-              <div class="w-80">
-                <div class="tr v-mid w-30 fl">
-                  <SelectMenu
-                    id="selectDate"
-                    menu={fetchDates.map(el => ({text: <Item text={el} item={ el.delivered } />, item: el.delivered, title: el.delivered}))}
-                    title="Select Delivery Date"
-                    active={menuSelectDate}
-                    style={{border: 0, color: "brown", "font-size": "1.2em"}}
-                  >
-                    { selectedDate ? selectedDate : "Select delivery date" }&nbsp;&nbsp;&nbsp;&#9662;
-                  </SelectMenu>
-                </div>
+              <div class="tr v-mid w-30 fl">
+                <SelectMenu
+                  id="selectDate"
+                  menu={fetchDates.map(el => ({text: <Item text={el} item={ el.delivered } />, item: el.delivered, title: el.delivered}))}
+                  title="Select Delivery Date"
+                  active={menuSelectDate}
+                  style={{border: 0, color: "brown", "font-size": "1.2em"}}
+                >
+                  { selectedDate ? selectedDate : "Select delivery date" }&nbsp;&nbsp;&nbsp;&#9662;
+                </SelectMenu>
               </div>
             )}
             {selectedDate && !loading ? (

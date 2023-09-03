@@ -49,7 +49,9 @@ function* ModalTemplate({ children, closeModal, error, loading, withClose, withC
             )}
             {loading && <BarLoader />}
             {(error && error !== null) && <Error msg={error} />}
-            { children }
+            <div class="tl">
+              { children }
+            </div>
             { (typeof withClose === "undefined" || withClose) && (
               <div class="w-100 tr">
                 <Button

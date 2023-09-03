@@ -150,7 +150,7 @@ function* PackingModal({ delivered, getUriFilters }) {
         {visible && (
           <Portal root={main}>
             <ModalTemplate closeModal={ closeModal } loading={ loading } error={ fetchError }>
-              <h6 class="fw4 tl fg-streamside-maroon">Packing List Preview { delivered }</h6>
+              <h3 class="fw4 tl fg-streamside-maroon">Packing List Preview { delivered }</h3>
                 { packingData.boxes && (
                   <div class="ph4 pb4 overflow-x-scroll">
                     <div class="fw6 bb b--black-20 mb3">
@@ -181,7 +181,7 @@ function* PackingModal({ delivered, getUriFilters }) {
                               <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">{ box.count }</th>
                             </tr>
                           </thead>
-                          <tbody class="lh-copy">
+                          <tbody class="lh-copy tl">
                             { box.products.map((product, idx) => (
                               <tr>
                                 <td crank-key={ `${product}-${idx}` }

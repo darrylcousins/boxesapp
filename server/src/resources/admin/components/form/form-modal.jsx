@@ -407,7 +407,7 @@ function FormModalWrapper(Component, options) {
                 withCloseButton={ false }
                 withClose={ false }>
                 <div class="tc center">
-                  <h6 class="fw4 tl fg-streamside-maroon">{title}</h6>
+                  <h3 class="fw4 tl fg-streamside-maroon">{title}</h3>
                 </div>
                 {saving && (
                   <div class="mv2 pt2 pl2 navy br3 ba b--navy bg-washed-blue">

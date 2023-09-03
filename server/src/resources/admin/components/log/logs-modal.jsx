@@ -6,7 +6,6 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment, Portal} from "@b9g/crank";
-import { CloseIcon } from "../lib/icon";
 import Button from "../lib/button";
 import ModalTemplate from "../lib/modal-template";
 

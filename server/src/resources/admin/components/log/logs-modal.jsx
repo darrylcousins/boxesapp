@@ -150,7 +150,7 @@ async function* LogsModal({ logs, box_title, admin }) {
           <Portal root={main}>
             <ModalTemplate closeModal={ closeModal } loading={ false } error={ false } withClose={ true }>
               <Fragment>
-                <div class="w-80 center">
+                <div class="w-80">
                   <h6 class="tl mb0 w-100 fg-streamside-maroon">
                     Logged activity for { box_title }
                   </h6>

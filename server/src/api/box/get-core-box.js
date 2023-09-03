@@ -15,7 +15,11 @@ export default async (req, res, next) => {
   const response = Array();
   try {
     const box = await collection.findOne({ delivered: 'Core Box' });
-    res.status(200).json(box);
+    if (box) {
+      return res.status(200).json(box);
+    } else {
+      return res.status(404).send('Not found');
+    };
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

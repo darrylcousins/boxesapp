@@ -122,7 +122,7 @@ function* BoxRules({ }) {
   while (true) {
     yield (
       <Fragment>
-        <div class="w-100 pb2 center">
+        <div class="w-100 pb2">
           {loading && <BarLoader />}
           <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
             Box Rules

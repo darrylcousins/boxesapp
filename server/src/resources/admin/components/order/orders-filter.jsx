@@ -127,7 +127,7 @@ function* FilterOrders({updateFilter}) {
         <Portal root={ main }>
           {visible && (
             <ModalTemplate closeModal={ closeModal } loading={ false } error={ false } withClose={ false }>
-              <h6 class="fw4 tl fg-streamside-maroon">Filter Options</h6>
+              <h3 class="fw4 tl fg-streamside-maroon">Filter Options</h3>
               <div class="flex w-100 mb3">
                 <div class="w-50">
                   <div class="tl ph2 mt1 ml0">

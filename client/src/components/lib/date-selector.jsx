@@ -83,7 +83,7 @@ function* DateSelector({fetchDates, selectedDate}) {
             { !selectedDate &&  (
               <div class="notice"
                     style={{
-                      "color": getSetting("Colour", "notice-fg")
+                      "color": getSetting("Colour", "notice-fg"),
                       "background-color": getSetting("Colour", "notice-bg")
                     }}>
                 <p>{getSetting("Translation", "notice-choose-date")}</p>
@@ -115,7 +115,7 @@ function* DateSelector({fetchDates, selectedDate}) {
         ) : (
           <div class="notice"
                 style={{
-                  "color": getSetting("Colour", "notice-fg")
+                  "color": getSetting("Colour", "notice-fg"),
                   "background-color": getSetting("Colour", "notice-bg")
                 }}>
             <p>{getSetting("Translation", "notice-no-boxes")}</p>

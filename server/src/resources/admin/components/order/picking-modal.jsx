@@ -176,7 +176,7 @@ function* PickingModal({ delivered, getUriFilters }) {
         {visible && (
           <Portal root={main}>
             <ModalTemplate closeModal={ closeModal } loading={ loading } error={ fetchError }>
-              <h6 class="fw4 tl fg-streamside-maroon">Picking List Preview { delivered }</h6>
+              <h3 class="fw4 tl fg-streamside-maroon">Picking List Preview { delivered }</h3>
               <div class="pa4">
                 <div class="overflow-auto">
                   <table class="w-100 mw8 center" cellspacing="0">
@@ -189,7 +189,7 @@ function* PickingModal({ delivered, getUriFilters }) {
                         ))}
                       </tr>
                     </thead>
-                    <tbody class="lh-copy">
+                    <tbody class="lh-copy tl">
                       { pickingList.map(row => (
                         (row.length > 0) ? (
                           <tr>

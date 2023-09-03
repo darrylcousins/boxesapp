@@ -50,7 +50,7 @@ export default () => {
   //saveConfirmation();
 
   return (
-    <div class="w-100 pb2 center">
+    <div class="w-100 pb2">
       <div class="pl5 w-100">
         <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
           Boxes App

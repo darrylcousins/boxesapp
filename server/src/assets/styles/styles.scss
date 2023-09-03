@@ -22,6 +22,11 @@
 }
 */
 
+/* attempt to override the theme */
+body { 
+  font-size: 1.2rem;
+}
+
 @media only screen and (min-width: 960px) {
   h1#store {
     color: #333;

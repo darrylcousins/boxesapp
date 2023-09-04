@@ -394,9 +394,9 @@ async function *Customer({ customer, admin }) {
             )}
             { chargeGroups && chargeGroups.length > 0 ? (
               <Fragment>
-                <h6 class="tc mv4 w-100 navy b">
+                <h4 class="tc mv4 w-100 navy b">
                   Active Subscriptions
-                </h6>
+                </h4>
                 { chargeGroups.map((group, idx) => (
                   <div id={`subscription-${group.attributes.subscription_id}`}>
                     <Subscription
@@ -420,9 +420,9 @@ async function *Customer({ customer, admin }) {
             { cancelledGroups && (
               cancelledGroups.length > 0 ? (
                 <Fragment>
-                  <h6 class="tc mv4 w-100 navy b">
+                  <h4 class="tc mv4 w-100 navy b">
                     Cancelled Subscriptions
-                  </h6>
+                  </h4>
                   { cancelledGroups.map((group, idx) => (
                     <div id={`subscription-${group.subscription_id}`}>
                       <Cancelled subscription={ group } customer={ customer } idx={ idx } />

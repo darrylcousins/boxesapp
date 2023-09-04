@@ -418,7 +418,7 @@ async function* Customers() {
                     None found for your search term <b>{ searchTerm }</b>.
                   </div>
                 )}
-                <table id="customer-table" class="mt4 w-100 center" cellspacing="10">
+                <table id="customer-table" class="mt4 w-100 center" cellspacing="0">
                   { rechargeCustomers.length > 0 && (
                     <Fragment>
                       <thead>
@@ -434,7 +434,7 @@ async function* Customers() {
                       <tbody class="tl">
                         { rechargeCustomers.map((customer, idx) => (
                           <tr crank-key={ `${ customer.last_name }-${ idx }` }>
-                            <td class="pr1 bb b--black-20 v-top">
+                            <td class="pr1 pt1 bb b--black-20 v-top">
                               <div onclick={ () => updateRechargeCustomer(customer.recharge_id) }>
                                 <IconButton color="fg-streamside-blue" title="Sync"
                                   name="Sync" id={`sync-${customer.recharge_id}`}>
@@ -442,36 +442,36 @@ async function* Customers() {
                                 </IconButton>
                               </div>
                             </td>
-                            <td class="pr3 bb b--black-20 v-top">
+                            <td class="pr3 pt1 bb b--black-20 v-top">
                               <div class="dt w-100">
                                 <div class="ml2 dt-row pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
                                   title="Show customer subscriptions"
                                   onclick={ () => fetchRechargeCustomer(customer.recharge_id) }>
                                   <div class="dtc w-100">
-                                    <div class="dib w-50 mv2 pl2">
+                                    <div class="dib w-50 pl2">
                                       { customer.last_name }
                                     </div>
-                                    <div class="dib w-50 mv2 pl2">
+                                    <div class="dib w-50 pl2">
                                       { customer.first_name }
                                     </div>
                                   </div>
                                 </div>
                               </div>
                             </td>
-                            <td class="pr3 bb b--black-20 v-top">
+                            <td class="pr3 pt1 bb b--black-20 v-top">
                               <div class="dt w-100">
                                 <div class="ml2 dt-row pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
                                   title="Show customer subscriptions"
                                   onclick={ () => fetchRechargeCustomer(customer.recharge_id) }>
                                   <div class="">
-                                    <div class="mv2 pl2">
+                                    <div class="pl2">
                                       { customer.email }
                                     </div>
                                   </div>
                                 </div>
                               </div>
                             </td>
-                            <td class="pv2 pr3 bb b--black-20 v-top">
+                            <td class="pr3 pt1 bb b--black-20 v-top">
                               <a href={ `${ rechargeAdminUrl }/${ customer.recharge_id }` }
                                 class="dim fg-streamside-blue no-underline"
                                 target="_blank"
@@ -479,7 +479,7 @@ async function* Customers() {
                                 { customer.recharge_id }
                               </a>
                             </td>
-                            <td class="pv2 pr3 bb b--black-20 v-top">
+                            <td class="pr3 pt1 bb b--black-20 v-top">
                               <a href={ `${ shopAdminUrl }/${ customer.shopify_id }` }
                                 class="dim fg-streamside-blue no-underline"
                                 target="_blank"
@@ -487,14 +487,14 @@ async function* Customers() {
                                 { customer.shopify_id }
                               </a>
                             </td>
-                            <td class="pr3 bb b--black-20 v-top">
-                              <div class="dt mv2 w-100">
+                            <td class="pr3 pt1 bb b--black-20 v-top">
+                              <div class="dt w-100">
                                 { customer.charge_list.map((charge, idx) => (
-                                  <div class="dt-row">
-                                    <div class="dtc mv2 pl2">
+                                  <div class="dt-row pb1">
+                                    <div class="dtc mv1 pl2">
                                       { charge[0] }
                                     </div>
-                                    <div class="dtc mv2 pl2 dark-grey">
+                                    <div class="dtc mv1 pl2 dark-grey">
                                       { charge[1] }
                                     </div>
                                   </div>

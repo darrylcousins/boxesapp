@@ -1003,9 +1003,9 @@ async function *Subscription({ subscription, customer, idx, admin }) {
         <Cancelled subscription={ CancelledSubscription } idx={ idx } admin={ admin } />
       ) : (
         <Fragment>
-          <h6 class="tl mb0 w-100 fg-streamside-maroon">
+          <h3 class="tl mb0 w-100 fg-streamside-maroon">
             {subscription.attributes.title} - {subscription.attributes.variant}
-          </h6>
+          </h3>
           { (!subscription.attributes.hasNextBox && !editsPending) && (
             <div class="pv2 orange">Box items not yet loaded for <span class="b">
                 { subscription.attributes.nextDeliveryDate }

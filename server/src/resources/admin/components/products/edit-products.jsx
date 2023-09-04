@@ -797,7 +797,6 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
                     <Image
                       src={ getImageUrl(box.shopify_product_id) }
                       title={ box.shopify_title }
-                      shopify_product_id={ box.shopify_product_id }
                       id={`image-${key}-${box.shopify_product_id}`}
                       crank-key={`image-${key}-${box.shopify_product_id}`}
                     />

@@ -7,7 +7,6 @@ import {
   redisOptions,
   apiQueueName,
   mailQueueName,
-  imageQueueName,
 } from "./config.js";
 
 /* Queues and QueueEvents */
@@ -24,13 +23,5 @@ export const mailQueue = new Queue(mailQueueName, {
 });
 
 export const mailQueueEvents = new QueueEvents(mailQueueName, {
-  connection: redisOptions,
-});
-
-export const imageQueue = new Queue(imageQueueName, {
-  connection: redisOptions,
-});
-
-export const imageQueueEvents = new QueueEvents(imageQueueName, {
   connection: redisOptions,
 });

@@ -8,26 +8,7 @@ import {
   apiQueueEvents,
   mailQueue,
   mailQueueEvents,
-  imageQueue,
-  imageQueueEvents,
 } from "./queue.js";
-
-export const makeImageJob = async (opts) => {
-  // opts is the job data passed to sendmail
-  console.log(opts);
-  const job = await imageQueue.add(
-    "Store Product Image",
-    opts,
-    {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
-      },
-      removeOnComplete: 10, removeOnFail: 50
-    },
-  );
-};
 
 export const makeMailJob = async (opts) => {
   // opts is the job data passed to sendmail

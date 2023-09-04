@@ -4,9 +4,37 @@
  */
 
 import path from "path";
+import fs from "fs";
 import { queryStoreGraphQL } from "../../lib/shopify/helpers.js";
-import { makeImageJob } from "../../bull/job.js";
+import sharp from "sharp";
 import { ObjectID } from "mongodb";
+
+/*
+ * async job to fetch and save product images
+ */
+const imageProcessor = async (data) => {
+  try {
+    const path = `${process.env.SERVER_ROOT}/assets/product-images/${data.id}.jpg`;
+
+    if (fs.existsSync(path)) {
+      _logger.info(`Path exists ${path}`);
+      return;
+    };
+    _logger.info(`Appear to be here with ${path}`);
+
+    const image_data = await fetch(data.url);
+    const blob = await image_data.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    sharp(buffer)
+      .resize(40, 40, { fit: "cover" })
+      .toFile(path);
+    _logger.info(`Fetched and saved ${path}`);
+  } catch(err) {
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
+};
 
 /*
  * @function box/add-product-to-box.js
@@ -101,7 +129,7 @@ export default async (req, res, next) => {
         // that it is updated - this goes to another process worker
         try {
           if (product.featuredImage && Object.hasOwnProperty.call(product.featuredImage, "url")) {
-            await makeImageJob({ id: shopify_product_id, url: product.featuredImage.url });
+            imageProcessor({ id: shopify_product_id, url: product.featuredImage.url });
           };
         } catch(err) {
           _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

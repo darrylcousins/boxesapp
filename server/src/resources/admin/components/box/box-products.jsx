@@ -12,6 +12,7 @@ import { CloseIcon } from "../lib/icon";
 import AddProductToBoxModal from "./product-add";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
+import Image from "../lib/image";
 import { titleCase, camelCaseToWords, getImageUrl } from "../helpers";
 
 /**
@@ -256,9 +257,13 @@ function *Products ({box, products, type, allproducts, id}) {
                   data-title={el.shopify_title}
                   data-type={type}
                 >
-                    <div class="cover ma1 ba dib v-mid"
+                    <Image
+                      src={ getImageUrl(el.shopify_product_id) }
                       title={ el.shopify_title }
-                      style={ `width: 2em; height: 2em;background-image: url("${getImageUrl(el.shopify_product_id)}");` } />
+                      id={`image-${idx}-${el.shopify_product_id}`}
+                      size="2em"
+                      crank-key={`image-${idx}-${el.shopify_product_id}`}
+                    />
                     <div class="dib ml2">{el.shopify_title}</div>
                 </div>
               </div>

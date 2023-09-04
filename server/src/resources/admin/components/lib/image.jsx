@@ -36,11 +36,11 @@ async function *Image({ src, id, size, title }) {
 
   for await ({ src, id, size, title } of this) { // eslint-disable-line no-unused-vars
     yield (
-      <div class="ba dib v-mid" id={ id } style={ `width: ${width}; height: ${width}` } title={ name } >
+      <div class="dib v-mid" id={ id } title={ name } >
         { loading ? (
-          <div class="skeleton mr1 w-100 h-100" style={ `width: ${width}; height: ${width}` } />
+          <div class="ba skeleton mr1 w-100 h-100" style={ `width: ${width}; height: ${width}` } />
         ) : (
-          <div class="cover mr1 w-100 h-100" style={ `background-image: url("${ uri }");` } />
+          <img src={ uri } class="ba" style={ `width: ${width}; height: ${width}` } />
         )}
       </div>
     );

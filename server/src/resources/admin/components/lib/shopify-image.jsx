@@ -51,7 +51,7 @@ async function *ShopifyProductImage({ shopify_title, shopify_product_id, size, i
         ) : (
           <div class="cover mr1 w-100 h-100"
             title={ shopify_title }
-            style={ `background-image: url("${ src }");` } />
+            style={ `background-image: url(${ src });` } />
         )}
       </div>
     );

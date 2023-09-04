@@ -415,7 +415,8 @@ async function* UpsertOrderModal(props) {
           box = json.box;
           properties = json.properties;
           messages = json.messages;
-          isBoxEditable = messages.length === 0; // no messages, no updates required
+          isBoxReconciled = json.reconciled;
+          isBoxEditable = isBoxReconciled; // no messages, no updates required
           attributes = json.attributes;
           formData.including = properties["Including"].split(",").filter(el => Boolean(el));
           formData.addons = properties["Add on Items"].split(",").filter(el => Boolean(el));
@@ -489,7 +490,7 @@ async function* UpsertOrderModal(props) {
     // reload box with update to reconcile box
     const options = { ...order };
     options.updating = true;
-    await getBox(order);
+    await getBox(options);
     this.refresh();
   };
 
@@ -527,20 +528,40 @@ async function* UpsertOrderModal(props) {
               meta={toastTemplate}
             />
             { !loading && box && messages.length > 0 && (
-              <div class="w-95 ba br2 pa3 mh2 mb3 dark-blue bg-washed-blue" role="alert">
-                { messages.map(message => (
-                  <p>{message}</p> 
-                ))}
-                <div class="fr">
-                  <Button type="primary" onclick={async () => await doReconcileBox() }>
-                    Reconcile box
-                  </Button>
-                  <Button type="secondary" onclick={ignoreReconcileBox}>
-                    Ignore
-                  </Button>
+              <Fragment>
+                { !isBoxEditable && (
+                  <div class="tl ba br2 pa3 mh2 mv1 orange bg-light-yellow" role="alert">
+                    <p>
+                      Products cannot be edited because the items in the order do
+                      match those for the current box. Other fields may be edited
+                      and the order can be reconciled with the box to allow the
+                      editing of products.
+                    </p>
+                  </div>
+                )}
+                { (isBoxEditable && isBoxReconciled) && (
+                  <div class="tl ba br2 pa3 mh2 mv1 orange bg-light-yellow" role="alert">
+                    <p>
+                      The order has been reconciled with the box but is unsaved.
+                    </p>
+                  </div>
+                )}
+                <div class="w-95 tl ba br2 pa3 mh2 mb3 dark-blue bg-washed-blue" role="alert">
+                  { messages.map(message => (
+                    <p>{message}</p> 
+                  ))}
+                  { !isBoxReconciled && (
+                    <div class="tr">
+                      <Button type="primary" onclick={async () => await doReconcileBox() }>
+                        Reconcile box
+                      </Button>
+                      <Button type="secondary" onclick={ignoreReconcileBox}>
+                        Ignore
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <div class="cf" />
-              </div>
+              </Fragment>
             )}
             <div class="tr pr2 pb2">
               { !loading && box && false && (
@@ -560,7 +581,7 @@ async function* UpsertOrderModal(props) {
               )}
             </div>
             { !loading && box && !boxLoading && (
-              <Fragment>
+              <div class="tl">
                 <EditProducts
                   properties={ properties }
                   box={box}
@@ -569,7 +590,7 @@ async function* UpsertOrderModal(props) {
                   key="order"
                   isEditable={ isBoxEditable }
                 />
-              </Fragment>
+              </div>
             )}
           </div>
         )}

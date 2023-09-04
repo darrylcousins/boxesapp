@@ -22,7 +22,7 @@ export default async (req, res, next) => {
   // product_id(entifier) can be shopify_title or shopify_product_id
   const product_identifier = parseInt(req.params.product_id);
   const order_id = req.params.order_id ? ObjectID(req.params.order_id) : null;
-  const update = req.query.update;
+  const update = Boolean(req.query.update); // string or not at all
   const query = {
     delivered: deliveryDay
   };
@@ -247,8 +247,7 @@ export default async (req, res, next) => {
     // can we push this through to the front end when customer, or admin goes to their update
     // if we're not updating then return the order, else the reconciled box
     // XXX easy switch to miss when reading the code
-   console.log("wtf", update);
-    const properties =  !update
+    const properties = !update
       ? {
         "Delivery Date": order.delivered,
         "Including": order.including.join(","), 
@@ -262,7 +261,7 @@ export default async (req, res, next) => {
         "Swapped Items": makeItemString(boxSwappedExtras, ","),
         "Removed Items": makeItemString(boxRemovedItems, ","),
     };
-    res.status(200).json({ box, properties, messages, attributes });
+    res.status(200).json({ box, properties, messages, attributes, reconciled: (update || messages.length === 0) });
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

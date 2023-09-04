@@ -248,7 +248,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
       modalSelect: {from: "possibleAddons", to: to_list_name},
       modalType: "add",
       modalNote: (
-        <h6 class="fw4 tl fg-streamside-maroon">Select item to add to the box.</h6>
+        <h3 class="fw4 tl fg-streamside-maroon">Select item to add to the box.</h3>
       ),
       hideModal: hideSelectModal,
       modalStore: null,
@@ -768,7 +768,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
         <div id={ `overlay-${key}` } class="dn aspect-ratio--object bg-black o-90"></div>
         <div id={ `edit-products-${key}` } class="mt2 ph1 relative w-100" style="font-size: 1.3rem">
           <div class="tc center">
-            <h6 class="fw4 tl mb0 fg-streamside-maroon">{box.shopify_title}</h6>
+            <h3 class="fw4 tl mb0 fg-streamside-maroon">{box.shopify_title}</h3>
           </div>
           <div class="flex-container w-100">
             <div class="mb2 w-100">

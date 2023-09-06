@@ -31,6 +31,9 @@ crossroads.addRoute("/recharge", () => import(`/src/resources/admin/components/r
 crossroads.addRoute("/recharge/cancel-options", () => import(`/src/resources/admin/components/routes/cancel-options`).then(({ default: CancelOptions }) => {
   return renderer.render(<CancelOptions />, document.getElementById("app"));
 }));
+crossroads.addRoute("/recharge/bulk-pause-subscriptions", () => import(`/src/resources/admin/components/routes/bulk-pause-subscriptions`).then(({ default: BulkPauseSubscriptions }) => {
+  return renderer.render(<BulkPauseSubscriptions />, document.getElementById("app"));
+}));
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Initialized app");

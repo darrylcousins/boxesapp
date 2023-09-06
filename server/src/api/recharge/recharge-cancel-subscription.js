@@ -18,7 +18,7 @@ export default async (req, res, next) => {
 
   let io;
   let sockets;
-  const { session_id } = req.query;
+  const { session_id } = req.body;
 
   if (typeof session_id !== "undefined") {
     sockets = req.app.get("sockets");

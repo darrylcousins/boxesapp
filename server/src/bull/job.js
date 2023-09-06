@@ -36,21 +36,16 @@ export const makeApiJob = async (opts) => {
   const { io, session_id, finish } = opts;
   delete opts.io;
 
+  /*
+   * helper method
+   */
   const emit = ({ io, eventName, message }) => { // args should be the rest of it
-    return;
     if (io) {
       io.emit(eventName, message);
     };
   };
 
-  const eventName = "uploadProgress";
-  const title = (typeof opts.title !== "undefined") ? `"${opts.title}"` : "";
-
-  emit({
-    io,
-    eventName,
-    message: `${session_id} Received query continue...`
-  });
+  const eventName = "progress";
 
   // opts is the job data passed to doRechargeQuery
   const job = await apiQueue.add(
@@ -69,47 +64,48 @@ export const makeApiJob = async (opts) => {
   emit({
     io,
     eventName,
-    message: `Queued ${title} update...`
+    message: `Queued "${opts.title}" ...`
   });
 
 
+  /* Not really required, just doing queued and completed
   if (io) {
     apiQueueEvents.on('progress', async ({ jobId, data }, timestamp) => {
       const job = await Job.fromId(apiQueue, jobId);
       if (typeof job.data.session_id !== "undefined") {
         console.log("job completed with session_id: ", job.data.session_id)
-        const title = (typeof job.data.title !== "undefined") ? job.data.title : "";
         emit({
           io,
           eventName,
-          message: `Updating ${title}...`
+          message: `Updating "${job.data.title}" ...`
         });
       };
     });
     apiQueueEvents.on('completed', async ({ jobId, returnvalue }) => {
       const job = await Job.fromId(apiQueue, jobId);
       if (typeof job.data.session_id !== "undefined") {
-        console.log("job completed with session_id: ", job.data.session_id)
-        const title = (typeof job.data.title !== "undefined") ? job.data.title : "";
         emit({
           io,
           eventName,
-          message: `Update ${title} completed...`
+          message: `Completed "${job.data.title}" ...`
         });
+
         if (typeof job.data.finish !== "undefined") {
-          // e.g. updateSubscriptions
-          console.log("all jobs completed: ", job.data.session_id)
+          // e.g. updateSubscriptions, the last of which might emit a finished
+          // event - NB finished event will close the connection at the browser
+          // end, see components/sockets.jsx
           emit({
             io,
             eventName: "finished",
-            message: job.data.session_id
+            message: "All jobs completed"
           });
         };
       };
     });
   };
+  */
 
-  await job.updateProgress(`Update ${title} executing...`);
+  await job.updateProgress(`Update ${opts.title} executing...`);
   /*
    * Returns one of these values: "completed", "failed", "delayed", "active", "waiting", "waiting-children", "unknown".
    */
@@ -117,7 +113,6 @@ export const makeApiJob = async (opts) => {
 
   // This correctly waits until the job is done :)
   await job.waitUntilFinished(apiQueueEvents)
-  //console.log("Done");
 
   const finished = await Job.fromId(apiQueue, job.id)
 
@@ -125,6 +120,12 @@ export const makeApiJob = async (opts) => {
   if (parseInt(finished.returnvalue.status) > 299) {
     throw new Error(`${job.name} request failed with code ${finished.returnvalue.status}: "${finished.returnvalue.statusText}"`);
   };
+
+  emit({
+    io,
+    eventName,
+    message: `Completed "${opts.title}" ...`
+  });
 
   return finished.returnvalue;
 };

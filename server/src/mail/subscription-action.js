@@ -5,7 +5,7 @@
 import buildMail from "./build-mail.js";
 
 /*
- * @function mail/charge-upcoming.js
+ * @function mail/subscription-action.js
  * @param (object) data
  */
 export default async ({ type, descriptiveType, attributes, includes }) => {

@@ -6,9 +6,15 @@
       <p style="padding:5px 0;margin:0">
       Hi {{ attributes.customer.first_name }} {{ attributes.customer.last_name }},
       </p>
-      <p style="padding:5px 0;margin:0">
-      You are receiving this email because you {{ descriptiveType }} a box subscription with <a href="https://{{ env.SHOP }}">{{ env.SHOP_TITLE }}</a>.
-      </p>
+      {% if attributes.content %}
+        <p style="padding:5px 0;margin:0">
+          {{ attributes.content }}
+        </p>
+      {% else %}
+        <p style="padding:5px 0;margin:0">
+        You are receiving this email because you {{ descriptiveType }} a box subscription with <a href="https://{{ env.SHOP }}">{{ env.SHOP_TITLE }}</a>.
+        </p>
+      {% endif %}
       <p style="padding:5px 0;margin:0">
         If you have any queries about this email please contact <a href="mailto:{{ admin_email }}">{{ admin_email }}</a>.
       </p>
@@ -34,7 +40,7 @@
     </mj-column>
   </mj-section>
 {% endif %}
-{% if attributes.nextChargeDate and type == "reactivated" or type == "updated" %}
+{% if attributes.nextChargeDate and type == "reactivated" or type == "updated" or type == "paused" %}
   <mj-section padding="0px">
     <mj-column>
       <mj-table align="center" width="300px">

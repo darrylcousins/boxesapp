@@ -72,10 +72,7 @@ export default async function chargeCreated(topic, shop, body) {
           if (allUpdated && countMatch) {
             if (updates_pending.charge_id === charge.id) {
               meta.recharge.updates_pending = "COMPLETED";
-              // XXX I think (doh) I'm now removing this on reload - more testing please
-              // this may be how pausing subscription doesn't manage to reload
-              //await _mongodb.collection("updates_pending").deleteOne({ _id: ObjectID(updates_pending._id) });
-            } else {
+            } else { // if label === CHARGE_DATE?
               // Should ok then to update the charge_id??
               const res = await _mongodb.collection("updates_pending").updateOne(
                 { _id: ObjectID(updates_pending._id) },
@@ -318,7 +315,7 @@ export default async function chargeCreated(topic, shop, body) {
       for (const [key, value] of Object.entries(props)) {
         update[key] = value;
       };
-      // I had in error assigned this to the variable result
+      //console.log(`Updating pending table with ${updatedCharge.id}`);
       await _mongodb.collection("updates_pending").updateOne(
         { charge_id: updatedCharge.id },
         { "$set" : update },

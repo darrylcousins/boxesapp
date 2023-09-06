@@ -82,17 +82,29 @@ export default async function chargeUpdated(topic, shop, body) {
         //const countMatch = updates_pending.rc_subscription_ids.length === meta.recharge.rc_subscription_ids.length;
         const countMatch = rc_ids_removed.length === meta.recharge.rc_subscription_ids.length;
         if (allUpdated && countMatch) {
+          /// XXX all a bit ugly here trying to get it to work
           // on a new subscription updated via webhooks/charge-created then we
           // don't get a second update on the new id so we can check for the
           // label
           if (updates_pending.charge_id === charge.id || updates_pending.label === "NEW SUBSCRIPTION") {
-            meta.recharge.updates_pending = "COMPLETED";
-            _logger.info(`charge-updated completed`);
-            await _mongodb.collection("updates_pending").deleteOne({ _id: ObjectID(updates_pending._id) });
+            if (updates_pending.label !== "CHARGE_DATE") {
+              meta.recharge.updates_pending = "COMPLETED";
+              _logger.info(`charge-updated completed`);
+              await _mongodb.collection("updates_pending").deleteOne({ _id: ObjectID(updates_pending._id) });
+            } else if (charge.scheduled_at === updates_pending.scheduled_at) {
+              const res = await _mongodb.collection("updates_pending").updateOne(
+                { _id: ObjectID(updates_pending._id) },
+                { $set: { updated_charge_date: true } },
+              );
+              _logger.info(`charge-updated charge id updated`);
+              meta.recharge.updates_pending = "CHARGE ID UPDATED";
+            };
           } else {
+            // XXX same appeaars in charge created??
             // not receiving charge created webhook when updating scheduled_at so just trusting this
             // this is because when the charge exists, because of other
             // customer subscriptions then they are merged into existing charge
+            //console.log("Updating updates_pending on charge updated");
             const res = await _mongodb.collection("updates_pending").updateOne(
               { _id: ObjectID(updates_pending._id) },
               { $set: { charge_id : charge.id, updated_charge_date: true } },

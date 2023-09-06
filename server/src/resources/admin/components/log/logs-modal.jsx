@@ -151,9 +151,9 @@ async function* LogsModal({ logs, box_title, admin }) {
             <ModalTemplate closeModal={ closeModal } loading={ false } error={ false } withClose={ true }>
               <Fragment>
                 <div class="w-80">
-                  <h6 class="tl mb0 w-100 fg-streamside-maroon">
+                  <h3 class="tl mb0 w-100 fg-streamside-maroon">
                     Logged activity for { box_title }
-                  </h6>
+                  </h3>
                   <p class="lh-copy tl mb3 mt2">
                     { logs.length === 0 ? (
                       <span>No recent logs stored for this subscription</span>

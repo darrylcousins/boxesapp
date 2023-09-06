@@ -234,9 +234,9 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
       ) : (
         <Fragment>
           <div class="mb2 pb2 bb b--black-80">
-            <h6 class="tl mb2 w-100 fg-streamside-maroon">
+            <h3 class="tl mb2 w-100 fg-streamside-maroon">
               {subscription.box.product_title} - {subscription.box.variant_title}
-            </h6>
+            </h3>
             <div class="flex-container w-100">
               <div class="w-50-ns w-100">
                 <div class="dt">

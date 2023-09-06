@@ -187,7 +187,7 @@ async function* BoxSettings({ delivered, settings }) {
           <Portal root={main}>
             <ModalTemplate closeModal={ closeModal } loading={ false } error={ false } withClose={ false }>
               <div class="tc center">
-                <h6 class="fw4 tl fg-streamside-maroon">Box settings for { selectedDateDay }</h6>
+                <h3 class="fw4 tl fg-streamside-maroon">Box settings for { selectedDateDay }</h3>
               </div>
               <div class="navy mv2 pt2 pl2 br3 ba b--navy bg-washed-blue">
                 <ul class="pr2">

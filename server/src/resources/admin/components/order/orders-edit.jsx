@@ -207,7 +207,7 @@ function* EditOrders({selectedOrders}) {
               {fetchOrders.length > 0 && (
                 <Fragment>
                   <div class="tc center">
-                    <h6 class="fw4 tl fg-streamside-maroon">Change Pick Up Date For Orders</h6>
+                    <h3 class="fw4 tl fg-streamside-maroon">Change Pick Up Date For Orders</h3>
                   </div>
                   <legend class="dn fw6 ph0 mh0">Edit orders</legend>
 

@@ -254,7 +254,7 @@ function *RulesForm({ rule, disabled, toggleCollapse }) {
       <Fragment>
         <div class={`w-100 center pa1 ${ loading && "pb3" } ${!newRule && "ba b--black-40 br2"}`}>
           {!Boolean(newRule) && (
-            <h6 class="tc mb0">Add Box Rule</h6>
+            <h3 class="tc mb0">Add Box Rule</h3>
           )}
           {loading && <BarLoader />}
           {formError && <Error msg={formError} />}

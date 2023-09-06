@@ -243,9 +243,9 @@ async function* AddProductToBox(props) {
         ) : (
           <Fragment>
             <div class="near-black">
-              <h6 class="lh-copy tl">
+              <h3 class="lh-copy tl">
                 { box.shopify_title }
-              </h6>
+              </h3>
               <p class="lh-copy tl">
                 Select a product for { box.shopify_title }{" "}
                 <b class="pl1 near-black">{ titleCase(camelCaseToWords(type)) }</b>{" "}

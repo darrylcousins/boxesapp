@@ -59,8 +59,6 @@ const options = {
  * @returns {object} Error (if any) and the boxes
  */
 const getBoxes = async ({search, delivered}) => {
-  console.log("Search", search);
-  console.log(delivered);
   const headers = { "Content-Type": "application/json" };
   const { error, json } = await PostFetch({
     src: "/api/query-store-boxes",
@@ -74,7 +72,6 @@ const getBoxes = async ({search, delivered}) => {
       error: e,
       json: null,
     }));
-  console.log(error, json);
   return { error, boxes: json };
 }
 
@@ -91,7 +88,7 @@ const getAddFields = async (delivered, onDeliveredChange) => {
       error: e,
       json: null,
     }));
-  if (error.message === "Not found") {
+  if (error && error.message === "Not found") {
     error = null;
   };
   const fields = {};

@@ -30,18 +30,18 @@ export const getSelectModalOptions = ({boxLists, from_list_name, shopify_product
         if (modalSelectList.length === 0) {
           modalNote = (
             <Fragment>
-              <h6 class="fw4 tl fg-streamside-maroon">
+              <h3 class="fw4 tl fg-streamside-maroon">
                 { /* Unable to swap &lsquo;{product.shopify_title}&rsquo; due to availability. */ }
                 No similarly prices products to swap for &lsquo;{product.shopify_title}&rsquo;.
-              </h6>
+              </h3>
             </Fragment>
           );
         } else {
           modalNote = (
             <Fragment>
-              <h6 class="fw4 tl fg-streamside-maroon">
+              <h3 class="fw4 tl fg-streamside-maroon">
                 Removing &lsquo;{product.shopify_title}&rsquo;.
-              </h6>
+              </h3>
               { product.quantity > 1 && (
                 <p class="bold">{ product.quantity } items will be removed, change the quantity if this is not your intention.</p>
               )}
@@ -56,9 +56,9 @@ export const getSelectModalOptions = ({boxLists, from_list_name, shopify_product
         modalStore = {id: shopify_product_id, from: from_list_name, to: "possibleAddons"};
         modalNote = (
           <Fragment>
-            <h6 class="fw4 tl fg-streamside-maroon">
+            <h3 class="fw4 tl fg-streamside-maroon">
               Removing &lsquo;{product.shopify_title}&rsquo; from add ons.
-            </h6>
+            </h3>
             { product.quantity > 1 && (
               <Fragment>
                 <p class="bold">{ product.quantity } items will be removed, change the quantity if you want to remove one only.</p>
@@ -73,9 +73,9 @@ export const getSelectModalOptions = ({boxLists, from_list_name, shopify_product
         modalSelectList = boxLists["Swapped Items"]; 
         modalNote = (
           <Fragment>
-            <h6 class="fw4 tl fg-streamside-maroon">
+            <h3 class="fw4 tl fg-streamside-maroon">
               Putting &lsquo;{product.shopify_title}&rsquo; back into the box.
-            </h6>
+            </h3>
             { modalSelectList.length > 1 ? (
               <p class="bold">To continue please select one of the swapped items to remove.</p>
             ) : (
@@ -95,9 +95,9 @@ export const getSelectModalOptions = ({boxLists, from_list_name, shopify_product
         modalSelectList = boxLists["Removed Items"]; 
         modalNote = (
           <Fragment>
-            <h6 class="fw4 tl fg-streamside-maroon">
+            <h3 class="fw4 tl fg-streamside-maroon">
               &lsquo;{product.shopify_title}&rsquo; is a swapped item.
-            </h6>
+            </h3>
             { product.quantity > 1 && (
               <p class="bold">Only one of the { product.quantity } items will be removed, the remaining will be moved to your add on items.</p>
             )}

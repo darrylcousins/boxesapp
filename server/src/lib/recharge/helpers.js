@@ -201,6 +201,18 @@ export const updateSubscriptions = async ({ updates, io, session_id }) => {
 };
 
 /*
+ * @function getCharge
+ * @returns { charge }
+ */
+export const getCharge = async ({ charge_id }) => {
+  const { charge } = await makeRechargeQuery({
+    path: `charges/${charge_id}`,
+    title: "Get charge by id",
+  });
+  return charge;
+};
+
+/*
  * @function getLastOrder
  * @returns { order }
  */

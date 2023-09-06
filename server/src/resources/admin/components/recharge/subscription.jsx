@@ -6,7 +6,6 @@
  * @requires module:app/recharge/subscription
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
-import { io } from "socket.io-client";
 import { createElement, Fragment, Portal } from "@b9g/crank";
 import CollapseWrapper from "../lib/collapse-animator";
 import EditProducts from "../products/edit-products";
@@ -24,6 +23,7 @@ import SkipChargeModal from "./skip-modal";
 import UnSkipChargeModal from "./unskip-modal";
 import LogsModal from "../log/logs-modal";
 import CancelSubscriptionModal from "./cancel-modal";
+import { getSessionId } from "../socket";
 import {
   animateFadeForAction,
   animateFade,
@@ -205,53 +205,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
   };
 
   /*
-   * Get and connect to socket.io, on connect insert the sessionId into the
-   * data then call the submission method 'callback'
-   * @function getSessionId
-   *
-   * This is disabled at the moment see saveChanges method for registration.
-   * But the idea was instead of using Timer to reload every 30 seconds until
-   * complete, we could wait for a signal via a socket that would indicate the
-   * the server side process had been completed.
-   */
-  const getSessionId = async (callback, data) => {
-    const proxy = localStorage.getItem("proxy-path");
-    const sessionId = Math.random().toString(36).substr(2, 9);
-    const host = `https://${ window.location.host }`;
-    const socket = io(host, {
-      autoConnect: true, // could also do this with socket.open()
-      path: `${proxy}/socket-io`,
-      transports: ["polling"], // disable websocket polling - no wss on shopify
-    });
-    socket.emit('connectInit', sessionId);
-    socket.on('connected', async (id) => {
-      if (id === sessionId) {
-        console.log('connected with id', id);
-      };
-    });
-    socket.on('uploadProgress', async (data) => {
-      console.log(data);
-      // display data or update timer
-    });
-    socket.on('finished', async (id) => {
-      if (id === sessionId) {
-        console.log('closing connection for id', id);
-        socket.disconnect();
-      };
-    });
-    socket.on('connect', async () => {
-      console.log("connection opened with id", sessionId);
-      // do the work
-      data.sessionId = sessionId;
-      await callback(data);
-    });
-    socket.on('disconnect', async () => {
-      console.log("connection closed with id", sessionId);
-    });
-  };
-
-
-  /*
    * @function saveChanges
    *
    * Initiates the socket and calls doChanges
@@ -269,6 +222,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     await doChanges({ key });
 
     // try again later with this
+    // will add session_id to the data, { key, session_id }
     //await getSessionId(doChanges, { key });
   };
 
@@ -280,7 +234,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    * Also used by saveEdits to save changes made by the user.
    * Importantly no further updates can be sent until current changes are successfull.
    */
-  const doChanges = async ({ key, sessionId }) => {
+  const doChanges = async ({ key, session_id }) => {
     let updates;
     let label;
     if (key === "includes") {
@@ -290,11 +244,10 @@ async function *Subscription({ subscription, customer, idx, admin }) {
       updates = subscription.updates;
       label = "RECONCILE";
     };
-    let headers = { "Content-Type": "application/json" };
     let src = `/api/recharge-update`;
     src = `${src}?label=${label}`;
-    if (sessionId) {
-      src = `${src}&session_id=${sessionId}`;
+    if (session_id) {
+      src = `${src}&session_id=${session_id}`;
     };
 
     // this value is saved to mongodb so we can track the updates and figure
@@ -309,6 +262,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     delete properties["Likes"];
     delete properties["Dislikes"];
 
+    const headers = { "Content-Type": "application/json" };
     const data = { updates, attributes, properties };
     await PostFetch({ src, data, headers })
       .then((result) => {

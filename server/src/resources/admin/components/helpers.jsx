@@ -202,6 +202,18 @@ export const dateStringSort = (a, b) => {
 };
 
 /**
+ * Is the given string a valid date string
+ *
+ * @function isValidDateString
+ * @param {str} a string
+ * @returns {boolean} True or false
+ */
+export const isValidDateString = (str) => {
+  const d = new Date(Date.parse(str));
+  return d instanceof Date && !isNaN(d);
+};
+
+/**
  * Get the next upcoming date for a particular weekday
  *
  * @function findNextWeekday

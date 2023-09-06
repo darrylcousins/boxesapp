@@ -24,6 +24,7 @@ import { toastEvent } from "../lib/events";
 import { PostFetch } from "../lib/fetch";
 import { CloseIcon } from "../lib/icon";
 import { parseStringTemplate } from "../helpers";
+import { getSessionId } from "../socket";
 
 /**
  * Wrap a crank Component and provide modal and form functionality
@@ -135,12 +136,6 @@ function FormModalWrapper(Component, options) {
         return false;
       });
 
-      let session_id;
-      if (Object.hasOwnProperty.call(formData, "sessionId")) {
-        session_id = formData.sessionId;
-        delete formData.sessionId;
-      };
-
       // we have a file so need to use FormData and not json encode data
       // see PostFetch
       if (hasFile) {
@@ -167,10 +162,9 @@ function FormModalWrapper(Component, options) {
 
       // allows passing a function in form-modal options
       let uri = (typeof src === "string") ? src : src();
-      if (session_id) {
-        uri = `${uri}?session_id=${session_id}`;
-      };
-      /* Dev logging
+
+      /* Dev logging - do not delete, nearly did one day :-) */
+      /*
       console.log(uri);
       console.log(data);
       console.warn('Posting saved successfully but disabled for development');
@@ -237,51 +231,6 @@ function FormModalWrapper(Component, options) {
         });
     };
 
-    /*
-     * Get and connect to socket.io, on connect insert the sessionId into the
-     * data then call the submission method 'callback'
-     * @function getSessionId
-     *
-     * This currently disabled but the idea was instead of using Timer to
-     * reload every 30 seconds until complete, we could wait for a signal via a
-     * socket that would indicate the the server side process had been
-     * completed.
-     */
-    const getSessionId = async (callback, data) => {
-      const proxy = localStorage.getItem("proxy-path");
-      const sessionId = Math.random().toString(36).substr(2, 9);
-      const host = `https://${ window.location.host }`;
-      const socket = io(host, {
-        autoConnect: true, // could also do this with socket.open()
-        path: `${proxy}/socket-io`,
-        transports: ["polling"], // disable websocket polling - no wss on shopify
-      });
-      socket.emit('connectInit', sessionId);
-      socket.on('connected', async (id) => {
-        if (id === sessionId) {
-          console.log('connected with id', id);
-        };
-      });
-      socket.on('uploadProgress', async (data) => {
-        console.log(data);
-        // display data or update timer
-      });
-      socket.on('finished', async (id) => {
-        if (id === sessionId) {
-          console.log('closing connection for id', id);
-          socket.disconnect();
-        };
-      });
-      socket.on('connect', async () => {
-        console.log("connection opened with id", sessionId);
-        // do the work
-        data.sessionId = sessionId;
-        await callback(data);
-      });
-      socket.on('disconnect', async () => {
-        console.log("connection closed with id", sessionId);
-      });
-    };
 
     const fieldIds = [];
     const fieldData = [];

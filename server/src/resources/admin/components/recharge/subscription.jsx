@@ -95,7 +95,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    *
    * @member {array} timerSeconds
    */
-  const timerSeconds = 30;
+  const timerSeconds = 15;
   /**
    * On cancel, delete, and reactivate we need to ask the Customer component to
    * reload all subscriptions. This value stores the string value of the
@@ -681,13 +681,21 @@ async function *Subscription({ subscription, customer, idx, admin }) {
           borderColour: "black"
         }));
       };
+      const socketMessages = document.getElementById("socketMessages");
+      if (socketMessages) {
+        socketMessages.innerHTML = "";
+      };
     };
     if (!charge || pending) {
       attempts += 1; // force Timer reload and count attempts
       pending = true;
       editsPending = Boolean(pending);
     };
-    fetchError = null;
+    if (typeof fetchError === "string" && fetchError.includes("404")) {
+      console.log("got a 404");
+      editsPending = false;
+      fetchError = "The update has timed out, please refresh the page";
+    };
     if (killTimer) killTimer();
     loading = false;
     await this.refresh();
@@ -1112,6 +1120,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
               )}
             </div>
           </div>
+          <div id="socketMessages" class="tl"></div>
         </Fragment>
       )
     )

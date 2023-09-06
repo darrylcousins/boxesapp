@@ -51,13 +51,14 @@ export default async (req, res, next) => {
     try {
       result = await makeRechargeQuery({
         path: `charges/${charge_id}`,
-        title: "Charge",
+        title: "Get Charge",
         // debugging
         customer_id: parseInt(customer_id),
         subscription_id: parseInt(subscription_id),
       });
 
     } catch(err) {
+      // so we don't have the correct charge_id - send message back
       // this will catch when the charge is not found
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
       return res.status(200).json({ error: err.message });

@@ -28,11 +28,10 @@ export default async (req, res, next) => {
 
   if (typeof session_id !== "undefined") {
     sockets = req.app.get("sockets");
-    console.log("SOCKETS", sockets, session_id);
     if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
       const socket_id = sockets[session_id];
       io = req.app.get("io").to(socket_id);
-      io.emit("uploadProgress", "Received request, processing data...");
+      io.emit("message", "Received request, processing data...");
     };
   };
 
@@ -118,6 +117,7 @@ export default async (req, res, next) => {
   meta.recharge = sortObjectByKeys(meta.recharge);
   _logger.notice(`Recharge customer api reqest ${topicLower}.`, { meta });
 
+  if (io) io.emit("message", `Updating ${attributes.title} - ${attributes.variant}`);
   try {
 
     // necessarily has 2 updates to the subscription, must somehow know how
@@ -126,24 +126,24 @@ export default async (req, res, next) => {
     for (const update of updates) {
       const opts = {
         id: update.id,
-        title: update.title,
+        title: `Updating delivery date ${update.title}`,
         body: { properties: update.properties },
         io,
         session_id,
       };
-      await updateSubscription(opts);
+      const updateDeliveryDate = await updateSubscription(opts);
     };
 
     for (const update of updates) {
       const opts = {
         id: update.id,
-        title: update.title,
+        title: `Updating charge date ${update.title}`,
         date: next_scheduled_at,
         io,
         session_id,
       };
       // this will update an existing charge with the matching scheduled_at or create a new charge
-      await updateChargeDate(opts);
+      const updatedChargeDate = await updateChargeDate(opts);
     };
 
     attributes.nextChargeDate = nextchargedate;
@@ -154,8 +154,10 @@ export default async (req, res, next) => {
       attributes,
       includes,
     };
-    await subscriptionActionMail(mail);
+    //await subscriptionActionMail(mail);
 
+    if (io) io.emit("message", "Updates completed - awaiting creation of new charge");
+    if (io) io.emit("finished", session_id);
     // res.status(200).json({ success: true, nextchargedate: data.nextchargedate, nextdeliverydate: data.nextdeliverydate });
     // This data is passed by form-modal back to initiator using 'listing.reload' event
     res.status(200).json({

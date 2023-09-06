@@ -52,7 +52,7 @@ function* ModalTemplate({ children, closeModal, error, loading, withClose, withC
             <div class="tl">
               { children }
             </div>
-            { (typeof withClose === "undefined" || withClose) && (
+            { withClose && (
               <div class="w-100 tr">
                 <Button
                   type="secondary"

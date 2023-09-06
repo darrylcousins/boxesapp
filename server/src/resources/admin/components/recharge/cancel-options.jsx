@@ -355,16 +355,18 @@ function* CancelOptions() {
               </IconButton>
             </div>
           )}
-          { buttons && (
-            <div class="tr pr2 pb2 w-100">
+          <div class="tr pr2 pb2 w-100">
+            { buttons && (
               <Button type="primary" onclick={saveChanges}>
                 Save
               </Button>
+            )}
+            { (adding || buttons) && (
               <Button type="secondary" onclick={cancelChanges}>
                 Cancel
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     );

@@ -285,6 +285,7 @@ async function* Customers() {
   const proxy_path = localStorage.getItem("proxy-path");
   const qs = localStorage.getItem("qs"); // query string to maintain access
   const cancelOptionsPath = `${proxy_path}/admin-portal/recharge/cancel-options${ qs }`;
+  const bulkPauseSubscriptionsPath = `${proxy_path}/admin-portal/recharge/bulk-pause-subscriptions${ qs }`;
   /**
    * Side navigation menu
    *
@@ -297,6 +298,13 @@ async function* Customers() {
          name="Cancel Options"
          title="Cancel Options">
         <span style="width: 250px" class="db tl link white pv1 pl3 pr2">Cancel Options</span>
+      </IconButton>
+    </div>,
+    <div onclick={() => window.location = bulkPauseSubscriptionsPath}>
+      <IconButton
+         name="Bulk Pause"
+         title="Bulk Pause">
+        <span style="width: 250px" class="db tl link white pv1 pl3 pr2">Bulk Pause</span>
       </IconButton>
     </div>,
   ];
@@ -323,10 +331,8 @@ async function* Customers() {
         { !fetchCustomer && (
           <Fragment>
             <div class="cf dark-blue pa2 mt2 mb3 br3 ba b--dark-blue bg-washed-blue">
-              <Fragment>
-                Customers here may not be synchronised to Recharge customers. They are updated nightly, but may also be re-sychronised here.
-                For example if they have cancelled or reactivated charges since last night's update.
-              </Fragment>
+              Customers here may not be synchronised to Recharge customers. They are updated nightly, but may also be re-sychronised here.
+              For example if they have cancelled or reactivated charges since last night's update.
             </div>
             <div class="w-100 flex-container">
               <div class="w-20 v-bottom tl flex">

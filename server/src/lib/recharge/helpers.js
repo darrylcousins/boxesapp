@@ -177,6 +177,14 @@ export const updateSubscriptions = async ({ updates, io, session_id }) => {
           quantity: update.quantity,
         };
         if (Object.hasOwnProperty.call(update, "price")) body.price = update.price;
+        if (Object.hasOwnProperty.call(update, "order_day_of_week")) body.order_day_of_week = update.order_day_of_week;
+        if (Object.hasOwnProperty.call(update, "charge_interval_frequency")) body.charge_interval_frequency = update.charge_interval_frequency;
+        if (Object.hasOwnProperty.call(update, "order_interval_frequency")) body.order_interval_frequency = update.order_interval_frequency;
+        if (Object.hasOwnProperty.call(update, "order_interval_unit")) body.order_interval_unit = update.order_interval_unit;
+        if (Object.hasOwnProperty.call(update, "external_product_id")) body.external_product_id = update.external_product_id;
+        if (Object.hasOwnProperty.call(update, "external_variant_id")) body.external_variant_id = update.external_variant_id;
+        if (Object.hasOwnProperty.call(update, "product_title")) body.product_title = update.product_title;
+        if (Object.hasOwnProperty.call(update, "variant_title")) body.variant_title = update.variant_title;
         options.body = JSON.stringify(body);
       };
     } else {
@@ -194,6 +202,7 @@ export const updateSubscriptions = async ({ updates, io, session_id }) => {
     if (i === updates.length - 1) {
       options.finish = true;
     };
+
     await makeRechargeQuery(options);
 
   };

@@ -17,7 +17,7 @@ import { createElement } from "@b9g/crank";
 const ProgressLoader = () => (
   <div id="progress w-100">
     <div id="innerprogress">
-      <div id="move"></div>
+      <div id="move">{ " " }</div>
     </div>
   </div>
 );

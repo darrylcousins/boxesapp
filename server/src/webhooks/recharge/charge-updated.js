@@ -73,15 +73,20 @@ export default async function chargeUpdated(topic, shop, body) {
       // failing my query do the query match here
       if (updates_pending) {
         meta.recharge.label = updates_pending.label;
+
+        /* removed this because I found that sometimes the charge update came before the subscription created */
         const allUpdated = updates_pending.rc_subscription_ids.every(el => {
           // check that all subscriptions have updated
           return el.updated === true && Number.isInteger(el.subscription_id);
         });
+
         // filter out the updates that were deleted items
         const rc_ids_removed = updates_pending.rc_subscription_ids.filter(el => el.quantity > 0);
         //const countMatch = updates_pending.rc_subscription_ids.length === meta.recharge.rc_subscription_ids.length;
         const countMatch = rc_ids_removed.length === meta.recharge.rc_subscription_ids.length;
-        if (allUpdated && countMatch) {
+
+        //if (allUpdated && countMatch) {
+        if (countMatch) {
           /// XXX all a bit ugly here trying to get it to work
           // on a new subscription updated via webhooks/charge-created then we
           // don't get a second update on the new id so we can check for the

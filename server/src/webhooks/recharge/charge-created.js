@@ -3,7 +3,7 @@
  */
 import { ObjectID } from "mongodb";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
-import { sortObjectByKeys, matchNumberedString } from "../../lib/helpers.js";
+import { formatDate, sortObjectByKeys, matchNumberedString } from "../../lib/helpers.js";
 import { updateSubscription, updateChargeDate, getSubscription } from "../../lib/recharge/helpers.js";
 import subscriptionCreatedMail from "../../mail/subscription-created.js";
 import { getBoxesForCharge, getMetaForCharge, writeFileForCharge, buildMetaForBox, itemStringToList  } from "./helpers.js";
@@ -200,12 +200,14 @@ export default async function chargeCreated(topic, shop, body) {
       orderDayOfWeek = currentIdx % 7;
 
       // with the delivery date we fix the next_charge_scheduled_at to 3 days prior
-      const offset = dateObj.getTimezoneOffset()
-      const nextChargeDate = new Date(dateObj.getTime() - (offset*60*1000));
+      //const offset = dateObj.getTimezoneOffset()
+      //const nextChargeDate = new Date(dateObj.getTime() - (offset*60*1000));
+      const nextChargeDate = new Date(Date.parse(currentDeliveryDate));
       nextChargeDate.setDate(nextChargeDate.getDate() - 3);
       // Put to the required yyyy-mm-dd format
       // Could use .split("T")[0] instead of substring
-      nextChargeScheduledAt = nextChargeDate.toISOString().split('T')[0];
+      //nextChargeScheduledAt = nextChargeDate.toISOString().split('T')[0];
+      nextChargeScheduledAt = formatDate(nextChargeDate);
 
       // used to compile the email
       const updatedLineItems = []; // update line items to match subscription updates

@@ -449,31 +449,20 @@ async function* Customers() {
                               </div>
                             </td>
                             <td class="pr3 pt1 bb b--black-20 v-top">
-                              <div class="dt w-100">
-                                <div class="ml2 dt-row pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
+                              <div class="w-100">
+                                <div class="pa3 ml2 pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
                                   title="Show customer subscriptions"
                                   onclick={ () => fetchRechargeCustomer(customer.recharge_id) }>
-                                  <div class="dtc w-100">
-                                    <div class="dib w-50 pl2">
-                                      { customer.last_name }
-                                    </div>
-                                    <div class="dib w-50 pl2">
-                                      { customer.first_name }
-                                    </div>
-                                  </div>
+                                  { customer.first_name } { customer.last_name }
                                 </div>
                               </div>
                             </td>
                             <td class="pr3 pt1 bb b--black-20 v-top">
-                              <div class="dt w-100">
-                                <div class="ml2 dt-row pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
+                              <div class="w-100">
+                                <div class="pa3 ml2 pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
                                   title="Show customer subscriptions"
                                   onclick={ () => fetchRechargeCustomer(customer.recharge_id) }>
-                                  <div class="">
-                                    <div class="pl2">
-                                      { customer.email }
-                                    </div>
-                                  </div>
+                                  { customer.email }
                                 </div>
                               </div>
                             </td>

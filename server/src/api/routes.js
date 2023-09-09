@@ -165,6 +165,9 @@ router.post(
   "/recharge-update", 
   await import("./recharge/recharge-update.js").then(({ default: fn }) => fn));
 router.post(
+  "/recharge-get-reconciled-preview",
+  await import("./recharge/recharge-get-reconciled-preview.js").then(({ default: fn }) => fn));
+router.post(
   "/recharge-update-charge-date", 
   await import("./recharge/recharge-update-charge-date.js").then(({ default: fn }) => fn));
 router.post(
@@ -179,6 +182,9 @@ router.post(
 router.post(
   "/recharge-subscription-update", 
   await import("./recharge/recharge-subscription-update.js").then(({ default: fn }) => fn));
+router.post(
+  "/recharge-change-box",
+  await import("./recharge/recharge-change-box.js").then(({ default: fn }) => fn));
 router.get(
   "/recharge-subscription/:subscription_id", 
   await import("./recharge/recharge-subscription.js").then(({ default: fn }) => fn));
@@ -248,6 +254,9 @@ router.post(
 router.get(
   "/settings-for-app", 
   await import("./setting/settings-for-app.js").then(({ default: fn }) => fn));
+router.get(
+  "/get-store-boxes",
+  await import("./shopify/get-store-boxes.js").then(({ default: fn }) => fn));
 router.post(
   "/query-store-boxes", 
   await import("./shopify/query-store-boxes.js").then(({ default: fn }) => fn));

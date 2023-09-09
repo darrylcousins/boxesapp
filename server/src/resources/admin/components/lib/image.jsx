@@ -38,9 +38,9 @@ async function *Image({ src, id, size, title }) {
     yield (
       <div class="dib v-mid" id={ id } title={ name } >
         { loading ? (
-          <div class="ba skeleton mr1 w-100 h-100" style={ `width: ${width}; height: ${width}` } />
+          <div class="ba skeleton ma0 w-100 h-100" style={ `width: ${width}; height: ${width}` } />
         ) : (
-          <img src={ uri } class="ba" style={ `width: ${width}; height: ${width}` } />
+          <img src={ uri } class="ba ma0" style={ `width: ${width}; height: ${width}` } />
         )}
       </div>
     );

@@ -14,7 +14,6 @@ import { getNZDeliveryDay } from "../../lib/dates.js";
  * @param (function) next
  */
 export default async (req, res, next) => {
-  _logger.info(JSON.stringify(req.body, null, 2));
 
   const {delivered, shopify_product_id, useCoreBox} = req.body;
   const deliveryDay = getNZDeliveryDay(new Date(delivered).getTime());

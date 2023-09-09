@@ -109,13 +109,6 @@ async function* UpsertOrderModal(props) {
    */
   let messages = [];
   /**
-   * Extra attributes for EditProduct, including images
-   * See recharge/subscription for full usage of all attributes
-   *
-   * @member {object} attributes
-   */
-  let attributes = null;
-  /**
    * Fields fetched from api
    *
    * @member {object} fields
@@ -417,7 +410,6 @@ async function* UpsertOrderModal(props) {
           messages = json.messages;
           isBoxReconciled = json.reconciled;
           isBoxEditable = isBoxReconciled; // no messages, no updates required
-          attributes = json.attributes;
           formData.including = properties["Including"].split(",").filter(el => Boolean(el));
           formData.addons = properties["Add on Items"].split(",").filter(el => Boolean(el));
           formData.swaps = properties["Swapped Items"].split(",").filter(el => Boolean(el));
@@ -585,7 +577,6 @@ async function* UpsertOrderModal(props) {
                 <EditProducts
                   properties={ properties }
                   box={box}
-                  images={attributes.images}
                   id="edit-products"
                   key="order"
                   isEditable={ isBoxEditable }

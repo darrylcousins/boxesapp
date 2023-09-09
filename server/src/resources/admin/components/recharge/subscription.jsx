@@ -10,6 +10,7 @@ import { createElement, Fragment, Portal } from "@b9g/crank";
 import CollapseWrapper from "../lib/collapse-animator";
 import EditProducts from "../products/edit-products";
 import Cancelled from "./cancelled";
+import ModalTemplate from "../lib/modal-template";
 import Error from "../lib/error";
 import { PostFetch, Fetch } from "../lib/fetch";
 import { toastEvent } from "../lib/events";
@@ -19,6 +20,7 @@ import BarLoader from "../lib/bar-loader";
 import ProgressLoader from "../lib/progress-loader";
 import Button from "../lib/button";
 import TextButton from "../lib/text-button";
+import ChangeBoxModal from "./change-box-modal";
 import SkipChargeModal from "./skip-modal";
 import UnSkipChargeModal from "./unskip-modal";
 import LogsModal from "../log/logs-modal";
@@ -95,7 +97,13 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    *
    * @member {array} timerSeconds
    */
-  const timerSeconds = 15;
+  const timerSeconds = 30;
+  /**
+   * Is the explainer open?
+   *
+   * @member {boolean} isExplainerOpen
+   */
+  let isExplainerOpen = false;
   /**
    * On cancel, delete, and reactivate we need to ask the Customer component to
    * reload all subscriptions. This value stores the string value of the
@@ -240,7 +248,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     if (key === "includes") {
       updates = getUpdatesFromIncludes();
       label = "USER";
-    } else {
+    } else { // key = "updates"
       updates = subscription.updates;
       label = "RECONCILE";
     };
@@ -615,6 +623,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
         attempts += 1; // force Timer reload and count attempts
         editsPending = true;
         loading = false;
+        isExplainerOpen = attempts === 1;
         await this.refresh();
         if (restartTimer) restartTimer(timerSeconds);
         return;
@@ -695,6 +704,8 @@ async function *Subscription({ subscription, customer, idx, admin }) {
       console.log("got a 404");
       editsPending = false;
       fetchError = "The update has timed out, please refresh the page";
+    } else {
+      fetchError = null;
     };
     if (killTimer) killTimer();
     loading = false;
@@ -957,6 +968,12 @@ async function *Subscription({ subscription, customer, idx, admin }) {
   getLogs();
 
   const modalWindow = document.getElementById("modal-window");
+  const host = localStorage.getItem("host"); // server host e.g. https://myshop.boxexapp.nz
+
+  const toggleExplainer = () => {
+    isExplainerOpen = !isExplainerOpen;
+    this.refresh();
+  };
 
   for await ({ subscription, idx, admin } of this) { // eslint-disable-line no-unused-vars
 
@@ -1004,6 +1021,10 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                     </span>
                   </Button>
                 )}
+                { ( !editsPending ) && (
+                  <ChangeBoxModal
+                    subscription={ subscription } />
+                )}
               </div>
               <div class="fl w-70 tr">
                 { ( !editsPending ) && collapsed && (
@@ -1038,17 +1059,20 @@ async function *Subscription({ subscription, customer, idx, admin }) {
               <div class="db w-100 orange pa2 ma2 br3 ba b--orange bg-light-yellow">
                 <p class="b">
                   { ( subscription.attributes.pending || attempts > 0) ? (
-                    `Your subscription has updates pending. `
+                    <div class="center pb2">Your subscription has updates pending.</div>
                   ) : (
-                    `Your updates have been queued for saving. `
+                    <div>Your updates have been queued for saving.</div>
                   )}
-                  This can take several minutes. Reloading subscription in 
-                  <div class="di w-2">
-                    <Timer seconds={ timerSeconds } 
-                      crank-key={ `timer-${ idx }` }
-                      callback={ reloadCharge } /> ...
+                  <div>Check your emails for confirmation of the updates you have requested.</div>
+                  <div>This can take several minutes. You may close the window and come back to it later. { " " }
+                    Reloading subscription in 
+                    <div class="di w-2">
+                      <Timer seconds={ timerSeconds } 
+                        crank-key={ `timer-${ idx }` }
+                        callback={ reloadCharge } /> ...
+                    </div>
+                    { attempts ? ` ${formatCount(attempts)} attempt completed, updates pending` : "" }
                   </div>
-                  { attempts ? ` ${formatCount(attempts)} attempt completed, updates pending` : "" }
                 </p>
                 <ProgressLoader />
               </div>
@@ -1121,6 +1145,28 @@ async function *Subscription({ subscription, customer, idx, admin }) {
             </div>
           </div>
           <div id="socketMessages" class="tl"></div>
+          { isExplainerOpen && (
+            <Portal root={modalWindow}>
+              <ModalTemplate closeModal={ toggleExplainer } loading={ false } error={ false }>
+                <h3 class="fw4 tl fg-streamside-maroon">Why does it take so long to update my subscription?</h3>
+                <p class="pa4">
+                  <img src={ `${ host }/logos/boxes.png` } width="50" />
+                  Because in order to ensure the integrity of your box
+                  subscripton we must be sure that all updates have completed
+                  before you are able to continue editing your box. The boxes
+                  are a linking between two web services: 1. the store and 2.
+                  the subscription service. When an update is requested a
+                  number of calls are made between the services to complete the
+                  update.
+                </p>
+                <p class="pa4">
+                  You are welcome to close this window at any time. Please
+                  check your emails for notification of the completion of the
+                  requested changes.
+                </p>
+              </ModalTemplate>
+            </Portal>
+          )}
         </Fragment>
       )
     )

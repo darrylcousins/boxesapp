@@ -6,6 +6,7 @@
 import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
 import { reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
+import { formatDate } from "../../lib/helpers.js";
 
 const isValidDateString = (str) => {
   const d = new Date(Date.parse(str));
@@ -113,7 +114,8 @@ export default async (req, res, next) => {
                 opts = {
                   id: subscription.subscription_id,
                   title,
-                  date: nextChargeDate.toISOString().split('T')[0],
+                  //date: nextChargeDate.toISOString().split('T')[0],
+                  date: formatDate(nextChargeDate),
                   io,
                   session_id,
                 };

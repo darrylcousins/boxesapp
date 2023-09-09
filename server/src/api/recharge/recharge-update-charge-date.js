@@ -5,7 +5,7 @@
 
 import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
-import { sortObjectByKeys } from "../../lib/helpers.js";
+import { sortObjectByKeys, formatDate } from "../../lib/helpers.js";
 import fs from "fs";
 
 /*
@@ -54,9 +54,10 @@ export default async (req, res, next) => {
 
   let chargeDate = new Date(Date.parse(nextchargedate));
   // store as ISO date
-  const offset = chargeDate.getTimezoneOffset()
-  chargeDate = new Date(chargeDate.getTime() - (offset*60*1000))
-  const next_scheduled_at = chargeDate.toISOString().split('T')[0];
+  //const offset = chargeDate.getTimezoneOffset()
+  //chargeDate = new Date(chargeDate.getTime() - (offset*60*1000))
+  //const next_scheduled_at = chargeDate.toISOString().split('T')[0];
+  const next_scheduled_at = formatDate(chargeDate);
 
   const collection = _mongodb.collection("updates_pending");
   const doc= {
@@ -131,7 +132,7 @@ export default async (req, res, next) => {
         io,
         session_id,
       };
-      const updateDeliveryDate = await updateSubscription(opts);
+      await updateSubscription(opts);
     };
 
     for (const update of updates) {
@@ -143,7 +144,7 @@ export default async (req, res, next) => {
         session_id,
       };
       // this will update an existing charge with the matching scheduled_at or create a new charge
-      const updatedChargeDate = await updateChargeDate(opts);
+      await updateChargeDate(opts);
     };
 
     attributes.nextChargeDate = nextchargedate;
@@ -154,7 +155,7 @@ export default async (req, res, next) => {
       attributes,
       includes,
     };
-    //await subscriptionActionMail(mail);
+    await subscriptionActionMail(mail);
 
     if (io) io.emit("message", "Updates completed - awaiting creation of new charge");
     if (io) io.emit("finished", session_id);

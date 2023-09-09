@@ -5,7 +5,7 @@
 
 import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
-import { sortObjectByKeys } from "../../lib/helpers.js";
+import { formatDate, sortObjectByKeys } from "../../lib/helpers.js";
 
 /*
  * @function recharge/recharge-reactivate-subscription.js
@@ -63,9 +63,11 @@ export default async (req, res, next) => {
 
   // set dates
   let chargeDate = new Date(Date.parse(nextchargedate));
-  const offset = chargeDate.getTimezoneOffset()
-  chargeDate = new Date(chargeDate.getTime() - (offset*60*1000))
-  const nextChargeDate = chargeDate.toISOString().split('T')[0];
+  const nextChargeDate = formatDate(chargeDate);
+
+  //const offset = chargeDate.getTimezoneOffset()
+  //chargeDate = new Date(chargeDate.getTime() - (offset*60*1000))
+  //const nextChargeDate = chargeDate.toISOString().split('T')[0];
 
   const doc= {
     label: "REACTIVATE",

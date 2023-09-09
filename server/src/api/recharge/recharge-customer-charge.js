@@ -24,11 +24,12 @@ export default async (req, res, next) => {
     //charge_id: parseInt(charge.id), now trying to avoid this because of updating charge and new charges created.
     customer_id: parseInt(customer_id),
     address_id: parseInt(address_id),
-    scheduled_at,
+    //scheduled_at, similarly to the charge_id
     subscription_id: parseInt(subscription_id),
   };
   //console.log("customer-charge query", query);
   const findPending = await _mongodb.collection("updates_pending").findOne(query);
+  //console.log("FIND PENDING", findPending)
   if (findPending) {
     charge_id = findPending.charge_id;
     // if this is a change date entry
@@ -60,6 +61,7 @@ export default async (req, res, next) => {
     } catch(err) {
       // so we don't have the correct charge_id - send message back
       // this will catch when the charge is not found
+      // err.message.contains("404") ??
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
       return res.status(200).json({ error: err.message });
     };

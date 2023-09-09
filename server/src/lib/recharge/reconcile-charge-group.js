@@ -237,7 +237,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     };
   };
 
-
   let newIncludedInThisBox = [];
   let notIncludedInThisBox = [];
   let nowAvailableAsAddOns = [];
@@ -699,6 +698,7 @@ export const gatherData = async ({ grouped, result }) => {
 
         // XXX try/catch? This can fail with 404 when subscriptions have been
         // orphaned so the box_subscription_id value is dead
+        console.log("FETCHING SUBSCRIPTION");
         res = await makeRechargeQuery({
           path: `subscriptions/${item_id}`,
           title: group.box.title
@@ -786,9 +786,12 @@ export const gatherData = async ({ grouped, result }) => {
     const attributes = {
       nextChargeDate,
       nextDeliveryDate,
+      orderDayOfWeek: subscription.order_day_of_week,
       hasNextBox,
       title: subscription.product_title,
       variant: subscription.variant_title,
+      variant_id: parseInt(subscription.external_variant_id.ecommerce),
+      product_id: parseInt(subscription.external_product_id.ecommerce),
       pending: group.pending,
       frequency,
       days,
@@ -801,6 +804,7 @@ export const gatherData = async ({ grouped, result }) => {
       customer: charge.customer,
       lastOrder,
       totalPrice: `${totalPrice.toFixed(2)}`,
+      boxPrice: `${parseFloat(subscription.price).toFixed(2)}`,
       notIncludedInThisBox,
       newIncludedInThisBox,
       nowAvailableAsAddOns,

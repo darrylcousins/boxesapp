@@ -73,7 +73,7 @@ const getBoxes = async ({search, delivered}) => {
       json: null,
     }));
   return { error, boxes: json };
-}
+};
 
 /**
  * Get the fields, this only to ascertain if a core box exists

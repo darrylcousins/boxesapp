@@ -28,6 +28,25 @@ export const capWords = (arr) => {
   return arr.map(el => el.charAt(0).toUpperCase() + el.substring(1).toLowerCase());
 };
 
+/*
+ * Format a date yyy-mm-dd
+ * Was formally using:
+    const offset = yourDate.getTimezoneOffset()
+    yourDate = new Date(yourDate.getTime() - (offset*60*1000))
+    return yourDate.toISOString().split('T')[0]
+ * but would still get a date a day out from where I was
+ * Usually we're only parsing a day date object and not a datetime obj, this may be the kurfuffle
+ */
+export const formatDate = (dateObj) => {
+  let month = "" + (dateObj.getMonth() + 1);
+  let day = "" + dateObj.getDate();
+  const year = dateObj.getFullYear();
+
+  if (month.length < 2)  month = "0" + month;
+  if (day.length < 2) day = "0" + day;
+  return [year, month, day].join("-");
+};
+
 /* 
  * compare 2 arrays
  */

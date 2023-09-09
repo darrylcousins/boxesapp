@@ -280,7 +280,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
         id={inputId}
         value={el.quantity}
         autocomplete="off"
-        style="font-size: 1.2rem; width: 3.5em; border-color: silver; padding: 0 3px; margin: 0"
+        style="font-size: 1.2rem; width: 3.5em; border-color: silver; padding: 2px 3px; margin: 0"
       />
     );
   };
@@ -788,8 +788,8 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
               ))}
             </div>
             <div id="pricedItems" class="mr2 w-100">
-              <div class="ml2 mb1 pt1 flex bt">
-                <div class="w-20">
+              <div class="ml2 mb0 mt1 pt1 flex bt">
+                <div class="w-20 ma0">
                   { loading && (
                     <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
                   )}
@@ -815,7 +815,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
               </div>
               { pricedItems.map((el, idx) => (
                 <div class="ml2 mb1 flex">
-                  <div class="w-20">
+                  <div class="w-20 ma0">
                     { loading && (
                       <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
                     )}

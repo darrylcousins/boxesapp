@@ -16,6 +16,24 @@ export const LABELKEYS = [
 ];
 
 /*
+ * Format a date yyy-mm-dd
+ * Was formally using:
+    const offset = yourDate.getTimezoneOffset()
+    yourDate = new Date(yourDate.getTime() - (offset*60*1000))
+    return yourDate.toISOString().split('T')[0]
+ * but would still get a date a day out from where I was
+ */
+export const formatDate = (dateObj) => {
+  let month = "" + (dateObj.getMonth() + 1);
+  let day = "" + dateObj.getDate();
+  const year = dateObj.getFullYear();
+
+  if (month.length < 2)  month = "0" + month;
+  if (day.length < 2) day = "0" + day;
+  return [year, month, day].join("-");
+};
+
+/*
  * @ function stringTemplate
  * @example:
  * let template = "I'm ${name}. I'm almost ${age} years old."

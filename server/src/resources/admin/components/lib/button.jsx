@@ -16,17 +16,32 @@ import { createElement } from "@b9g/crank";
  * @param {string} props.title Button title - hover hint
  */
 const Button = (props) => {
-  const { children, type, title, hover, border } = props;
+  // how to make a selected option? i.e. equuivalent to the hover?
+  let { children, type, title, hover, border, selected, classes } = props;
   let classList;
   let hint = "";
   let elProps = { ...props };
   // doh, why?
   delete elProps["hover"];
   delete elProps["border"];
+
+  // pretty dodgy territory here, needs improvement - see first attempt with recharge/change-box-modal
+  if (selected && type.startsWith("alt")) {
+    type = type.split("-")[1];
+  };
+
+  // this needs a tidy up! On some hover is included and not on others for example
+  // Search for instances and check if hover or border are used!
   if (type === "secondary") {
     classList = "b--navy bg-near-white black-70 hover-bg-moon-gray relative";
     classList += border ? ` b--${border}` : " b--navy";
     classList += hover ? ` ${hover}` : " hover-bg-moon-gray";
+    if (classes) classList += ` ${classes}`;
+  } else if (type === "alt-secondary") { // lighter
+    classList = "b--black-70 bg-white black-70 hover-bg-near-white relative";
+    classList += border ? ` b--${border}` : " b--black-70";
+    classList += hover ? ` ${hover}` : " hover-bg-near-white";
+    if (classes) classList += ` ${classes}`;
   } else if (type === "primary") {
     classList = "bg-dark-blue white relative";
     classList += border ? ` b--${border}` : " b--navy";
@@ -35,6 +50,14 @@ const Button = (props) => {
     classList = "bg-transparent navy relative";
     classList += border ? ` b--${border}` : " b--navy";
     classList += hover ? ` ${hover}` : " hover-bg-navy hover-white";
+  } else if (type === "alt-primary") {
+    classList = "bg-navy white relative";
+    classList += border ? ` b--${border}` : " b--navy";
+    classList += hover ? ` ${hover}` : " hover-bg-dark-blue";
+  } else if (type === "alt-primary-reverse") {
+    classList = "bg-transparent dark-blue relative";
+    classList += border ? ` b--${border}` : " b--dark-blue";
+    classList += hover ? ` ${hover}` : " hover-bg-dark-blue hover-white";
   } else if (type === "success") {
     classList = "bg-green white relative";
     classList += border ? ` b--${border}` : " b--dark-green";

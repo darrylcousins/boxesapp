@@ -40,7 +40,7 @@
     </mj-column>
   </mj-section>
 {% endif %}
-{% if attributes.nextChargeDate and type == "reactivated" or type == "updated" or type == "paused" %}
+{% if attributes.nextChargeDate and type == "reactivated" or type == "updated" or type == "paused" or type == "changed" %}
   <mj-section padding="0px">
     <mj-column>
       <mj-table align="center" width="300px">
@@ -52,6 +52,12 @@
           <td style="color:#777;text-align:right;padding-right:20px;">Next Scheduled Delivery</td>
           <td style="font-weight:bold">{{ attributes.nextDeliveryDate }}</td>
         </tr>
+        {% if attributes.delivery_schedule %}
+          <tr>
+            <td style="color:#777;text-align:right;padding-right:20px;">Delivery Schedule</td>
+            <td>{{ attributes.delivery_schedule }}</td>
+          </tr>
+        {% endif %}
       </mj-table>
     </mj-column>
   </mj-section>

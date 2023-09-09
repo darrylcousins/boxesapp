@@ -31,8 +31,13 @@
         <p style="padding:0;margin:0;line-height:1.5">
         Payment will be charged to your nominated payment method three days prior to delivery. Please make sure you have sufficient funds available on that day.
         </p>
+        {% if attributes.delivery_schedule %}
+          <p style="padding:5px 0;margin:0">
+            Delivery is scheduled {{ attributes.delivery_schedule }}.
+          </p>
+        {% endif %}
         <p style="padding:0;margin:0;line-height:1.5">
-        You will receive a weekly order confirmation email once your payment has been successfully processed.
+        You will receive a scheduled order confirmation email once your payment has been successfully processed.
         </p>
         <p style="padding:5px 0;margin:0;line-height:1.5">
           If you have any questions or concerns regarding your order please email <a href="mailto:{{ admin_email }}">{{ admin_email }}</a>.

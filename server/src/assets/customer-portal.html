@@ -11,11 +11,6 @@
             localStorage.setItem("proxy-path", "{% endraw %}{{ proxy_path }}{% raw %}"); // proxy path used in shop
           </script>
 
-          <div class="tr mw9 center">
-            <div class="dib mr3"><a href="/account">Your Account</a></div>
-            <div class="dib mr3">{{ 'Log out' | customer_logout_link }}</div>
-          </div>
-
     {% endraw %}
         <!-- used for most modals -->
         <div id="modal-window" style="top: 0px"></div>
@@ -49,9 +44,8 @@
 
       {% else %}
 
-          <div class="ml3">
+          <div class="white ml3">
             You need to be logged in to view this resource.
-            <div class="dib ml3">{{ 'Customer Log in' | customer_login_link }}</div>
           </div>
 
       {% endif %}

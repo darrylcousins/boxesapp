@@ -6,7 +6,6 @@
  */
 import { createElement, Fragment } from "@b9g/crank";
 import { selectVariantEvent } from "../lib/events";
-import SelectMenu from "../lib/select-menu";
 import { getSetting } from "../../helpers";
 
 /**
@@ -17,21 +16,6 @@ import { getSetting } from "../../helpers";
 function* VariantSelector({boxVariants, selectedVariant}) {
 
   /**
-   * Display variant selection menu if active
-   *
-   * @member selectVariantOpen
-   * @type {boolean}
-   */
-  let selectVariantOpen = false;
-  /**
-   * Selector id for select menu
-   *
-   * @member selectorId
-   * @type {string}
-   */
-  const selectorId = "selectVariant";
-
-  /**
    * Handle mouse up on selected components
    *
    * @function handleMouseUp
@@ -40,23 +24,13 @@ function* VariantSelector({boxVariants, selectedVariant}) {
    */
   const handleMouseUp = (ev) => {
     if (ev.target.tagName === "BUTTON") {
-      switch(ev.target.id) {
-        case selectorId:
-          selectVariantOpen = !selectVariantOpen;
-          this.refresh();
-          break;
-      }
-    } else if (ev.target.tagName === "DIV") {
-      switch(ev.target.getAttribute("name")) {
-        case selectorId:
-          const variant_id = ev.target.getAttribute("data-item");
-          //this.dispatchEvent(selectorOpenEvent(null));
-          this.dispatchEvent(selectVariantEvent(variant_id));
-          selectVariantOpen = false;
-          this.refresh();
-          break;
-      }
-    }
+      const variant_id = ev.target.getAttribute("data-item");
+      //this.dispatchEvent(selectorOpenEvent(null));
+      this.dispatchEvent(selectVariantEvent(variant_id));
+      selectVariantOpen = false;
+      this.refresh();
+      return;
+    };
   };
   this.addEventListener("mouseup", handleMouseUp);
 
@@ -65,15 +39,15 @@ function* VariantSelector({boxVariants, selectedVariant}) {
       <div id="variantSelector">
         { (boxVariants.length > 0) ? (
           <Fragment>
-            <div class="relative">
-              <SelectMenu
-                id={selectorId}
-                menu={boxVariants}
-                title="Select Delivery Day"
-                active={selectVariantOpen}
-              >
-                { selectedVariant.title }&nbsp;&nbsp;&nbsp;{ selectVariantOpen ? "▴" : "▾" }
-              </SelectMenu>
+            <div class="relative box-button-wrapper">
+              {boxVariants.map((el, idx, arr) => (
+                <button 
+                  data-item={el.item}
+                  data-title={el.text}
+                  class={ `box-button${selectedVariant.title === el.text ? " box-button-selected" : ""}` }>
+                  { el.text }
+                </button>
+              ))}
             </div>
           </Fragment>
         ) : ""

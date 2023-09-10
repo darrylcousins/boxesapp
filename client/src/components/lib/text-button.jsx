@@ -40,9 +40,10 @@ function TextButton({ text, index, array, title, name, item }) {
 
   const slug = text.replace(/ /g, '-');
 
+  // removed position class for Taste theme
   return (
     <button
-      class={position}
+      class={ `mybutton` }
       title={text}
       name={slug}
       id={slug}

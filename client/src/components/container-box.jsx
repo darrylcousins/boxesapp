@@ -353,22 +353,18 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     if (!loadedFromCart && cartBoxId) {
       showWarningPopup = !showWarningPopup;
       await this.refresh()
-      const popup = document.querySelector(`#popup-${productJson.id}`);
-      if (popup) {
-        popup.animate({ opacity: 1 }, animationOptions);
-      }
     } else {
       confirmSubmitCart()
     }
   };
 
-  const popupCallback = (result) => {
+  const popupCallback = async (result) => {
     if (result) {
       confirmSubmitCart()
       return;
     }
     showWarningPopup = !showWarningPopup;
-    this.refresh()
+    await this.refresh()
   };
 
   /**
@@ -934,7 +930,38 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
         for (const item of cartJson.items) {
           if (item.product_type === "Container Box") {
             // get the delivery date regardless of which box and use if available
-            selectedDate = item.properties["Delivery Date"];
+            const itemDate = item.properties["Delivery Date"];
+
+            // figure the variant from date weekday
+            let weekDay;
+            try {
+              weekDay = new Date(itemDate).toLocaleDateString("en-US", { weekday: 'long' });
+            } catch(e) {
+              console.warn(e);
+            };
+
+            // get the fetchDates for the weekday variant
+            const varDates = [];
+            for (const dayKey of Object.keys(fetchJson)) {
+              const dayTest = new Date(dayKey).toLocaleDateString("en-US", { weekday: 'long' });
+              if (dayTest === weekDay) {
+                varDates.push(dayKey);
+              };
+            };
+            if (varDates.length > 0) fetchDates = [ ...varDates ];
+
+            // set selected date
+            if (Object.keys(fetchJson).includes(itemDate)) {
+              selectedDate = itemDate;
+            };
+
+            // set selected variant
+            if (productJson.variants.length > 0 && weekDay) {
+              const variantTitles = productJson.variants.map(el => el.title);
+              if (variantTitles.includes(weekDay)) {
+                selectedVariant = productJson.variants[variantTitles.indexOf(weekDay)];
+              };
+            };
 
             // Get the box if it exists
             if (hasOwnProp.call(fetchJson, selectedDate)) selectedBox = fetchJson[selectedDate];
@@ -1118,7 +1145,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
   for await ({ productJson } of this) {
     yield (
       <div id="container-box">
-        <div id="containerBoxOverlay" class="overlay"></div>
+        <div id="containerBoxOverlay" class="boxOverlay"></div>
         {loading ? (
           <BarLoader />
         ) : (
@@ -1130,13 +1157,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 selectedSwaps={selectedSwaps}
               />
             )}
-            <div class="notice"
-                  style={{
-                    "color": getSetting("Colour", "notice-fg"),
-                    "background-color": getSetting("Colour", "notice-bg")
-                  }}>
-              <p>Choose a day of the week</p>
-            </div>
             <VariantSelector boxVariants={getVariants()} selectedVariant={selectedVariant} />
             <DateSelector fetchDates={fetchDates} selectedDate={selectedDate} />
             { selectedDate && boxRules.length > 0 && (
@@ -1175,13 +1195,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               <div class="button-wrapper" style="margin-bottom: 0.5em">
                 <button
                   title="Change product quantities"
+                  class="button"
                   id="qtyForm"
                   type="button"
-                  style={{
-                    color: getSetting("Colour", "button-foreground"),
-                    "background-color": getSetting("Colour", "button-background"),
-                    "border-color": getSetting("Colour", "button-background"),
-                    }}
                   >
                   {getSetting("Translation", "edit-quantities")}
                 </button>
@@ -1208,16 +1224,12 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                   )}
                   <button
                     type="button"
+                    class="button"
                     name="add"
                     id="add-button"
                     aria-label="Add to cart"
                     data-add-to-cart=""
                     onclick={initSubmitCart}
-                    style={{
-                      color: getSetting("Colour", "button-foreground"),
-                      "background-color": getSetting("Colour", "button-background"),
-                      "border-color": getSetting("Colour", "button-background"),
-                      }}
                   >
                     <span data-add-to-cart-text="">{ getButtonText() }</span>{" "}
                     <span style="display:none" data-loader="">
@@ -1238,10 +1250,10 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                   { !loadedFromCart && (
                       <Popup
                         class="w-third-ns"
-                        id={productJson.id}
+                        id={ `popup` }
                         buttons={true}
-                        active={showWarningPopup}
                         callback={popupCallback}
+                        collapsed={!(showWarningPopup)}
                         text={getSetting("Translation", "existing-box-confirm")} />
                   )}
                 </div>

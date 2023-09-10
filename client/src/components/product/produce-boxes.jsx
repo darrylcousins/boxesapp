@@ -33,7 +33,7 @@ function Boxes ({boxList, selectedProduct, cartBox, cartAddons, boxInCart, type}
         cartAddons={cartAddons}
         boxInCart={boxInCart} />
     ))
-  )
+  );
 };
 
 export default Boxes;

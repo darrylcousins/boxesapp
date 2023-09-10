@@ -30,6 +30,7 @@ theme
 
 # any back up files saved temporarily
 bak
+*.bak*
 
 # Dependency directory
 node_modules

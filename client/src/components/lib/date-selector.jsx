@@ -56,6 +56,13 @@ function* DateSelector({fetchDates, selectedDate}) {
    */
   const handleMouseUp = (ev) => {
     if (ev.target.tagName === "BUTTON") {
+      const date = ev.target.getAttribute("data-item");
+      this.dispatchEvent(selectDateEvent(date));
+      this.refresh();
+      return;
+    };
+    return;
+    if (ev.target.tagName === "BUTTON") {
       switch(ev.target.id) {
         case selectorId:
           selectDateOpen = !selectDateOpen;
@@ -91,22 +98,23 @@ function* DateSelector({fetchDates, selectedDate}) {
             )}
             <div class="relative">
               { (fetchDates.length > 1) ? (
-                <SelectMenu
-                  id={selectorId}
-                  menu={getDates().map(el => ({text: el, item: el}))}
-                  title="Select Date"
-                  active={selectDateOpen}
-                  hideButton={false}
-                >
-                  { selectedDate 
-                      ? selectedDate 
-                      : getSetting("Translation", "select-delivery-date") }&nbsp;&nbsp;&nbsp;{ selectDateOpen ? "▴" : "▾" }
-                </SelectMenu>
+                <Fragment>
+                  <div class="relative box-button-wrapper">
+                    {getDates().map(el => ({text: el, item: el})).map((el, idx, arr) => (
+                      <button 
+                        data-item={el.item}
+                        data-title={el.text}
+                        class={ `box-button${selectedDate === el.text ? " box-button-selected" : ""}` }>
+                        { el.text }
+                      </button>
+                    ))}
+                  </div>
+                </Fragment>
               ) : (
                 <div style={ wrapperStyle }>
-                  <div class="ma1">
+                  <div class="ma1 ph2">
                     <span class="b">Next delivery: </span>
-                    <span class="b fr fg-streamside-blue">{ selectedDate }</span>
+                    <span class="b fr">{ selectedDate }</span>
                   </div>
                 </div>
               )}

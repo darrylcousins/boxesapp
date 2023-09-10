@@ -16,7 +16,6 @@ import CollapseWrapper from "./collapse-animator";
  * <SelectMenu id="selectDate" menu={fetchDates} title="Select Date" active={menuSelectDate} />
  */
 function *SelectMenu ({ id, active, title, menu, children, style, hideButton }) {
-  const type = (id.startsWith("selectDate")) ? "ttu tracked" : "";
 
   for ({ id, active, title, menu, children, style, hideButton } of this) {
     yield (

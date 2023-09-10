@@ -256,7 +256,7 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
 
     yield (
       <div id="productSelector" class="">
-        <div id="productSelectorOverlay" class="overlay"></div>
+        <div id="productSelectorOverlay" class="boxOverlay"></div>
         <div>
 
           { selectedIncludes.length > 0 && (
@@ -266,7 +266,7 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
                   <div id="swapSelectorModal">
                     { possibleSwaps.length > 0 ? (
                       <Fragment>
-                        <div style="font-size:1em;font-weight:bold;padding:0.3em 0.5em;color:dark-grey;">
+                        <div style="font-size:1em;font-weight:bold;padding:0.3em 0.5em;color:black;">
                           <div>Removing <span style="color: black">{ removedItem.shopify_title }</span>.</div>
                           <div class="tr">To continue please select a replacement.</div>
                         </div>
@@ -288,7 +288,7 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
                         </div>
                       </Fragment>
                     ) : (
-                      <div style="font-size:1em;font-weight:bold;padding:0.3em 0.5em;color:dark-grey;">
+                      <div style="font-size:1em;font-weight:bold;padding:0.3em 0.5em;color:black;">
                         <div>Unable to swap <span style="color: black">{ removedItem.shopify_title }</span>.</div>
                       </div>
                     )}

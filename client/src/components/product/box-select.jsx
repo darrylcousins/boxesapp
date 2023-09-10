@@ -271,6 +271,26 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
     });
   };
 
+  // just provide a list of links to the box for now
+  // note that the boxes here are lists  by delivery date
+  for ({box, boxes, dates, title, initialProducts, idx} of this) {
+    yield (
+      <Fragment>
+        <div style="margin-left: 2em">
+          <div>{ box.title }</div>
+          <ul>
+           { dates.map((el) => (
+              <li>
+                <a class="link" href={ `/products/${box.handle}?ts=${Date.parse(el)}` }>{ el }</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Fragment>
+    );
+  };
+
+  /*
   for ({box, boxes, dates, title, initialProducts, idx} of this) {
     yield (
       <Fragment>
@@ -278,7 +298,7 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
           <div style={ { ...wrapperStyle, "margin-top": cartBox ? "2em" : "0.5em" } }>
             <div class="ma1">
               <span class="b">{ box.title } </span>
-              <span class="b fr fg-streamside-blue">{ selectedDate }</span>
+              <span class="b fr">{ selectedDate }</span>
             </div>
           </div>
         )}
@@ -415,6 +435,7 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
       </Fragment>
     );
   };
+*/
 }
 
 export default BoxSelect;

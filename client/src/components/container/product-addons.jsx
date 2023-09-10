@@ -9,7 +9,6 @@ import { createElement, Fragment } from "@b9g/crank";
 
 import CollapseWrapper from "../lib/collapse-animator";
 import { moveProductEvent, selectorOpenEvent } from "../lib/events";
-import SelectMenu from "../lib/select-menu";
 import {
   hasOwnProp,
   getSetting,

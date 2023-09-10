@@ -48,6 +48,9 @@ other subscription products in the shop.
 
 ```django
   {% if product.type == 'Container Box' %}
+    <script type="application/json" data-product-json id="product-json">
+      {{ product | json }}
+    </script>
     <script type="application/json" id="cart-json">
       {{ cart | json }}
     </script>

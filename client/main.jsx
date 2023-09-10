@@ -17,7 +17,17 @@ const init = async () => {
 
   // this is how I can test for product page with the Taste theme
   if (document.querySelector("#app")) {
-    const productJson = await JSON.parse(document.getElementById("product-json").textContent);
+    const productJsonEl = document.getElementById("product-json");
+
+    if (!productJsonEl) return;
+
+    let productJson;
+    try {
+      productJson = await JSON.parse(productJsonEl.textContent);
+    } catch(e) {
+      console.warn(e.message);
+      return;
+    };
 
     if (productJson.type !== "Container Box" && productJson.type !== "Box Produce") {
       return;

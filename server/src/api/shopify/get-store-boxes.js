@@ -62,6 +62,20 @@ export default async (req, res, next) => {
         if (data.products.length === 0) return null;
         const boxes = [];
         for (const { node } of data.products.edges) {
+          // xmas boxes and such like
+          if (!Object.hasOwnProperty.call(node, "sellingPlanGroups") || node.sellingPlanGroups.length === 0) continue;
+          let plans;
+          try {
+            plans = node.sellingPlanGroups.nodes[0].sellingPlans.nodes.map(el => {
+                return {
+                  id: parseInt(el.id.split("/").pop()),
+                  name: el.name.charAt(0).toUpperCase() + el.name.substring(1).toLowerCase(),
+                };
+            });
+          } catch(err) {
+            _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+            continue;
+          };
           boxes.push({
             id: parseInt(node.id.split("/").pop()),
             title: node.title,
@@ -73,12 +87,7 @@ export default async (req, res, next) => {
                   order_day_of_week: getOrderDayOfWeek(el.title)
                 };
               }),
-            plans: node.sellingPlanGroups.nodes[0].sellingPlans.nodes.map(el => {
-                return {
-                  id: parseInt(el.id.split("/").pop()),
-                  name: el.name.charAt(0).toUpperCase() + el.name.substring(1).toLowerCase(),
-                };
-              }),
+            plans,
           });
         };
         for (const box of boxes) {

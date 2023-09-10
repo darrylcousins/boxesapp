@@ -34,6 +34,7 @@ export default async (req, res, next) => {
   };
   try {
     const box = await _mongodb.collection("boxes").findOne(query);
+    console.log(box)
 
     let order;
     let boxLists;
@@ -72,10 +73,10 @@ export default async (req, res, next) => {
     box.variant_title = variant.title;
     box.variant_name = `${box.shopify_title} - ${variant.title}`;;
 
-    let { properties, messages } = reconcileLists(box, boxLists);
+    const { properties, messages } = await reconcileLists(box, boxLists);
 
     // if we're not updating then return the order, else the reconciled box
-    properties = (!update && order)
+    const finalProperties = (!update && order)
       ? {
         "Delivery Date": order.delivered,
         "Including": order.including.join(","), 
@@ -84,7 +85,7 @@ export default async (req, res, next) => {
         "Swapped Items": order.swaps.join(","), 
       } : properties;
 
-    res.status(200).json({ box, properties, messages, reconciled: (update || messages.length === 0) });
+    res.status(200).json({ box, properties: finalProperties, messages, reconciled: (update || messages.length === 0) });
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

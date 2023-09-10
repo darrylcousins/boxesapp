@@ -202,7 +202,7 @@ export default async function chargeCreated(topic, shop, body) {
       // with the delivery date we fix the next_charge_scheduled_at to 3 days prior
       //const offset = dateObj.getTimezoneOffset()
       //const nextChargeDate = new Date(dateObj.getTime() - (offset*60*1000));
-      const nextChargeDate = new Date(Date.parse(currentDeliveryDate));
+      const nextChargeDate = new Date(Date.parse(deliveryDate));
       nextChargeDate.setDate(nextChargeDate.getDate() - 3);
       // Put to the required yyyy-mm-dd format
       // Could use .split("T")[0] instead of substring

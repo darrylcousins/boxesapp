@@ -288,6 +288,7 @@ export default async (req, res, next) => {
         quantity: 1, // always one eh
         shopify_product_id: data.product_id,
     });
+    // bother, no first_name, last_name on a charge customer
     const attributes = {
       customer: charge.customer,
       nextChargeDate: new Date(Date.parse(data.scheduled_at)).toDateString(),

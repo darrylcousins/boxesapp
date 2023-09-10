@@ -623,7 +623,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
         attempts += 1; // force Timer reload and count attempts
         editsPending = true;
         loading = false;
-        isExplainerOpen = attempts === 1;
         await this.refresh();
         if (restartTimer) restartTimer(timerSeconds);
         return;
@@ -709,6 +708,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     };
     if (killTimer) killTimer();
     loading = false;
+    isExplainerOpen = attempts === 1;
     await this.refresh();
     if ( charge === "PENDING" || pending) {
       if (restartTimer) restartTimer(timerSeconds);

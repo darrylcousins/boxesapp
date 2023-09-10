@@ -75,7 +75,9 @@ const run = async () => {
     ]).then(async result => {
       console.log(result);
       let url = path.join(base_url, result.path);
-      if (result.id !== 'null') url = path.join(url, result.id);
+      if (result.id !== 'null') {
+        url = path.join(url, result.id);
+      };
       if (["subscriptions"].includes(result.path) && result.method !== "DELETE") {
         url = `${url}?include=metafields`;
         //url = `${url}&status=active`;
@@ -102,7 +104,7 @@ const run = async () => {
       } else {
         const data = await fetch(url, options).then(result => result.json());
         console.log(JSON.stringify(data, null, 2));
-       writeFileSync("recharge.charge.json", JSON.stringify(data, null, 2));
+        //writeFileSync("recharge.charge.json", JSON.stringify(data, null, 2));
       };
       process.exit(1);
     })

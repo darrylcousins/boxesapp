@@ -920,6 +920,53 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
         };
       };
 
+      let ts = null;
+      if (window.location.search) {
+        ts = findGetParameter("ts");
+      };
+
+      /* For arriving from adding product from an individual box product, e.g.
+       * see product-box.jsx
+       * Note that this will override whatever is in the cart
+       */
+      if (ts) {
+        const d = new Date(parseInt(ts, 10));
+
+        const dateStr = d.toDateString();
+        const vTitles = productJson.variants.map(el => el.title);
+        if (Object.keys(fetchJson).includes(dateStr)) {
+          selectedDate = dateStr;
+          const dayOfWeek = d.toLocaleDateString("en-US", { weekday: 'long' });
+          if (vTitles.includes(dayOfWeek)) {
+            selectedVariant = productJson.variants[vTitles.indexOf(dayOfWeek)];
+          };
+          selectedBox = fetchJson[selectedDate];
+
+          const vDates = [];
+          for (const dayKey of Object.keys(fetchJson)) {
+            const dayTest = new Date(dayKey).toLocaleDateString("en-US", { weekday: 'long' });
+            if (dayTest === dayOfWeek) {
+              vDates.push(dayKey);
+            };
+          };
+          if (vDates.length > 0) fetchDates = [ ...vDates ];
+
+          showBox = true;
+        };
+
+        // no aop without a timestamp
+        const aop = findGetParameter("aop");
+        if (aop) {
+          // got an add on product
+          const item = selectedBox.addOnProducts.find(el => el.shopify_product_id === parseInt(aop, 10));
+          if (item && !selectedAddons.find(el => el.shopify_product_id === parseInt(aop, 10))) {
+            const product = { ...item };
+            product.quantity = 1;
+            selectedAddons.push(product);
+          };
+        };
+      };
+
       // in both the following circumstances we should present entire edit box
       if (cartJson.items.length) {
         const custom_box_id = parseInt(getSetting("General", "custom-box-id"));
@@ -929,42 +976,52 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
         let cartSwappedItems = [];
         for (const item of cartJson.items) {
           if (item.product_type === "Container Box") {
-            // get the delivery date regardless of which box and use if available
-            const itemDate = item.properties["Delivery Date"];
 
-            // figure the variant from date weekday
-            let weekDay;
-            try {
-              weekDay = new Date(itemDate).toLocaleDateString("en-US", { weekday: 'long' });
-            } catch(e) {
-              console.warn(e);
-            };
+            if (!ts) { // use timestamp first and foremost
+              // get the delivery date regardless of which box and use if available
+              const itemDate = item.properties["Delivery Date"];
 
-            // get the fetchDates for the weekday variant
-            const varDates = [];
-            for (const dayKey of Object.keys(fetchJson)) {
-              const dayTest = new Date(dayKey).toLocaleDateString("en-US", { weekday: 'long' });
-              if (dayTest === weekDay) {
-                varDates.push(dayKey);
+              // figure the variant from date weekday
+              let weekDay;
+              try {
+                weekDay = new Date(itemDate).toLocaleDateString("en-US", { weekday: 'long' });
+              } catch(e) {
+                console.warn(e);
               };
-            };
-            if (varDates.length > 0) fetchDates = [ ...varDates ];
 
-            // set selected date
-            if (Object.keys(fetchJson).includes(itemDate)) {
-              selectedDate = itemDate;
-            };
-
-            // set selected variant
-            if (productJson.variants.length > 0 && weekDay) {
-              const variantTitles = productJson.variants.map(el => el.title);
-              if (variantTitles.includes(weekDay)) {
-                selectedVariant = productJson.variants[variantTitles.indexOf(weekDay)];
+              // get the fetchDates for the weekday variant
+              const varDates = [];
+              for (const dayKey of Object.keys(fetchJson)) {
+                const dayTest = new Date(dayKey).toLocaleDateString("en-US", { weekday: 'long' });
+                if (dayTest === weekDay) {
+                  varDates.push(dayKey);
+                };
               };
-            };
+              if (varDates.length > 0) fetchDates = [ ...varDates ];
 
-            // Get the box if it exists
-            if (hasOwnProp.call(fetchJson, selectedDate)) selectedBox = fetchJson[selectedDate];
+              // set selected date
+              if (Object.keys(fetchJson).includes(itemDate)) {
+                selectedDate = itemDate;
+              };
+
+              // set selected variant
+              if (productJson.variants.length > 0 && weekDay) {
+                const variantTitles = productJson.variants.map(el => el.title);
+                if (variantTitles.includes(weekDay)) {
+                  selectedVariant = productJson.variants[variantTitles.indexOf(weekDay)];
+                };
+              };
+
+              // Get the box if it exists
+              if (hasOwnProp.call(fetchJson, selectedDate)) selectedBox = fetchJson[selectedDate];
+
+            } else {
+              // boxHasChanged if we have loaded a different variant
+              if (selectedVariant.id !== item.variant_id && item.product_id === productJson.id) {
+                boxHasChanged = true;
+                console.log("different variant to the cart item");
+              };
+            }; // end if ts url parameter
 
             // XXX Beware of custom box, move swaps to addons and elimiate removed items
 
@@ -988,6 +1045,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
 
             if (item.product_id === productJson.id) {
               // only now are we sure that this is the same box
+              // but must also check for variant_id
               loadedFromCart = true;
             };
           };
@@ -1069,30 +1127,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       //console.log('date', selectedDate);
       //console.log('box', selectedBox);
 
-      /* For arriving from adding product from an individual box product, e.g.
-       * see product-box.jsx
-       */
-      if (window.location.search) {
-        const ts = findGetParameter("ts");
-        if (ts) {
-          const d = new Date(parseInt(ts, 10));
-          selectedDate = d.toDateString();
-          selectedBox = fetchJson[selectedDate];
-          showBox = true;
-          // no aop without a timestamp
-          const aop = findGetParameter("aop");
-          if (aop) {
-            // got an add on product
-            const item = selectedBox.addOnProducts.find(el => el.shopify_product_id === parseInt(aop, 10));
-            if (item && !selectedAddons.find(el => el.shopify_product_id === parseInt(aop, 10))) {
-              const product = { ...item };
-              product.quantity = 1;
-              selectedAddons.push(product);
-            };
-          };
-        };
-      };
-
       // either a single delivery date, or selected date
       // or box in cart XXX which needs a fix for bad matching dates
       if (showBox) {
@@ -1158,7 +1192,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               />
             )}
             <VariantSelector boxVariants={getVariants()} selectedVariant={selectedVariant} />
-            <DateSelector fetchDates={fetchDates} selectedDate={selectedDate} />
+            <DateSelector fetchDates={fetchDates} selectedDate={selectedDate} variantTitle={selectedVariant.title} />
             { selectedDate && boxRules.length > 0 && (
               <div class="notice"
                   style={{

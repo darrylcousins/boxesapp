@@ -14,7 +14,7 @@ import { getSetting, wrapperStyle } from "../../helpers";
  *
  * @yields {Element} DOM component
  */
-function* DateSelector({fetchDates, selectedDate}) {
+function* DateSelector({fetchDates, selectedDate, variantTitle}) {
 
   /**
    * Display date selection menu if active
@@ -126,7 +126,7 @@ function* DateSelector({fetchDates, selectedDate}) {
                   "color": getSetting("Colour", "notice-fg"),
                   "background-color": getSetting("Colour", "notice-bg")
                 }}>
-            <p>{getSetting("Translation", "notice-no-boxes")}</p>
+            <p>{ `No boxes scheduled for ${variantTitle} delivery, we will post next week's boxes shortly. Please try again later.` }</p>
           </div>
         )}
       </div>

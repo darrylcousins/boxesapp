@@ -16,7 +16,7 @@ const init = async () => {
 
 
   // this is how I can test for product page with the Taste theme
-  if (document.querySelector("product-info")) {
+  if (document.querySelector("#app")) {
     const productJson = await JSON.parse(document.getElementById("product-json").textContent);
 
     if (productJson.type !== "Container Box" && productJson.type !== "Box Produce") {
@@ -34,5 +34,8 @@ const init = async () => {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
+  await init();
+});
+window.addEventListener("QuickAddLoaded", async () => {
   await init();
 });

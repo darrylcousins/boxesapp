@@ -527,7 +527,7 @@ async function* ChangeBox(props) {
                     <span class="o-50">Charge date:</span>
                   </div>
                   <div class="tl dt-cell w-50 fl pl2">
-                    { boxAttributes.nextChargeDate } ({boxAttributes.orderDayOfWeek})
+                    { boxAttributes.nextChargeDate }
                   </div>
                 </div>
                 <div class="dt-row w-100">
@@ -549,7 +549,7 @@ async function* ChangeBox(props) {
         </div>
         <p class="lh-copy tc">
           <div class="cf mt3">
-            <div class="fl w-100 pv1 b">
+            <div class="fl w-100 mb2 pv1 b ba br3 b--silver">
               { currentBoxes && currentBoxes.map(box => (
                 <Button
                   type="alt-secondary"
@@ -563,7 +563,7 @@ async function* ChangeBox(props) {
                 </Button>
               ))}
             </div>
-            <div class="fl w-100 pv1 b">
+            <div class="fl w-100 mb2 pv1 b ba br3 b--silver">
               { currentVariants && currentVariants.map(variant => (
                 <Button
                   type="alt-secondary"
@@ -577,7 +577,7 @@ async function* ChangeBox(props) {
                 </Button>
               ))}
             </div>
-            <div class="fl w-100 pv1 b">
+            <div class="fl w-100 pv1 b ba br3 b--silver">
               { currentPlans && currentPlans.map(plan => (
                 <Button
                   type="alt-secondary"

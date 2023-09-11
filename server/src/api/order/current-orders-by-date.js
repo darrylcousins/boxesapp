@@ -20,9 +20,18 @@ export default async (req, res, next) => {
   const collection = _mongodb.collection("orders");
   const response = Object();
 
+  const checkDate = new Date(parseInt(req.params.timestamp));
+
+  let searchDate;
+  if (isNaN(checkDate)) {
+    searchDate = NODELIVER_STRING;
+  } else {
+    searchDate = deliveryDay;
+  };
+
   let query = getQueryFilters(req, {
     product_id: {$ne: null},
-    delivered: { $in: [deliveryDay, NODELIVER_STRING]}
+    delivered: searchDate,
   });
 
   try {
@@ -32,6 +41,11 @@ export default async (req, res, next) => {
       // order by box title
       response.orders = result;
       response.headers = headersPartial;
+
+      // !old style - returning res.status(200).json() would work,
+      // I clearly wrote this around 3 years ago but I'll leave it here as a
+      // reminder to self of time passing :-)
+
       res.set('Content-Type', 'application/json');
       res.write(JSON.stringify(response));
       res.end();

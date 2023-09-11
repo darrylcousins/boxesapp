@@ -39,23 +39,6 @@ import { getLoader, capWords, dateStringForInput, animateFadeForAction } from ".
 async function* UpsertOrderModal(props) {
   const { doSave, closeModal, title, order, delivered, formId } = props;
 
-  //const CollapsibleProducts = CollapseWrapper(EditProducts);
-  /**
-   * Hold collapsed state of product edit business
-   *
-   * @member {boolean} collapsed
-   */
-  let collapsed = true;
-
-  /*
-   * Control the collapse of product list
-   * @function toggleCollapse
-   */
-  const toggleCollapse = () => {
-    collapsed = !collapsed;
-    this.refresh();
-  };
-
   /**
    * Retain form data after changes
    *
@@ -218,12 +201,15 @@ async function* UpsertOrderModal(props) {
           bgColour: "black",
           borderColour: "black"
         }));
-        getBox({
-          delivered: input.value,
-          product_title: ev.target.value,
-          _id: order ? order._id : null,
-        });
       });
+    // always get the box from the updated form data because if it has changed
+    // then the included products will likely need updating
+    // this will also correctly set the variant - calculated by the date
+    getBox({
+      delivered: formData.delivered,
+      product_title: formData.product_title,
+      _id: order ? order._id : null,
+    });
   };
 
   /*
@@ -260,16 +246,21 @@ async function* UpsertOrderModal(props) {
             bgColour: "black",
             borderColour: "black"
           }));
-          getBox({
-            delivered: ev.target.value,
-            product_title: input.value,
-            _id: order ? order._id : null,
-          });
         } else {
           fields.Box.datalist.unshift("Select a box");
           this.refresh(); // otherwise called after fetching box
         };
       });
+      
+    // always get the box from the updated form data because if it has changed
+    // then the included products will likely need updating
+    // this will also correctly set the variant - calculated by the date
+    getBox({
+      delivered: formData.delivered,
+      product_title: formData.product_title,
+      product_id: formData.product_id,
+      _id: order ? order._id : null,
+    });
   };
 
   /**
@@ -329,10 +320,14 @@ async function* UpsertOrderModal(props) {
       result.source = JSON.stringify(order.source);
       result.shipping = JSON.stringify(order.shipping);
       const delivered = new Date(Date.parse(order.delivered));
-      fields["Pickup Date"].datalist = [delivered.toDateString()];
-      for (const i of [1, 2]) {
-        delivered.setDate(delivered.getDate() - 1);
-        fields["Pickup Date"].datalist.unshift(delivered.toDateString());
+      if (!isNaN(delivered.getTime())) { // those "No delivery date" entries
+        fields["Pickup Date"].datalist = [delivered.toDateString()];
+        for (const i of [1, 2]) {
+          delivered.setDate(delivered.getDate() - 1);
+          fields["Pickup Date"].datalist.unshift(delivered.toDateString());
+        };
+      } else {
+        fields["Delivered"].datalist.unshift("Select a date");
       };
       return result;
     };
@@ -383,13 +378,23 @@ async function* UpsertOrderModal(props) {
       boxLoading = true;
       box = null;
       properties = null;
-      messages = null;
+      messages = [];
       this.refresh()
     };
     if (target) {
       animateFadeForAction(target, fix);
     };
     const timestamp = new Date(Date.parse(options.delivered)).getTime();
+    if (isNaN(timestamp)) {
+      // no delivery date raise error that delivery date should be updated first
+      isBoxEditable = false;
+      // it's not but we let it pass by choice
+      isBoxReconciled = true;
+      // clear the messages
+      messages = [];
+      box = null;
+      return;
+    };;
     const order_id = options._id;
     const product_title = encodeURIComponent(options.product_title);
     const product_identifier = Boolean(options.product_id) ? options.product_id : product_title;
@@ -407,8 +412,8 @@ async function* UpsertOrderModal(props) {
         if (!error) {
           box = json.box;
           properties = json.properties;
-          messages = json.messages;
           isBoxReconciled = json.reconciled;
+          if (!json.reconciled) messages = json.messages;
           isBoxEditable = isBoxReconciled; // no messages, no updates required
           formData.including = properties["Including"].split(",").filter(el => Boolean(el));
           formData.addons = properties["Add on Items"].split(",").filter(el => Boolean(el));
@@ -480,8 +485,13 @@ async function* UpsertOrderModal(props) {
    */
   const doReconcileBox = async () => {
     // reload box with update to reconcile box
-    const options = { ...order };
+    //const options = { ...order };
+
+    // the box and delivery date may have changed so now want to fix the includes etc.
+    // if nothing was changed then this will match the order
+    const options = { ...formData };
     options.updating = true;
+
     await getBox(options);
     this.refresh();
   };
@@ -512,6 +522,13 @@ async function* UpsertOrderModal(props) {
         {!loading && !fetchError && fields && (
           <div class="w-90 center ph1">
             {formError && <Error msg={formError} />}
+            { (!isBoxEditable && isBoxReconciled && !box) && (
+              <div class="tl ba br2 pa3 mh2 mv1 orange bg-light-yellow" role="alert">
+                <p>
+                  The delivery date should be updated and saved before products can be edited.
+                </p>
+              </div>
+            )}
             <Form
               data={formData}
               fields={fields}
@@ -556,11 +573,6 @@ async function* UpsertOrderModal(props) {
               </Fragment>
             )}
             <div class="tr pr2 pb2">
-              { !loading && box && false && (
-                <Button type="secondary" onclick={toggleCollapse}>
-                  { collapsed ? "Edit products" : "Hide products" }
-                </Button>
-              )}
               { ( isBoxEditable || isBoxReconciled ) && (
                 <Fragment>
                   <Button type="primary" onclick={saveData}>

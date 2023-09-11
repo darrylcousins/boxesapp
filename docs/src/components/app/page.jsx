@@ -281,14 +281,16 @@ ${ `${ fence }` }
           </div>
         </div>
 
-        <div class="cf"></div>
+        <div class="cf mb2"></div>
+        { true && (
+          <Alert>
+          This documentation was written mostly in spring 2022. In the winter
+          of 2023 I spent several hundred hours of work making changes,
+          adding features, and generally re-working the application. Therefore,
+          this documentation is mostly out of date. Sorry.
+          </Alert>
+        )}
         <div id="page-wrapper" role="document">
-          { false && (
-            <Alert>
-              This documentation is still under construction, incomplete, and
-              already a little out of date.
-            </Alert>
-          )}
           <div id="page-content" role="main" class={ `markdown-body ${mode}-mode` }>
             { parsed ? (
               <Raw value={ html } />

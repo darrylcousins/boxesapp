@@ -76,6 +76,17 @@ other clients then this copy will be needed to be customised. It is therefore
 imperative that templates can be edited. No further thoughts here, write files,
 use [database][mongo] or whatever.
 
+## Client App On Store
+
+A change of theme on [Streamside][streamside] cost me many, many hours of work
+to fix the client app for the new theme (the dark background was a headache). A
+settings module for the admin allows for the editing of fragments of text that
+appear in the client app and for the colours of buttons etc. Even so, this was
+not anything close enough to allow making the changing of the
+[shopify](shopify) theme an easy task. My thinking now is ditch most of
+settings (keeping only the text strings) and de-coupling the css for the client
+app so that it can simply be edited in the store admin.
+
 ## Analytics
 
 Maybe analyse cancel/edit/delete emails to look for patterns and customer behaviours.

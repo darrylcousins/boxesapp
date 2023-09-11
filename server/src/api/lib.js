@@ -6,6 +6,22 @@
 import { matchNumberedString } from "../lib/helpers.js";
 
 /*
+ * @function compareArrayElements
+ *
+ * A function to compare if two arrays have the same elements regardless of their order
+ */
+const compareArrayElements = (a, b) => {
+  if (a.length !== b.length) return false;
+  const elements = new Set([...a, ...b]);
+  for (const x of elements) {
+    const count1 = a.filter(e => e === x).length;
+    const count2 = b.filter(e => e === x).length;
+    if (count1 !== count2) return false;
+  };
+  return true;
+};
+
+/*
  * @function reconcileLists
  * @param (Http request object) req
  * @param (Http response object) res
@@ -38,8 +54,24 @@ export default async function reconcileLists(box, boxLists) {
   const includedProducts = box.includedProducts.map(el => el.shopify_title);
 
   const messages = [];
+
+  // remove the quantity values and titles only
+  const currentIncludes = boxListArrays["Including"]
+    .map(el => matchNumberedString(el))
+    .map(el => el.title);
+  // match includes - could be the order has a date or box change
+  if (!compareArrayElements(currentIncludes, includedProducts)) {
+    messages.push("The included items do not match the box included items");
+  };
+
   let item;
   let idx;
+
+  // first check that the included products match, e.g. when a delivery date is
+  // changed for a box then the included products may well be different and
+  // also if we have had a "No delivery date" order then the included products
+  // would also not have been updated
+  
 
   /* REMOVED ITEMS one only is allowed with the matching swap */
   for  ([idx, item] of Object.entries(boxRemovedItems)) {

@@ -54,7 +54,7 @@ export const headersFull = [
 
 export const headersPartial = [
   'Select',
-  'Box',
+  'Box (Variant)',
   'Delivery (Pickup)',
   'Order #',
   'Customer',

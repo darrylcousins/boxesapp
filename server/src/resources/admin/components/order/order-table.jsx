@@ -41,7 +41,7 @@ function* TableRow({ order, index, selected }) {
             id={order._id}
           />
         </td>
-        <td data-title="SKU" class="pv1 bb b--black-20 v-top">{order.product_title}</td>
+        <td data-title="SKU" class="pv1 bb b--black-20 v-top">{order.product_title}<span class="db black-40">({order.variant_title})</span></td>
         <td data-title="Delivered" class="pv1 bb b--black-20 v-top">{order.delivered}<span class="db black-40">({order.pickup})</span></td>
         <td data-title="Order #" class="pv1 bb b--black-20 v-top">{order.order_number}</td>
         <td data-title="Contact" class="pv1 bb b--black-20 v-top">

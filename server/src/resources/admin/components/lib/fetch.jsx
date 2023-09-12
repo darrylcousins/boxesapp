@@ -22,7 +22,7 @@ import { hasOwnProp } from "../helpers";
  */
 const Fetch = async (src) => {
   const proxy = localStorage.getItem("proxy-path");
-  //console.log("fetching", `${proxy}${src}`);
+  console.log("fetching", `${proxy}${src}`);
   let error = null;
   return fetch(`${proxy}${src}`)
     .then(async (response) => {

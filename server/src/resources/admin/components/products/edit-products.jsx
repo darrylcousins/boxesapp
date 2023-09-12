@@ -188,8 +188,6 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
     let deliveryDate = new Date(Date.parse(box.delivered));
     // just passing the day index of the week - api returns the variant with that title
     let variant_id = deliveryDate.getDay();
-    console.log("fetching price");
-    console.log(box.delivered, variant_id, product_id);
     const uri = `/api/shopify-box-price/${product_id}/${variant_id}`;
     return Fetch(uri)
       .then((result) => {
@@ -200,7 +198,6 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
           return null;
         };
         box.shopify_price = json.price;
-        console.log("got this", json);
         this.refresh();
       })
       .catch((err) => {

@@ -205,6 +205,7 @@ async function* UpsertOrderModal(props) {
     // always get the box from the updated form data because if it has changed
     // then the included products will likely need updating
     // this will also correctly set the variant - calculated by the date
+    // need to check if variant is available otherwise an error comes from not finding a variant
     getBox({
       delivered: formData.delivered,
       product_title: formData.product_title,
@@ -426,6 +427,7 @@ async function* UpsertOrderModal(props) {
           formData.variant_name = box.variant_name;
           formData.variant_title = box.variant_title;
           formError = null;
+          fetchError = null;
           this.refresh();
         } else {
           fetchError = error;
@@ -518,10 +520,12 @@ async function* UpsertOrderModal(props) {
     yield (
       <Fragment>
         {loading && <BarLoader />}
-        {fetchError && <Error msg={fetchError} />}
-        {!loading && !fetchError && fields && (
+        {!loading && fields && (
           <div class="w-90 center ph1">
-            {formError && <Error msg={formError} />}
+            <div class="mh2">
+              {fetchError && <Error msg={fetchError} />}
+              {formError && <Error msg={formError} />}
+            </div>
             { (!isBoxEditable && isBoxReconciled && !box) && (
               <div class="tl ba br2 pa3 mh2 mv1 orange bg-light-yellow" role="alert">
                 <p>

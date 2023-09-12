@@ -37,7 +37,6 @@ const calculateDates = (deltaDays, newVariant, currentDate) => {
   // currentDate comes from the original subscription
   const currentDeliveryDate = new Date(Date.parse(currentDate));
   if (deliveryDate.getTime() < currentDeliveryDate.getTime()) {
-    console.log("moving it forward a week");
     deliveryDate.setDate(deliveryDate.getDate() + 7);
   };
 
@@ -60,8 +59,6 @@ const calculateDates = (deltaDays, newVariant, currentDate) => {
   // Could use .split("T")[0] instead of substring
   const nextChargeScheduledAt = formatDate(chargeDate);
   // does ISOString mess with things given timezone offset?
-  console.log(deliveryDate);
-  console.log(nextChargeScheduledAt);
 
   return { deliveryDate, chargeDate, orderDayOfWeek };
 
@@ -135,7 +132,6 @@ const getBoxes = async () => {
 async function* ChangeBox(props) {
   const { doSave, closeModal, title, subscription, formId } = props;
 
-  console.log(subscription);
   /**
    * Holds all the data
    *
@@ -143,7 +139,6 @@ async function* ChangeBox(props) {
    */
   const boxAttributes = { ...subscription.attributes };
   boxAttributes.boxPlan = ""; // initialize
-  console.log(boxAttributes);
   let currentBoxes;
   let currentBox;
   let currentVariants;
@@ -151,7 +146,6 @@ async function* ChangeBox(props) {
   let currentPlans;
   let currentPlan;
 
-  console.log(subscription);
   /**
    * the selected box on clicking preview
    *
@@ -164,6 +158,12 @@ async function* ChangeBox(props) {
    * @member {object} boxProperties
    */
   let boxProperties;
+  /**
+   * Feedback to user
+   *
+   * @member {object} boxMessages
+   */
+  let alertMessage;
   /**
    * Messages after reconcile box
    *
@@ -356,7 +356,6 @@ async function* ChangeBox(props) {
           this.refresh();
           return null;
         };
-        console.log(json);
         loading = false;
         this.refresh();
         return true;
@@ -374,6 +373,7 @@ async function* ChangeBox(props) {
       return this.refresh();
     };
     let foundDate = Object.keys(json).find(el => el === boxAttributes.nextDeliveryDate);
+
     if (!foundDate) {
       foundDate = Object.keys(json).sort(dateStringSort).pop();
     };
@@ -389,8 +389,6 @@ async function* ChangeBox(props) {
     selectedBox.variant_title = currentVariant.title;
     selectedBox.variant_name = `${currentBox.title} - ${currentVariant.title}`;;
 
-    console.log(selectedBox);
-
     const headers = { "Content-Type": "application/json" };
     const data = { boxLists, box: selectedBox };
     const src = "/api/recharge-get-reconciled-preview";
@@ -402,9 +400,7 @@ async function* ChangeBox(props) {
           loading = false;
           this.refresh();
         } else {
-          console.log(json);
           boxProperties = json.properties;
-          console.log(boxProperties);
           // because a box is already uploaded for this delivery date it will need to reconciled
           boxMustReconcile = (
             boxProperties["Delivery Date"] === boxAttributes.nextDeliveryDate
@@ -423,20 +419,55 @@ async function* ChangeBox(props) {
 
   };
 
+  /**
+   * Handle clicks in this component
+   * If a box has changed then we must collect the new set of variants and selling plans
+   * If a variant has changed then we must collect boxes that have that variant
+   * If a selling plan has changed then we must collect boxes and their variants that have that selling plan
+   *
+   * @function onClick
+   * @returns {null}
+   */
   const onClick = (ev) => {
     const name = ev.target.name;
     const value = ev.target.title;
     const itemId = ev.target.getAttribute("data-id");
+    alertMessage = null;
     switch (name) {
       case "title":
         // update variants for the box
         currentBox = currentBoxes.find(el => parseInt(el.id) === parseInt(itemId));
         currentVariants = currentBox.variants;
         // what if it doesn't have the currently selected variant?
-        currentVariant = currentBox.variants.find(el => el.title === currentVariant.title);
+        //const searchVariant = currentBox.variants.find(el => el.title === currentVariant.title);
+        const searchVariant = currentBox.variants.find(el => el.title === boxAttributes.variant);
+        if (searchVariant) {
+          currentVariant = searchVariant;
+        } else {
+          currentVariant = currentVariants[0];
+          // now we have changed the variant all the dates need to be updated
+          // and let the user know
+          if (currentVariant.title !== boxAttributes.variant) {
+            alertMessage = `${value} does not have a ${boxAttributes.variant} option so ${currentVariant.title} has been selected instead`;
+            // now must set the boxAttributes for this option
+            const { deliveryDate, chargeDate, orderDayOfWeek } = calculateDates(
+              deltaDays, // day difference into future
+              currentVariant.title, // our new variant
+              subscription.attributes.nextDeliveryDate, // the original date
+            );
+            // assign to collected data
+            boxAttributes.nextDeliveryDate = deliveryDate.toDateString();
+            boxAttributes.nextChargeDate = chargeDate.toDateString();
+            boxAttributes.orderDayOfWeek = orderDayOfWeek;
+            boxAttributes.variant = currentVariant.title;
+            boxAttributes.variant_id = currentVariant.id;
+            boxAttributes.boxPrice = currentVariant.price;
+          };
+        };
         currentPlans = currentBox.plans;
         // what if it doesn't have the currently selected plan?
-        currentPlan = currentBox.plans.find(el => el.name === currentPlan.name);
+        const searchPlan = currentBox.plans.find(el => el.name === currentPlan.name);
+        if (searchPlan) currentPlan = searchPlan;
         // assign to collected data
         boxAttributes.title = value;
         boxAttributes.product_id = currentBox.id;
@@ -542,8 +573,13 @@ async function* ChangeBox(props) {
             </div>
           </h5>
           { currentBoxes && (
-            <div class="f4 dark-blue pa2 mt0 mb3 br3 ba b--dark-blue bg-washed-blue">
+            <div class="dark-blue pa2 mt0 mb3 br3 ba b--dark-blue bg-washed-blue">
               Delivery dates can be paused or rescheduled after changes are saved.
+            </div>
+          )}
+          { alertMessage && (
+            <div class="orange pa2 mv2 br3 ba b--orange bg-light-yellow">
+              { alertMessage }
             </div>
           )}
         </div>
@@ -629,7 +665,7 @@ async function* ChangeBox(props) {
                     <span>Changes to your box are indicative only and dependent on upcoming boxes.</span>
                   )}
                 </h5>
-                <div class="f4 tc dark-blue mt1 mb3">
+                <div class="i tc dark-blue mt1 mb3">
                     <span>You will be able to edit your products once the changes have been saved.</span>
                 </div>
                 { boxMessages.map(message => (
@@ -647,6 +683,7 @@ async function* ChangeBox(props) {
               properties={ boxProperties }
               box={ selectedBox }
               nextChargeDate={ boxAttributes.nextChargeDate }
+              hideDetails={ true }
               rc_subscription_ids={ boxAttributes.rc_subscription_ids }
               id="edit-products"
               key="order"

@@ -30,23 +30,39 @@ const main = async () => {
   global._mongodb = mongodb;
   global._logger = winstonLogger;
 
+
   try {
+
+
+    const getQuery = (result) => {
+      let query = [
+        ["limit", 250 ],
+      ];
+      if (result.next_cursor) {
+        query.push(
+          ["page_info", result.next_cursor ],
+        );
+      };
+      return query;
+    };
 
     const collection = mongodb.collection("customers");
     const existingCount = await collection.countDocuments({}, { hint: "_id_" });
-    const result = await makeRechargeQuery({
-      path: `customers`,
-      query: [
-        ["limit", 250 ],
-      ]
-    });
-    const { customers, next_cursor, previous_cursor } = result;
 
-    if (next_cursor) {
-      console.log(`Collect customers, got more than 250 ${customers.length}`);
-      // XXX must code for this now while I still can
+    let nextCursor = true;
+    let customers = [];
+    let result = { next_cursor: false };
+
+    while (nextCursor === true) {
+      result = await makeRechargeQuery({
+        path: `customers`,
+        query: getQuery(result),
+      });
+      customers = [ ...customers, ...result.customers ];
+      if (!result.next_cursor) nextCursor = false;
     };
 
+    console.log(customers.length);
     for (const el of customers) {
 
       const charge_list = [];

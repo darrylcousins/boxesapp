@@ -409,6 +409,7 @@ async function* Customers() {
             </div>
           </Fragment>
         )}
+          <div class="ma1"><br /></div>
         { loading && <BarLoader /> }
         { fetchCustomer ? (
             <Customer customer={ fetchCustomer } admin={ true } /> 

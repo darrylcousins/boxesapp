@@ -47,6 +47,7 @@ function* ModalTemplate({ children, closeModal, error, loading, withClose, withC
                 <span class="dn">Close modal</span>
               </button>
             )}
+            <div class="mv2"><br /></div>
             {loading && <BarLoader />}
             {(error && error !== null) && <Error msg={error} />}
             <div class="tl">

@@ -97,7 +97,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    *
    * @member {array} timerSeconds
    */
-  const timerSeconds = 30;
+  const timerSeconds = 20;
   /**
    * Is the explainer open?
    *
@@ -157,7 +157,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    * @member {object|string} editsPending
    */
   let editsPending = Boolean(subscription.attributes.pending);
-  //let editsPending;
   /**
    * The subscription logs if any
    *
@@ -610,7 +609,10 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     loading = true;
     await this.refresh();
 
-    //
+    // also need to send message to server to delete the updates_pending entry
+    // message user, kill the timer, change messages
+    // keep editsPending as true to prevent any futher action on this page
+
     // duplicated in the Cancelled component - surely should figure out
     if (eventAction === "cancelled") {
       const json = await getCancelledSubscription();
@@ -698,6 +700,20 @@ async function *Subscription({ subscription, customer, idx, admin }) {
       attempts += 1; // force Timer reload and count attempts
       pending = true;
       editsPending = Boolean(pending);
+      if (attempts === 3) {
+        fetchError = (
+          <Fragment>
+            <p>Sorry, but we have lost the connection to poll for a result.</p>
+            <p>This does not mean that your changes have been lost, please close the window
+            and check you emails for notification of the changes made.</p>
+            <p>You will be able to check this page later.</p>
+          </Fragment>
+        );
+        // also need to send message to server to delete the updates_pending entry
+        // message user, kill the timer, change messages
+        // keep editsPending as true to prevent any futher action on this page
+        // but hide the loader thingy
+      };
     };
     if (typeof fetchError === "string" && fetchError.includes("404")) {
       console.log("got a 404");
@@ -865,8 +881,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     const diffDays = Math.ceil(Math.abs(delivered - lastDeliveryDate) / (1000 * 60 * 60 * 24));
     */
 
-    // but still should take into account lastOrder - well that is a question
-
     /*
      * Determine if pausable
      * however this is the method used in the modal
@@ -875,11 +889,21 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     const getDiffDays = (subscription) => {
       const now = new Date();
       const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
-      const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
-      // so this modal only shows if diffDays in greater than 8 days
+      let diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
+
+      // XXX need to also account for the lastOrder.delivered date
+      const ts = Date.parse(subscription.attributes.lastOrder.delivered); // could be null ie lastOrder = {}
+      let lastOrderDate;
+      let orderDiffDays;
+      if (!isNaN(ts)) { // can happen if the order is not completed or found by the api
+        lastOrderDate = new Date(ts);
+        orderDiffDays = Math.ceil(Math.abs(nextCharge - lastOrderDate ) / (1000 * 60 * 60 * 24));
+        diffDays = orderDiffDays > diffDays ? diffDays : orderDiffDays;
+      };
+
+      // so this modal only shows if diffDays in greater than 8 days and last order was earlier than then
       return diffDays;
     };
-
 
     // so this modal only shows if diffDays in greater than 8 days
     const interval = 7; // allow fortnightly subscriptions to also reschedule by a week

@@ -31,12 +31,15 @@ import {
  * @param {object} props Props
  * @param {object} props.box Box object
  * @param {object} props.properties Property object either an existing subscription or an order
+ * @param {object} props.hideDetails Ignore the charge date and other details for display
  * @yields Element
  * @example
  * import {renderer} from '@b9g/crank/dom';
  * renderer.render(<EditProducts box={box} />, document.querySelector('#app'))
  */
-function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, isEditable, key, id }) {
+function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, nextChargeDate, isEditable, key, id }) {
+
+  const showDetails = !hideDetails;  // if undefined or null show the details
 
   /**
    * True while loading data from api // box price
@@ -185,6 +188,8 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
     let deliveryDate = new Date(Date.parse(box.delivered));
     // just passing the day index of the week - api returns the variant with that title
     let variant_id = deliveryDate.getDay();
+    console.log("fetching price");
+    console.log(box.delivered, variant_id, product_id);
     const uri = `/api/shopify-box-price/${product_id}/${variant_id}`;
     return Fetch(uri)
       .then((result) => {
@@ -195,6 +200,7 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
           return null;
         };
         box.shopify_price = json.price;
+        console.log("got this", json);
         this.refresh();
       })
       .catch((err) => {
@@ -772,20 +778,25 @@ function *EditProducts({ box, rc_subscription_ids, properties, nextChargeDate, i
           </div>
           <div class="flex-container w-100">
             <div class="mb2 w-100">
-              { !loading && getListData().map(([title, value]) => (
-                <div class="dt">
-                  <div class="dtc gray tr pr3 pv1">
-                    { title }:
-                  </div>
-                  <div class="dtc pv1">
-                    { loading ? (
-                      <div class="skeleton mr1" />
-                    ) : (
-                      <span>{ value }</span>
-                    )}
-                  </div>
-                </div>
-              ))}
+              { !loading && showDetails ? (
+                <Fragment>
+                  { getListData().map(([title, value]) => (
+                    <div class="dt">
+                      <div class="dtc gray tr pr3 pv1">
+                        { title }:
+                      </div>
+                      <div class="dtc pv1">
+                        { loading ? (
+                          <div class="skeleton mr1" />
+                        ) : (
+                          <span>{ value }</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  </Fragment>
+                ) : " "
+              }
             </div>
             <div id="pricedItems" class="mr2 w-100">
               <div class="ml2 mb0 mt1 pt1 flex bt">

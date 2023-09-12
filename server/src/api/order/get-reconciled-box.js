@@ -61,13 +61,18 @@ export default async (req, res, next) => {
     const day = new Date(parseInt(req.params.timestamp));
     const path = `products/${box.shopify_product_id}.json`;
     const fields = ["id", "variants"];
+    const title = weekdays[day.getDay()];
     const { variant } = await makeShopQuery({path, fields, title: "Product detail"})
       .then(async ({product}) => {
-        const title = weekdays[day.getDay()];
         return {
           variant: product.variants.find(el => el.title === title),
         };
       });
+    if (!variant) {
+      return res.status(200).json({
+        error: `Sorry. Can't do a ${box.shopify_title} on a ${title}, try another box or delivery date`
+      });
+    };
     box.variant_id = variant.id;
     box.variant_title = variant.title;
     box.variant_name = `${box.shopify_title} - ${variant.title}`;;

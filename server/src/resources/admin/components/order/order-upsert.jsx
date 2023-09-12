@@ -593,6 +593,7 @@ async function* UpsertOrderModal(props) {
                 <EditProducts
                   properties={ properties }
                   box={box}
+                  hideDetails={ true }
                   id="edit-products"
                   key="order"
                   isEditable={ isBoxEditable }

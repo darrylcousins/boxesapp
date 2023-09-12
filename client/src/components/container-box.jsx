@@ -286,14 +286,16 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
         };
         return item;
       })
+      .filter(el => swapMap["selectedIncludes"].indexOf(el.shopify_product_id) === -1)
       .filter(el => !findOnFilter(selectedBox.includedProducts, el)) // these are addons on increased quantity
-      .filter(el => !findOnFilter(selectedAddons, el));
+      .filter(el => !findOnFilter(selectedSwaps, el)) // already swapped
+      .filter(el => !findOnFilter(selectedAddons, el)); // already added as addon
 
     // date has changed possibly so I must filter selectedExcludes and
     // selectedAddons and selectedSwaps because selectedBox.inlcudedProducts and
     // selectedBox.addOnProducts may be different
-    selectedExcludes = selectedExcludes.filter(el => findOnFilter(selectedBox.includedProducts, el));
     selectedAddons = selectedAddons.filter(el => findOnFilter(selectedBox.addOnProducts, el));
+    selectedExcludes = selectedExcludes.filter(el => findOnFilter(selectedBox.includedProducts, el));
     selectedSwaps = selectedSwaps.filter(el => findOnFilter(selectedBox.addOnProducts, el));
 
     // need to check for swaps because the removed item may no longer be in box.includedProducts
@@ -310,6 +312,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
         selectedAddons.push(el); // include in addons regardless
       };
     };
+    // just in case, actually was finding swaps turning up in here without quantity
+    selectedAddons = selectedAddons.filter(el => Object.hasOwnProperty.call(el, "quantity"));
+
     /*
      * XXX updated to allow customisation
     if (selectedVariant.requires_selling_plan) {
@@ -974,6 +979,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
         const cartAddons = {};
         let cartRemovedItems = [];
         let cartSwappedItems = [];
+        let cartAddonItems = [];
         for (const item of cartJson.items) {
           if (item.product_type === "Container Box") {
 
@@ -988,6 +994,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               } catch(e) {
                 console.warn(e);
               };
+              console.log("variant from cart", weekDay);
 
               // get the fetchDates for the weekday variant
               const varDates = [];
@@ -998,6 +1005,8 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 };
               };
               if (varDates.length > 0) fetchDates = [ ...varDates ];
+              console.log("Fetch dates after filter", fetchDates);
+              console.log("Available dates", Object.keys(fetchJson));
 
               // set selected date
               if (Object.keys(fetchJson).includes(itemDate)) {
@@ -1007,6 +1016,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               // set selected variant
               if (productJson.variants.length > 0 && weekDay) {
                 const variantTitles = productJson.variants.map(el => el.title);
+                console.log("Available variants", variantTitles);
                 if (variantTitles.includes(weekDay)) {
                   selectedVariant = productJson.variants[variantTitles.indexOf(weekDay)];
                 };
@@ -1015,7 +1025,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               // Get the box if it exists
               if (hasOwnProp.call(fetchJson, selectedDate)) selectedBox = fetchJson[selectedDate];
 
-            } else {
+            } else { // has ts parameter
               // boxHasChanged if we have loaded a different variant
               if (selectedVariant.id !== item.variant_id && item.product_id === productJson.id) {
                 boxHasChanged = true;
@@ -1024,6 +1034,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
             }; // end if ts url parameter
 
             // XXX Beware of custom box, move swaps to addons and elimiate removed items
+            // actually now just removing the swaps and not attempting to move them
 
             cartBoxId = item.product_id;
 
@@ -1043,6 +1054,12 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 .map(el => (matchNumberedString(el).str));
             };
 
+            if (hasOwnProp.call(item.properties, "Swapped Items")) {
+              cartAddonItems = item.properties["Add on Items"]
+                .split(",")
+                .map(el => (matchNumberedString(el).str));
+            };
+
             if (item.product_id === productJson.id) {
               // only now are we sure that this is the same box
               // but must also check for variant_id
@@ -1057,7 +1074,10 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
             // also need to adjust quantity of includedProducts
           };
         };
-
+        console.log("cart addon items", cartAddonItems)
+        console.log("cart add ons", cartAddons);
+        console.log("cart swapped items", cartSwappedItems)
+        console.log("cart removed items", cartRemovedItems)
 
         if (!selectedBox) {
           selectedDate = null;
@@ -1094,6 +1114,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
           });
 
           selectedBox.addOnProducts.forEach(el => {
+            // have been getting a swapped out item here, why?
             const item = { ...el };
             if (cartSwappedItems.includes(el.shopify_title)) {
               if (hasOwnProp.call(cartAddons, el.shopify_variant_id)) {
@@ -1229,7 +1250,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               <div class="button-wrapper" style="margin-bottom: 0.5em">
                 <button
                   title="Change product quantities"
-                  class="button"
+                  class="button button--secondary"
                   id="qtyForm"
                   type="button"
                   >
@@ -1258,7 +1279,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                   )}
                   <button
                     type="button"
-                    class="button"
+                    class="button button--secondary"
                     name="add"
                     id="add-button"
                     aria-label="Add to cart"

@@ -14,6 +14,8 @@ function Popup ({ text, buttons, callback }) {
   /*
    * I need to make this collapsible so that it can force it's way into the dom
    * and not be overlayed, rendering buttons unclickable
+   *
+   * A couple of years later, only using this for confirming add to cart so who cares?
    */
   
   /**
@@ -30,14 +32,14 @@ function Popup ({ text, buttons, callback }) {
     callback(false);
   }
 
+  // could get id from collapsible
+
   return (
     <div
-      id={`popup`}
+      id="popup"
       class="popup-container"
       style={{
         "font-weight": "bold",
-        "background-color": "#FEEFB3",
-        "color": "#9F6000",
       }}>
       <button
         class="close-button"
@@ -58,12 +60,7 @@ function Popup ({ text, buttons, callback }) {
               name="cancel"
               aria-label="Cancel"
               onclick={popupDeny}
-              style={{
-                color: getSetting("Colour", "button-foreground"),
-                "background-color": getSetting("Colour", "button-background"),
-                "border-color": getSetting("Colour", "button-background"),
-                "font-size": "0.9em"
-                }}
+              class="button button--secondary"
             >
               Not yet
             </button>
@@ -72,12 +69,7 @@ function Popup ({ text, buttons, callback }) {
               name="yes"
               aria-label="Yes"
               onclick={popupAffirm}
-              style={{
-                color: getSetting("Colour", "button-foreground"),
-                "background-color": getSetting("Colour", "button-background"),
-                "border-color": getSetting("Colour", "button-background"),
-                "font-size": "0.9em"
-                }}
+              class="button button--secondary"
             >
               Yes
             </button>

@@ -321,12 +321,11 @@ div.button-wrapper > button:hover {
   font-weight: bold;
 }
 .listing-title {
-  color: inherit;
   line-height: 1.5;
   box-sizing: border-box;
   font-weight: 700;
   padding-top: .5rem;
-  text-transform: uppercase;
+  border-bottom: 1px solid white;
 }
 .pill-wrapper {
   font-weight: 400;
@@ -389,24 +388,21 @@ div.button-wrapper > button:hover {
   font-weight: 400;
   line-height: 1.5;
   box-sizing: border-box;
-  border-style: solid;
-  border-width: 1px;
-  border-radius: .25rem;
   width: 100%;
-  position: absolute;
-  opacity: 0;
-  background-color: white;
-  padding: .25rem;
-  z-index: 9999;
-  top: 50px;
+  background-color: transparent;
+  color: white;
+  border-bottom: 1px solid white;
 }
 #quantityModal .listing-title {
+  color: white;
+  margin-bottom: 15px;
   text-align: center;
 }
 #quantityModal .listing-wrapper {
 }
 #quantityModal .input-wrapper {
   margin-bottom: 0.2em;
+  width: 100%;
 }
 #quantityModal .input-title {
   -webkit-text-size-adjust: 100%;
@@ -415,40 +411,11 @@ div.button-wrapper > button:hover {
   margin: 0;
   overflow: visible;
   outline: 0;
-  border-color: #333;
-  border-style: solid;
-  border-top-style: solid;
-  border-top-width: 1px;
-  border-bottom-style: solid;
-  border-bottom-width: 1px;
-  border-left-style: solid;
-  border-left-width: 1px;
-  border-radius: .25rem;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  border-right-width: 0;
   -webkit-appearance: none;
-  width: 65%;
   padding: .5rem;
   box-sizing: border-box;
 }
 #quantityModal .input-quantity {
-  -webkit-text-size-adjust: 100%;
-  font-family: inherit;
-  line-height: 1.15;
-  margin: 0;
-  overflow: visible;
-  border-color: #333;
-  border-style: solid;
-  border-width: 1px;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  -webkit-appearance: none;
-  width: 15%;
-  padding: .5rem;
-  box-sizing: border-box;
 }
 #quantityModal .input-price {
   -webkit-text-size-adjust: 100%;
@@ -479,11 +446,5 @@ div.button-wrapper > button:hover {
   font-weight: 400;
   line-height: 1.5;
   box-sizing: border-box;
-  border-style: solid;
-  border-width: 1px;
-  border-color: #111;
-  border-radius: .25rem;
   width: 100%;
-  //position: absolute;
-  padding: 1rem;
 }

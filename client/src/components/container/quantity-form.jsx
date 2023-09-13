@@ -13,6 +13,7 @@ import {
   getSetting,
   animateFadeForAction
 } from "../../helpers";
+import CollapseWrapper from "../lib/collapse-animator";
 
 /**
  * Component to update quantities in box
@@ -21,33 +22,34 @@ import {
  */
 function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
 
-  let hasChanged = false;
+  const TitleInput = ({ el, includes }) => {
+    if (!Object.hasOwnProperty.call(el, "quantity")) el.quantity = 1; 
+    const showPrice = !includes || (includes && el.quantity > 1);
 
-  const TitleInput = ({ el }) => (
-    <input
-      class="input-title"
-      type="text"
-      readonly
-      name="title"
-      value={`${el.shopify_title} (${toPrice(el.shopify_price)})`}
-    />
-  );
+    return (
+      <div style="display: inline-block; width: 90%">
+        { `${el.shopify_title} ${ showPrice ? `(${getPrice(el, includes)})` : "" }` }
+      </div>
+    );
+  };
 
   const QuantityInput = ({ el, id }) => {
     // Should look in moveProduct to find where the quantity is not set
     if (!Object.hasOwnProperty.call(el, "quantity")) el.quantity = 1;
     return (
-      <input
-        class="input-quantity"
-        type="number"
-        steps="1"
-        min={ id === "selectedIncludes" ? 1 : 0 }
-        name="quantity"
-        data-id={id}
-        id={el.shopify_product_id}
-        value={el.quantity}
-        autocomplete="off"
-      />
+      <div style="display: inline-block; width: 10%; text-align: right; padding-right: 10px;">
+        <input
+          class="quantity__input"
+          type="number"
+          steps="1"
+          min={ id === "selectedIncludes" ? 1 : 0 }
+          name="quantity"
+          data-id={id}
+          id={el.shopify_product_id}
+          value={el.quantity}
+          autocomplete="off"
+        />
+      </div>
     );
   };
 
@@ -101,48 +103,45 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
           });
         } else {
           this.dispatchEvent(quantityUpdateEvent(ev.target.id, ev.target.value, ev.target.getAttribute("data-id")));
-        }
-        hasChanged = true;
-      }
-    }
+        };
+      };
+    };
   };
   this.addEventListener("change", handleChange);
+
+  /*
+                <PriceInput el={el} includes={true} />
+                    <PriceInput el={el} includes={false} />
+                    <PriceInput el={el} includes={true} />
+   */
 
   for ({selectedIncludes, selectedAddons, selectedSwaps} of this) {
     yield (
       <div class="relative">
         <div id="quantityModal">
-          <button
-            class="close-button"
-            name="close"
-            type="button"
-            id="qtyFormClose"
-            title="Close modal"
-          >
-            &#x2716;
-            <span class="dn">Close modal</span>
-          </button>
           <div class="listing-wrapper">
-            <div class="listing-title">
-              {getSetting("Translation", "modal-included-title")}:
-            </div>
-            {selectedIncludes.map(el => 
-              <div class="input-wrapper">
-                <TitleInput el={el} />
-                <QuantityInput el={el} id="selectedIncludes" />
-                <PriceInput el={el} includes={true} />
-              </div>
+            { selectedIncludes.length > 0 && (
+              <Fragment>
+                <div class="listing-title">
+                  Included items:
+                </div>
+                {selectedIncludes.map(el => 
+                  <div class="input-wrapper">
+                    <TitleInput el={el} includes={true}  />
+                    <QuantityInput el={el} id="selectedIncludes" />
+                  </div>
+                )}
+              </Fragment>
             )}
             {(selectedAddons.length > 0) && (
               <Fragment>
                 <div class="listing-title">
-                  {getSetting("Translation", "modal-addons-title")}:
+                  Add on items:
                 </div>
                 {selectedAddons.map(el => 
                   <div class="input-wrapper">
-                    <TitleInput el={el} />
+                    <TitleInput el={el} includes={false}  />
                     <QuantityInput el={el} id="selectedAddons" />
-                    <PriceInput el={el} includes={false} />
                   </div>
                 )}
               </Fragment>
@@ -150,33 +149,16 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
             {(selectedSwaps.length > 0) && (
               <Fragment>
                 <div class="listing-title">
-                  {getSetting("Translation", "modal-swaps-title")}:
+                  Swapped items:
                 </div>
                 {selectedSwaps.map(el => 
                   <div class="input-wrapper">
-                    <TitleInput el={el} />
+                    <TitleInput el={el} includes={true}  />
                     <QuantityInput el={el} id="selectedSwaps" />
-                    <PriceInput el={el} includes={true} />
                   </div>
                 )}
               </Fragment>
             )}
-            <div class="tr button-wrapper">
-              <button
-                name="close"
-                type="button"
-                id="qtyFormClose"
-                title="Close modal"
-                style={{
-                  color: getSetting("Colour", "button-foreground"),
-                  "background-color": getSetting("Colour", "button-background"),
-                  "border-color": getSetting("Colour", "button-background"),
-                  "font-size": "0.9em"
-                  }}
-                >
-                  {hasChanged ? "Done" : "Close"}
-                </button>
-            </div>
           </div>
         </div>
       </div>
@@ -184,4 +166,5 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
   }
 };
 
-export default QuantityForm;
+//export default QuantityForm;
+export default CollapseWrapper(QuantityForm);

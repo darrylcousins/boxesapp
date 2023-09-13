@@ -126,7 +126,7 @@ function* DateSelector({fetchDates, selectedDate, variantTitle}) {
                   "color": getSetting("Colour", "notice-fg"),
                   "background-color": getSetting("Colour", "notice-bg")
                 }}>
-            <p>{ `No boxes scheduled for ${variantTitle} delivery, we will post next week's boxes shortly. Please try again later.` }</p>
+            <p>{getSetting("Translation", "notice-no-boxes")}</p>
           </div>
         )}
       </div>

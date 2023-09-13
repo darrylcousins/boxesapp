@@ -66,6 +66,13 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    */
   let boxRules = null;
   /**
+   * On conditions we might want to scroll the app into view onload
+   *
+   * @member scrollIntoView
+   * @type {boolean}
+   */
+  let scrollIntoView = false;
+  /**
    * Display loading indicator while fetching data
    *
    * @member loading
@@ -522,44 +529,19 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       }
     }
     if (ev.target.tagName === "BUTTON") {
-      if (ev.target.id === "qtyForm") {
+      // try maybe toggleQtyForm and avoid these 2 options
+      if (ev.target.id === "toggleQuantityForm") {
         modalQtyForm= !modalQtyForm;
-        await this.refresh(); // render quantity modal
 
-        const overlay = document.querySelector("#containerBoxOverlay");
-        overlay.style.visibility = "visible";
-
-        let animation;
-
-        animation = overlay.animate({
-          opacity: 0.9,
-        }, animationOptions);
-
-        animation = document.querySelector("#quantityModal").animate({
-          opacity: 1,
-        }, animationOptions);
+        const quantityModal = document.querySelector("#quantityModal");
+        if (!quantityModal && modalQtyForm) {
+          await this.refresh();
+        } else {
+          animateFadeForAction("quantityModal", async () => await this.refresh());
+        };
 
       };
-      if (ev.target.id === "qtyFormClose") {
-        modalQtyForm= !modalQtyForm;
-        const overlay = document.querySelector("#containerBoxOverlay");
-        let animation;
-        // hide overlay
-        animation = overlay.animate({
-          opacity: 0,
-        }, animationOptions);
-
-        // hide modal
-        animation = document.querySelector("#quantityModal").animate({
-          opacity: 0
-        }, animationOptions);
-
-        animation.addEventListener("finish", () => {
-          overlay.style.visibility = "hidden";
-          this.refresh();
-        });
-      }
-    }
+    };
   };
 
   this.addEventListener("click", handleClick);
@@ -713,7 +695,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     // increment total price of the order
     const totalPrice = priceToCurrency(start + product_price);
 
-    const priceElement = document.querySelector("#product-price");
+    const priceElement = document.querySelector("#boxesapp-product-price");
     animateFadeForAction(priceElement, async () => {
       priceElement.innerHTML = totalPrice;
     });
@@ -895,6 +877,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
 
       const variant = findGetParameter("variant");
       if (variant) selectedVariant = productJson.variants.find(el => el.id === parseFloat(variant));
+      if (variant || findGetParameter("ts")) { // so from cart or off a product product page
+        scrollIntoView = true;
+      };
     };
 
     if (!selectedVariant) selectedVariant = productJson.variants[0]; // select the first if not in query
@@ -994,7 +979,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               } catch(e) {
                 console.warn(e);
               };
-              console.log("variant from cart", weekDay);
 
               // get the fetchDates for the weekday variant
               const varDates = [];
@@ -1005,8 +989,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 };
               };
               if (varDates.length > 0) fetchDates = [ ...varDates ];
-              console.log("Fetch dates after filter", fetchDates);
-              console.log("Available dates", Object.keys(fetchJson));
 
               // set selected date
               if (Object.keys(fetchJson).includes(itemDate)) {
@@ -1016,7 +998,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               // set selected variant
               if (productJson.variants.length > 0 && weekDay) {
                 const variantTitles = productJson.variants.map(el => el.title);
-                console.log("Available variants", variantTitles);
                 if (variantTitles.includes(weekDay)) {
                   selectedVariant = productJson.variants[variantTitles.indexOf(weekDay)];
                 };
@@ -1074,10 +1055,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
             // also need to adjust quantity of includedProducts
           };
         };
-        console.log("cart addon items", cartAddonItems)
-        console.log("cart add ons", cartAddons);
-        console.log("cart swapped items", cartSwappedItems)
-        console.log("cart removed items", cartRemovedItems)
 
         if (!selectedBox) {
           selectedDate = null;
@@ -1145,9 +1122,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
 
       };
 
-      //console.log('date', selectedDate);
-      //console.log('box', selectedBox);
-
       // either a single delivery date, or selected date
       // or box in cart XXX which needs a fix for bad matching dates
       if (showBox) {
@@ -1172,7 +1146,20 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     }).catch((e) => {
       console.log('Caught error on loading', e);
     }).finally(() => {
-      console.log('Here the finally', loading);
+      console.log('Here the finally', loading, scrollIntoView);
+      if (scrollIntoView) {
+        const opts = {
+          behavior: "smooth",
+          block: "start",
+          inline: "nearest",
+        };
+        setTimeout(() => {
+          const titleElement = document.querySelector("#boxesapp-product-title > h2");
+          titleElement.innerHTML = productJson.title;
+          const titleDiv = document.querySelector("#boxesapp-product-title");
+          titleDiv.scrollIntoView(opts);
+        }, 500);
+      };
     });
   };
 
@@ -1205,13 +1192,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
           <BarLoader />
         ) : (
           <Fragment>
-            { modalQtyForm && (
-              <QuantityForm
-                selectedIncludes={selectedIncludes}
-                selectedAddons={selectedAddons}
-                selectedSwaps={selectedSwaps}
-              />
-            )}
             <VariantSelector boxVariants={getVariants()} selectedVariant={selectedVariant} />
             <DateSelector fetchDates={fetchDates} selectedDate={selectedDate} variantTitle={selectedVariant.title} />
             { selectedDate && boxRules.length > 0 && (
@@ -1251,13 +1231,20 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 <button
                   title="Change product quantities"
                   class="button button--secondary"
-                  id="qtyForm"
+                  id="toggleQuantityForm"
                   type="button"
                   >
-                  {getSetting("Translation", "edit-quantities")}
+                  { modalQtyForm ? "Close quantities" : "Change quantities" }
                 </button>
               </div>
             )}
+            <QuantityForm
+              id="quantityForm"
+              collapsed={!(modalQtyForm)}
+              selectedIncludes={selectedIncludes}
+              selectedAddons={selectedAddons}
+              selectedSwaps={selectedSwaps}
+            />
             <div id="customize-box">
               { showBoxActive && selectedDate && (
                 <ProductSelector

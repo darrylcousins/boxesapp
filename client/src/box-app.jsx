@@ -60,11 +60,11 @@ const init = async ({ productJson, cartJson }) => {
 
   if (productJson.type === "Container Box") {
     await renderer.render(
-      <ContainerBoxApp productJson={productJson} cartJson={cartJson} />, document.querySelector("#app")
+      <ContainerBoxApp productJson={productJson} cartJson={cartJson} />, document.querySelector("#boxesapp")
     );
   } else if (productJson.type === "Box Produce") {
     await renderer.render(
-      <ProductBoxApp productJson={productJson} cartJson={cartJson} />, document.querySelector("#app")
+      <ProductBoxApp productJson={productJson} cartJson={cartJson} />, document.querySelector("#boxesapp")
     );
   };
   return;

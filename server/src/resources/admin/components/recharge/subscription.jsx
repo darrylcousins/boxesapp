@@ -682,7 +682,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
         CollapsibleProducts = CollapseWrapper(EditProducts); // forces refresh of products
         attempts = 0;
         changed = [];
-        await getLogs();  // refresh the logs
+        if (admin) await getLogs();  // refresh the logs
         let notice = (restartTimer) ? "Updated" : "Reloaded";
         notice = `${notice} ${subscription.attributes.title} - ${subscription.attributes.variant}`;
         this.dispatchEvent(toastEvent({
@@ -800,10 +800,10 @@ async function *Subscription({ subscription, customer, idx, admin }) {
   const AttributeRow = ({ title, value }) => {
     return (
       <Fragment>
-        <div class={`fl w-50 gray tr pr3 pv1${title.startsWith("Next") ? " b" : ""}`}>
+        <div class={`dtc gray tr pr3 pv1${title.startsWith("Next") ? " b" : ""}`}>
           { title }:
         </div>
-        <div class={`fl w-50 pv1${title.startsWith("Next") ? " b" : ""}`}>
+        <div class={`dtc pv1${title.startsWith("Next") ? " b" : ""}`}>
           <span>{ value }</span>
         </div>
       </Fragment>
@@ -818,7 +818,9 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     return (
       data.map(([title, value]) => (
         value && (
-          <AttributeRow title={ title } value={ value } />
+          <div class="dt dt--fixed w-100">
+            <AttributeRow title={ title } value={ value } />
+          </div>
         )
       ))
     );
@@ -989,7 +991,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     return;
   };
 
-  getLogs();
+  if (admin) getLogs();
 
   const modalWindow = document.getElementById("modal-window");
   const host = localStorage.getItem("host"); // server host e.g. https://myshop.boxexapp.nz
@@ -1031,6 +1033,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
           </div>
           { subscription.messages.length === 0 && (
             <div id={`skip_cancel-${subscription.attributes.subscription_id}`} class="cf w-100 pv2">
+              { admin && (
               <div class="fl w-30">
                 <LogsModal logs={ subscriptionLogs }
                     admin={ admin }
@@ -1045,12 +1048,13 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                     </span>
                   </Button>
                 )}
+              </div>
+              )}
+              <div class={ `${ !admin ? "w-100" : "fl w-70" } tr` }>
                 { ( !editsPending ) && (
                   <ChangeBoxModal
                     subscription={ subscription } />
                 )}
-              </div>
-              <div class="fl w-70 tr">
                 { ( !editsPending ) && collapsed && (
                   <Fragment>
                     { isSkippable() === true && (

@@ -249,10 +249,10 @@ async function* CancelSubscription(props) {
         { !loading && (
           <Fragment>
             { formError && <Error msg={formError} /> }
-            <ul class="list">
+            <ul class="list pl0">
               { cancelOptions.map((option, idx) => (
-                <li>
-                  <label class="pointer items-center" style="font-size: 1em; margin-bottom: 0px;">
+                <li class="mb1">
+                  <label class="pointer items-center">
                     <input 
                       onclick={ handleClick }
                       checked={ selectedOptionId === idx }
@@ -274,7 +274,7 @@ async function* CancelSubscription(props) {
               meta={toastTemplate}
               hideLabel={ true }
             />
-            <div class="tr">
+            <div class="w-80 center mt3">
               <Button type="primary" onclick={thisSave}>
                 Yes, Cancel Subscription
               </Button>

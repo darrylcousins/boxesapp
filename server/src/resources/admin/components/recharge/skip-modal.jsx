@@ -161,7 +161,6 @@ async function* SkipCharge(props) {
       pauseInterval: {
         label: "Select Pause Interval",
         type: "input-select",
-        size: "50",
         datatype: "string",
         datalist: intervalDays,
         required: true,
@@ -208,41 +207,45 @@ async function* SkipCharge(props) {
     const updatedCharge = chargeObj.toDateString();
 
     yield (
-      <div class="w-80 center">
+      <div class="w-100 center">
         <p class="lh-copy tl mb3">
           Are you sure you want to pause the subscription?<br />
-          <div class="cf">
-            <div class="fl w-50 gray tr pr3 pv1 b">
+          <div class="dt dt--fixed w-100">
+            <div class="dtc gray tr pr3 pv1 b">
               This payment date:
             </div>
-            <div class="fl w-50 pv1 b">
+            <div class="dtc pv1 b">
               { subscription.attributes.nextChargeDate }
             </div>
-            <div class="fl w-50 gray tr pr3 pv1 b">
+          </div>
+          <div class="dt dt--fixed w-100">
+            <div class="dtc gray tr pr3 pv1 b">
               Scheduled delivery date:
             </div>
-            <div class="fl w-50 pv1 b">
+            <div class="dtc pv1 b">
               { subscription.attributes.nextDeliveryDate }
             </div>
           </div>
         </p>
         <p class="lh-copy tl">
-          <div class="cf mt3">
-            <div class="fl w-50 gray tr pr3 pv1 b">
+          <div class="dt dt--fixed w-100">
+            <div class="dtc gray tr pr3 pv1 b">
               New payment date will be:
             </div>
-            <div class="fl w-50 pv1 b" id="charge-date">
+            <div class="dtc pv1 b" id="charge-date">
               { chargeDays[intervalIndex] }
             </div>
-            <div class="fl w-50 gray tr pr3 pv1 b">
+          </div>
+          <div class="dt dt--fixed w-100">
+            <div class="dtc gray tr pr3 pv1 b">
               New delivery date will be:
             </div>
-            <div class="fl w-50 pv1 b" id="delivery-date">
+            <div class="dtc pv1 b" id="delivery-date">
               { deliveryDays[intervalIndex] }
             </div>
           </div>
         </p>
-        <div class="w-100 pl7 mb3">
+        <div class="w-80 center mb3">
           <Form
             data={getInitialData()}
             fields={getFields()}
@@ -251,7 +254,7 @@ async function* SkipCharge(props) {
             meta={toastTemplate}
           />
         </div>
-        <div class="cf tr">
+        <div class="w-100 center">
           <Button type="primary" onclick={thisSave}>
             Yes, Pause Subscription
           </Button>

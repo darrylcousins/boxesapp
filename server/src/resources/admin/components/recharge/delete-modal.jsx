@@ -155,7 +155,7 @@ async function* DeleteSubscription(props) {
           id={formId}
           meta={toastTemplate}
         />
-        <div class="tr">
+        <div class="w-100 center mt3">
           <Button type="primary" onclick={thisSave}>
             Yes, Delete Subscription
           </Button>

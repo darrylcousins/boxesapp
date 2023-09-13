@@ -6,13 +6,39 @@ import { MongoClient, ObjectID } from "mongodb";
 import { Shopify } from "../src/lib/shopify/index.js";
 import { makeShopQuery } from "../src/lib/shopify/helpers.js";
 import { getMongo } from "../src/lib/mongo/mongo.js";
-import { makeImageJob } from "../src/bull/job.js";
 
 global._filename = (_meta) => _meta.url.split("/").pop();
 dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
 global._logger = console;
 global._mongodb;
 _logger.notice = (e) => console.log(e);
+
+/*
+ * async job to fetch and save product images
+ */
+const imageProcessor = async (data) => {
+  try {
+    const path = `${process.env.SERVER_ROOT}/assets/product-images/${data.id}.jpg`;
+
+    if (fs.existsSync(path)) {
+      _logger.info(`Path exists ${path}`);
+      return;
+    };
+    _logger.info(`Appear to be here with ${path}`);
+
+    const image_data = await fetch(data.url);
+    const blob = await image_data.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    sharp(buffer)
+      .resize(40, 40, { fit: "cover" })
+      .toFile(path);
+    _logger.info(`Fetched and saved ${path}`);
+  } catch(err) {
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
+};
 
 /**
  * Simple template for node script

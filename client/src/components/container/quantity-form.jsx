@@ -11,7 +11,7 @@ import {
   toPrice,
   getPrice,
   getSetting,
-  animateFadeForAction
+  animateFadeForAction,
 } from "../../helpers";
 import CollapseWrapper from "../lib/collapse-animator";
 
@@ -27,7 +27,7 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
     const showPrice = !includes || (includes && el.quantity > 1);
 
     return (
-      <div style="display: inline-block; width: 90%">
+      <div style="display: inline-block; width: 80%">
         { `${el.shopify_title} ${ showPrice ? `(${getPrice(el, includes)})` : "" }` }
       </div>
     );
@@ -36,19 +36,57 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
   const QuantityInput = ({ el, id }) => {
     // Should look in moveProduct to find where the quantity is not set
     if (!Object.hasOwnProperty.call(el, "quantity")) el.quantity = 1;
+    const min = id === "selectedIncludes" ? 1 : 0;
+    const disabled = { "cursor": "not-allowed", "opacity": "0.5" };
+    const button = {
+      "cursor": "pointer",
+      "font-weight": "bold",
+      "font-size": "1.2em",
+      "display": "inline-flex",
+      "justify-content": "center",
+      "align-items": "center",
+      "background": "transparent",
+      "border": "0",
+      "color": "inherit",
+    };
+    const buttonMinus = el.quantity === min ? { ...button, ...disabled } : { ...button };
     return (
-      <div style="display: inline-block; width: 10%; text-align: right; padding-right: 10px;">
+      <div style={ {
+        "display": "inline-flex",
+        "justify-content": "center",
+        "align-items": "center",
+        "border": "1px solid rgba(255, 255, 255, 0.5)",
+        "width": "20%",
+        "padding-right": "10px",
+        "padding-left": "10px",
+      } }>
+        <div style={buttonMinus}
+          data-id={id}
+          data-product={el.shopify_product_id}
+          data-quantity={el.quantity}
+          data-action="minus"
+        >
+          -
+        </div>
         <input
           class="quantity__input"
           type="number"
           steps="1"
-          min={ id === "selectedIncludes" ? 1 : 0 }
+          min={ min }
           name="quantity"
           data-id={id}
           id={el.shopify_product_id}
           value={el.quantity}
           autocomplete="off"
         />
+        <div style={button}
+          data-id={id}
+          data-product={el.shopify_product_id}
+          data-quantity={el.quantity}
+          data-action="plus"
+        >
+          +
+        </div>
       </div>
     );
   };
@@ -84,9 +122,37 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
       case 'selectedSwaps':
         list = selectedSwaps;
         break;
-    }
+    };
     return list;
-  }
+  };
+
+  /**
+   * Handle click on selected input elements
+   *
+   * @function handleClick
+   * @param {object} ev The firing event
+   * @listens change
+   */
+  const handleClick = (ev) => {
+    if (ev.target.tagName === "DIV") {
+      const dataId = ev.target.getAttribute("data-id");
+      const dataProduct = ev.target.getAttribute("data-product");
+      const dataQuantity = parseInt(ev.target.getAttribute("data-quantity"));
+      const dataAction = ev.target.getAttribute("data-action");
+
+      if (dataQuantity === 0) return; // should never really happen but don't want negatives
+
+      console.log(dataId, dataProduct, dataQuantity, dataAction);
+      let quantity;
+      if (dataAction === "plus") quantity = dataQuantity + 1;
+      if (dataAction === "minus") quantity = dataQuantity - 1;
+
+      if (dataId === "selectedIncludes" && quantity === 0) return;
+
+      this.dispatchEvent(quantityUpdateEvent(dataProduct, quantity, dataId));
+    };
+  };
+
   /**
    * Handle change on selected input elements
    *
@@ -96,11 +162,13 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
    */
   const handleChange = (ev) => {
     if (ev.target.tagName === "INPUT") {
+      console.log(ev.target.parentNode);
       if (ev.target.name === "quantity") {
         if (ev.target.value === "0") {
           animateFadeForAction(ev.target.parentNode, async () => {
             await this.dispatchEvent(quantityUpdateEvent(ev.target.id, ev.target.value, ev.target.getAttribute("data-id")));
           });
+          ev.target.blur();
         } else {
           this.dispatchEvent(quantityUpdateEvent(ev.target.id, ev.target.value, ev.target.getAttribute("data-id")));
         };
@@ -108,12 +176,7 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
     };
   };
   this.addEventListener("change", handleChange);
-
-  /*
-                <PriceInput el={el} includes={true} />
-                    <PriceInput el={el} includes={false} />
-                    <PriceInput el={el} includes={true} />
-   */
+  this.addEventListener("mouseup", handleClick);
 
   for ({selectedIncludes, selectedAddons, selectedSwaps} of this) {
     yield (

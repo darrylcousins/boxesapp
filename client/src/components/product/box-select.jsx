@@ -276,15 +276,15 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
   for ({box, boxes, dates, title, initialProducts, idx} of this) {
     yield (
       <Fragment>
-        <div style="margin-left: 2em">
-          <div>{ box.title }</div>
-          <ul>
-           { dates.map((el) => (
-              <li>
-                <a class="link" href={ `/products/${box.handle}?ts=${Date.parse(el)}` }>{ el }</a>
-              </li>
-            ))}
-          </ul>
+        <div>{ box.title }</div>
+        <div class="relative box-button-wrapper">
+         { dates.map((el) => (
+            <button 
+              onclick={ () => window.location = `/products/${box.handle}?ts=${Date.parse(el)}` }
+              class="box-button">
+              { el }
+            </button>
+          ))}
         </div>
       </Fragment>
     );

@@ -58,7 +58,7 @@ async function* Box ({handle, boxes, selectedProduct, cartBox, cartAddons, boxIn
    * @member loading
    * @type {boolean}
    */
-  let loading = true;
+  let loading = false;
 
   const init = async () => {
     await Fetch(

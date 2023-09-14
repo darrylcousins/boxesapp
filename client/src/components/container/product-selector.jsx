@@ -20,6 +20,7 @@ import {
 } from "./../../helpers";
 import ProductAddons from "./product-addons";
 import ProductListing from "./product-listing";
+import SwapSelector from "./swap-selector";
 
 /**
  * Box products display, shows included as well as excluded items and addons
@@ -63,20 +64,6 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
    * @type {boolean}
    */
   let removedItem = null;
-  /**
-   * Selector id for add item select menu
-   *
-   * @member addItemId
-   * @type {string}
-   */
-  const addItemId = "addItem";
-  /**
-   * Selector id for remove item select menu
-   *
-   * @member removeItemId
-   * @type {string}
-   */
-  const removeItemId = "removeItem";
   /** 
    * Map strings to the lists
    *
@@ -105,16 +92,16 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
     let id;
     if (ev.target.tagName === "BUTTON") {
       switch(ev.target.id) {
-        case addItemId:
-          this.dispatchEvent(selectorOpenEvent(addItemId));
+        case "addItem":
+          this.dispatchEvent(selectorOpenEvent("addItem"));
           break;
-        case removeItemId:
-          this.dispatchEvent(selectorOpenEvent(removeItemId));
+        case "removeItem":
+          this.dispatchEvent(selectorOpenEvent("removeItem"));
           break;
       }
     } else if (ev.target.tagName === "DIV") {
       switch(ev.target.getAttribute("name")) {
-        case addItemId:
+        case "addItem":
           /* XXX my preference is to close the list - overruled by Streamside */
           //this.dispatchEvent(selectorOpenEvent(null));
           id = ev.target.getAttribute("data-item");
@@ -122,7 +109,7 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
             await this.dispatchEvent(moveProductEvent(id, "possibleAddons", "selectedAddons"));
           });
           break;
-        case removeItemId:
+        case "removeItem":
 
           id = ev.target.getAttribute("data-item");
 
@@ -131,7 +118,6 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
           // for swaps, if removing from selectedSwaps back to includedProducts, then
           // we must also put back the excludeProduct Biggest worry here is how to
           // identify *which* was swapped out when excludedProducts.length > 1
-          //
           // find list of similar-priced items from the possibleAddons
           const product = listMap("selectedIncludes").find(el => el.shopify_product_id === parseInt(id));
           swaps = listMap("possibleAddons").filter(el => {
@@ -143,13 +129,6 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
             });
           if (swaps.length === 0) {
             possibleSwaps = [];
-
-            /* First version allowed remove without swap
-            this.dispatchEvent(selectorOpenEvent(null));
-            animateFadeForAction(ev.target, async () => {
-              await this.dispatchEvent(moveProductEvent(id, "selectedIncludes", "selectedExcludes"));
-            });
-            */
           } else {
             // need to pause things here to allow user to select one of the possible swaps
             // in the move above a product has moved from selectedIncludes to selectedExcludes
@@ -180,6 +159,34 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
   this.addEventListener("mouseup", handleMouseUp);
 
   /**
+   * Handle selector open event, if matching selectorId the menu is open, else close
+   * Also need to be nulling the removedItem and closing swapSelector
+   *
+   * @function handleSelectorOpen
+   * @param {object} ev The firing event
+   * @listens selectorOpenEvent
+   */
+  const handleSelectorOpen = async (ev) => {
+    console.log("here in selector open from event");
+    if ("addItem" === ev.detail.selector) {
+      addItemOpen = !addItemOpen;
+      removeItemOpen = false;
+    } else if ("removeItem" === ev.detail.selector) {
+      removeItemOpen = !removeItemOpen;
+      addItemOpen = false;
+    } else {
+      addItemOpen = false;
+      removeItemOpen = false;
+    };
+    removedItem = null;
+    possibleSwaps = [];
+    swapSelector = false;
+    await this.refresh();
+  };
+
+  this.addEventListener("selectorOpenEvent", handleSelectorOpen)
+
+  /**
    * Confirm swap - onclick of product item in swap modal
    *
    * @function confirmSwap
@@ -190,22 +197,9 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
     possibleSwaps = [];
     swapSelector = false;
 
-    const overlay = document.querySelector("#productSelectorOverlay");
-    const animation = overlay.animate({
-      opacity: 0
-    }, animationOptions);
-    animation.addEventListener("finish", () => {
-      overlay.style.visibility = "hidden";
-      this.refresh();
-    });
-
     this.dispatchEvent(selectorOpenEvent(null));
 
-    /*
-    animateFadeForAction(ev.target, async () => {
-      await this.dispatchEvent(moveProductEvent(id, "selectedIncludes", "selectedExcludes"));
-    });
-    */
+    // I assume this refresh is called here along the way?
     await this.dispatchEvent(moveProductEvent(removed.shopify_product_id, "selectedIncludes", "selectedExcludes"));
     await this.dispatchEvent(moveProductEvent(product.shopify_product_id, "possibleAddons", "selectedSwaps"));
   };
@@ -219,38 +213,8 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
     removedItem = null;
     possibleSwaps = [];
     swapSelector = false;
-
-    const overlay = document.querySelector("#productSelectorOverlay");
-    const animation = overlay.animate({
-      opacity: 0
-    }, animationOptions);
-    this.refresh();
-    animation.addEventListener("finish", () => {
-      overlay.style.visibility = "hidden";
-    });
+    await this.refresh();
   };
-
-  /**
-   * Handle selector open event, if matching selectorId the menu is open, else close
-   *
-   * @function handleSelectorOpen
-   * @param {object} ev The firing event
-   * @listens selectorOpenEvent
-   */
-  const handleSelectorOpen = (ev) => {
-    if (addItemId === ev.detail.selector) {
-      addItemOpen = !addItemOpen;
-      removeItemOpen = false;
-    } else if (removeItemId === ev.detail.selector) {
-      removeItemOpen = !removeItemOpen;
-      addItemOpen = false;
-    } else {
-      addItemOpen = false;
-      removeItemOpen = false;
-    }
-    this.refresh();
-  };
-  this.addEventListener("selectorOpenEvent", handleSelectorOpen)
 
   for ({selectedIncludes, possibleAddons, selectedExcludes} of this) {
 
@@ -261,67 +225,24 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
 
           { selectedIncludes.length > 0 && (
             <Fragment>
-              { swapSelector && (
-                <div class="relative">
-                  <div id="swapSelectorModal">
-                    { possibleSwaps.length > 0 ? (
-                      <Fragment>
-                        <div style="font-size:1em;font-weight:bold;padding:0.3em 0.5em;color:black;">
-                          <div>Removing <span style="color: black">{ removedItem.shopify_title }</span>.</div>
-                          <div class="tr">To continue please select a replacement.</div>
-                        </div>
-                        <div class="pill-wrapper">
-                          {possibleSwaps.map(el =>
-                            <div
-                              class="pill"
-                              style={{
-                                "color": getSetting("Colour", "excluded-product-fg"),
-                                "background-color": getSetting("Colour", "excluded-product-bg"),
-                                "border-color": getSetting("Colour", "excluded-product-bg"),
-                                "cursor": "pointer",
-                              }}
-                              onclick={ () => confirmSwap(el) }
-                            >
-                              {el.shopify_title}
-                            </div>
-                          )}
-                        </div>
-                      </Fragment>
-                    ) : (
-                      <div style="font-size:1em;font-weight:bold;padding:0.3em 0.5em;color:black;">
-                        <div>Unable to swap <span style="color: black">{ removedItem.shopify_title }</span>.</div>
-                      </div>
-                    )}
-                    <div class="tc button-wrapper">
-                      <button
-                        name="close"
-                        type="button"
-                        id="selectSwapClose"
-                        title="Cancel"
-                        onclick={ cancelSwap }
-                        style={{
-                          color: getSetting("Colour", "button-foreground"),
-                          "background-color": getSetting("Colour", "button-background"),
-                          "border-color": getSetting("Colour", "button-background"),
-                          "font-size": "0.9em"
-                          }}
-                        >
-                          { possibleSwaps.length === 0 ? "Continue" : "Cancel" }
-                        </button>
-                    </div>
-                  </div>
-                </div>
-              )}
               { selectedExcludes.length < 2 && (
                 <Fragment>
                   <button
                     class="select-dropdown-button"
                     title="Remove items to your box"
-                    id={removeItemId}
+                    id="removeItem"
                     type="button"
                     >
                     {getSetting("Translation", "select-excludes")}&nbsp;&nbsp;&nbsp;{ removeItemOpen ? "▴" : "▾" }
                   </button>
+                  <SwapSelector
+                    possibleSwaps={ possibleSwaps }
+                    removedItem={ removedItem }
+                    confirmSwap={ confirmSwap }
+                    cancelSwap={ cancelSwap }
+                    collapsed={ !(swapSelector && removedItem && !addItemOpen && removeItemOpen) }
+                    id="swap-selector"
+                  />
                   <ProductListing
                     possibleProducts={selectedIncludes}
                     name="removeItem"
@@ -340,7 +261,7 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
               <button
                 class="select-dropdown-button"
                 title="Add items to your box"
-                id={addItemId}
+                id="addItem"
                 type="button"
                 >
                 {getSetting("Translation", "select-addons")}&nbsp;&nbsp;&nbsp;{ addItemOpen ? "▴" : "▾" }

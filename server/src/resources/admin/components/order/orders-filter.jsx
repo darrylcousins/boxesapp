@@ -9,6 +9,7 @@ import { createElement, Fragment, Portal } from "@b9g/crank";
 
 import { CloseIcon, FilterIcon } from "../lib/icon";
 import Button from "../lib/button";
+import Error from "../lib/error";
 import ModalTemplate from "../lib/modal-template";
 
 /**
@@ -26,16 +27,32 @@ function* FilterOrders({updateFilter}) {
    */
   let fields = [
     {
-      title: 'Pickup Date',
-      id: 'pickup'
+      title: "Pickup Date",
+      id: "pickup",
+      input_type: "date",
+      type: "date",
+      hint: "Select date",
+    },
+    {
+      title: "Postcode",
+      id: "zip",
+      input_type: "text",
+      type: "array",
+      hint: "A postcode or a list of comma separated values",
     }
   ];
+  /**
+   * Form errors
+   *
+   * @member {string} formError
+   */
+  let formError = null;
   /**
    * Form filter field
    *
    * @member {boolean} filter_field
    */
-  let filter_field = fields[0].id;
+  let filter_field = fields[0];
   /**
    * Form filter value
    *
@@ -71,6 +88,16 @@ function* FilterOrders({updateFilter}) {
   };
 
   /**
+   * Select the filter, one of fields
+   *
+   * @function selectFilter
+   */
+  const selectFilter = async (ev) => {
+    filter_field = fields.find(el => el.id === ev.target.options[ev.target.selectedIndex].value);
+    this.refresh();
+  };
+
+  /**
    * Control the value field
    *
    * @function updateValue
@@ -86,9 +113,28 @@ function* FilterOrders({updateFilter}) {
    * @function setFilter
    */
   const setFilter = async (ev) => {
+    let value;
+    let error;
+    if (filter_field.type === "date") {
+      value = new Date(Date.parse(filter_value)).getTime();
+      if (isNaN(value)) error = "Please select a date";
+    } else if (filter_field.type === "array") {
+      if (filter_value.length === 0) {
+        error = "Please input a postcode or a list of comma separated values";
+      } else {
+        value = filter_value.split(",").map(el => el.trim()).filter(el => el.length > 0);
+      };
+    };
+    if (error) {
+      formError = error;
+      return this.refresh();
+    } else {
+      formError = null;
+    };
     updateFilter({
-      filter_field,
-      filter_value: new Date(Date.parse(filter_value)).getTime(),
+      filter_field: filter_field.id,
+      filter_value: value,
+      filter_type: filter_field.type,
     });
     closeModal();
   };
@@ -128,6 +174,9 @@ function* FilterOrders({updateFilter}) {
           {visible && (
             <ModalTemplate closeModal={ closeModal } loading={ false } error={ false } withClose={ false }>
               <h3 class="fw4 tl fg-streamside-maroon">Filter Options</h3>
+              {formError && <Error msg={formError} />}
+              <h4 class="fw4 tl fg-streamside-maroon">Filter by { filter_field.title }</h4>
+              <div>{ filter_field.hint }</div>
               <div class="flex w-100 mb3">
                 <div class="w-50">
                   <div class="tl ph2 mt1 ml0">
@@ -137,10 +186,11 @@ function* FilterOrders({updateFilter}) {
                     <select
                       class="mr1 pa2 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
                       id="field"
+                      onchange={ selectFilter }
                     >
                       {fields.map(field => (
                         <option
-                          selected={field.id === filter_field}
+                          selected={field.id === filter_field.id}
                           value={field.id}>{field.title}</option>
                       ))}
                     </select>
@@ -153,7 +203,7 @@ function* FilterOrders({updateFilter}) {
                     </label>
                     <input
                       class="mr1 pa2 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
-                      type="date"
+                      type={ filter_field.input_type }
                       value={filter_value}
                       id="filter"
                       onchange={(ev) => updateValue(ev.target.value)}

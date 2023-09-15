@@ -88,6 +88,7 @@ function* CurrentOrders() {
    */
   let filterFields = {
     pickup: 'Pickup Date',
+    zip: 'Postcode',
   };
   /**
    * Form filter field
@@ -98,9 +99,15 @@ function* CurrentOrders() {
   /**
    * Form filter value
    *
-   * @member {boolean} filterValue
+   * @member {string|date|array} filterValue
    */
   let filterValue = null;
+  /**
+   * Form filter type
+   *
+   * @member {string} filterType string|date|array
+   */
+  let filterType = null;
   /**
    * Maintain array of checked orders
    *
@@ -154,8 +161,14 @@ function* CurrentOrders() {
    * @function getUriFilters
    */
   const getUriFilters = (uri, includeProxy) => {
-    if (filterField && filterValue) {
-      uri += `?filter_field=${encodeURIComponent(filterField)}&filter_value=${encodeURIComponent(filterValue)}`;
+    if (filterField && filterValue && filterType) {
+      uri += `?filter_field=${
+        encodeURIComponent(filterField)
+      }&filter_value=${
+        encodeURIComponent(filterValue)
+      }&filter_type=${
+        encodeURIComponent(filterType)
+      }`;
     };
     if (includeProxy) {
       const proxy = localStorage.getItem("proxy-path");
@@ -173,6 +186,7 @@ function* CurrentOrders() {
     loading = true;
     this.refresh();
     let uri = getUriFilters(`/api/current-orders-by-date/${new Date(selectedDate).getTime()}`, false);
+    console.log(uri);
     Fetch(uri)
       .then((result) => {
         const { error, json } = result;
@@ -243,12 +257,22 @@ function* CurrentOrders() {
       menuSelectDate = false;
       if (date !== selectedDate) {
         selectedDate = date;
+        checkedOrders = [];
         clearFilter();
       } else {
         this.refresh();
       };
 
     } else if (name === "INPUT") {
+      if (ev.target.name.startsWith("selectAll")) {
+        // select all
+        if (ev.target.checked) {
+          checkedOrders = fetchOrders.map(el => el._id.toString());
+        } else {
+          checkedOrders =[];
+        };
+        return this.refresh();
+      };
       // pickes up order checkboxes
       //const initialCheckedOrdersLength = checkedOrders.length;
       if (ev.target.name.startsWith("order")) {
@@ -258,7 +282,7 @@ function* CurrentOrders() {
           const idx = checkedOrders.indexOf(ev.target.id);
           if (idx > -1) checkedOrders.splice(idx, 1);
         };
-        this.refresh();
+        return this.refresh();
       };
     } else {
       // close menu
@@ -366,6 +390,10 @@ function* CurrentOrders() {
   const updateFilter = (args) => {
     filterField = args.filter_field;
     filterValue = args.filter_value;
+    filterType = args.filter_type;
+    console.log(filterField);
+    console.log(filterValue);
+    console.log(filterType);
     getOrders();
   };
 
@@ -377,6 +405,7 @@ function* CurrentOrders() {
   const clearFilter = () => {
     filterField = null;
     filterValue = null;
+    filterType = null;
     getOrders();
   };
 
@@ -386,8 +415,15 @@ function* CurrentOrders() {
    * @function normalizeFilterValue
    */
   const normalizeFilterValue = (value) => {
-    const testDate = new Date(parseInt(value));
-    return (!Boolean(testDate)) ? value : testDate.toDateString();
+    console.log("normalising", value);
+    if (filterType === "date") {
+      const testDate = new Date(parseInt(value));
+      return (!Boolean(testDate)) ? value : testDate.toDateString();
+    } else if (filterType === "array") {
+      return value.join(", ");
+    } else {
+      return value;
+    };
   };
 
   /*
@@ -537,6 +573,7 @@ function* CurrentOrders() {
                   <TableHeader
                     crank-key={`${selectedDate}-th`}
                     headers={getHeaders()}
+                    selected={ checkedOrders }
                   />
                 ) : null }
                 {getOrderCount(selectedDate) ? (

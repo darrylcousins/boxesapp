@@ -549,15 +549,24 @@ function* CurrentOrders() {
           {filterField && filterValue && (
             <div class="ba br2 pa3 ma2 orange bg-light-yellow" role="alert">
               {fetchOrders.length ? (
-                <p class="fl w-50">
-                  Filtered <strong>{fetchOrders.length}</strong> orders by <strong>{filterFields[filterField]}</strong> for <strong>{normalizeFilterValue(filterValue)}</strong>.
+                <p class="w-50">
+
+                  { filterField !== "pickup" && (
+                    <div class="tl">List previews and downloads only look for a filter on pickup.</div>
+                  )}
+                  <div class="mb2 tl">
+                    Filtered  { " " }
+                    <strong>{fetchOrders.length}</strong>{ " " }
+                    orders by <strong>{filterFields[filterField]}</strong> for { " " }
+                    <strong>{normalizeFilterValue(filterValue)}</strong>.
+                  </div>
                 </p>
               ) : (
-                <p class="fl w-50">
+                <p class="w-50 tl">
                   No orders found filtering on <strong>{filterFields[filterField]}</strong> by <strong>{normalizeFilterValue(filterValue)}</strong>.
                 </p>
               )}
-              <div class="w-50 tr dib">
+              <div class="w-50 tr dib cf">
                 <Button
                   type="secondary"
                   onclick={clearFilter}

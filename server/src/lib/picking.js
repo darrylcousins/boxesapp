@@ -13,16 +13,16 @@ export const getPackingData = async (query) => {
 
   // XXX order query filters currently only allow "pickup"
   // Add here if any additional are required
-  const pickup = query.pickup;
+  // need to build it like this because I'm matching across two collections
   const match = {
     "$and": [
       {"$eq": ["$product_id", "$$product_id"]}, 
       {"$eq": ["$delivered", "$$delivered"]}, 
     ],
   };
-  if (pickup) {
+  if (query.pickup) {
     match["$and"].push(
-      {"$eq": ["$pickup", pickup]}, 
+      {"$eq": ["$pickup", query.pickup]}, 
     );
   };
 

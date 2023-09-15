@@ -15,17 +15,39 @@ export const getQueryFilters = (req, query) => {
   // get query parameters
   let filter_field = null;
   let filter_value = null;
+  let filter_type = null;
   if (Object.keys(req.query).length) {
     if (Object.hasOwnProperty.call(req.query, 'filter_field')) {
       filter_field = req.query.filter_field;
     };
+    if (Object.hasOwnProperty.call(req.query, 'filter_type')) {
+      filter_type = req.query.filter_type;
+    };
     if (Object.hasOwnProperty.call(req.query, 'filter_value')) {
-      const testDate = new Date(parseInt(req.query.filter_value));
-      filter_value = (!Boolean(testDate)) ? req.query.filter_value : testDate.toDateString();
+      if (filter_type === "date") {
+        const testDate = new Date(parseInt(req.query.filter_value));
+        filter_value = testDate.toDateString();
+      };
+      if (filter_type === "string") {
+        filter_value = req.query.filter_value
+      };
+      if (filter_type === "array") {
+        // now try to split into an array
+        filter_value = req.query.filter_value.split(",").map(el => el.trim()).filter(el => el.length > 0);
+        if (filter_value.length === 1) {
+          filter_value = filter_value[0];
+          filter_type = "string";
+        };
+      };
     };
   };
-  if (filter_field && filter_value) {
-    query[filter_field] = filter_value;
+  if (filter_field && filter_value && filter_type) {
+    // now fix for array using $in
+    if (filter_type === "array") {
+      query[filter_field] = { "$in": filter_value };
+    } else {
+      query[filter_field] = filter_value;
+    };
   };
   return query;
 };

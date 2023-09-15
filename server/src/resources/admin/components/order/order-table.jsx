@@ -96,16 +96,31 @@ function* TableRow({ order, index, selected }) {
  * @param {Array} props.headers Array of header titles
  * @param {number} props.index The index of the row
  */
-const TableHeader = ({ headers, index }) => (
-  <thead>
-    <tr crank-key={index}>
-      {headers.map(item => (
-        <th class="z-999 fw6 bb b--black-20 tl pv3 bg-white sticky o-100">{item}</th>
-      ))}
-      <th class="z-999 fw6 bb b--black-20 tl pv3 bg-white sticky o-100" aria-label="Empty" />
-    </tr>
-  </thead>
-);
+const TableHeader = ({ headers, index, selected }) => {
+  return (
+    <thead>
+      <tr crank-key={index}>
+        {headers.map(item => (
+          <th class="z-999 fw6 bb b--black-20 tl pv3 bg-white sticky o-100">
+            { item.toLowerCase() === "select" ? (
+              <div class="flex items-center mb1 dark-gray">
+                <input
+                  type="checkbox"
+                  name="selectAll"
+                  checked={!(selected.length === 0)}
+                  id="select_all"
+                />
+              </div>
+            ) : (
+              <span>{ item }</span>
+            )}
+          </th>
+        ))}
+        <th class="z-999 fw6 bb b--black-20 tl pv3 bg-white sticky o-100" aria-label="Empty" />
+      </tr>
+    </thead>
+  );
+};
 
 /**
  * Create a DOM representation of table body

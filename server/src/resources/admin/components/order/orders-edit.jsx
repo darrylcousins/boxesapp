@@ -211,15 +211,13 @@ function* EditOrders({selectedOrders}) {
                   </div>
                   <legend class="dn fw6 ph0 mh0">Edit orders</legend>
 
-                  <div class="bt b--black-20" />
                   {fetchOrders.map((el, idx) => (
-                    <Fragment>
-                      <p class="pv2 fl mv0 w-25"><span class="b mr3">{idx+1}.</span> {el.name}</p>
-                      <p class="pv2 fl mv0 w-25">{el.pickup}</p>
-                      <p class="pv2 fl mv0 w-25">{el.delivered}</p>
-                      <p class="pv2 fl mv0 w-25">{el.order_number}</p>
-                      <div class="cf bb b--black-20" />
-                    </Fragment>
+                    <div class="dt dt--fixed">
+                      <div class="dtc"><span class="b mr3">{idx+1}.</span> {el.name}</div>
+                      <div class="dtc">{el.pickup}</div>
+                      <div class="dtc">{el.delivered}</div>
+                      <div class="dtc">{el.order_number ? el.order_number : " "}</div>
+                    </div>
                   ))}
                   {success && (
                     <div class="mv2 pt2 pl2 br3 dark-green ba b--dark-green bg-washed-green">

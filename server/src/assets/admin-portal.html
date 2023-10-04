@@ -1,7 +1,7 @@
 {% raw %}{% assign supplied_admin = {% endraw %}{{ admin }}{% raw %}  %}{% endraw %}
 
 <link rel="stylesheet" href="{{ host }}/src/assets/index.scss">
-  <div id="boxes" class="absolute w-100 z-999 bg-white">
+  <div id="boxes" class="absolute h-100 w-100 z-999 bg-white">
 
     {% raw %}
       {% if supplied_admin  %}
@@ -42,7 +42,7 @@
       <div id="modal-window"></div>
       <!-- available for placing another modal on top of main modal - e.g. box-rules-remove -->
       <div id="front-modal-window"></div>
-      <div id="app" class="ph4 pt3"></div>
+      <div id="boxes-app" class="ph4 pt3"></div>
 
     </main>
     <!-- close main content -->

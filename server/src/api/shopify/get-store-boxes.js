@@ -73,7 +73,7 @@ export default async (req, res, next) => {
                 };
             });
           } catch(err) {
-            _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+            //_logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
             continue;
           };
           boxes.push({

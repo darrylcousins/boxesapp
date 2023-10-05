@@ -61,6 +61,18 @@ function* BulkPauseSubscriptions() {
    */
   let fetchSubscriptions = [];
   /**
+   * Selected subscriptions
+   *
+   * @member {boolean} selectedSubscriptions
+   */
+  let selectedCustomers = [];
+  /**
+   * Name of messaging div
+   *
+   * @member {boolean} messageDivId
+   */
+  let messageDivId = "socketMessages";
+  /**
    * Form data collected
    *
    * @member {object} formData
@@ -84,6 +96,10 @@ function* BulkPauseSubscriptions() {
   const getSubscriptions = async () => {
     let uri = `/api/recharge-get-subscriptions-by-date?date=${selectedDate}`;
     loading = true;
+    const socketMessages = document.getElementById(messageDivId);
+    if (socketMessages) {
+      socketMessages.innerHTML = "";
+    };
     this.refresh();
     await Fetch(encodeURI(uri))
       .then(async (result) => {
@@ -188,6 +204,11 @@ function* BulkPauseSubscriptions() {
       this.refresh();
       return;
     };
+    if (selectedCustomers.length === 0) {
+      formError = "Please select at least one subscription";
+      this.refresh();
+      return;
+    };
     // send the date to pause the subscriptions, the api will collect the
     // subscriptions required
     let src = `/api/recharge-bulk-pause-subscriptions`;
@@ -195,10 +216,13 @@ function* BulkPauseSubscriptions() {
     this.refresh();
     
     const headers = { "Content-Type": "application/json" };
-    const data = { chargeDate: selectedDate, message: formData.message };
+    const data = {
+      chargeDate: selectedDate,
+      message: formData.message,
+      selectedCustomers,
+    };
 
     const callback = async (data) => {
-      console.log(data.session_id);
       await PostFetch({ src, data, headers })
         .then(async (result) => {
           const { error, json } = result;
@@ -207,7 +231,6 @@ function* BulkPauseSubscriptions() {
             loading = false;
             this.refresh();
           } else {
-            console.log(json);
             loading = false;
             this.refresh();
           }
@@ -219,7 +242,7 @@ function* BulkPauseSubscriptions() {
         });
     };
 
-    await getSessionId(callback, data);
+    await getSessionId(callback, data, messageDivId);
     // need a way to display emits
   };
 
@@ -233,9 +256,29 @@ function* BulkPauseSubscriptions() {
     selectedDate = null;
     formData.charge_date = "";
     formData.message = "";
-    const socketMessages = document.getElementById("socketMessages");
+    const socketMessages = document.getElementById(messageDivId);
     if (socketMessages) {
       socketMessages.innerHTML = "";
+    };
+    this.refresh();
+  };
+
+  /**
+   * Handle checkbox inputs
+   */
+  const handleSelection = (id) => {
+    if (id) {
+      if (selectedCustomers.includes(id)) {
+        selectedCustomers.splice(selectedCustomers.indexOf(id), 1);
+      } else {
+        selectedCustomers.push(id);
+      };
+    } else {
+      if (selectedCustomers.length > 0) {
+        selectedCustomers = [];
+      } else {
+        selectedCustomers = fetchSubscriptions.map(el => el.recharge_id);
+      };
     };
     this.refresh();
   };
@@ -284,7 +327,7 @@ function* BulkPauseSubscriptions() {
               <div class="cf dark-blue pa2 mt2 mb3 br3 ba b--dark-blue bg-washed-blue">
                 The following subscriptions will be paused for 7 days. A
                 standard email will be sent to each customer including the text
-                provided here as a paragraph. The text provided should explain
+                provided here as a paragraph. The text should explain
                 to the customer why the subscription has been paused.
               </div>
               <div class="w-100 cf">
@@ -302,6 +345,17 @@ function* BulkPauseSubscriptions() {
                 <table id="customer-table" class="mt4 w-100 center" cellspacing="0">
                   <thead>
                     <tr>
+                      <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white" aria-label="Empty">
+                        <div class="flex items-center mb1 dark-gray">
+                          <input
+                            type="checkbox"
+                            name="selectAll"
+                            checked={!(selectedCustomers.length === 0)}
+                            onchange={ () => handleSelection(null) }
+                            id="select_all"
+                          />
+                        </div>
+                        </th>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Customer</th>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Email</th>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Charge Id</th>
@@ -311,6 +365,15 @@ function* BulkPauseSubscriptions() {
                   <tbody class="tl">
                     { fetchSubscriptions.map(el => (
                       <tr crank-key={ `${ el.recharge_id }` }>
+                        <td class="pr1 pt1 bb b--black-20 v-top">
+                          <input
+                            type="checkbox"
+                            name="subscription[]"
+                            checked={ selectedCustomers.includes(el.recharge_id) }
+                            onchange={ () => handleSelection(el.recharge_id) }
+                            id={el.recharge_id}
+                          />
+                        </td>
                         <td class="pr1 pt1 bb b--black-20 v-top">
                           { el.first_name } { el.last_name }
                         </td>
@@ -333,17 +396,19 @@ function* BulkPauseSubscriptions() {
                 </table>
               </div>
               <div class="tr pr1 pv2 w-100">
+                { selectedCustomers.length > 0 && (
                   <Button type="primary" onclick={pauseSubscriptions}>
                     Pause Subscriptions
                   </Button>
-                  <Button type="secondary" onclick={cancelChanges}>
-                    Cancel
-                  </Button>
+                )}
+                <Button type="secondary" onclick={cancelChanges}>
+                  Cancel
+                </Button>
               </div>
             </Fragment>
           )}
         </div>
-        <div id="socketMessages" class="tl"></div>
+        <div id={ messageDivId } class="tl socketMessages"></div>
       </div>
     );
   };

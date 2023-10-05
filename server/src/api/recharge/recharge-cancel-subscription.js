@@ -103,16 +103,22 @@ export default async (req, res, next) => {
         cancellation_reason: cancellation_reason,
       };
       if (update.subscription_id !== subscription_id) body.send_email = false;
-      await makeRechargeQuery({
+
+      const opts = {
         method: "POST",
         path: `subscriptions/${update.subscription_id}/cancel`,
         body: JSON.stringify(body),
         title: `Cancel ${update.title}`,
-      });
+        io,
+        session_id,
+      };
+
+      await makeRechargeQuery(opts);
     };
 
     attributes.cancellation_reason = cancellation_reason;
     await subscriptionActionMail({ type: "cancelled", attributes, includes });
+    if (io) io.emit("message", `Customer cancel email sent (${customer.email})`);
 
     res.status(200).json({ success: true, action: "cancelled", subscription_id });
 

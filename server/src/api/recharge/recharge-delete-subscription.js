@@ -14,6 +14,20 @@ import { sortObjectByKeys } from "../../lib/helpers.js";
  * @param (function) next
  */
 export default async (req, res, next) => {
+  let io;
+  let sockets;
+  const { session_id } = req.body;
+
+  if (typeof session_id !== "undefined") {
+    sockets = req.app.get("sockets");
+    console.log("SOCKETS", sockets, session_id);
+    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
+      const socket_id = sockets[session_id];
+      io = req.app.get("io").to(socket_id);
+      io.emit("uploadProgress", "Received request, processing data...");
+    };
+  };
+
   const box = JSON.parse(req.body.box);
   const includes = JSON.parse(req.body.includes);
   const attributes = JSON.parse(req.body.attributes);
@@ -35,12 +49,15 @@ export default async (req, res, next) => {
   try {
 
     for (const id of included) {
-      const result = await makeRechargeQuery({
+      const opts = {
         method: "DELETE",
         path: `subscriptions/${id}`,
         body: JSON.stringify({ send_email: false }),
-        title: `Delete ${id}`
-      });
+        title: `Delete ${id}`,
+        io,
+        session_id,
+      };
+      const result = await makeRechargeQuery(opts);
     };
 
     // update for email template
@@ -55,6 +72,7 @@ export default async (req, res, next) => {
       includes,
     };
     await subscriptionActionMail(mail);
+    if (io) io.emit("message", `Customer delete email sent (${attributes.customer.email})`);
 
     meta.recharge = sortObjectByKeys(meta.recharge);
     _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });

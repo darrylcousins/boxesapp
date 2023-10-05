@@ -65,7 +65,6 @@ export default async (req, res, next) => {
 
   const { body: data } = req;
   data.plan = JSON.parse(data.plan);
-  console.log(data);
   try {
 
     // check for custom box

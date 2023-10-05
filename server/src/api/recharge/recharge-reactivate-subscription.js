@@ -145,11 +145,15 @@ export default async (req, res, next) => {
 
     // first activated the subscription, curious to see what charge date it gives, still don't know
     for (const update of updates) {
-      await makeRechargeQuery({
+      const opts = {
         method: "POST",
+        title: update.title,
         path: `subscriptions/${update.id}/activate`,
-        title: `Reactivate ${update.title}`
-      })
+        title: `Reactivate ${update.title}`,
+        io,
+        session_id,
+      };
+      await makeRechargeQuery(opts)
     };
 
     // then update properties [Delivery Date]
@@ -194,9 +198,8 @@ export default async (req, res, next) => {
       includes,
       attributes,
     };
-    console.log("api", attributes.customer);
-    console.log("api", JSON.stringify(attributes, null, 2));
     await subscriptionActionMail(mail);
+    if (io) io.emit("message", `Customer reactivated email sent (${attributes.customer.email})`);
 
     meta.recharge = sortObjectByKeys(meta.recharge);
     _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });

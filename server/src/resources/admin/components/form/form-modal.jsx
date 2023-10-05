@@ -33,7 +33,7 @@ import { getSessionId } from "../socket";
  * @returns {Function} Return the wrapped component
  * @param {object} Component The component to be wrapped
  * @param {object} options Options for form and modal
- * @param {object} options.useSession Use session.io // e.g. skip-modal.js
+ * @param {object} options.useSession Use session.io // the id should point to a messaging div
  */
 function FormModalWrapper(Component, options) {
   /**
@@ -116,7 +116,7 @@ function FormModalWrapper(Component, options) {
      * @function saveData
      * @param {object} form The form data. !! Not a form document object
      */
-    const saveData = (formData) => {
+    const saveData = async (formData) => {
       loading = true;
       saving = true;
       fetchError = false;
@@ -167,61 +167,71 @@ function FormModalWrapper(Component, options) {
       /*
       console.log(uri);
       console.log(data);
+      console.log(props);
+      console.log(useSession);
       console.warn('Data posted but disabled for development');
       return;
       */
 
-      PostFetch({ src: encodeURI(uri), data, headers })
-        .then((result) => {
-          //console.log('Submit result:', JSON.stringify(result, null, 2));
-          const { formError, error, json } = result;
-          if (error !== null) {
-            fetchError = error;
-            console.log("FETCH ERROR", fetchError);
-            resetFields();
-            this.refresh();
-          } else if (formError !== null) {
-            saveError = formError;
-            console.log("SAVE ERROR", saveError);
-            resetFields();
-            this.refresh();
-          } else {
-            resetFields();
-            success = true;
-            this.refresh();
-            setTimeout(() => {
-              closeModal();
-              if (success) {
-                if (Object.keys(toastData).length) {
-                  // string notice via form data-* html attributes passed to Form as 'meta'
-                  const templateString = toastData.template;
-                  delete toastData.template;
-                  const notice = parseStringTemplate(templateString, toastData);
-                  this.dispatchEvent(toastEvent({
-                    notice,
-                    bgColour: "black",
-                    borderColour: "black"
-                  }));
+      const callback = async (data) => {
+        await PostFetch({ src: encodeURI(uri), data, headers })
+          .then((result) => {
+            //console.log('Submit result:', JSON.stringify(result, null, 2));
+            const { formError, error, json } = result;
+            if (error !== null) {
+              fetchError = error;
+              console.log("FETCH ERROR", fetchError);
+              resetFields();
+              this.refresh();
+            } else if (formError !== null) {
+              saveError = formError;
+              console.log("SAVE ERROR", saveError);
+              resetFields();
+              this.refresh();
+            } else {
+              resetFields();
+              success = true;
+              this.refresh();
+              setTimeout(() => {
+                closeModal();
+                if (success) {
+                  if (Object.keys(toastData).length) {
+                    // string notice via form data-* html attributes passed to Form as 'meta'
+                    const templateString = toastData.template;
+                    delete toastData.template;
+                    const notice = parseStringTemplate(templateString, toastData);
+                    this.dispatchEvent(toastEvent({
+                      notice,
+                      bgColour: "black",
+                      borderColour: "black"
+                    }));
+                  };
                 };
-              };
-              this.dispatchEvent(
-                new CustomEvent("listing.reload", {
-                  bubbles: true,
-                  detail: { src, json },
-                })
-              );
-              success = false;
-            }, 2000);
-          }
-        })
-        .catch((err) => {
-          console.warn("ERROR:", err);
-          fetchError = err;
-          loading = false;
-          this.refresh();
-        });
-    };
+                this.dispatchEvent(
+                  new CustomEvent("listing.reload", {
+                    bubbles: true,
+                    detail: { src, json },
+                  })
+                );
+                success = false;
+              }, 2000);
+            }
+          })
+          .catch((err) => {
+            console.warn("ERROR:", err);
+            fetchError = err;
+            loading = false;
+            this.refresh();
+          });
+      };
 
+      if (typeof useSession !== "undefined" && useSession && Object.hasOwnProperty.call(props, "socketMessageId")) {
+        const messageDiv = document.getElementById(props.socketMessageId);
+        await getSessionId(callback, data, props.socketMessageId);
+      } else {
+        await callback(data);
+      };
+    };
 
     const fieldIds = [];
     const fieldData = [];
@@ -235,11 +245,7 @@ function FormModalWrapper(Component, options) {
       fieldData.push(ev.detail);
       if (fieldData.length === fieldLength) {
         const finalData = Object.fromEntries(fieldData.map(el => [el.id, el.value]));
-        if (typeof useSession !== "undefined" && useSession) {
-          getSessionId(saveData, finalData);
-        } else {
-          saveData(finalData);
-        };
+        saveData(finalData);
       }
     });
 
@@ -369,6 +375,9 @@ function FormModalWrapper(Component, options) {
                     doSave={doSave}
                     closeModal={closeModal}
                   />
+                )}
+                { Object.hasOwnProperty.call(props, "socketMessageId") && (
+                  <div id={ props.socketMessageId } class="tl socketMessages"></div>
                 )}
               </ModalTemplate>
             </Portal>

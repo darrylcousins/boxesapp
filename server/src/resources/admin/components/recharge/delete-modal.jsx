@@ -45,6 +45,7 @@ const options = {
   ShowLink,
   saveMsg: "Permanently deleting box subscription ... please be patient, it will take some seconds.",
   successMsg: "Successfully deleted box subscription, reloading page.",
+  useSession: true, // set up socket.io to get feedback
 };
 
 /**

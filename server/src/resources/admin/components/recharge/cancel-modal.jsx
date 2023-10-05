@@ -50,7 +50,7 @@ const options = {
   ShowLink,
   saveMsg: "Cancelling box subscription ... please be patient, it will take some seconds.",
   successMsg: "Cancellation has been queued, reloading ...",
-  useSession: false, // set up socket.io to get feedback
+  useSession: true, // set up socket.io to get feedback
 };
 
 

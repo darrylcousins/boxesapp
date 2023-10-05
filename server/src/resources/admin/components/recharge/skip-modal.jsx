@@ -47,7 +47,7 @@ const options = {
   ShowLink,
   saveMsg: "Pausing subscription ... please be patient, it will take some seconds.",
   successMsg: "Updates have been queued, reloading ...",
-  useSession: false, // set up socket.io to get feedback
+  useSession: true, // set up socket.io to get feedback, requires passing a div id for messages
 };
 
 /**

@@ -46,6 +46,7 @@ const options = {
   ShowLink,
   saveMsg: "Reactivating box subscription ... please be patient, it will take some seconds.",
   successMsg: "Reactivation has been queued, reloading ...",
+  useSession: true, // set up socket.io to get feedback
 };
 
 /**

@@ -11,7 +11,26 @@ import { io } from "socket.io-client";
  * complete, we could wait for a signal via a socket that would indicate the
  * the server side process had been completed.
  */
-export const getSessionId = async (callback, data) => {
+const appendMessage = (data, colour, divId) => {
+  const socketMessages = document.getElementById(divId);
+  if (socketMessages) {
+    let innerDiv = socketMessages.firstElementChild;
+    if (!innerDiv) {
+      innerDiv = document.createElement("div");
+      socketMessages.appendChild(innerDiv);
+    };
+    let message = document.createElement("p");
+    message.classList.add("mv1", "pv1", colour);
+    message.textContent = data;
+    innerDiv.appendChild(message);
+    socketMessages.scrollTo({
+      top: socketMessages.scrollHeight,
+      behavior: "smooth",
+      });
+  };
+};
+
+export const getSessionId = async (callback, data, divId) => {
   const proxy = localStorage.getItem("proxy-path");
   const session_id = Math.random().toString(36).substr(2, 9);
   const host = `https://${ window.location.host }`;
@@ -28,39 +47,20 @@ export const getSessionId = async (callback, data) => {
     await callback(data);
   });
   socket.on('message', async (data) => {
-    console.log('message', data);
+    //console.log('message', data);
     // display data or update timer
-    const socketMessages = document.getElementById("socketMessages");
-    if (socketMessages) {
-      let message = document.createElement("p");
-      message.classList.add("b", "mv1", "pv1", "dark-blue");
-      message.textContent = data;
-      socketMessages.appendChild(message);
-      socketMessages.scrollIntoView({ behavior: "smooth", block: "end" });
-    };
+    appendMessage(data, "dark-blue", divId);
   });
   socket.on('progress', async (data) => {
-    console.log('progress', data);
+    //console.log('progress', data);
     // display data or update timer
-    const socketMessages = document.getElementById("socketMessages");
-    if (socketMessages) {
-      let message = document.createElement("p");
-      message.classList.add("b", "mv1", "pv1", "orange");
-      message.textContent = data;
-      socketMessages.appendChild(message);
-    };
+    appendMessage(data, "orange", divId);
   });
   socket.on('finished', async (id) => {
     if (id === session_id) {
       console.log('closing connection for id', id);
       socket.disconnect();
-      const socketMessages = document.getElementById("socketMessages");
-      if (socketMessages) {
-        let message = document.createElement("p");
-        message.classList.add("b", "mv1", "pv1", "dark-green");
-        message.textContent = "Finished, closing connection";
-        socketMessages.appendChild(message);
-      };
+      appendMessage("Finished, closing connection", "dark-green", divId);
     };
   });
   /*

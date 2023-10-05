@@ -33,7 +33,8 @@ export default async (req, res, next) => {
     };
   };
 
-  const { chargeDate, message } = req.body;
+  const { chargeDate, message, selectedCustomers } = req.body;
+
   if (!isValidDateString(chargeDate)) {
     return res.status(200).json({ error: "Invalid Date" });
   };
@@ -44,11 +45,13 @@ export default async (req, res, next) => {
   let nextDeliveryDate = new Date(nextChargeDate);
   nextDeliveryDate.setDate(nextDeliveryDate.getDate() + 3);
 
+  if (io) io.emit("message", `Updating to new charge date: ${nextChargeDate.toDateString()}`);
   if (io) io.emit("message", `Updating to new delivery date: ${nextDeliveryDate.toDateString()}`);
 
   const collection = _mongodb.collection("customers");
   try {
     const customers = await collection.find({
+      "recharge_id": { "$in": selectedCustomers },
       "charge_list": {
         $elemMatch: {
           $elemMatch:{

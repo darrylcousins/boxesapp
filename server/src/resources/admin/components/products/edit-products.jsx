@@ -756,7 +756,8 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
   const lineHeightStyle = { height: "40px", "line-height": "40px" }
   const lineImageStyle = { height: "40px", width: "40px" };
 
-  window.addEventListener("resize", (event) => this.refresh() );
+  // this is handled by collapseAnimator
+  //window.addEventListener("resize", (event) => this.refresh() );
 
   for (const { box, properties, nextChargeDate, isEditable, key } of this) { // eslint-disable-line no-unused-vars
 

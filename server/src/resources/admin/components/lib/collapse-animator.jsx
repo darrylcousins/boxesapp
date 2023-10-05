@@ -40,8 +40,11 @@ function CollapseWrapper(Component) {
   return async function* ({id, collapsed, ...props}) {
 
     const fixCollapse = () => {
-      const el= document.querySelector(`#${id}`);
-      transitionElementHeight(el);
+      // only fix container if not collapsed, i.e. open
+      if (!collapsed) {
+        const el= document.querySelector(`#${id}`);
+        transitionElementHeight(el);
+      };
     };
 
     window.addEventListener('resize', fixCollapse);

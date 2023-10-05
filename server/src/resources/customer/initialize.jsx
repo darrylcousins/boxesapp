@@ -3,11 +3,11 @@ import { renderer } from "@b9g/crank/dom";
 import crossroads from "crossroads";
 
 crossroads.addRoute("/", () => import("/src/resources/customer/components/home").then(({ default: Home }) => {
-  return renderer.render(<Home />, document.getElementById("boxes-app"));
+  return renderer.render(<Home />, document.getElementById("app"));
 }));
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("Initialized boxes-app");
+  console.log("Initialized app");
 
   const paths = window.location.pathname.split("/").filter(el => el !== "");
 

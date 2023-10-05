@@ -78,6 +78,12 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
    * @member {array} timerSeconds
    */
   const timerSeconds = 30;
+  /**
+   * Name of messaging div
+   *
+   * @member {boolean} messageDivId
+   */
+  let messageDivId = `socketMessages-${subscription.attributes.subscription_id}`;
 
   const pricedItems = () => {
     const result = [];
@@ -297,8 +303,10 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
             </div>
             { !editsPending && (
               <div id={`reactivate-${subscription.box.id}`} class="w-100 pv2 tr">
-                <DeleteSubscriptionModal subscription={ subscription } customer={ customer } />
-                <ReactivateSubscriptionModal subscription={ subscription } customer={ customer } />
+                <DeleteSubscriptionModal subscription={ subscription } customer={ customer }
+                  socketMessageId={ `delete-${messageDivId}` } />
+                <ReactivateSubscriptionModal subscription={ subscription } customer={ customer }
+                  socketMessageId={ `reactivate-${messageDivId}` } />
               </div>
             )}
             { editsPending && (

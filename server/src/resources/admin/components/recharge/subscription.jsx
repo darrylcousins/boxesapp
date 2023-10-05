@@ -1058,13 +1058,11 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                 </div>
               )}
               <div class={ `${ !admin ? "w-100" : "fl w-70" } tr` }>
-                { ( !editsPending ) && (
-                  <ChangeBoxModal
-                    subscription={ subscription }
-                    socketMessageId={ `change-${messageDivId}` } />
-                )}
                 { ( !editsPending ) && collapsed && (
                   <Fragment>
+                    <ChangeBoxModal
+                      subscription={ subscription }
+                      socketMessageId={ `change-${messageDivId}` } />
                     { isSkippable() === true && (
                       <SkipChargeModal subscription={ subscription }
                         socketMessageId={ `skip-${messageDivId}` } />

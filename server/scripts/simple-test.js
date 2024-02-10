@@ -57,7 +57,7 @@ const calculateDates = (currentDate, currentVariant, newVariant) => {
 
 };
 
-const main= async () => {
+const someTest = async () => {
   const d = "Thu Sep 14 2023";
   let variant = "Thursday";
   let weekday = "Tuesday";
@@ -110,6 +110,18 @@ const main_old = async () => {
   const nextChargeScheduledAt = nextChargeDate.toISOString().split('T')[0];
   console.log(nextChargeDate.toDateString());
   console.log(orderDayOfWeek);
+};
+
+const main = async () => {
+  const a = [1,1,2,2,3];
+  const dup = a.filter((el, idx) => {
+    if (a.indexOf(el) !== idx) {
+      console.log(el);
+      return true;
+    };
+    return false;
+  });
+  console.log(dup);
 };
 
 main().catch(console.error);

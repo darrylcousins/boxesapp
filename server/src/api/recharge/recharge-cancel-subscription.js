@@ -7,6 +7,7 @@
 import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
+import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
 
 /*
  * @function recharge/recharge-cancel-subscription.js
@@ -16,27 +17,18 @@ import { sortObjectByKeys } from "../../lib/helpers.js";
  */
 export default async (req, res, next) => {
 
-  let io;
-  let sockets;
-  const { session_id } = req.body;
-
-  if (typeof session_id !== "undefined") {
-    sockets = req.app.get("sockets");
-    console.log("SOCKETS", sockets, session_id);
-    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
-      const socket_id = sockets[session_id];
-      io = req.app.get("io").to(socket_id);
-      io.emit("uploadProgress", "Received request, processing data...");
-    };
-  };
+  const { io, session_id } = getIOSocket(req);
 
   const cancellation_reason = req.body.cancellation_reason;
 
   const properties = JSON.parse(req.body.properties);
   const includes = JSON.parse(req.body.includes);
   const attributes = JSON.parse(req.body.attributes);
+  attributes.cancellation_reason = cancellation_reason;
+  const { charge_id, now, admin, navigator } = req.body;
+  const counter = new Date();
 
-  const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
+  const { title, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
 
   //console.log(attributes);
   //console.log("INCLUDES",includes);
@@ -45,33 +37,11 @@ export default async (req, res, next) => {
   // add updated flag to rec_subscription_ids
   // rc_subscription_ids should have everything in includes
   const subscription_ids = rc_subscription_ids.map(el => {
-    return { ...el, updated: true };
+    return { ...el, updated: false };
   });
 
   // make sure that the box is last
   for(var x in includes) includes[x].properties.some(el => el.name === "Including") ? includes.push( includes.splice(x,1)[0] ) : 0;
-
-  const doc= {
-    label: "CANCEL",
-    charge_id,
-    customer_id: customer.id,
-    address_id,
-    subscription_id,
-    scheduled_at,
-    rc_subscription_ids: subscription_ids,
-    title,
-    timestamp: new Date(),
-  };
-  delete properties.Likes;
-  delete properties.Dislikes;
-  for (const [key, value] of Object.entries(properties)) {
-    doc[key] = value;
-  };
-  const result = await _mongodb.collection("updates_pending").updateOne(
-    { subscription_id },
-    { "$set" : doc },
-    { "upsert": true }
-  );
 
   const topicLower = "subscription/cancelled";
   const meta = {
@@ -97,6 +67,42 @@ export default async (req, res, next) => {
   _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
 
   try {
+
+    const entry_id = await upsertPending({
+      action: "cancelled",
+      charge_id: parseInt(charge_id), // the only time charge id is included - this charge will be deleted
+      customer_id: customer.id,
+      address_id,
+      subscription_id,
+      scheduled_at,
+      deliver_at: meta.recharge["Delivery Date"],
+      rc_subscription_ids: subscription_ids,
+      title,
+      session_id,
+    });
+
+    try {
+
+      const mailOpts = {
+        type: "cancelled",
+        includes,
+        attributes,
+        now,
+        navigator,
+        admin,
+      };
+
+      if (io) {
+        makeIntervalForFinish({req, io, session_id, entry_id, counter, admin, mailOpts });
+      };
+
+    } catch(err) {
+      if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
+      throw err;
+    };
+
+    res.status(200).json({ success: true, action: "cancelled", subscription_id });
+
     for (const update of includes) {
       const body = {
         cancellation_reason_comments: "BoxesApp cancel subscription",
@@ -116,11 +122,6 @@ export default async (req, res, next) => {
       await makeRechargeQuery(opts);
     };
 
-    attributes.cancellation_reason = cancellation_reason;
-    await subscriptionActionMail({ type: "cancelled", attributes, includes });
-    if (io) io.emit("message", `Customer cancel email sent (${customer.email})`);
-
-    res.status(200).json({ success: true, action: "cancelled", subscription_id });
 
   } catch(err) {
     res.status(200).json({ error: err.message });

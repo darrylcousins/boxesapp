@@ -5,7 +5,8 @@
 
 import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
-import { sortObjectByKeys, formatDate } from "../../lib/helpers.js";
+import { sortObjectByKeys, formatDate, delay } from "../../lib/helpers.js";
+import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
 import fs from "fs";
 
 /*
@@ -22,24 +23,20 @@ import fs from "fs";
  */
 export default async (req, res, next) => {
 
-  let io;
-  let sockets;
-  const { session_id } = req.body;
+  const { io, session_id } = getIOSocket(req);
 
-  if (typeof session_id !== "undefined") {
-    sockets = req.app.get("sockets");
-    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
-      const socket_id = sockets[session_id];
-      io = req.app.get("io").to(socket_id);
-      io.emit("message", "Received request, processing data...");
-    };
-  };
-
-  const { nextchargedate, nextdeliverydate } = req.body;
+  const counter = new Date(); // time the update to finished
+  const { nextchargedate, nextdeliverydate, now, navigator, type, admin } = req.body;
 
   const includes = JSON.parse(req.body.includes);
   const attributes = JSON.parse(req.body.attributes);
   const properties = JSON.parse(req.body.properties);
+
+  // update attributes - presented in the email - old/updated
+  attributes.previousChargeDate = attributes.nextChargeDate;
+  attributes.nextChargeDate = nextchargedate;
+  attributes.previousDeliveryDate = attributes.nextDeliveryDate;
+  attributes.nextDeliveryDate = nextdeliverydate;
 
   const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
 
@@ -54,36 +51,8 @@ export default async (req, res, next) => {
 
   let chargeDate = new Date(Date.parse(nextchargedate));
   // store as ISO date
-  //const offset = chargeDate.getTimezoneOffset()
-  //chargeDate = new Date(chargeDate.getTime() - (offset*60*1000))
-  //const next_scheduled_at = chargeDate.toISOString().split('T')[0];
   const next_scheduled_at = formatDate(chargeDate);
 
-  const collection = _mongodb.collection("updates_pending");
-  const doc= {
-    label: "CHARGE_DATE",
-    charge_id,
-    customer_id: customer.id,
-    address_id,
-    subscription_id,
-    scheduled_at: next_scheduled_at, // this will match the updated subscriptions and charges
-    rc_subscription_ids: subscription_ids,
-    updated_charge_date: false,
-    title,
-    timestamp: new Date(),
-  };
-  delete properties.Likes;
-  delete properties.Dislikes;
-  for (const [key, value] of Object.entries(properties)) {
-    doc[key] = value;
-  };
-  const result = await collection.updateOne(
-    { charge_id: attributes.charge_id },
-    { "$set" : doc },
-    { "upsert": true }
-  );
-
-  // update the properties
   let delivered;
   const updates = includes.map(el => {
     const properties = [ ...el.properties ];
@@ -94,10 +63,10 @@ export default async (req, res, next) => {
   // ensure the box subscription is the first to create a new charge
   for(var x in updates) updates[x].properties.some(el => el.name === "Including") ? updates.unshift(updates.splice(x,1)[0]) : 0;
 
-  const topicLower = "charge/update-charge-date";
+  const topicLower = `charge/${type}-charge`;
   const meta = {
     recharge: {
-      label: "CHARGE_DATE",
+      label: "CHARGE DATE",
       topic: topicLower,
       title: `${attributes.title} - ${attributes.variant}`,
       charge_id: attributes.charge_id,
@@ -118,12 +87,63 @@ export default async (req, res, next) => {
   meta.recharge = sortObjectByKeys(meta.recharge);
   _logger.notice(`Recharge customer api reqest ${topicLower}.`, { meta });
 
+  // return early so as to close the modal and return control to parent component
+  // This data is passed by form-modal back to initiator using 'listing.reload' event
+  // Can we also find if nextBox is true?
+  const boxQuery = {
+    delivered: nextdeliverydate,
+    shopify_product_id: attributes.product_id,
+    active: true };
+  const hasNextBox = await _mongodb.collection("boxes").find(boxQuery).toArray();
+
   if (io) io.emit("message", `Updating ${attributes.title} - ${attributes.variant}`);
+
   try {
 
-    // necessarily has 2 updates to the subscription, must somehow know how
-    // many when I get the webhook
+    const entry_id = await upsertPending({
+      action: type,
+      customer_id: customer.id,
+      address_id,
+      subscription_id,
+      scheduled_at: next_scheduled_at, // this will match the updated subscriptions and charges
+      deliver_at: nextdeliverydate,
+      rc_subscription_ids: subscription_ids,
+      title,
+      session_id,
+    });
 
+    try {
+
+      const mailOpts = {
+        type: type,
+        descriptiveType: type,
+        attributes,
+        includes,
+        now,
+        navigator,
+        admin,
+      };
+
+      if (io) {
+        makeIntervalForFinish({req, io, session_id, entry_id, counter, admin, mailOpts });
+      };
+
+    } catch(err) {
+      if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
+      throw err;
+    };
+
+    res.status(200).json({
+      success: true,
+      action: "updated",
+      hasNextBox: Boolean(hasNextBox.length),
+      subscription_id: attributes.subscription_id,
+      scheduled_at: next_scheduled_at,
+      nextchargedate,
+      nextdeliverydate,
+    });
+
+    // the order of these matters, doing charge date first gave me odd results
     for (const update of updates) {
       const opts = {
         id: update.id,
@@ -134,6 +154,9 @@ export default async (req, res, next) => {
       };
       await updateSubscription(opts);
     };
+
+    // also tempted to add a time pause here
+    await delay(10000); // wait 10 seconds
 
     for (const update of updates) {
       const opts = {
@@ -149,26 +172,7 @@ export default async (req, res, next) => {
 
     attributes.nextChargeDate = nextchargedate;
     attributes.nextDeliveryDate = nextdeliverydate;
-    const mail = {
-      type: "updated",
-      descriptiveType: "paused or rescheduled",
-      attributes,
-      includes,
-    };
-    await subscriptionActionMail(mail);
-
     if (io) io.emit("message", "Updates completed - awaiting creation of new charge");
-    if (io) io.emit("finished", session_id);
-    // res.status(200).json({ success: true, nextchargedate: data.nextchargedate, nextdeliverydate: data.nextdeliverydate });
-    // This data is passed by form-modal back to initiator using 'listing.reload' event
-    res.status(200).json({
-      success: true,
-      action: "updated",
-      subscription_id: attributes.subscription_id,
-      scheduled_at: next_scheduled_at,
-      nextchargedate,
-      nextdeliverydate,
-    });
 
   } catch(err) {
     res.status(200).json({ error: err.message });

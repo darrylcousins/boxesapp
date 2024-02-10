@@ -4,7 +4,9 @@
  */
 import "dotenv/config";
 import crypto from "crypto";
+import { logWebhook } from "./helpers.js";
 import { Recharge } from "./index.js";
+import { getIOSocket } from "../../api/recharge/lib.js";
 
 export default class Registry {
 
@@ -20,6 +22,7 @@ export default class Registry {
   };
 
   async process(req, res) {
+
     let reqBody = "";
     const promise = new Promise((resolve, reject) => {
       req.on("data", (chunk) => {
@@ -83,16 +86,36 @@ export default class Registry {
           return reject(responseError);
         } else {
           webhookHandler = this.getHandler(webhookTopic);
+
           if (webhookHandler) {
+
+            let sockets;
             try {
-              await webhookHandler(webhookTopic, domain, reqBody);
+              // need to find a capture session_id from updates_pending
+              const io = req.app.get("io");
+              sockets = req.app.get("sockets");
+
+              // can now pass the sockets to the webhook and from the session_id stored
+              // on the updates_pending table I should be able to emit messages to the
+              // user to give update reports and then finally also when the
+              // updates_pending entry is deleted, i.e. when the update is completed
+
+            } catch(err) {
+              console.log("GOT SESSION AND IO?", err.message);
+            };
+
+            try {
+              await webhookHandler(webhookTopic, domain, reqBody,
+                { sockets: req.app.get("sockets"), io: req.app.get("io") }
+              );
+              await logWebhook(webhookTopic, JSON.parse(reqBody));
             } catch(error) {
               return reject(error);
             };
           } else {
             const err = new Error(`Recharge webhook ${topic} unknown handler.`);
             _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-            return reject(error);
+            return reject(err);
           };
           return resolve();
         };
@@ -166,6 +189,20 @@ export default class Registry {
         success = true;
         meta.recharge = { topic, id: data.webhook.id };
         _logger.notice(`Recharge webhook ${tidyTopic} registered.`, { meta });
+      } else if (data.hasOwnProperty("errors")) {
+        try {
+          const existing = data.errors.duplicate[0].slice(data.errors.duplicate[0].length-7);
+          const doc = {
+            service: "recharge",
+            topic,
+            webhook_id: parseInt(existing),
+          };
+          this.Store.setItem(doc, {topic, service: "recharge"}); // upsert if found the topic
+          this.Handlers[topic] = handler;
+          success = true;
+        } catch (err) {
+          success = false;
+        };
       } else {
         errors = typeof(data.errors) === "string" ? { error: data.errors } : data.errors;
       };

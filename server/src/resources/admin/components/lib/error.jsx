@@ -18,7 +18,7 @@ import { createElement, isElement } from "@b9g/crank";
 const ErrorMsg = ({ msg }) => {
 
   const Template = ({ children }) => (
-    <div class="dark-red mv2 pt2 pl2 br3 ba b--dark-red bg-washed-red">
+    <div class="alert-box dark-red mv2 pt2 pl2 br3 ba b--dark-red bg-washed-red">
       <p class="tc">{ children }</p>
     </div>
   );

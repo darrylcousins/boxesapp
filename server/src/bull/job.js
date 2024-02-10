@@ -45,8 +45,6 @@ export const makeApiJob = async (opts) => {
     };
   };
 
-  const eventName = "progress";
-
   // opts is the job data passed to doRechargeQuery
   const job = await apiQueue.add(
     opts.processorName,
@@ -63,49 +61,12 @@ export const makeApiJob = async (opts) => {
   //console.log("Queued")
   emit({
     io,
-    eventName,
+    eventName: "progress",
     message: `Queued "${opts.title}" ...`
   });
 
-
-  /* Not really required, just doing queued and completed
-  if (io) {
-    apiQueueEvents.on('progress', async ({ jobId, data }, timestamp) => {
-      const job = await Job.fromId(apiQueue, jobId);
-      if (typeof job.data.session_id !== "undefined") {
-        console.log("job completed with session_id: ", job.data.session_id)
-        emit({
-          io,
-          eventName,
-          message: `Updating "${job.data.title}" ...`
-        });
-      };
-    });
-    apiQueueEvents.on('completed', async ({ jobId, returnvalue }) => {
-      const job = await Job.fromId(apiQueue, jobId);
-      if (typeof job.data.session_id !== "undefined") {
-        emit({
-          io,
-          eventName,
-          message: `Completed "${job.data.title}" ...`
-        });
-
-        if (typeof job.data.finish !== "undefined") {
-          // e.g. updateSubscriptions, the last of which might emit a finished
-          // event - NB finished event will close the connection at the browser
-          // end, see components/sockets.jsx
-          emit({
-            io,
-            eventName: "finished",
-            message: "All jobs completed"
-          });
-        };
-      };
-    });
-  };
-  */
-
   await job.updateProgress(`Update ${opts.title} executing...`);
+
   /*
    * Returns one of these values: "completed", "failed", "delayed", "active", "waiting", "waiting-children", "unknown".
    */
@@ -117,16 +78,16 @@ export const makeApiJob = async (opts) => {
   const finished = await Job.fromId(apiQueue, job.id)
 
   // this will still go back to the caller
+  // XXX look again at this if we are no longer to waitUntilFinished!!
   if (parseInt(finished.returnvalue.status) > 299) {
     throw new Error(`${job.name} request failed with code ${finished.returnvalue.status}: "${finished.returnvalue.statusText}"`);
   };
 
-  emit({
-    io,
-    eventName,
-    message: `Completed "${opts.title}" ...`
-  });
+  if (finish) { // only used by updateSubscriptions?
+    // final subscription of list, didn't prove useful at all
+  };
 
+  // return the value received from the api call
   return finished.returnvalue;
 };
 

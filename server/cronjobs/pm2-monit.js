@@ -49,14 +49,14 @@ const main = async () => {
         subject: `\[${process.env.DB_NAME}\] [ERROR] ${subject}`,
         text: `${subject}`,
       };
-      const sent = await sendmail(opts);
+      //const sent = await sendmail(opts);
       // try to restart it - always on --no-autorestart ?
       delete opts.html;
       delete opts.attachments;
       winstonLogger.notice("Process Monitor", { meta: { mail: { ...opts, ...sent } } });
     };
   } catch(err) {
-    winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    //winstonLogger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   } finally {
     await client.close();
     process.exit(1);

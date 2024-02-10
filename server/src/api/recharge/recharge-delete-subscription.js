@@ -6,6 +6,7 @@
 import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
+import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
 
 /*
  * @function recharge/recharge-delete-subscription.js
@@ -14,25 +15,16 @@ import { sortObjectByKeys } from "../../lib/helpers.js";
  * @param (function) next
  */
 export default async (req, res, next) => {
-  let io;
-  let sockets;
-  const { session_id } = req.body;
 
-  if (typeof session_id !== "undefined") {
-    sockets = req.app.get("sockets");
-    console.log("SOCKETS", sockets, session_id);
-    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
-      const socket_id = sockets[session_id];
-      io = req.app.get("io").to(socket_id);
-      io.emit("uploadProgress", "Received request, processing data...");
-    };
-  };
+  const { io, session_id } = getIOSocket(req);
 
   const box = JSON.parse(req.body.box);
   const includes = JSON.parse(req.body.includes);
   const attributes = JSON.parse(req.body.attributes);
+  const { now, admin, navigator } = req.body;
+  const counter = new Date();
 
-  const topicLower = "subscription/reactivated";
+  const topicLower = "subscription/deleted";
   const meta = {
     recharge: {
       label: "DELETE",
@@ -44,11 +36,46 @@ export default async (req, res, next) => {
     }
   };
 
-  const included = includes.map(el => `${el.id}`);
-
   try {
 
-    for (const id of included) {
+    try {
+
+      // missing total_price
+      const adjusted = includes.map(el => {
+        return {
+          ...el,
+          total_price: el.price,
+          title: el.product_title,
+          shopify_product_id: el.external_product_id.ecommerce,
+        };
+      });
+      const totalPrice = includes.map(el => parseFloat(el.price) * el.quantity).reduce((sum, el) => sum + el, 0);
+      attributes.totalPrice = `${totalPrice.toFixed(2)}`;
+
+      const mailOpts = {
+        type: "deleted",
+        includes: adjusted,
+        attributes,
+        now,
+        navigator,
+        admin,
+      };
+
+      console.log(session_id);
+      const entry_id = null; // will complete almost immediately
+      if (io) {
+        io.emit("message", `Deleting subscription`);
+        makeIntervalForFinish({req, io, session_id, entry_id, counter, admin, mailOpts });
+      };
+
+    } catch(err) {
+      if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
+      throw err;
+    };
+
+    res.status(200).json({ success: true, action: "deleted", subscription_id: box.id });
+
+    for (const id of includes.map(el => `${el.id}`)) {
       const opts = {
         method: "DELETE",
         path: `subscriptions/${id}`,
@@ -60,23 +87,18 @@ export default async (req, res, next) => {
       const result = await makeRechargeQuery(opts);
     };
 
-    // update for email template
-    for (const el of includes) {
-      el.title = el.product_title;
-      el.shopify_product_id = el.external_product_id.ecommerce;
-    };
-
-    const mail = {
-      type: "deleted",
-      attributes,
-      includes,
-    };
-    await subscriptionActionMail(mail);
-    if (io) io.emit("message", `Customer delete email sent (${attributes.customer.email})`);
-
     meta.recharge = sortObjectByKeys(meta.recharge);
+
     _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
-    res.status(200).json({ success: true, action: "deleted", subscription_id: box.id });
+
+    setTimeout(() => {
+      io.emit("completed", "Subscription deleted");
+      io.emit("finished", {
+        action: "deleted",
+        session_id: session_id,
+        subscription_id: box.id,
+      });
+    }, 5000);
 
   } catch(err) {
     res.status(200).json({ error: err.message });

@@ -11,7 +11,11 @@ import { createElement, Fragment } from "@b9g/crank";
 import Button from "../lib/button";
 import FormModalWrapper from "../form/form-modal";
 import Form from "../form";
-import { animateFadeForAction } from "../helpers";
+import {
+  animateFadeForAction,
+  userNavigator,
+  dateStringNow,
+} from "../helpers";
 
 /**
  * Icon component for link to expand modal
@@ -45,7 +49,7 @@ const options = {
   color: "dark-red",
   src: "/api/recharge-update-charge-date",
   ShowLink,
-  saveMsg: "Pausing subscription ... please be patient, it will take some seconds.",
+  saveMsg: "Pausing subscription ... please be patient, it will take some minutes.",
   successMsg: "Updates have been queued, reloading ...",
   useSession: true, // set up socket.io to get feedback, requires passing a div id for messages
 };
@@ -119,6 +123,7 @@ async function* SkipCharge(props) {
    * returns the box else compiles reasonable defaults.
    */
   const getInitialData = () => {
+    console.log(subscription.attributes);
     const data = {
       attributes: JSON.stringify(subscription.attributes),
       includes: JSON.stringify(subscription.includes),
@@ -126,6 +131,10 @@ async function* SkipCharge(props) {
       pauseinterval: intervalDays[intervalIndex],
       nextchargedate: chargeDays[intervalIndex],
       nextdeliverydate: deliveryDays[intervalIndex],
+      now: dateStringNow(),
+      type: "paused",
+      navigator: userNavigator(),
+      admin: props.admin,
     };
     return data;
   };
@@ -141,6 +150,22 @@ async function* SkipCharge(props) {
       attributes: {
         type: "hidden",
         datatype: "string",
+      },
+      type: {
+        type: "hidden",
+        datatype: "string",
+      },
+      now: {
+        type: "hidden",
+        datatype: "string",
+      },
+      navigator: {
+        type: "hidden",
+        datatype: "string",
+      },
+      admin: {
+        type: "hidden",
+        datatype: "boolean",
       },
       includes: {
         type: "hidden",
@@ -212,36 +237,36 @@ async function* SkipCharge(props) {
           Are you sure you want to pause the subscription?<br />
           <div class="dt dt--fixed w-100">
             <div class="dtc gray tr pr3 pv1 b">
-              This payment date:
-            </div>
-            <div class="dtc pv1 b">
-              { subscription.attributes.nextChargeDate }
-            </div>
-          </div>
-          <div class="dt dt--fixed w-100">
-            <div class="dtc gray tr pr3 pv1 b">
               Scheduled delivery date:
             </div>
             <div class="dtc pv1 b">
               { subscription.attributes.nextDeliveryDate }
             </div>
           </div>
-        </p>
-        <p class="lh-copy tl">
           <div class="dt dt--fixed w-100">
             <div class="dtc gray tr pr3 pv1 b">
-              New payment date will be:
+              This charge date:
             </div>
-            <div class="dtc pv1 b" id="charge-date">
-              { chargeDays[intervalIndex] }
+            <div class="dtc pv1 b">
+              { subscription.attributes.nextChargeDate }
             </div>
           </div>
+        </p>
+        <p class="lh-copy tl">
           <div class="dt dt--fixed w-100">
             <div class="dtc gray tr pr3 pv1 b">
               New delivery date will be:
             </div>
             <div class="dtc pv1 b" id="delivery-date">
               { deliveryDays[intervalIndex] }
+            </div>
+          </div>
+          <div class="dt dt--fixed w-100">
+            <div class="dtc gray tr pr3 pv1 b">
+              New charge date will be:
+            </div>
+            <div class="dtc pv1 b" id="charge-date">
+              { chargeDays[intervalIndex] }
             </div>
           </div>
         </p>
@@ -254,7 +279,7 @@ async function* SkipCharge(props) {
             meta={toastTemplate}
           />
         </div>
-        <div class="w-100 center">
+        <div class="w-100 center tr">
           <Button type="primary" onclick={thisSave}>
             Yes, Pause Subscription
           </Button>

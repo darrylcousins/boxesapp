@@ -43,7 +43,22 @@
             margin: 0 0 0 160px;
             padding: 0 0 0.5em 0;
                           ">
-                          {{ thing.next_charge_scheduled_at }}
+                          {{ thing.next_charge_scheduled_at }}</dd>
+                        {% endif %}
+                        {% if thing.box_subscription_id %}
+                          <dt style="
+            float: left;
+            clear: left;
+            width: 150px;
+            text-align: right;
+            font-weight: bold;
+            color: grey;
+                          ">Box subscription id</dt>
+                          <dd style="
+            margin: 0 0 0 160px;
+            padding: 0 0 0.5em 0;
+                          ">
+                          {{ thing.box_subscription_id }}</dd>
                         {% endif %}
                         {% if thing.delivery_at %}
                           <dt style="
@@ -58,7 +73,7 @@
             margin: 0 0 0 160px;
             padding: 0 0 0.5em 0;
                           ">
-                          {{ thing.delivery_at }}
+                          {{ thing.delivery_at }}</dd>
                         {% endif %}
                         {% if thing.cancelled_at %}
                           <dt style="
@@ -72,9 +87,7 @@
                           <dd style="
             margin: 0 0 0 160px;
             padding: 0 0 0.5em 0;
-                          ">
-                          {{ thing.cancelled_at }}
-                        </dd>
+                          ">{{ thing.cancelled_at }}</dd>
                         {% endif %}
                         {% if thing.updated_at %}
                           <dt style="
@@ -89,6 +102,34 @@
             margin: 0 0 0 160px;
             padding: 0 0 0.5em 0;
                           ">{{ thing.updated_at }}</dd>
+                        {% endif %}
+                        {% if thing.price %}
+                          <dt style="
+            float: left;
+            clear: left;
+            width: 150px;
+            text-align: right;
+            font-weight: bold;
+            color: grey;
+                          ">Box subscription price</dt>
+                          <dd style="
+            margin: 0 0 0 160px;
+            padding: 0 0 0.5em 0;
+                          ">{{ thing.price }}</dd>
+                        {% endif %}
+                        {% if thing.variant_price %}
+                          <dt style="
+            float: left;
+            clear: left;
+            width: 150px;
+            text-align: right;
+            font-weight: bold;
+            color: grey;
+                          ">Box shop price</dt>
+                          <dd style="
+            margin: 0 0 0 160px;
+            padding: 0 0 0.5em 0;
+                          ">{{ thing.variant_price }}</dd>
                         {% endif %}
                       </dl>
                     </li>

@@ -11,9 +11,12 @@ import cloneDeep from "lodash.clonedeep";
 import Cancelled from "./cancelled";
 import Subscription from "./subscription";
 import Error from "../lib/error";
-import { Fetch } from "../lib/fetch";
+import { Fetch, PostFetch } from "../lib/fetch";
 import BarLoader from "../lib/bar-loader";
 import { loadAnotherCustomer } from "./events";
+import { toastEvent } from "../lib/events";
+import Toaster from "../lib/toaster";
+import DTable from "./dtable";
 import { animateFadeForAction, delay } from "../helpers";
 
 /**
@@ -77,6 +80,24 @@ async function *Customer({ customer, admin }) {
    * @member {object} charge groups for the customer
    */
   let originalChargeGroups = [];
+  /**
+   * Orphans for this customer as fetched by 'verify subscriptions'
+   *
+   * @member {object} orphaned subscriptions for the customer
+   */
+  let orphans = [];
+  /**
+   * Date mismatches for this customer as fetched by 'verify subscriptions'
+   *
+   * @member {object} date mismatched subscriptions for the customer
+   */
+  let date_mismatch = [];
+  /**
+   * Price mismatches for this customer as fetched by 'verify subscriptions'
+   *
+   * @member {object} Price mismatched subscriptions for the customer
+   */
+  let price_mismatch = [];
 
   /**
    * Return to customer search
@@ -128,6 +149,7 @@ async function *Customer({ customer, admin }) {
         };
         if (Object.hasOwnProperty.call(json, "result")) {
           chargeGroups = json.result;
+          //console.log("Charge Groups", chargeGroups);
           originalChargeGroups = cloneDeep(json.result);
         };
         loading = false;
@@ -221,7 +243,7 @@ async function *Customer({ customer, admin }) {
       const div = document.querySelector(`#subscription-${id}`);
       div.classList.remove("disableevents");
     };
-    const div = document.querySelector(`#customer`);
+    const div = document.querySelector(`#customer-${rechargeCustomer.id}`);
     animateFadeForAction(div, async () => await this.refresh(), 800);
   };
 
@@ -234,18 +256,23 @@ async function *Customer({ customer, admin }) {
    */
   const reactivateSubscription = async (ev) => {
     const { subscription, subscription_id } = ev.detail
+    console.log("reactivate listener");
+    console.log(subscription, subscription_id);
     const cancelled = cancelledGroups.find(el => el.box.id === subscription_id);
     const idx = cancelledGroups.indexOf(cancelled);
-    cancelledGroups.splice(idx, 1);
-    chargeGroups.push(subscription);
-    originalChargeGroups = cloneDeep(chargeGroups); // save for cancel event
-    let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
-    for (const id of subscription_ids) {
-      const div = document.querySelector(`#subscription-${id}`);
-      div.classList.remove("disableevents");
+    console.log("The index", idx);
+    if (idx !== -1) { // oddly getting here twice???
+      cancelledGroups.splice(idx, 1);
+      chargeGroups.push(subscription);
+      originalChargeGroups = cloneDeep(chargeGroups); // save for cancel event
+      let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
+      for (const id of subscription_ids) {
+        const div = document.querySelector(`#subscription-${id}`);
+        div.classList.remove("disableevents");
+      };
+      const div = document.querySelector(`#customer-${rechargeCustomer.id}`);
+      animateFadeForAction(div, async () => await this.refresh(), 800);
     };
-    const div = document.querySelector(`#customer`);
-    animateFadeForAction(div, async () => await this.refresh(), 800);
   };
 
   this.addEventListener("subscription.reactivated", reactivateSubscription);
@@ -257,8 +284,11 @@ async function *Customer({ customer, admin }) {
    */
   const cancelSubscription = async (ev) => {
     const { subscription, subscription_id } = ev.detail
+    console.log("cancel listener");
+    console.log(subscription, subscription_id);
     const charge = chargeGroups.find(el => el.attributes.subscription_id === subscription_id);
     const idx = chargeGroups.indexOf(charge);
+    console.log("The index", idx);
     chargeGroups.splice(idx, 1);
     originalChargeGroups = cloneDeep(chargeGroups); // save for cancel event
     cancelledGroups.push(subscription);
@@ -267,7 +297,7 @@ async function *Customer({ customer, admin }) {
       const div = document.querySelector(`#subscription-${id}`);
       div.classList.remove("disableevents");
     };
-    const div = document.querySelector(`#customer`);
+    const div = document.querySelector(`#customer-${rechargeCustomer.id}`);
     animateFadeForAction(div, async () => await this.refresh(), 800);
   };
 
@@ -280,11 +310,9 @@ async function *Customer({ customer, admin }) {
    */
   const disableEvents = async (ev) => {
     const { subscription_id } = ev.detail;
-    let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
-    subscription_ids = subscription_ids.filter(el => el !== subscription_id);
-    for (const id of subscription_ids) {
-      const div = document.querySelector(`#subscription-${id}`);
-      div.classList.add("disableevents");
+    const mydiv = document.querySelector(`#subscription-${subscription_id}`);
+    if (mydiv) {
+      mydiv.classList.remove("disableevents");
     };
   };
 
@@ -297,11 +325,9 @@ async function *Customer({ customer, admin }) {
    */
   const enableEvents = async (ev) => {
     const { subscription_id } = ev.detail;
-    let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
-    subscription_ids = subscription_ids.filter(el => el !== subscription_id);
-    for (const id of subscription_ids) {
-      const div = document.querySelector(`#subscription-${id}`);
-      div.classList.remove("disableevents");
+    const mydiv = document.querySelector(`#subscription-${subscription_id}`);
+    if (mydiv) {
+      mydiv.classList.remove("disableevents");
     };
   };
 
@@ -311,9 +337,8 @@ async function *Customer({ customer, admin }) {
    * For reloading and cancelling changes
    * Simple reverts all changes.
    *
-   * @listens customer.reload From Subscription "cancel" changes button
    */
-  const reloadAll = (ev) => {
+  const reloadOldNeedsChecking = (ev) => {
     loading = true;
     chargeGroups = [];
     this.refresh();
@@ -321,33 +346,121 @@ async function *Customer({ customer, admin }) {
     setTimeout(() => {
       loading = false;
       chargeGroups = cloneDeep(originalChargeGroups);
-      this.refresh();
+      const div = document.querySelector(`#customer-${rechargeCustomer.id}`);
+      animateFadeForAction(div, async () => await this.refresh(), 800);
+      }, 
+      500);
+  };
+
+  /**
+   * Initiate and retrieve data
+   *
+   */
+  const init = async () => {
+    //console.log("CUSTOMER", customer);
+    if (!Object.hasOwnProperty.call(customer, "external_customer_id")) {
+      await getRechargeCustomer().then(res => {
+        if (res) {
+          getChargeGroups(res.id).then(result => {
+            loading = true;
+            this.refresh();
+            getCancelledGroups(res.id);
+          });
+        };
+      });
+    } else {
+      rechargeCustomer = customer;
+      getChargeGroups(customer.id).then(result => {
+        loading = true;
+        this.refresh();
+        getCancelledGroups(customer.id);
+      });
+    };
+  };
+
+  /**
+   * For reloading and cancelling changes
+   * Simple reverts all changes.
+   *
+   * @listens customer.reload From Subscription "cancel" changes button
+   */
+  const reloadAll = (ev) => {
+    loading = true;
+    this.refresh();
+
+    // reset originalChargeGroups?
+
+    setTimeout(() => {
+      const div = document.querySelector(`#customer-${rechargeCustomer.id}`);
+      animateFadeForAction(div, async () => await init(), 800);
       }, 
       500);
   };
 
   this.addEventListener("customer.reload", reloadAll);
 
-  if (!Object.hasOwnProperty.call(customer, "external_customer_id")) {
-    await getRechargeCustomer().then(res => {
-      if (res) {
-        getChargeGroups(res.id).then(result => {
-          loading = true;
+  /**
+   * Run the subscription verification script
+   *
+   * @function verifyCustomerSubscriptions
+   */
+  const verifyCustomerSubscriptions = async ( { customer } ) => {
+    let src = `/api/recharge-verify-customer-subscriptions`;
+    fetchError = false;
+    loading = true;
+    await this.refresh();
+    
+    const headers = { "Content-Type": "application/json" };
+    const data = {
+      customer: { recharge_id: customer.id }
+    };
+    await PostFetch({ src, data, headers })
+      .then(async (result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
           this.refresh();
-          getCancelledGroups(res.id);
-        });
-      };
-    });
-  } else {
-    rechargeCustomer = customer;
-    getChargeGroups(customer.id).then(result => {
-      loading = true;
-      this.refresh();
-      getCancelledGroups(customer.id);
-    });
+        } else {
+
+          if (Object.hasOwnProperty.call(json, "verified")) {
+            // passed verification
+            this.dispatchEvent(toastEvent({
+              notice: `Passed verification`,
+              bgColour: "black",
+              borderColour: "black"
+            }));
+            orphans = [];
+            date_mismatch = [];
+            price_mismatch = [];
+            // No action required
+          } else {
+            // failed to verify, update orphans and date_mismatches
+            this.dispatchEvent(toastEvent({
+              notice: `Failed verification`,
+              bgColour: "black",
+              borderColour: "black"
+            }));
+            // display a report
+            orphans = json.orphans;
+            date_mismatch = json.date_mismatch;
+            price_mismatch = json.price_mismatch;
+          };
+          loading = false;
+          this.refresh();
+        }
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+      });
   };
 
-  const adminUrl = `https://${window.location.hostname}/admin/customers`;
+  const shopAdminUrl = `https://${ localStorage.getItem("shop") }/admin/customers`;
+  const rechargeAdminUrl = `https://${ localStorage.getItem("recharge") }.admin.rechargeapps.com/merchant/customers`;
+
+  await init();
 
   for await ({ customer } of this) { // eslint-disable-line no-unused-vars
     yield (
@@ -355,7 +468,7 @@ async function *Customer({ customer, admin }) {
         { loading && <BarLoader /> }
         { loading && <div>Loading subscriptions ...</div> }
         { fetchError && <Error msg={fetchError} /> }
-        <div id="customer">
+        <div id={ `customer-${rechargeCustomer.id}` }>
           <Fragment>
             { admin && (
               <Fragment>
@@ -365,21 +478,46 @@ async function *Customer({ customer, admin }) {
                   onclick={ getNewCustomer }>
                   Load another customer
                 </div>
+                <div
+                  class="w-100 tr ml2 mr2 link bold pointer fg-streamside-blue"
+                  title="Load another customer"
+                  onclick={ async () => await verifyCustomerSubscriptions({ customer }) }>
+                  Verify customer subscriptions
+                </div>
                 <a
                   class="db w-100 tr ml2 mr2 link bold pointer fg-streamside-blue"
                   target="_blank"
-                  href={ `${adminUrl}/${customer.external_customer_id.ecommerce}` }>
+                  href={ `${shopAdminUrl}/${customer.external_customer_id.ecommerce}` }>
                   View customer in Shopify
                 </a>
+                <a
+                  class="db w-100 tr ml2 mr2 link bold pointer fg-streamside-blue"
+                  target="_blank"
+                  href={ `${rechargeAdminUrl}/${customer.id}` }>
+                  View customer in Recharge
+                </a>
+                <div class="cf" />
+                { date_mismatch && date_mismatch.length > 0 && (
+                  <DTable items={ date_mismatch } title="Date mismatches" />
+                )}
+                  <div class="cf" />
+                { orphans && orphans.length > 0 && (
+                  <DTable items={ orphans } title="Orphaned items" />
+                )}
+                <div class="cf" />
+                { price_mismatch && price_mismatch.length > 0 && (
+                  <DTable items={ price_mismatch } title="Price mismatches" />
+                )}
+                <div class="cf" />
               </Fragment>
             )}
             { messages.length > 0 && (
-              <div class="dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
-                  <p>{ messages }</p>
+              <div class="alert-box dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+                  <p class="tc">{ messages }</p>
               </div>
             )}
             { errors.length > 0 && (
-              <div class="dark-red mv2 pt2 pl2 br3 ba b--dark-red bg-washed-red">
+              <div class="alert-box dark-red mv2 pt2 pl2 br3 ba b--dark-red bg-washed-red">
                 { errors.split("\n").map(el => el.trim()).filter(el => el !== "").map(message => (
                   <p style="margin-bottom:5px">{ message }</p>
                 ))}
@@ -394,7 +532,7 @@ async function *Customer({ customer, admin }) {
             )}
             { chargeGroups && chargeGroups.length > 0 ? (
               <Fragment>
-                <h4 class="tc mv4 w-100 navy b">
+                <h4 class="tc mv4 w-100 navy">
                   Active Subscriptions
                 </h4>
                 { chargeGroups.map((group, idx) => (
@@ -410,17 +548,15 @@ async function *Customer({ customer, admin }) {
               </Fragment>
             ) : (
               !loading && cancelledGroups && cancelledGroups.length === 0 && (
-                <div class="w-100">
-                  <div class="mw6 center pt3">
-                    No subscriptions found.
-                  </div>
+                <div class="alert-box dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+                    <p class="tc">No subscriptions found.</p>
                 </div>
               )
             )}
             { cancelledGroups && (
               cancelledGroups.length > 0 ? (
                 <Fragment>
-                  <h4 class="tc mv4 w-100 navy b">
+                  <h4 class="tc mv4 w-100 navy">
                     Cancelled Subscriptions
                   </h4>
                   { cancelledGroups.map((group, idx) => (

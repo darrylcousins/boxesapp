@@ -8,7 +8,7 @@ import buildMail from "./build-mail.js";
  * @function mail/subscription-action.js
  * @param (object) data
  */
-export default async ({ type, descriptiveType, attributes, includes }) => {
+export default async ({ type, descriptiveType, attributes, includes, now, navigator, admin, counter, change_messages }) => {
   const email = attributes.customer.email;
   const title = `Subscription ${type.charAt(0).toUpperCase()}${type.substring(1).toLowerCase()}`;
   const subject = `${title} ${attributes.title} - ${attributes.variant}`;
@@ -34,6 +34,11 @@ export default async ({ type, descriptiveType, attributes, includes }) => {
     type,
     descriptiveType: descriptiveType ? descriptiveType : type,
     meta,
+    now,
+    navigator,
+    admin,
+    counter,
+    change_messages
   };
 
   return await buildMail(opts);

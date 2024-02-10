@@ -10,6 +10,10 @@ import { createElement, Fragment } from "@b9g/crank";
 import Button from "../lib/button";
 import FormModalWrapper from "../form/form-modal";
 import Form from "../form";
+import {
+  userNavigator,
+  dateStringNow,
+} from "../helpers";
 
 /**
  * Icon component for link to expand modal
@@ -43,7 +47,7 @@ const options = {
   color: "purple",
   src: "/api/recharge-delete-subscription",
   ShowLink,
-  saveMsg: "Permanently deleting box subscription ... please be patient, it will take some seconds.",
+  saveMsg: "Permanently deleting box subscription ... please be patient, it will take some minutes.",
   successMsg: "Successfully deleted box subscription, reloading page.",
   useSession: true, // set up socket.io to get feedback
 };
@@ -80,6 +84,18 @@ async function* DeleteSubscription(props) {
     attributes: {
       type: "hidden",
       datatype: "string",
+    },
+    now: {
+      type: "hidden",
+      datatype: "string",
+    },
+    navigator: {
+      type: "hidden",
+      datatype: "string",
+    },
+    admin: {
+      type: "hidden",
+      datatype: "boolean",
     },
   };
 
@@ -119,6 +135,9 @@ async function* DeleteSubscription(props) {
           variant: subscription.box.variant_title,
           lastOrder: subscription.lastOrder,
         }),
+        now: dateStringNow(),
+        navigator: userNavigator(),
+        admin: props.admin,
       };
     };
 

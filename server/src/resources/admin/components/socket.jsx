@@ -12,25 +12,27 @@ import { io } from "socket.io-client";
  * the server side process had been completed.
  */
 const appendMessage = (data, colour, divId) => {
+  //console.log(data);
   const socketMessages = document.getElementById(divId);
   if (socketMessages) {
+    socketMessages.classList.add("pa3"); // only add padding when we have content - whitespace fix
     let innerDiv = socketMessages.firstElementChild;
     if (!innerDiv) {
       innerDiv = document.createElement("div");
       socketMessages.appendChild(innerDiv);
     };
     let message = document.createElement("p");
-    message.classList.add("mv1", "pv1", colour);
+    message.classList.add("mt0", "mb1", "pv0", colour);
     message.textContent = data;
     innerDiv.appendChild(message);
     socketMessages.scrollTo({
       top: socketMessages.scrollHeight,
       behavior: "smooth",
-      });
+    });
   };
 };
 
-export const getSessionId = async (callback, data, divId) => {
+export const getSessionId = async (callback, data, divId, component) => {
   const proxy = localStorage.getItem("proxy-path");
   const session_id = Math.random().toString(36).substr(2, 9);
   const host = `https://${ window.location.host }`;
@@ -46,21 +48,60 @@ export const getSessionId = async (callback, data, divId) => {
     data.session_id = id;
     await callback(data);
   });
-  socket.on('message', async (data) => {
+  socket.on('fail', async (data) => { // unused for now
+    //console.log('fail', data);
+    // display data or update timer
+    appendMessage(data, "red", divId);
+  });
+  socket.on('message', async (data) => { // start and othe info
     //console.log('message', data);
     // display data or update timer
     appendMessage(data, "dark-blue", divId);
   });
-  socket.on('progress', async (data) => {
+  socket.on('progress', async (data) => { // usually progress from bull job
     //console.log('progress', data);
     // display data or update timer
     appendMessage(data, "orange", divId);
   });
-  socket.on('finished', async (id) => {
-    if (id === session_id) {
-      console.log('closing connection for id', id);
-      socket.disconnect();
+  socket.on('completed', async (data) => { // usually from webhook confiming update from Recharge
+    //console.log('completed', data);
+    // display data or update timer
+    appendMessage(data, "dark-green", divId);
+  });
+  socket.on('explainer', async () => { // time has passed so display explainer
+    component.dispatchEvent(
+      new CustomEvent("explainer", {
+        bubbles: true,
+      })
+    );
+  });
+  socket.on('error', async (data) => { // usually progress from bull job
+    //console.log('progress', data);
+    // display data or update timer
+    console.log('error', data);
+    appendMessage(data, "red", divId);
+  });
+  socket.on('charge', async (charge_id) => { // when the subscription updates are complete (remove updates_pending entry)
+    component.dispatchEvent(
+      new CustomEvent("charge.updated", {
+        bubbles: true,
+        detail: { charge_id },
+      })
+    );
+  });
+  socket.on('finished', async (data) => {
+    // some care needed here to make sure we send to the correct component
+    console.log(data); // also receiving subscription_id
+    if (data.session_id === session_id) {
+      //console.log('closing connection for id', id);
       appendMessage("Finished, closing connection", "dark-green", divId);
+      socket.disconnect();
+      window.dispatchEvent(
+        new CustomEvent("socket.closed", {
+          bubbles: true,
+          detail: { ...data },
+        })
+      );
     };
   });
   /*

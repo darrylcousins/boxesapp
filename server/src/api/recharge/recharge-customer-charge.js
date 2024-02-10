@@ -17,35 +17,11 @@ import fs from "fs";
  * This used primarily to reload the charge after editing
  */
 export default async (req, res, next) => {
-  let charge_id = req.params.charge_id;
-  const { customer_id, address_id, subscription_id, scheduled_at } = req.query;
 
-  const query = {
-    //charge_id: parseInt(charge.id), now trying to avoid this because of updating charge and new charges created.
-    customer_id: parseInt(customer_id),
-    address_id: parseInt(address_id),
-    //scheduled_at, similarly to the charge_id
-    subscription_id: parseInt(subscription_id),
-  };
-  //console.log("customer-charge query", query);
-  const findPending = await _mongodb.collection("updates_pending").findOne(query);
-  //console.log("FIND PENDING", findPending)
-  if (findPending) {
-    charge_id = findPending.charge_id;
-    // if this is a change date entry
-    if (Object.hasOwnProperty.call(findPending, "updated_charge_date")) {
-      if (findPending.updated_charge_date === true) {
-        _logger.info("Deleting updates_pending at customer-charge api");
-        const res = await _mongodb.collection("updates_pending").deleteOne(query);
-      } else {
-        // return something here while waiting for charge date to be fully updated
-        // because the charge will be gone or no longer containing this subscription
-        return res.status(200).json({ message: "Updates pending ..." });
-      };
-    } else {;
-      return res.status(200).json({ message: "Updates pending ..." });
-    };
-  };
+  let charge_id = req.params.charge_id;
+
+  // is this the updated scheduled_at?
+  const { customer_id, address_id, subscription_id, scheduled_at } = req.query;
 
   try {
     let result = {};
@@ -68,6 +44,8 @@ export default async (req, res, next) => {
 
     const groups = [];
     const grouped = await reconcileGetGrouped({ charge: result.charge });
+    //console.log(result.charge);
+    //console.log(JSON.stringify(result.charge.line_items, null, 2));
 
     groups.push(grouped);
     let data = [];
@@ -78,6 +56,8 @@ export default async (req, res, next) => {
 
     if (result.charge) {
       const subscription = data.find(el => el.attributes.subscription_id === parseInt(subscription_id));
+      //console.log(subscription);
+      //console.log(subscription.attributes.rc_subscription_ids);
       return res.status(200).json({ subscription });
     } else {
       return res.status(200).json({ error: "Not found" });

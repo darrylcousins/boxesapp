@@ -18,7 +18,6 @@ export default async (req, res, next) => {
   query[`meta.recharge.customer_id`] = parseInt(customer_id);
   query[`meta.recharge.subscription_id`] = parseInt(subscription_id);
 
-
   const collection = _mongodb.collection("logs");
   try {
     const result = await collection.find(query).sort({ timestamp: -1 }).limit(10).toArray();

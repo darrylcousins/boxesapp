@@ -12,41 +12,44 @@
           </script>
 
     {% endraw %}
+      <main id="boxes-main" class="w-100 bg-white black-70">
         <!-- used for most modals -->
         <div id="modal-window" style="top: 0px"></div>
         <!-- available for placing another modal on top of main modal - e.g. box-rules-remove -->
         <div id="front-modal-window" style="top: 0px"></div>
 
         <div id="app" class="ph4 pt3 bg-white"></div>
-        <script id="initialize" type="module" cid="{{ customer_id }}"
-          src="/src/resources/customer/initialize.jsx"></script>
-        <script type="text/javascript">
-          localStorage.setItem("proxy-path", "{{ proxy_path }}"); // proxy path used in shop
-          localStorage.setItem("shop", "{{ shop }}"); // name of shop e.g. myshop-dev.myshopify.com
-          localStorage.setItem("host", "{{ host }}"); // server host e.g. https://myshop.boxexapp.nz
-          localStorage.setItem("admin_email", "{{ admin_email }}"); // admin email address
-          let time = new Date().getTime();
-          const setActivityTime = (e) => {
-              time = new Date().getTime();
+      </main>
+      <script id="initialize" type="module" cid="{{ customer_id }}"
+        src="/src/resources/customer/initialize.jsx"></script>
+      <script type="text/javascript">
+        localStorage.setItem("proxy-path", "{{ proxy_path }}"); // proxy path used in shop
+        localStorage.setItem("shop", "{{ shop }}"); // name of shop e.g. myshop-dev.myshopify.com
+        localStorage.setItem("host", "{{ host }}"); // server host e.g. https://myshop.boxexapp.nz
+        localStorage.setItem("admin_email", "{{ admin_email }}"); // admin email address
+        let time = new Date().getTime();
+        const setActivityTime = (e) => {
+            time = new Date().getTime();
+        };
+        document.body.addEventListener("mousemove", setActivityTime);
+        document.body.addEventListener("keypress", setActivityTime);
+        const refresh = () => {
+          if (new Date().getTime() - time >= 5 * 60 * 1000) {  // 5 minutes
+            //window.location.reload(true);
+            window.location.assign(window.location.href.split('?')[0]);
+          } else {
+            setTimeout(refresh, 10000);
           };
-          document.body.addEventListener("mousemove", setActivityTime);
-          document.body.addEventListener("keypress", setActivityTime);
-          const refresh = () => {
-            if (new Date().getTime() - time >= 5 * 60 * 1000) {  // 5 minutes
-              //window.location.reload(true);
-              window.location.assign(window.location.href.split('?')[0]);
-            } else {
-              setTimeout(refresh, 10000);
-            };
-          };
-          setTimeout(refresh, 10000);
-        </script>
+        };
+        setTimeout(refresh, 10000);
+      </script>
     {% raw %}
 
       {% else %}
 
-          <div class="ml3 white">
+          <div class="ml3">
             You need to be logged in to view this resource.
+            <div class="dib ml3">{{ 'Customer Log in' | customer_login_link }}</div>
           </div>
 
       {% endif %}

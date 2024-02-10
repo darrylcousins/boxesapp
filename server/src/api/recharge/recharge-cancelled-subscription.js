@@ -29,6 +29,7 @@ export default async (req, res, next) => {
   // the box subscription id
   const subscription_id = parseInt(req.query.subscription_id);
 
+  /*
   // check mongo for updates - the webhook/subscription-cancelled will update
   // all of these, once updated we can remove the updates_pending entry and continue
   const search = {
@@ -47,14 +48,15 @@ export default async (req, res, next) => {
     completed = check && updated;
     if (completed) {
       // safely remove the entry
+      console.log("WTF this doesn't need to be here? Deleting updates pending entry.");
       await _mongodb.collection("updates_pending").deleteOne(search);
     };
   };
 
-
   if (!completed) {
     return res.status(200).json({ message: "Updates pending ..." });
   };
+  */
 
   const query = [
     ["customer_id", req.params.customer_id ],

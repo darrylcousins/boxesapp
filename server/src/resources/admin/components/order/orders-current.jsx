@@ -463,7 +463,7 @@ function* CurrentOrders() {
           )}
         </p>
         { hasOwnProp.call(orderCounts, "No delivery date") && (
-          <p class="w-95 ba br2 pa3 mh2 mv1 red bg-washed-red" role="alert">
+          <p class="alert-box w-95 ba br2 pa3 mh2 mv1 red bg-washed-red" role="alert">
             <strong>Note!</strong> We have <b>{ orderCounts["No delivery date"] }</b> {pluralize(orderCounts["No delivery date"], "order")} recorded with no delivery date, this will need attention.
           </p>
         )}

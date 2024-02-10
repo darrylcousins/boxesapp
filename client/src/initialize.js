@@ -3,7 +3,13 @@
  * @listens DOMContentLoaded
  *
  *
+ * XXX
+ * XXX
+ * XXX
  * XXX This file is no longer read - see main.jsx
+ * XXX
+ * XXX
+ * XXX
  */
 import boxApp from "./box-app.js";
 

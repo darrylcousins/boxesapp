@@ -33,7 +33,7 @@ const ShowLink = (opts) => {
   const { title, showModal } = opts;
   return (
     <div
-      class="dt w-100 ba br1 pa1 mv1 blue bg-washed-blue pointer"
+      class="dt w-100 ba br1 pa1 mt1 mb3 blue bg-washed-blue pointer"
       onclick={showModal}
       title={title}>
       <span class="dtc pl1">{title}</span>

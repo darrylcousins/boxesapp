@@ -62,7 +62,7 @@ other subscription products in the shop.
     <div style="text-align: center; font-weight: 700">
         <p id="product-price">{{ current_variant.price | money }}</p>
     </div>
-    <div id="app">
+    <div id="boxesapp">
       <div class="progress-bar mt2">
         <span class="bar">
           <span class="progress" />

@@ -17,6 +17,17 @@ export const matchNumberedString = (str) => {
   return { title: str, quantity: count };
 };
 
+/* 
+ * List of { title, quantity } to Title (quantity)
+ */
+export const makeItemString = (list, join) => {
+  let joinStr = ",";
+  if (join) joinStr = join;
+  return list.map(el => {
+    return `${el.title}${el.quantity > 1 ? ` (${el.quantity})` : ""}`;
+  }).sort().join(joinStr);
+};
+
 export const delay = (t) => {
   return new Promise(resolve => setTimeout(resolve, t));
 };
@@ -51,7 +62,14 @@ export const formatDate = (dateObj) => {
  * compare 2 arrays
  */
 export const compareArrays = (a, b) => {
-  return (a.length === b.length && a.every((element, index) => element === b[index]));
+  if (a.length !== b.length) return false;
+  const elements = new Set([...a, ...b]);
+  for (const x of elements) {
+    const count1 = a.filter(e => e === x).length;
+    const count2 = b.filter(e => e === x).length;
+    if (count1 !== count2) return false;
+  };
+  return true;
 };
 
 /*

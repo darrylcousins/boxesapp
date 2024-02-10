@@ -87,6 +87,6 @@ function CollapseWrapper(Component) {
 
     }
   };
-}
+};
 
 export default CollapseWrapper;

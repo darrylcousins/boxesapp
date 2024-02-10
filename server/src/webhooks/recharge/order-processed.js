@@ -8,6 +8,7 @@ import { writeFileForOrder } from "./helpers.js";
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
  * An order has been created from the charge
+ * We need to update all subscriptions to the next delivery date
  */
 export default async function orderProcessed(topic, shop, body) {
 
@@ -27,6 +28,8 @@ export default async function orderProcessed(topic, shop, body) {
     let parent = null; // hang on the box subscription for logging
     let deliveryDate; // updated delivery date as string
     let currentDeliveryDate; // the current date for logging
+
+    // should I put an entry in updates_pending?
 
     // loop line_items and find the parent box subscription and calculate new delivery date
     for (const line_item of order.line_items) {

@@ -60,12 +60,16 @@ export default async function ordersCreate(topic, shop, body) {
   };
   meta.order.box = box.name;
 
+
   // check for open and fulfillment and paid??
   // check if tag already stored
   // for webhooks the body is a raw string
   const order = await processOrderJson(orderJson);
   meta.order.delivered = order.delivered;
   meta.order.email = order.contact_email;
+  // try to get the recharge customer id in here by looking up customer collection by email?
+  const customer = await _mongodb.collection("customers").findOne({email: order.contact_email});
+  if (customer) meta.order.customer_id = customer.recharge_id;
   const result = await mongoInsert(collection, order);
   if (result.upsertedCount === 1) {
     meta.order = sortObjectByKeys(meta.order);

@@ -20,6 +20,7 @@ export default async (req, res, next) => {
     const result = await makeShopQuery({path, fields, title: "Get price"})
       .then(async ({product}) => {
         let variant;
+        // if we never do this, then use variants path - see verify-subscription for example shop query
         if (variant_id < 10) { // just been passed a date.getDay()
           const title = weekdays[variant_id];
           variant = product.variants.find(el => el.title === title);

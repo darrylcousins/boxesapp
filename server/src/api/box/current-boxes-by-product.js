@@ -19,9 +19,10 @@ export default async (req, res, next) => {
   };
   const response = Object();
   const product_id = parseInt(req.params.product_id);
+  const weekday = req.params.weekday; // as lowercase named day of week
 
   // the dates are filtered using filter settings including order limits and cutoff hours
-  const dates = await getDeliveryDays(db, product_id)
+  const dates = await getDeliveryDays(db, product_id, weekday)
   
   try {
     db.boxes.find({

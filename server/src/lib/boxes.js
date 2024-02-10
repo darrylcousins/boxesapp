@@ -3,6 +3,7 @@
  */
 import { getFilterSettings } from "./settings.js";
 import { getOrderCount } from "./orders.js";
+import { weekdays } from "./dates.js";
 /*
  * Helper method for filtering boxes
  */
@@ -10,7 +11,14 @@ import { getOrderCount } from "./orders.js";
  * Get list of delivery days for a box container filtered using cutoff and limit filters
  * @function getDeliveryDays
  */
-export const getDeliveryDays = async (db, product_id) => {
+export const getDeliveryDays = async (db, product_id, weekday) => {
+
+  // every use of weekday has no interest in filters nor in getting current boxes
+  // e.g. change-box-modal
+  let doFilters = false;
+  if (typeof weekday === "undefined") {
+    doFilters = true;
+  };
 
   const pipeline = [
     { "$match": { 
@@ -23,18 +31,35 @@ export const getDeliveryDays = async (db, product_id) => {
       },
       delivered: "$delivered",
     }},
-    { "$match": { deliverDate: { "$gte": new Date() } } },
+  ];
+  if (doFilters) {
+    pipeline.push(
+      { "$match": { deliverDate: { "$gte": new Date() } } },
+    );
+  };
+  pipeline.push(
     { "$project": {
       delivered: "$delivered",
       deliverDate: "$deliverDate",
       deliverDay: { "$dayOfWeek": "$deliverDate" },
     }}
-  ];
+  );
 
   try {
-    const filters = await getFilterSettings();
-    const counts = await getOrderCount();
-    const dates = await _mongodb.collection("boxes").aggregate(pipeline).toArray();
+    let dates = await _mongodb.collection("boxes").aggregate(pipeline).toArray();
+
+    let filters = {};
+    let counts = null;
+
+    if (typeof weekday === "undefined") {
+      filters = await getFilterSettings();
+      counts = await getOrderCount();
+    } else {
+      const dayIdx = weekdays.map(el => el.toLowerCase()).indexOf(weekday);
+      if (dayIdx >= 0) {
+        dates = dates.filter(el => el.deliverDay === dayIdx);
+      };
+    };
 
     const now = new Date();
     // now filter the array accounting for limits

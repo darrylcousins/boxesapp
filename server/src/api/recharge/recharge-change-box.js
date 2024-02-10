@@ -4,9 +4,12 @@
  */
 
 import subscriptionActionMail from "../../mail/subscription-action.js";
-import { makeRechargeQuery, updateSubscriptions,  updateChargeDate } from "../../lib/recharge/helpers.js";
+import { makeShopQuery } from "../../lib/shopify/helpers.js";
+import { makeRechargeQuery, updateSubscriptions,  updateChargeDate, findBoxes } from "../../lib/recharge/helpers.js";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
-import { sortObjectByKeys } from "../../lib/helpers.js";
+import { sortObjectByKeys, matchNumberedString, makeItemString } from "../../lib/helpers.js";
+import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
+
 /*
  * @function recharge/update-subscription.js
  * @param (Http request object) req
@@ -36,6 +39,9 @@ import { sortObjectByKeys } from "../../lib/helpers.js";
       scheduled_at: string, // formatted "yyyy-mm-dd"
       delivery_date: timestamp, // formatted "Tue Sep 21 2023"
       order_day_of_week: integer
+      now: string
+      navigator: string
+      customer: string
     };
  *
  * First check for upcoming box for the delivery date - if present then we must
@@ -50,39 +56,36 @@ import { sortObjectByKeys } from "../../lib/helpers.js";
  */
 export default async (req, res, next) => {
 
-  let io;
-  let sockets;
-  const { session_id } = req.body;
+  const { io, session_id } = getIOSocket(req);
 
-  if (typeof session_id !== "undefined") {
-    sockets = req.app.get("sockets");
-    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
-      const socket_id = sockets[session_id];
-      io = req.app.get("io").to(socket_id);
-      io.emit("message", "Received request, processing data...");
-    };
-  };
+  // i.e. in the try/catch statement send an error message back to browser
 
   const { body: data } = req;
+  const counter = new Date();
   data.plan = JSON.parse(data.plan);
-  try {
+  const { now, navigator, admin, type } = data;
 
-    // check for custom box
-    const setting = await _mongodb.collection("settings").findOne({ handle: "custom-box-id" });
-    const custom_box_id = setting ? setting.value : null;
-    const box = await _mongodb.collection("boxes").findOne({
-      delivered: data.delivery_date,
-      active: true,
-      shopify_product_id: parseInt(data.product_id),
-    });
+  try {
 
     const { charge } = await makeRechargeQuery({
       path: `charges/${data.charge_id}`,
       title: "Get Charge",
       // debugging
       subscription_id: parseInt(data.subscription_id),
+      io,
+      session_id,
     });
 
+    const box = JSON.parse(data.box);
+    console.log(box.delivered);
+    const boxProperties = JSON.parse(data.properties);
+    const boxMessages = JSON.parse(data.messages);
+    // so these are the updated properties for the subscription - how now to get the updates?
+    // I know I have the code to figure the updates
+
+    // check for custom box
+    const setting = await _mongodb.collection("settings").findOne({ handle: "custom-box-id" });
+    const custom_box_id = setting ? setting.value : null;
     /* 
      * Reconstruct the charge and line_items to create a fake charge that can
      * be passed to existing algorithms that can determine updates on
@@ -101,77 +104,127 @@ export default async (req, res, next) => {
     // create a "fake" subscription to pass to the group
     let fakeSubscription;
     let properties; // save this for the updates_pending entry
-    charge.line_items = charge.line_items.map(el => {
-      let prop = el.properties.find(el => el.name === "Delivery Date");
-      if (prop) prop.value = data.delivery_date;
-      prop = el.properties.find(el => el.name === "Add on product to");
-      if (prop) prop.value = data.product_title;
-      // for the actual box we now also want to update relevant properties
-      prop = el.properties.find(el => el.name === "Including");
-      if (prop) {
-        el.external_product_id.ecommerce = data.product_id;
-        el.external_variant_id.ecommerce = data.variant_id;
-        el.title = data.product_title;
-        el.variant_title = data.variant_title;
-        el.total_price = data.price;
-        el.unit_price = data.price;
-        fakeSubscription = { ...el };
-        fakeSubscription.price = data.price;
-        fakeSubscription.order_interval_frequency = data.plan.frequency;
-        fakeSubscription.order_interval_unit = data.plan.unit;
-        fakeSubscription.product_title = data.product_title;
-        fakeSubscription.variant_title = data.variant_title;
-        fakeSubscription.id = parseInt(data.subscription_id);
-        if (custom_box_id && data.product_id === custom_box_id) {
-          // fix removed and swapped - this could be in reconcileChargeGroups
-          for (const propName of ["Removed Items", "Swapped Items", "Including"]) {
-            el.properties.find(el => el.name === propName).value = "";
+    charge.line_items = await Promise.all(
+      charge.line_items.map(async (el) => {
+        let prop = el.properties.find(el => el.name === "Delivery Date");
+        // this is so we reconcile against an actual box, it later put back the the data.delivery_date
+        if (prop) prop.value = box.delivered; // later correct to the data.delivery_date
+        prop = el.properties.find(el => el.name === "Add on product to");
+        if (prop) prop.value = data.product_title;
+        // for the actual box we now also want to update relevant properties
+        prop = el.properties.find(el => el.name === "Including");
+        if (prop) {
+          el.external_product_id.ecommerce = data.product_id;
+          el.external_variant_id.ecommerce = data.variant_id;
+          el.title = data.product_title;
+          el.variant_title = data.variant_title;
+          el.price = data.price;
+          fakeSubscription = { ...el };
+          fakeSubscription.price = data.price;
+          fakeSubscription.order_interval_frequency = data.plan.frequency;
+          fakeSubscription.order_interval_unit = data.plan.unit;
+          fakeSubscription.product_title = data.product_title;
+          fakeSubscription.variant_title = data.variant_title;
+          fakeSubscription.id = parseInt(data.subscription_id);
+          const props = el.properties.reduce(
+            (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
+            {});
+          const included = props["Including"] // only the 'extra' items
+            .split(",").map(el => el.trim())
+            .filter(el => el !== "" && el !== "None")
+            .map(el => matchNumberedString(el))
+            .map(el => ({ title: el.title, quantity: el.quantity - 1 }))
+            .filter(el => el.quantity > 0); // only items with quantity > 1
+          const addons = props["Add on Items"]
+            .split(",").map(el => el.trim())
+            .filter(el => el !== "" && el !== "None")
+            .map(el => matchNumberedString(el));
+          const swapped = props["Swapped Items"] // only the 'extra' items
+            .split(",").map(el => el.trim())
+            .filter(el => el !== "" && el !== "None")
+            .map(el => matchNumberedString(el))
+            .map(el => ({ title: el.title, quantity: el.quantity - 1 }))
+            .filter(el => el.quantity > 0); // only items with quantity > 1
+          if (custom_box_id && data.product_id === custom_box_id) {
+            // special case of custom box
+            // move swapped items to addon items (the subscribed item remains)
+            // this will prompt a zeroing of unavailable items
+            for (const item of [ ...swapped, ...included ]) {
+              addons.push(item);
+            };
+            // clear the other properties for custom box
+            for (const propName of ["Removed Items", "Swapped Items", "Including"]) {
+              el.properties.find(el => el.name === propName).value = "";
+            };
+          } else {
+            // but also need to account for incremented quantities and remove the extra subscription if unavailable
+            // XXX an extra included needs to be moved to addons
+            const boxIncludes = box.includedProducts.map(el => el.shopify_title);
+            const boxAddons = box.addOnProducts.map(el => el.shopify_title);
+            for (const el of included) {
+              const idx = boxIncludes.indexOf(el.title);
+              if (idx !== -1) {
+                // push in the quantity from the current subscription includes
+                boxIncludes[idx] = `${el.title} (${el.quantity + 1})`;
+              } else {
+                // not available in includes, by pushing it only addons then
+                // the reconcile algorthim will pick up that it is unavailable
+                // and will zero the update, therefore it will be removed
+                addons.push(el); // quantity was fixed in makeing the included array
+              };
+            };
+            for (const el of swapped) {
+              const idx = boxAddons.indexOf(el.title);
+              if (idx === -1) {
+                // as above with extra includes
+                addons.push(el); // quantity was fixed in makeing the included array
+              };
+            };
+            el.properties.find(el => el.name === "Including").value = boxIncludes.join(",");
           };
+          // reset the addon property, it may have been changed
+          el.properties.find(el => el.name === "Add on Items").value = makeItemString(addons); // rejoin as string
+          el.properties.find(el => el.name === "Swapped Items")
+            .value = boxProperties["Swapped Items"]; // used the reconciled list
+          el.properties.find(el => el.name === "Removed Items")
+            .value = boxProperties["Removed Items"]; // used the reconciled list
+          properties = el.properties;
+          fakeSubscription.properties = properties;
         };
-        properties = el.properties;
-      };
-      return el;
-    });
+        return el;
+      })
+    );
 
-    /*
-    console.log(charge.line_items.map(el => {
-      return [ el.title, el.external_product_id.ecommerce ];
-    }));
-    console.log(fakeSubscription);
-    */
     let subscription;
     if (box) {
       console.log("Box requires reconciliation");
       const grouped = await reconcileGetGrouped({ charge });
       grouped[data.subscription_id].subscription = fakeSubscription;
+      // this works because the fake reconciles against an actual box
 
       let result = [];
       // must pass a subscription to the group else the original is fetched
       result = await gatherData({ grouped, result });
 
       subscription = result[0]; // only one because we have filtered line_items
-      console.log(Object.keys(subscription));
-      console.log(subscription.messages);
     } else {
       console.log("Box does not require reconciliation");
       subscription = { updates: [] };
     };
 
-    // good, finally getting the updates required for reconciling the box
-    // now need to merge this with all other line_items
-
-    //console.log(data);
     const updates = [];
-    for (const item of charge.line_items) {
+    let tempPrice;
+    for (let item of charge.line_items) {
       let found = subscription.updates.find(el => el.subscription_id === item.purchase_item_id);
       let start = {
         subscription_id: item.purchase_item_id,
         quantity: item.quantity,
-        properties: item.properties, // already updated
+        properties: item.properties, // already updated???
         title: item.title,
         external_product_id: item.external_product_id,
         external_variant_id: item.external_variant_id,
-        price: item.price,
+        price: item.unit_price,
+        total_price: item.total_price,
         order_day_of_week: data.order_day_of_week,
         order_interval_frequency: data.plan.frequency,
         charge_interval_frequency: data.plan.frequency,
@@ -182,19 +235,30 @@ export default async (req, res, next) => {
       // fix any changes from the updates
       let final;
       if (found) {
-        // this is where quantity = 0 could be inserted - hopefully
-        final = { ...start, ...found, in_updates: true };
+        // found will be missing total_price
+        tempPrice = parseFloat(found.price) * found.quantity;
+        found.total_price = `${tempPrice.toFixed(2)}`
+        final = { ...start, ...found };
       } else {
         final = start;
       };
+      // the box
+      if (parseInt(item.purchase_item_id) === parseInt(data.subscription_id)) {
+        final.price = data.price;
+        final.total_price = data.price; // alway quantity of one
+        // need to set the Including property
+      };
+
+      // put the date back to the calculated date from the change-box-modal
+      final.properties.find(el => el.name === "Delivery Date").value = data.delivery_date;
       updates.push(final);
     };
 
-    for (const update of updates.map(el => {
-      return { title: el.title, quantity: el.quantity, properties: el.properties, in_updates: el.in_updates };
-    })) {
-      console.log(update);
+    console.log("the updates ====================");
+    for (const el of updates) {
+      console.log(el);
     };
+
     // add updated flag to rc_subscription_ids
     const update_shopify_ids = updates.map(el => el.external_product_id.ecommerce);
 
@@ -209,33 +273,18 @@ export default async (req, res, next) => {
         updated: update_shopify_ids.indexOf(item.external_product_id.ecommerce) === -1,
       });
     };
-    const doc= {
-      label: "CHARGE_DATE",
-      charge_id: charge.id,
-      customer_id: charge.customer.id,
-      address_id: charge.address_id,
-      subscription_id: parseInt(data.subscription_id),
-      scheduled_at: data.scheduled_at, // this will match the updated subscriptions and charges
-      rc_subscription_ids,
-      updated_charge_date: false,
-      timestamp: new Date(),
+
+    for (const el of rc_subscription_ids) {
+      console.log(el);
     };
-    // these collected from the box subscription entry in line_items
-    for (const item of properties) {
-      doc[item.name] = item.value;
-    };
-    // create the entry - this should be resolved and eventually deleted through webhooks
-    await _mongodb.collection("updates_pending").updateOne(
-      { charge_id: charge.charge_id },
-      { "$set" : doc },
-      { "upsert": true }
-    );
+
+    res.status(200).json({});
 
     // log the request
-    const topicLower = "charge/update-box-subscription";
+    const topicLower = "charge/change-box";
     const meta = {
       recharge: {
-        label: "CHARGE_DATE",
+        label: "CHANGE BOX",
         topic: topicLower,
         title: `${data.product_title} - ${data.variant_title}`,
         customer_id: charge.customer.id,
@@ -249,11 +298,87 @@ export default async (req, res, next) => {
       meta.recharge[item.name] = item.value;
     };
     for (const [key, value] of Object.entries(data)) {
-      meta.recharge[key] = value;
+      // box and last_order are too much information - could truncate them though
+      if (!["box", "last_order"].includes(key)) meta.recharge[key] = value;
     };
 
     meta.recharge = sortObjectByKeys(meta.recharge);
     _logger.notice(`Recharge customer api reqest ${topicLower}.`, { meta });
+
+    // compile data for email to customer
+    let includes = updates.filter(el => el.quantity > 0).map(el => {
+      return {
+        title: el.title,
+        price: el.price,
+        total_price: el.total_price,
+        quantity: el.quantity,
+        shopify_product_id: el.external_product_id.ecommerce,
+      };
+    });
+    // filter out the box itself
+    includes = includes.filter(el => el.shopify_product_id !== data.product_id);
+    // and include the changed parent
+    includes.unshift({
+        title: `${data.product_title} - ${data.variant_title}`,
+        price: data.price,
+        total_price: data.price,
+        quantity: 1, // always one eh
+        shopify_product_id: data.product_id,
+    });
+
+    const attributes = {
+      customer: JSON.parse(data.customer),
+      nextChargeDate: new Date(Date.parse(data.scheduled_at)).toDateString(),
+      nextDeliveryDate: data.delivery_date,
+      title: data.product_title,
+      variant: data.variant_title,
+      subscription_id: data.subscription_id,
+      frequency: data.plan.name,
+      lastOrder: data.last_order !== "undefined" ? JSON.parse(data.last_order) : null,
+    };
+
+    const totalPrice = includes.map(el => parseFloat(el.price) * el.quantity).reduce((sum, el) => sum + el, 0);
+    attributes.totalPrice = `${totalPrice.toFixed(2)}`;
+
+    /*
+    console.log("updates ========================");
+    for (const el of updates) console.log(el);
+    console.log("includes ========================");
+    for (const el of includes) console.log(el);
+    */
+
+    const entry_id = await upsertPending({
+      action: "changed",
+      customer_id: charge.customer.id,
+      address_id: charge.address_id,
+      subscription_id: parseInt(data.subscription_id),
+      scheduled_at: data.scheduled_at, // this will match the updated subscriptions and charges
+      rc_subscription_ids,
+      scheduled_at: data.scheduled_at, // formatted "yyyy-mm-dd"
+      deliver_at: data.delivery_date, // formatted "Tue Sep 21 2023"
+      title: data.title,
+      session_id,
+    });
+
+    try {
+
+      const mailOpts = {
+        type: "changed",
+        attributes,
+        includes,
+        now,
+        navigator,
+        admin,
+      };
+
+      if (io) {
+        makeIntervalForFinish({req, io, session_id, entry_id, counter, admin, mailOpts });
+      };
+
+    } catch {
+      if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
+      throw err;
+    };
 
     await updateSubscriptions({ updates, io, session_id });
 
@@ -272,39 +397,12 @@ export default async (req, res, next) => {
       };
     };
 
-    // compile data for email to customer
-    let includes = updates.filter(el => el.quantity > 0).map(el => {
-      return {
-        title: el.title,
-        quantity: el.quantity,
-        shopify_product_id: el.external_product_id.ecommerce,
-      };
-    });
-    // filter out the box itself
-    includes = includes.filter(el => el.shopify_product_id !== data.product_id);
-    includes.unshift({
-        title: `${data.product_title} - ${data.variant_title}`,
-        quantity: 1, // always one eh
-        shopify_product_id: data.product_id,
-    });
-    // bother, no first_name, last_name on a charge customer
-    const attributes = {
-      customer: charge.customer,
-      nextChargeDate: new Date(Date.parse(data.scheduled_at)).toDateString(),
-      nextDeliveryDate: data.delivery_date,
-      title: data.product_title,
-      variant: data.variant_title,
-      subscription_id: data.subscription_id,
-      delivery_schedule: data.plan.name,
-    };
-    const mailOpts = {
-      type: "changed",
-      attributes,
-      includes,
-    };
-    await subscriptionActionMail(mailOpts);
+    /*
+    if (io) io.emit("message", `Customer update email sent (${attributes.customer.email})`);
+    if (io) io.emit("message", "Updates completed - awaiting creation of new charge");
+    if (io) io.emit("finished", session_id);
+    */
 
-    res.status(200).json({});
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

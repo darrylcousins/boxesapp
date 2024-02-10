@@ -27,12 +27,13 @@ const main = async () => {
   // regardless whether it is actually used in the script
   const { mongo: mongodb, client: dbClient } = await getMongo();
 
+  // for the development site I want to automatically duplicate boxes each week
+
   try {
 
     const db = process.env.DB_NAME;
     const now = new Date();
     const since = new Date();
-    since.setDate(now.getDate() - 21); // keep boxes and orders for 21 days
     const report = [];
     const attachments = [];
     report.push(`DB clean: ${now.toString()}`);
@@ -40,9 +41,13 @@ const main = async () => {
     report.push("\n");
 
     for (const collection of ['orders', 'boxes']) {
+
+      const delta = collection === "boxes" ? 21 : 14;
+      since.setDate(now.getDate() - delta); // keep boxes and orders for 21 days
       // collect distinct dates to archive and remove
       const searchDates = [];
       const dates = await mongodb.collection(collection).distinct('delivered');
+      console.log(dates);
       for (const d of dates) {
         if (new Date(Date.parse(d)) < since) {
           searchDates.push(d);
@@ -51,7 +56,33 @@ const main = async () => {
       const query = {
         delivered: {"$in": searchDates }
       };
+      console.log(query);
       const records = await mongodb.collection(collection).find(query).toArray();
+
+      /* 
+       * Separate routine to duplicate boxes forward for dev site because
+       * otherwise everytime I come back to testing or development I have no
+       * boxes to work with
+       */
+      if (process.env.DB_NAME === "southbridge" && collection === "boxes") {
+        // duplicate forward a week if not already done
+        since.setDate(now.getDate() - 7); // keep boxes and orders for 21 days
+        const weekDates = [];
+        for (const d of dates) {
+          const current = new Date(Date.parse(d));
+          if (current <= now && current > since) {
+            weekDates.push(d);
+          };
+        };
+        //console.log("dates", weekDates);
+        const boxes = await mongodb.collection(collection).find(query).toArray();
+        if (boxes.length) {
+          for (const record of boxes) {
+            //console.log(record);
+          };
+        };
+      };
+
       report.push(`Exporting ${collection} older than ${since.toDateString()}`);
       report.push(`Exported ${records.length} ${collection}`);
       if (records.length) {

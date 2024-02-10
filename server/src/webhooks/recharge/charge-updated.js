@@ -14,7 +14,7 @@ import { getBoxesForCharge, getMetaForCharge, writeFileForCharge, buildMetaForBo
  * delivery
  *
  */
-export default async function chargeUpdated(topic, shop, body) {
+export default async function chargeUpdated(topic, shop, body, { io, sockets }) {
 
   const mytopic = "CHARGE_UPDATED";
   if (topic !== mytopic) {
@@ -39,106 +39,83 @@ export default async function chargeUpdated(topic, shop, body) {
   // and a simple list of box subscription ids already updated with box_subscription_id
   const { box_subscriptions_possible, box_subscription_ids } = getBoxesForCharge(charge);
 
-  if (box_subscriptions_possible.length > 0) {
-    // should never happen, by now all connected subscriptions should have
-    // box_subscription_id property set - log it
-    for (const item of box_subscriptions_possible) {
-      // need to create new meta for each grouped items
-      const tempCharge = { ...charge };
-      // remove any line items not linked to this box subscription
-      tempCharge.line_items =  item.line_items;
-      meta = getMetaForCharge(tempCharge, "charge/updated");
-      meta.recharge = sortObjectByKeys(meta.recharge);
-      _logger.notice(`Error. Charge subscription not updated with box_subscription_id property.`, { meta });
-    };
-
-  };
-
   /*
    * Primarily for user editing of box, must prevent further edits until all
    * changes to subscriptions and charges have updated - hence using
-   * mongodb.updates_pending to hold a "flag" object, see also subscription-updated
+   * mongodb.updates_pending to hold a "flag" object, see also subscription/updated
    */
   try {
     for (const box_subscription_id of box_subscription_ids) {
-      meta = buildMetaForBox(box_subscription_id, charge);
+      meta = buildMetaForBox(box_subscription_id, charge, topicLower);
       const query = {
         subscription_id: parseInt(box_subscription_id),
         customer_id: parseInt(charge.customer.id),
         address_id: parseInt(charge.address_id),
-        scheduled_at: charge.scheduled_at,
+        scheduled_at: charge.scheduled_at, // must match the target date
+        deliver_at: meta.recharge["Delivery Date"],
       };
+
       // all rc_subscription_ids are true for this query
       const updates_pending = await _mongodb.collection("updates_pending").findOne(query);
       // failing my query do the query match here
       if (updates_pending) {
-        meta.recharge.label = updates_pending.label;
 
-        /* removed this because I found that sometimes the charge update came before the subscription created */
+        //console.log('webhook, charge updated, ids', meta.recharge.rc_subscription_ids);
+
+        // items with quantity set to zero will be removed on subscription/deleted
         const allUpdated = updates_pending.rc_subscription_ids.every(el => {
-          // check that all subscriptions have updated
+          // check that all subscriptions have updated or have been created
           return el.updated === true && Number.isInteger(el.subscription_id);
         });
 
-        // filter out the updates that were deleted items
-        const rc_ids_removed = updates_pending.rc_subscription_ids.filter(el => el.quantity > 0);
-        //const countMatch = updates_pending.rc_subscription_ids.length === meta.recharge.rc_subscription_ids.length;
-        const countMatch = rc_ids_removed.length === meta.recharge.rc_subscription_ids.length;
+        let countMatch = null;
+        if (allUpdated) {
+          // filter out the updates that were deleted items and have been updated
+          const rc_ids_removed = updates_pending.rc_subscription_ids.filter(el => el.quantity > 0);
+          countMatch = rc_ids_removed.length === meta.recharge.rc_subscription_ids.length;
+          if (countMatch) {
+            meta.recharge.update_pending = "UPDATE COMPLETED";
+            meta.recharge.update_label = updates_pending.action;
 
-        //if (allUpdated && countMatch) {
-        if (countMatch) {
-          /// XXX all a bit ugly here trying to get it to work
-          // on a new subscription updated via webhooks/charge-created then we
-          // don't get a second update on the new id so we can check for the
-          // label
-          if (updates_pending.charge_id === charge.id || updates_pending.label === "NEW SUBSCRIPTION") {
-            if (updates_pending.label !== "CHARGE_DATE") {
-              meta.recharge.updates_pending = "COMPLETED";
-              _logger.info(`charge-updated completed`);
-              await _mongodb.collection("updates_pending").deleteOne({ _id: ObjectID(updates_pending._id) });
-            } else if (charge.scheduled_at === updates_pending.scheduled_at) {
-              const res = await _mongodb.collection("updates_pending").updateOne(
-                { _id: ObjectID(updates_pending._id) },
-                { $set: { updated_charge_date: true } },
-              );
-              _logger.info(`charge-updated charge id updated`);
-              meta.recharge.updates_pending = "CHARGE ID UPDATED";
-            };
-          } else {
-            // XXX same appeaars in charge created??
-            // not receiving charge created webhook when updating scheduled_at so just trusting this
-            // this is because when the charge exists, because of other
-            // customer subscriptions then they are merged into existing charge
-            //console.log("Updating updates_pending on charge updated");
-            const res = await _mongodb.collection("updates_pending").updateOne(
-              { _id: ObjectID(updates_pending._id) },
-              { $set: { charge_id : charge.id, updated_charge_date: true } },
-            );
-            _logger.info(`charge-updated charge id updated`);
-            meta.recharge.updates_pending = "CHARGE ID UPDATED";
-            // and it will be deleted at api/customer-charge
+            // safely and surely remove the entry, only other place is on charge/deleted
+            console.log("=======================");
+            console.log("Deleting updates pending enty");
+            console.log("=======================");
+            await _mongodb.collection("updates_pending").deleteOne({ _id: ObjectID(updates_pending._id) });
+
+            // only here do we log the updated entry
+            meta.recharge = sortObjectByKeys(meta.recharge);
+            _logger.notice(`Charge updated for subscription.`, { meta });
+
           };
-        } else {
-          meta.recharge.updates_pending = "PENDING COMPLETION";
         };
-        const desired_rc_ids = [ ...updates_pending.rc_subscription_ids ];
-        const rc_subscription_ids = meta.recharge.rc_subscription_ids;
-        // more work required here - compare with charge rc_subscription_ids?
 
-      } else {
-        meta.recharge.updates_pending = "NOT FOUND";
+        // if all updates have completed then we can close the connection
+        if (sockets && io && Object.hasOwnProperty.call(sockets, updates_pending.session_id)) {
+          const socket_id = sockets[updates_pending.session_id];
+          io = io.to(socket_id);
+          if (allUpdated && countMatch) {
+            io.emit("completed", `Updates completed, removing updates entry. ChargeID: ${charge.id}`);
+            io.emit("finished", {
+              action: updates_pending.action,
+              session_id: updates_pending.session_id,
+              subscription_id: updates_pending.subscription_id,
+              address_id: updates_pending.address_id,
+              customer_id: updates_pending.customer_id,
+              scheduled_at: updates_pending.scheduled_at,
+              charge_id: charge.id,
+            });
+          } else {
+            io.emit("message", "Charge updated: pending updates");
+          };
+        };
+
       };
-
-      meta.recharge = sortObjectByKeys(meta.recharge);
-      _logger.notice(`Charge updated for subscription.`, { meta });
 
     };
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
-
-  //const grouped = await reconcileGetGrouped({ charge });
-  // {box, includes, charge, rc_shopify_ids}
 
 };

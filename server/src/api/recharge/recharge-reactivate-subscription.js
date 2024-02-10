@@ -3,9 +3,9 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
 import { formatDate, sortObjectByKeys } from "../../lib/helpers.js";
+import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
 
 /*
  * @function recharge/recharge-reactivate-subscription.js
@@ -15,22 +15,12 @@ import { formatDate, sortObjectByKeys } from "../../lib/helpers.js";
  */
 export default async (req, res, next) => {
 
-  let io;
-  let sockets;
-  const { session_id } = req.body;
+  const { io, session_id } = getIOSocket(req);
 
-  if (typeof session_id !== "undefined") {
-    sockets = req.app.get("sockets");
-    console.log("SOCKETS", sockets, session_id);
-    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
-      const socket_id = sockets[session_id];
-      io = req.app.get("io").to(socket_id);
-      io.emit("uploadProgress", "Received request, processing data...");
-    };
-  };
-
+  const counter = new Date();
   const nextchargedate = req.body.nextchargedate;
   const nextdeliverydate = req.body.nextdeliverydate;
+  const { navigator, now, admin } = req.body;
 
   const box = JSON.parse(req.body.box);
   const includes = JSON.parse(req.body.includes);
@@ -51,49 +41,10 @@ export default async (req, res, next) => {
       updated: false
     };
   });
-  // add the parent box subscription
-  /*
-  subscription_ids.push({
-    subscription_id: box.id,
-    shopify_product_id: parseInt(box.external_product_id.ecommerce),
-    quantity: box.quantity,
-    updated: false
-  });
-  */
 
   // set dates
   let chargeDate = new Date(Date.parse(nextchargedate));
   const nextChargeDate = formatDate(chargeDate);
-
-  //const offset = chargeDate.getTimezoneOffset()
-  //chargeDate = new Date(chargeDate.getTime() - (offset*60*1000))
-  //const nextChargeDate = chargeDate.toISOString().split('T')[0];
-
-  const doc= {
-    label: "REACTIVATE",
-    charge_id: null,
-    customer_id,
-    address_id,
-    subscription_id,
-    scheduled_at: nextChargeDate,
-    rc_subscription_ids: subscription_ids,
-    title,
-    timestamp: new Date(),
-  };
-  delete properties.Likes;
-  delete properties.Dislikes;
-
-  // not sure why we have a string here
-  properties.box_subscription_id = parseInt(properties.box_subscription_id);
-
-  for (const [key, value] of Object.entries(properties)) {
-    doc[key] = value;
-  };
-  const result = await _mongodb.collection("updates_pending").updateOne(
-    { subscription_id },
-    { "$set" : doc },
-    { "upsert": true }
-  );
 
   const topicLower = "subscription/reactivated";
   const meta = {
@@ -141,7 +92,73 @@ export default async (req, res, next) => {
     });
   };
 
+  const type = "reactivated";
+
   try {
+
+    const entry_id = await upsertPending({
+      action: "reactivated",
+      customer_id,
+      address_id,
+      subscription_id,
+      scheduled_at: nextChargeDate,
+      deliver_at: nextdeliverydate,
+      rc_subscription_ids: subscription_ids,
+      title,
+      session_id,
+    });
+
+    try {
+
+      // missing total_price
+      const adjusted = includes.map(el => {
+        return {
+          ...el,
+          total_price: el.price,
+          title: el.product_title,
+          shopify_product_id: el.external_product_id.ecommerce,
+        };
+      });
+      const totalPrice = includes.map(el => parseFloat(el.price) * el.quantity).reduce((sum, el) => sum + el, 0);
+      attributes.totalPrice = `${totalPrice.toFixed(2)}`;
+
+      const mailOpts = {
+        type,
+        includes: adjusted,
+        attributes,
+        now,
+        navigator,
+        admin,
+      };
+
+      if (io) {
+        makeIntervalForFinish({req, io, session_id, entry_id, counter, admin, mailOpts });
+      };
+
+    } catch(err) {
+      if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
+      throw err;
+    };
+
+    res.status(200).json({
+      success: true,
+      action: type,
+      subscription_id: box.id,
+      address_id,
+      customer_id,
+      scheduled_at: nextChargeDate,
+    });
+
+    meta.recharge = sortObjectByKeys(meta.recharge);
+    _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
+
+    // update for email template
+    for (const el of includes) {
+      el.title = el.product_title;
+      el.shopify_product_id = el.external_product_id.ecommerce;
+    };
+    attributes.nextChargeDate = nextchargedate;
+    attributes.nextDeliveryDate = nextdeliverydate;
 
     // first activated the subscription, curious to see what charge date it gives, still don't know
     for (const update of updates) {
@@ -183,35 +200,6 @@ export default async (req, res, next) => {
       // this will update an existing charge with the matching scheduled_at or create a new charge
       await updateChargeDate(opts);
     };
-
-    // update for email template
-    for (const el of includes) {
-      el.title = el.product_title;
-      el.shopify_product_id = el.external_product_id.ecommerce;
-    };
-
-    const type = "reactivated";
-    attributes.nextChargeDate = nextchargedate;
-    attributes.nextDeliveryDate = nextdeliverydate;
-    const mail = {
-      type,
-      includes,
-      attributes,
-    };
-    await subscriptionActionMail(mail);
-    if (io) io.emit("message", `Customer reactivated email sent (${attributes.customer.email})`);
-
-    meta.recharge = sortObjectByKeys(meta.recharge);
-    _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
-
-    res.status(200).json({
-      success: true,
-      action: type,
-      subscription_id: box.id,
-      address_id,
-      customer_id,
-      scheduled_at: nextChargeDate,
-    });
 
   } catch(err) {
     res.status(200).json({ error: err.message });

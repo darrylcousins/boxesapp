@@ -3,8 +3,10 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
+import subscriptionActionMail from "../../mail/subscription-action.js";
 import { updateSubscriptions } from "../../lib/recharge/helpers.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
+import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
 
 /*
  * @function recharge/recharge-update.js
@@ -14,23 +16,13 @@ import { sortObjectByKeys } from "../../lib/helpers.js";
  */
 export default async (req, res, next) => {
 
-  let io;
-  let sockets;
-  const { session_id } = req.body;
+  const { io, session_id } = getIOSocket(req);
 
-  if (typeof session_id !== "undefined") {
-    sockets = req.app.get("sockets");
-    console.log("SOCKETS", sockets, session_id);
-    if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
-      const socket_id = sockets[session_id];
-      io = req.app.get("io").to(socket_id);
-      io.emit("uploadProgress", "Received request, processing data...");
-    };
-  };
-
-  const { updates, attributes, properties } = req.body;
+  const counter = new Date(); // time the update to finished
+  const { change_messages, updates, attributes, properties, includes, now, navigator, admin } = req.body;
 
   const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
+  // can be 'edit' or 'reconcile' (reconcile when required updates for new box)
   const label = req.query.label;
 
   // add updated flag to rec_subscription_ids
@@ -43,34 +35,13 @@ export default async (req, res, next) => {
 
   // make sure that the box is last
   for(var x in updates) updates[x].properties.some(el => el.name === "Including") ? updates.push( updates.splice(x,1)[0] ) : 0;
-  const doc= {
-    label: `${label}-PRODUCT-UPDATE`,
-    charge_id,
-    customer_id: customer.id,
-    address_id,
-    subscription_id,
-    scheduled_at,
-    rc_subscription_ids: subscription_ids,
-    title,
-    timestamp: new Date(),
-  };
-  delete properties.Likes;
-  delete properties.Dislikes;
-  for (const [key, value] of Object.entries(properties)) {
-    doc[key] = value;
-  };
-  const result = await _mongodb.collection("updates_pending").updateOne(
-    { charge_id },
-    { "$set" : doc },
-    { "upsert": true }
-  );
 
   const topicLower = "charge/update";
   const meta = {
     recharge: {
       topic: topicLower,
       title: `${attributes.title} - ${attributes.variant}`,
-      label: `${label}-PRODUCT-UPDATE`,
+      label: `${label.toLowerCase()}`,
       charge_id,
       customer_id: customer.id,
       address_id,
@@ -85,17 +56,55 @@ export default async (req, res, next) => {
     meta.recharge[key] = value;
   };
 
-  meta.recharge = sortObjectByKeys(meta.recharge);
-  _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
-
   try {
 
+    const entry_id = await upsertPending({
+      action: "updated", // no need to alter this if reconciling or editing
+      customer_id: customer.id,
+      address_id,
+      subscription_id,
+      scheduled_at,
+      deliver_at: meta.recharge["Delivery Date"],
+      rc_subscription_ids: subscription_ids,
+      title,
+      session_id,
+    });
+
+    try {
+
+      let descriptiveType = "updated the products for"; // default
+      if (label === "edit") {
+        descriptiveType = "edited and updated the products for";
+      } else if (label === "reconcile") {
+        descriptiveType = "reconciled the products against the upcoming box for";
+      };
+
+      const mailOpts = {
+        type: "updated",
+        descriptiveType,
+        includes: includes.filter(el => el.quantity > 0),
+        attributes,
+        now,
+        navigator,
+        admin,
+        change_messages,
+      };
+
+      if (io) {
+        makeIntervalForFinish({req, io, session_id, entry_id, counter, admin, mailOpts });
+      };
+
+    } catch(err) {
+      if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
+      throw err;
+    };
+
+    meta.recharge = sortObjectByKeys(meta.recharge);
+    _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
+
     await updateSubscriptions({ updates, io, session_id });
-    const response = { message: "Updates scheduled" };
 
-    // only return items that have been added, i.e. a POST
-
-    res.status(200).json(response);
+    res.status(200).json({ message: "Updates scheduled" });
 
   } catch(err) {
     res.status(200).json({ error: err.message });

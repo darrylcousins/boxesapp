@@ -6,6 +6,17 @@
 
 import { createElement, Fragment } from "@b9g/crank";
 
+export const isSwappable = (list, product) => {
+  const selectList = list.filter(el => {
+      if (el.shopify_tag === product.shopify_tag) {
+        return ((product.shopify_price - 50 <= el.shopify_price) && (el.shopify_price <= product.shopify_price + 50));
+      } else {
+        return false;
+      };
+    });
+  return selectList.length > 0;
+};
+
 export const getSelectModalOptions = ({boxLists, from_list_name, shopify_product_id}) => {
     const product = boxLists[from_list_name].find(el => el.shopify_product_id === shopify_product_id);
     let [
@@ -27,21 +38,21 @@ export const getSelectModalOptions = ({boxLists, from_list_name, shopify_product
               return false;
             };
           });
-        if (modalSelectList.length === 0) {
+        if (!isSwappable(boxLists["possibleAddons"], product)) {
           modalNote = (
             <Fragment>
-              <h3 class="fw4 tl fg-streamside-maroon">
+              <h5 class="fw4 tl fg-streamside-maroon">
                 { /* Unable to swap &lsquo;{product.shopify_title}&rsquo; due to availability. */ }
                 No similarly prices products to swap for &lsquo;{product.shopify_title}&rsquo;.
-              </h3>
+              </h5>
             </Fragment>
           );
         } else {
           modalNote = (
             <Fragment>
-              <h3 class="fw4 tl fg-streamside-maroon">
+              <h5 class="fw4 tl fg-streamside-maroon">
                 Removing &lsquo;{product.shopify_title}&rsquo;.
-              </h3>
+              </h5>
               { product.quantity > 1 && (
                 <p class="bold">{ product.quantity } items will be removed, change the quantity if this is not your intention.</p>
               )}
@@ -56,9 +67,9 @@ export const getSelectModalOptions = ({boxLists, from_list_name, shopify_product
         modalStore = {id: shopify_product_id, from: from_list_name, to: "possibleAddons"};
         modalNote = (
           <Fragment>
-            <h3 class="fw4 tl fg-streamside-maroon">
+            <h5 class="fw4 tl fg-streamside-maroon">
               Removing &lsquo;{product.shopify_title}&rsquo; from add ons.
-            </h3>
+            </h5>
             { product.quantity > 1 && (
               <Fragment>
                 <p class="bold">{ product.quantity } items will be removed, change the quantity if you want to remove one only.</p>
@@ -73,9 +84,9 @@ export const getSelectModalOptions = ({boxLists, from_list_name, shopify_product
         modalSelectList = boxLists["Swapped Items"]; 
         modalNote = (
           <Fragment>
-            <h3 class="fw4 tl fg-streamside-maroon">
+            <h5 class="fw4 tl fg-streamside-maroon">
               Putting &lsquo;{product.shopify_title}&rsquo; back into the box.
-            </h3>
+            </h5>
             { modalSelectList.length > 1 ? (
               <p class="bold">To continue please select one of the swapped items to remove.</p>
             ) : (
@@ -95,9 +106,9 @@ export const getSelectModalOptions = ({boxLists, from_list_name, shopify_product
         modalSelectList = boxLists["Removed Items"]; 
         modalNote = (
           <Fragment>
-            <h3 class="fw4 tl fg-streamside-maroon">
+            <h5 class="fw4 tl fg-streamside-maroon">
               &lsquo;{product.shopify_title}&rsquo; is a swapped item.
-            </h3>
+            </h5>
             { product.quantity > 1 && (
               <p class="bold">Only one of the { product.quantity } items will be removed, the remaining will be moved to your add on items.</p>
             )}

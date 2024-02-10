@@ -12,10 +12,9 @@ import EditProducts from "../products/edit-products";
 import Cancelled from "./cancelled";
 import ModalTemplate from "../lib/modal-template";
 import Error from "../lib/error";
-import { PostFetch, Fetch } from "../lib/fetch";
-import { toastEvent } from "../lib/events";
-import Timer from "../lib/timer";
 import Toaster from "../lib/toaster";
+import { toastEvent } from "../lib/events";
+import { PostFetch, Fetch } from "../lib/fetch";
 import BarLoader from "../lib/bar-loader";
 import ProgressLoader from "../lib/progress-loader";
 import Button from "../lib/button";
@@ -32,7 +31,11 @@ import {
   collapseElement,
   transitionElementHeight,
   formatCount,
-  LABELKEYS
+  LABELKEYS,
+  userNavigator,
+  dateStringNow,
+  floatToString,
+  findTimeTaken,
 } from "../helpers";
 
 /**
@@ -48,6 +51,7 @@ import {
  */
 async function *Subscription({ subscription, customer, idx, admin }) {
 
+  console.log(subscription);
   /*
   console.log("TITLE", subscription.attributes.title);
   console.log("Box", subscription.box);
@@ -93,12 +97,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     "Swapped Items":`${subscription.properties["Swapped Items"]}`,
   };
   /**
-   * How long to delay reloading after submitting changes
-   *
-   * @member {array} timerSeconds
-   */
-  const timerSeconds = 20;
-  /**
    * Is the explainer open?
    *
    * @member {boolean} isExplainerOpen
@@ -110,15 +108,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    * @member {boolean} messageDivId
    */
   let messageDivId = `socketMessages-${subscription.attributes.subscription_id}`;
-  /**
-   * On cancel, delete, and reactivate we need to ask the Customer component to
-   * reload all subscriptions. This value stores the string value of the
-   * action. Editing products and changing schedule only requires the
-   * refreshing of this subscription only.
-   *
-   * @member {array} eventAction
-   */
-  let eventAction = "";
   /**
    * Hold changed items only used when toggling products, previously was using
    * this to find updates
@@ -152,12 +141,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    */
   let fetchError = null;
   /**
-   * The attempts attribute to force restart of Timer and count attempts
-   *
-   * @member {integer} attempts
-   */
-  let attempts = 0;
-  /**
    * A save has been done so don't allow edits
    *
    * @member {object|string} editsPending
@@ -169,6 +152,28 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    * @member {object} subscriptionLogs
    */
   let subscriptionLogs = [];
+  /**
+   * timer
+   *
+   * @member {object} Keeping a track of how long updated take
+   */
+  let timer = null;
+
+  /**
+   * Helper method called on load to find problems that will prevent any further changes to box
+   *
+   * @function hasDuplicates
+   */
+  const hasDuplicates = () => {
+    const id_array = subscription.attributes.rc_subscription_ids.map(el => el.title);
+    let title;
+    const check = id_array.some((el, idx) => {
+      const t = id_array.indexOf(el) != idx;
+      if (t) title = el;
+      return t;
+    });
+    return title;
+  };
 
   /**
    * Helper method to build properties on box
@@ -222,8 +227,9 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    *
    * Initiates the socket and calls doChanges
    */
-  const saveChanges = async (key) => {
-    editsPending = true;
+  const saveChanges = async (key, ev) => {
+    ev.target.blur(); // removes the key event listener from the button
+    editsPending = true; // setting this when socket is closed
     CollapsibleProducts = CollapseWrapper(EditProducts);
     this.dispatchEvent(
       new CustomEvent("customer.disableevents", {
@@ -234,9 +240,79 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     await this.refresh();
     await doChanges({ key });
 
-    // try again later with this
-    // will add session_id to the data, { key, session_id }
-    //await getSessionId(doChanges, { key });
+  };
+
+  /*
+   * @function getChangeMessages
+   * 
+   * Gather list of messages detailing the changes made to the box
+   * This will be included in the email to customer
+   * e.g. Carrots quantity incresed to 2, Beetroot deleted etc
+   */
+  const getChangeMessages = (updates) => {
+    const messages = [];
+
+    // add updated flag to rec_subscription_ids
+    const update_shopify_ids = updates.map(el => el.shopify_product_id);
+    let updated;
+    const subscription_ids = subscription.attributes.rc_subscription_ids.map(el => {
+      updated = update_shopify_ids.indexOf(el.shopify_product_id) === -1;
+      return { ...el, updated };
+    });
+
+    if (subscription.properties["Removed Items"]
+        !== subscriptionSwaps_orig["Removed Items"]
+      || subscription.properties["Swapped Items"]
+        !== subscriptionSwaps_orig["Swapped Items"]) {
+      messages.push("Swaps have changed.");
+    };
+
+    for (const item of subscription_ids) {
+      if (!item.updated) {
+        const orig = rc_subscription_ids_orig.find(el => el.shopify_product_id === item.shopify_product_id);
+        if (item.quantity === 0) {
+          messages.push(`${item.title} ${orig && `(${orig.quantity}) ` }has been removed from your box.`);
+        } else {
+          if (orig) {
+            if (orig.quantity !== item.quantity) {
+              messages.push(`${item.title} quantity has changed from ${orig.quantity} to ${item.quantity}.`);
+            };
+          } else {
+            // a new item
+            messages.push(`${item.title} (${ item.quantity }) has been added to your box.`);
+          };
+        };
+      };
+    };
+    return messages;
+  };
+
+  /*
+   * @function testChanges
+   * 
+   * Gather data as if to make changes and log to console
+   */
+  const testChanges = async () => {
+
+    const updates = getUpdatesFromIncludes();
+
+    const change_messages = getChangeMessages(updates);
+    console.log(change_messages);
+    /*
+    const filtered = updates.filter(el => el.subscription_id !== subscription.attributes.subscription_id);
+    console.log(filtered);
+    console.log(JSON.stringify(updates, null, 2));
+    console.log(JSON.stringify(subscription_ids, null, 2));
+    console.log(JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
+    console.log(JSON.stringify(updates, null, 2));
+    console.log(JSON.stringify(subscription.includes, null, 2));
+    console.log(JSON.stringify(subscription.attributes, null, 2));
+    */
+
+    const title = hasDuplicates();
+    if (title) console.error(`${title} is duplicated in rc_subscription_ids`);
+    console.log(dateStringNow(), userNavigator());
+
   };
 
   /*
@@ -252,10 +328,10 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     let label; // stored on pending_updates table
     if (key === "includes") {
       updates = getUpdatesFromIncludes();
-      label = "USER";
+      label = "edit";
     } else { // key = "updates"
       updates = subscription.updates;
-      label = "RECONCILE";
+      label = "reconcile";
     };
     let src = `/api/recharge-update`;
     src = `${src}?label=${label}`;
@@ -271,9 +347,33 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     const properties = { ...subscription.properties };
     delete properties["Likes"];
     delete properties["Dislikes"];
+    const includes = [ ...subscription.includes ];
+
+    const id_array = attributes.rc_subscription_ids.map(el => el.title);
+    const title = hasDuplicates();
+    if (title) {
+      fetchError = `Unable to save changes. Duplicate item in rc_subscription_ids ${title}. Please contact administrator`;
+      editsPending = false;
+      return this.refresh()
+    };
+
+    const change_messages = getChangeMessages(updates);
+    console.log(change_messages);
+
+    // start the timer - can get this from the socket.closed event detail
+    timer = new Date();
 
     const headers = { "Content-Type": "application/json" };
-    const data = { updates, attributes, properties };
+    const data = {
+      updates,
+      attributes,
+      change_messages,
+      properties,
+      includes,
+      now: dateStringNow(),
+      navigator: userNavigator(),
+      admin,
+    };
 
     const callback = async (data) => {
       await PostFetch({ src, data, headers })
@@ -301,7 +401,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
         });
     };
 
-    await getSessionId(callback, data, messageDivId);
+    await getSessionId(callback, data, messageDivId, this);
 
   };
 
@@ -454,8 +554,10 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     if (addingProduct) {
       subscription.includes.push({
         product_title: product.shopify_title,
+        title: product.shopify_title,
         ...subscription.attributes.templateSubscription,
         price: `${(product.shopify_price * 0.01).toFixed(2)}`,
+        total_price: `${(product.shopify_price * 0.01).toFixed(2)}`,
         quantity,
         external_product_id: {
           ecommerce: `${product.shopify_product_id}`
@@ -466,12 +568,23 @@ async function *Subscription({ subscription, customer, idx, admin }) {
         properties: [ ...propertyTemplate ],
         shopify_product_id: product.shopify_product_id, // so we can still find it in the list
       });
-      rc_subscription_ids.push({
-        shopify_product_id: parseInt(product.shopify_product_id),
-        subscription_id: null,
-        title: product.shopify_title,
-        quantity: parseInt(quantity),
-      });
+
+      // bugfix here, found that I can push a new item onto rc_subscription_ids
+      // even though it may already be present with quantity set to zero, i.e.
+      // a deletion
+
+      let rc_product = rc_subscription_ids.find(el => el.shopify_product_id === parseInt(product.shopify_product_id));
+      if (rc_product) {
+        // simply update the quantity
+        rc_product.quantity = parseInt(quantity);
+      } else {
+        rc_subscription_ids.push({
+          shopify_product_id: parseInt(product.shopify_product_id),
+          subscription_id: null,
+          title: product.shopify_title,
+          quantity: parseInt(quantity),
+        });
+      };
     };
 
     const bar = document.querySelector(`#saveBar-${subscription.attributes.subscription_id}`);
@@ -480,8 +593,9 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     el.classList.add("dn");
 
     subscription.attributes.rc_subscription_ids = [ ...rc_subscription_ids ];
+    // and update the total price
+    subscription.attributes.totalPrice = floatToString(total_price);
 
-    const updates = getUpdatesFromIncludes();
   };
 
   /**
@@ -548,30 +662,22 @@ async function *Subscription({ subscription, customer, idx, admin }) {
   };
 
   /**
-   * @function saveEdits
-   * Save the changes made
-   */
-  const saveEdits = () => {
-    /* No longer using "changed", now using rc_subscription_ids and compare to orig
-    const box_id = subscription.box.shopify_product_id;
-    // update the values for the subscription box
-    const boxInclude = subscription.includes.find(el => el.shopify_product_id === box_id);
-    changed.push(box_id);
-    */
-    saveChanges("includes");
-  };
-
-  /**
    * @function cancelEdits
    * Cancel changes made - see Customer but it only reverts back to initial api query
    */
   const cancelEdits = () => {
-    this.dispatchEvent(
-      new CustomEvent("customer.reload", {
-        bubbles: true,
-        detail: { charge_id: subscription.attributes.charge_id },
-      })
-    );
+    const bar = document.querySelector(`#saveBar-${subscription.attributes.subscription_id}`);
+    bar.classList.remove("open");
+
+    // let the save bar close nicely first
+    setTimeout(() => {
+      this.dispatchEvent(
+        new CustomEvent("customer.reload", {
+          bubbles: true,
+          detail: { charge_id: subscription.attributes.charge_id },
+        })
+      );
+    }, 1000);
   };
 
   /*
@@ -584,11 +690,13 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     uri = `${uri}&address_id=${subscription.attributes.address_id}`;
     uri = `${uri}&subscription_id=${subscription.attributes.subscription_id}`;
     uri = `${uri}&scheduled_at=${subscription.attributes.scheduled_at}`;
+    console.log(`Fetching ${uri}`);
     return Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
         if (error !== null) {
           fetchError = error;
+          loading = false;
           return null;
         } else {
           if (json.message) {
@@ -599,155 +707,173 @@ async function *Subscription({ subscription, customer, idx, admin }) {
             }));
             return null;
           } else {
+            console.log("fetched charge ===============");
+            console.log(json.subscription);
+            console.log("==============");
+            loading = false;
             return json.subscription;
           };
         };
       })
       .catch((err) => {
         fetchError = err;
+        loading = false;
       });
   };
 
   /**
+   * @function chargeUpdated
+   * @listens charge.updated From sockets
+   *
+   * When changes have been made to the subscription a new charge is sometimes
+   * created (date changes, added/deleted products etc). Back on the server it
+   * picks up the new charge and sends the charge.id back through the socket so
+   * that we can reload the subscription correctly
+   * This is sent only when all updates have been completed (i.e. when the updates_pending entry is being deleted);
+   */
+  const chargeUpdated = async (ev) => {
+    // set the charge id on the subscription
+    subscription.attributes.charge_id = parseInt(ev.detail.charge_id);
+  };
+
+  this.addEventListener("charge.updated", chargeUpdated);
+
+  /**
    * @function reloadCharge
    * Reload this particular charge from the server as a 'subsciption' object
+   * @listens socket.closed
    */
-  const reloadCharge = async (restartTimer, killTimer) => {
+  const reloadCharge = async ({ detail }) => {
 
-    collapsed = true;
-    loading = true;
-    await this.refresh();
+    if (detail.action === "reactivated") return; // could do better here
 
-    // also need to send message to server to delete the updates_pending entry
-    // message user, kill the timer, change messages
-    // keep editsPending as true to prevent any futher action on this page
+    console.log(detail);
+    const { charge_id, session_id, subscription_id, action } = detail;
 
-    // duplicated in the Cancelled component - surely should figure out
-    if (eventAction === "cancelled") {
-      const json = await getCancelledSubscription();
-      if (Object.hasOwnProperty.call(json, "message")) {
-        this.dispatchEvent(toastEvent({
-          notice: json.message,
-          bgColour: "black",
-          borderColour: "black"
-        }));
-        attempts += 1; // force Timer reload and count attempts
-        editsPending = true;
-        loading = false;
-        await this.refresh();
-        if (restartTimer) restartTimer(timerSeconds);
-        return;
+    // session_id consumed by socket.js
+    // do something with action ? toaster perhaps
+
+    if (subscription_id !== subscription.attributes.subscription_id) {
+      console.log("Subscription id does not match, exiting");
+      return; // drop out and do not reload
+    };
+
+    if (typeof subscription.attributes.charge_id === "undefined") {
+      console.log("Charge id undefined, exiting"); // when user has done cancel/reactivate in one session
+      return; // drop out and do not reload
+    };
+
+    if (subscription.attributes.charge_id !== charge_id) {
+      console.log("Updating charge id", subscription.attributes.charge_id, charge_id);
+      if (typeof charge_id !== "undefined") {
+        subscription.attributes.charge_id = charge_id;
+      };
+    } else {
+      console.log("Charge id matches");
+    };
+
+    // get the message blocks to remove them
+    const socketMessages = document.getElementById(messageDivId);
+    const saveMessages = document.getElementById(`save-${messageDivId}`);
+
+    if (socketMessages) {
+      socketMessages.classList.add("closed"); // uses css transitions
+    };
+
+    if (saveMessages) {
+      saveMessages.classList.add("closed"); // uses css transitions
+    };
+
+    if (timer) {
+      const timeTaken = findTimeTaken(timer);
+      timer = null;
+      console.log(timeTaken);
+
+      this.dispatchEvent(toastEvent({
+        notice: `Updates completed after ${timeTaken} minutes` ,
+        bgColour: "black",
+        borderColour: "black"
+      }));
+    } else {
+      console.warn("No timer object");
+    };
+
+    // use timeoout to wait for the collapse to complete
+    setTimeout(async () => {
+      if (socketMessages) {
+        // clear the socket messaages
+        socketMessages.innerHTML = "";
       } else {
-        editsPending = false;
-        attempts = 0;
-        changed = [];
-        CancelledSubscription = json;
-        const notice = `Cancelled ${json.box.product_title} - ${json.box.variant_title}`;
-        this.dispatchEvent(toastEvent({
-          notice,
-          bgColour: "black",
-          borderColour: "black"
-        }));
-        fetchError = null;
-        if (killTimer) killTimer();
-        loading = false;
-        await this.refresh();
+        console.warn("No socketMessages object");
+      };
+
+      if (action === "cancelled") {
+        // in this case we must remove the subscription and load it as a cancelled subscription
+
+        const cancelled = await getCancelledSubscription();
         // then dispatch event to Customer which will shuffle the grouped subscriptions
-        const event = `subscription.cancelled`;
-        const subdiv = document.querySelector(`#subscription-${CancelledSubscription.box.id}`);
-        // customer div faded at Customer
-        //const div = document.querySelector(`#customer`);
-        //animateFade(div, 0.3);
+        const subdiv = document.querySelector(`#subscription-${cancelled.box.id}`);
         setTimeout(() => {
           animateFadeForAction(subdiv, () => {
             this.dispatchEvent(
-              new CustomEvent(event, {
+              new CustomEvent("subscription.cancelled", {
                 bubbles: true,
                 detail: {
-                  subscription: CancelledSubscription,
+                  subscription: cancelled,
                   //list: "chargeGroups",
-                  subscription_id: CancelledSubscription.box.id,
+                  subscription_id: cancelled.box.id,
                 },
               })
             );
           });
         }, 100);
-        return;
-      };
-    };
+        return; // and return out of here
 
-    const charge = await getCharge(subscription.attributes.charge_id);
-    let pending = false;
-    if (charge) {
-      if (charge.attributes.pending) {
-        pending = true;
       } else {
-        // reload subscription
+
+        // forces reload of component to make it again editable
+        CollapsibleProducts = CollapseWrapper(EditProducts);
+        editsPending = false;
+
+        // otherwise reloading the updated charge
+        // refetch the charge and adapt to subscription object
+        const charge = await getCharge(subscription.attributes.charge_id);
+
+        //console.log(charge);
+
         for (const key of Object.keys(charge)) {
           subscription[key] = charge[key];
         };
+
+        // reset ids_orig
         rc_subscription_ids_orig = subscription.attributes.rc_subscription_ids.map(el => { return {...el}; });
-        editsPending = Boolean(subscription.attributes.pending);
-        CollapsibleProducts = CollapseWrapper(EditProducts); // forces refresh of products
-        attempts = 0;
-        changed = [];
-        if (admin) await getLogs();  // refresh the logs
-        let notice = (restartTimer) ? "Updated" : "Reloaded";
-        notice = `${notice} ${subscription.attributes.title} - ${subscription.attributes.variant}`;
-        this.dispatchEvent(toastEvent({
-          notice,
-          bgColour: "black",
-          borderColour: "black"
-        }));
+
+        try {
+          // finally refresh the component
+          await this.refresh();
+        } catch(err) {
+          console.warn(err.message);
+        };
+
+        if (collapsed) {
+          // restore buttons
+          this.dispatchEvent(
+            new CustomEvent("customer.enableevents", {
+              bubbles: true,
+              detail: { subscription_id },
+            })
+          );
+        };
       };
-      const socketMessages = document.getElementById(messageDivId);
-      if (socketMessages) {
-        socketMessages.innerHTML = "";
-      };
-    };
-    if (!charge || pending) {
-      attempts += 1; // force Timer reload and count attempts
-      pending = true;
-      editsPending = Boolean(pending);
-      if (attempts === 3) {
-        fetchError = (
-          <Fragment>
-            <p>Sorry, but we have lost the connection to poll for a result.</p>
-            <p>This does not mean that your changes have been lost, please close the window
-            and check you emails for notification of the changes made.</p>
-            <p>You will be able to check this page later.</p>
-          </Fragment>
-        );
-        // also need to send message to server to delete the updates_pending entry
-        // message user, kill the timer, change messages
-        // keep editsPending as true to prevent any futher action on this page
-        // but hide the loader thingy
-      };
-    };
-    if (typeof fetchError === "string" && fetchError.includes("404")) {
-      console.log("got a 404");
-      editsPending = false;
-      fetchError = "The update has timed out, please refresh the page";
-    } else {
-      fetchError = null;
-    };
-    if (killTimer) killTimer();
-    loading = false;
-    isExplainerOpen = attempts === 1;
-    await this.refresh();
-    if ( charge === "PENDING" || pending) {
-      if (restartTimer) restartTimer(timerSeconds);
-    } else {
-      if (collapsed) {
-        this.dispatchEvent(
-          new CustomEvent("customer.enableevents", {
-            bubbles: true,
-            detail: { subscription_id: subscription.attributes.subscription_id },
-          })
-        );
-      };
-    };
+
+    }, 100);
+
+    await getLogs();  // refresh the logs
+
   };
+
+  // socket.closed when webhooks are received that verify that all updates have been completed
+  window.addEventListener("socket.closed", reloadCharge);
 
   /*
    * @function getCancelledSubscription
@@ -777,25 +903,45 @@ async function *Subscription({ subscription, customer, idx, admin }) {
       });
   };
 
+  /*
+   * @function listingReload
+   * @listens listing.reload
+   *
+   * Gets reply from the PostFetch request from form-modals
+   * Updates attributes if dates have changed
+   * Collapses products and indicates that changes/edits are pending
+   *
+   */
   const listingReload = async (ev) => {
     const result = ev.detail.json; // success, action, subscription_id
 
+    // start the timer
+    timer = new Date();
+
+    console.log(result); // get details from change box also?
+    // not using any of this result!!
+    // could use subscription_id to verify the component?
+    // could use action to add to the messaging, 'reschedule pause' etc?
+
     const subscription_id = result.subscription_id;
     // update attributes nextChargeDate, nextDeliveryDate, scheduled_at
+    // details on updating charge date
     if (Object.hasOwnProperty.call(result, "scheduled_at")) {
       // update dates from skip and unskip
       subscription.attributes.scheduled_at = result.scheduled_at;
       subscription.attributes.nextChargeDate = result.nextchargedate;
       subscription.attributes.nextDeliveryDate = result.nextdeliverydate;
+      subscription.attributes.hasNextBox = result.hasNextBox;
       // and update the new product template
       subscription.attributes.templateSubscription.next_charge_scheduled_at = result.scheduled_at;
     };
 
-    // this means that the timer will start and reload
     editsPending = true;
+
+    // forces reload of component?
     CollapsibleProducts = CollapseWrapper(EditProducts);
-    if (result.action) eventAction = `${result.action}`;
     await this.refresh();
+
     return;
   };
 
@@ -1010,6 +1156,17 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     this.refresh();
   };
 
+  this.addEventListener("explainer", toggleExplainer);
+  
+  const hideExplainer = async (ev) => {
+    if (ev.key && ev.key === "Escape" && isExplainerOpen) {
+      isExplainerOpen = false;
+      this.refresh();
+    };
+  };
+
+  window.document.addEventListener("keyup", hideExplainer);
+
   for await ({ subscription, idx, admin } of this) { // eslint-disable-line no-unused-vars
 
     yield (
@@ -1017,9 +1174,9 @@ async function *Subscription({ subscription, customer, idx, admin }) {
         <Cancelled subscription={ CancelledSubscription } idx={ idx } admin={ admin } />
       ) : (
         <Fragment>
-          <h3 class="tl mb0 w-100 fg-streamside-maroon">
+          <h4 class="tl mb0 w-100 fg-streamside-maroon">
             {subscription.attributes.title} - {subscription.attributes.variant}
-          </h3>
+          </h4>
           { (!subscription.attributes.hasNextBox && !editsPending) && (
             <div class="pv2 orange">Box items not yet loaded for <span class="b">
                 { subscription.attributes.nextDeliveryDate }
@@ -1047,12 +1204,12 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                   <LogsModal logs={ subscriptionLogs }
                       admin={ admin }
                       box_title={ `${subscription.attributes.title} - ${subscription.attributes.variant}` } />
-                  <Button type="success-reverse"
-                    onclick={() => reloadCharge(null, null)}
-                    title="Reload"
+                  <Button type="primary-reverse"
+                    onclick={() => testChanges()}
+                    title="Test"
                   >
                     <span class="b">
-                      Reload
+                      Test Changes
                     </span>
                   </Button>
                 </div>
@@ -1062,17 +1219,21 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                   <Fragment>
                     <ChangeBoxModal
                       subscription={ subscription }
-                      socketMessageId={ `change-${messageDivId}` } />
+                      admin={ admin }
+                      socketMessageId={ `${messageDivId}` } />
                     { isSkippable() === true && (
                       <SkipChargeModal subscription={ subscription }
-                        socketMessageId={ `skip-${messageDivId}` } />
+                        admin={ admin }
+                        socketMessageId={ `${messageDivId}` } />
                     )}
                     { isUnSkippable() === true && (
                       <UnSkipChargeModal subscription={ subscription }
-                        socketMessageId={ `unskip-${messageDivId}` } />
+                        admin={ admin }
+                        socketMessageId={ `${messageDivId}` } />
                     )}
                         <CancelSubscriptionModal subscription={ subscription }
-                          socketMessageId={ `cancel-${messageDivId}` } />
+                          admin={ admin }
+                          socketMessageId={ `${messageDivId}` } />
                   </Fragment>
                 )}
                 <Button type="success-reverse"
@@ -1087,38 +1248,42 @@ async function *Subscription({ subscription, customer, idx, admin }) {
             </div>
           )}
           { !subscription.attributes.hasNextBox && !collapsed && (
-            <div class="dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+            <div class="alert-box dark-blue pa2 ma2 mt3 br3 ba b--dark-blue bg-washed-blue">
               <p class="">You will be able to edit your box products when the next box has been loaded.</p>
             </div>
           )}
           { (editsPending || subscription.attributes.pending) && (
             <Fragment>
-              <div class="db w-100 orange pa2 ma2 br3 ba b--orange bg-light-yellow">
-                <p class="b">
-                  { ( subscription.attributes.pending || attempts > 0) ? (
-                    <div class="center pb2">Your subscription has updates pending.</div>
-                  ) : (
-                    <div>Your updates have been queued for saving.</div>
+              <div id={ `save-${messageDivId }` } class="tl saveMessages">
+                <div class="alert-box dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+                  <p class="pa3 ma0">
+                    { ( subscription.attributes.pending) ? (
+                      <div>Your subscription has updates pending.</div>
+                    ) : (
+                      <div>Your updates have been queued for saving.</div>
+                    )}
+                    { ( subscription.attributes.pending) ? (
+                      <div>Please return to this page later to edit your subscription.</div>
+                    ) : (
+                      <div>
+                        This can take several minutes. You may close the window and come back to it later. { " " }
+                      </div>
+                    )}
+                    <div>Check your emails for confirmation of the updates you have requested.</div>
+                  </p>
+                  { (!subscription.attributes.pending) && (
+                    <ProgressLoader />
                   )}
-                  <div>Check your emails for confirmation of the updates you have requested.</div>
-                  <div>This can take several minutes. You may close the window and come back to it later. { " " }
-                    Reloading subscription in 
-                    <div class="di w-2">
-                      <Timer seconds={ timerSeconds } 
-                        crank-key={ `timer-${ idx }` }
-                        callback={ reloadCharge } /> ...
-                    </div>
-                    { attempts ? ` ${formatCount(attempts)} attempt completed, updates pending` : "" }
-                  </div>
-                </p>
-                <ProgressLoader />
+                </div>
               </div>
             </Fragment>
           )}
+          <div id={ messageDivId } class="tl socketMessages"></div>
           { subscription.messages.length > 0 && subscription.attributes.hasNextBox && !editsPending && (
-              <div class="dark-blue pv2 ma2 br3 ba b--dark-blue bg-washed-blue">
+              <div class="alert-box dark-blue pv2 ma2 br3 ba b--dark-blue bg-washed-blue">
                   <Fragment>
-                    <ul class="">
+                    <p class="pa3">Your subscription needs to be reconciled with the upcoming box:</p>
+                    <ul class="ma0">
                       { subscription.messages.map(el => <li>{el}</li>) }
                     </ul>
                     { subscription.attributes.nowAvailableAsAddOns.length > 0 && (
@@ -1127,9 +1292,9 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                     <div class="tr mv2 mr3">
                       <Button type="primary-reverse"
                         title="Continue"
-                        onclick={() => saveChanges("updates")}>
+                        onclick={(ev) => saveChanges("updates", ev)}>
                         <span class="b">
-                          Continue
+                          Apply changes to continue
                         </span>
                       </Button>
                     </div>
@@ -1146,6 +1311,15 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                 </span>
               </div>
               <div class="w-100 tr">
+                { admin && (
+                  <div class="dib pr2 nowrap">
+                    <Button
+                      onclick={ () => testChanges() }
+                      type="transparent/dark">
+                      Test changes
+                    </Button>
+                  </div>
+                )}
                 <div class="dib pr2 nowrap">
                   <Button
                     onclick={ cancelEdits }
@@ -1155,7 +1329,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                 </div>
                 <div class="dib pr2" id="saveEdits">
                   <Button
-                    onclick={ saveEdits }
+                    onclick={ (ev) => saveChanges("includes", ev) }
                     hover="dim"
                     border="navy"
                     type="primary">
@@ -1174,18 +1348,17 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                   properties={ subscription.properties }
                   box={ subscription.box }
                   nextChargeDate={ subscription.attributes.nextChargeDate }
-                  isEditable={ subscription.attributes.hasNextBox && !editsPending }
+                  isEditable={ subscription.messages.length === 0 && subscription.attributes.hasNextBox && !editsPending }
                   key={ idx }
                   id={ `subscription-${idx}` }
                 />
               )}
             </div>
           </div>
-          <div id={ messageDivId } class="tl socketMessages"></div>
           { isExplainerOpen && (
             <Portal root={modalWindow}>
               <ModalTemplate closeModal={ toggleExplainer } loading={ false } error={ false }>
-                <h3 class="fw4 tl fg-streamside-maroon">Why does it take so long to update my subscription?</h3>
+                <h4 class="fw4 tl fg-streamside-maroon">Why does it take so long to update my subscription?</h4>
                 <p class="pa4">
                   <img src={ `${ host }/logos/boxes.png` } width="50" />
                   Because in order to ensure the integrity of your box
@@ -1194,12 +1367,15 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                   are a linking between two web services: 1. the store and 2.
                   the subscription service. When an update is requested a
                   number of calls are made between the services to complete the
-                  update.
+                  update. We have recorded delays of up to 5 minutes for the
+                  order to be finalised and updated on our subscriptions
+                  service.
                 </p>
                 <p class="pa4">
-                  You are welcome to close this window at any time. Please
-                  check your emails for notification of the completion of the
-                  requested changes.
+                  You are welcome to close this window at any time, your
+                  updates will continue to be processed. Please check your
+                  emails for notification of the completion of the requested
+                  changes.
                 </p>
               </ModalTemplate>
             </Portal>

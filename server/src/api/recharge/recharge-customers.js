@@ -49,9 +49,23 @@ export default async (req, res, next) => {
 
     const customers = await collection.find(query).sort({ last_name: 1 }).limit(pageSize).skip(skip).toArray();
 
+    const pipeline = [
+      { "$lookup": {
+        "from": "customers",
+        "localField": "customer_id",
+        "foreignField": "recharge_id",
+        "as": "customer"
+      }},
+      { "$unwind": "$customer" }
+    ];
+    const updatesPending = await _mongodb.collection("updates_pending").aggregate(pipeline).toArray();
+    const faultySubscriptions = await _mongodb.collection("faulty_subscriptions").aggregate(pipeline).toArray();
+
     const response = {
       pageCount,
       pageNumber: currentPage,
+      updatesPending,
+      faultySubscriptions,
       customerCount: count,
       customers,
     };

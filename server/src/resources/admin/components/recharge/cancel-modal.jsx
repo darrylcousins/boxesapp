@@ -14,7 +14,10 @@ import Form from "../form";
 import { Fetch } from "../lib/fetch";
 import Error from "../lib/error";
 import BarLoader from "../lib/bar-loader";
-import { animateFadeForAction } from "../helpers";
+import {
+  userNavigator,
+  dateStringNow,
+} from "../helpers";
 
 /**
  * Icon component for link to expand modal
@@ -48,7 +51,7 @@ const options = {
   color: "dark-red",
   src: "/api/recharge-cancel-subscription",
   ShowLink,
-  saveMsg: "Cancelling box subscription ... please be patient, it will take some seconds.",
+  saveMsg: "Cancelling box subscription ... please be patient, it will take some minutes.",
   successMsg: "Cancellation has been queued, reloading ...",
   useSession: true, // set up socket.io to get feedback
 };
@@ -183,6 +186,10 @@ async function* CancelSubscription(props) {
           type: "hidden",
           datatype: "string",
         },
+        charge_id: {
+          type: "hidden",
+          datatype: "string",
+        },
         includes: {
           type: "hidden",
           datatype: "string",
@@ -209,6 +216,18 @@ async function* CancelSubscription(props) {
           size: 100,
           disabled: selectedOptionId !== cancelOptions.length - 1,
         },
+        now: {
+          type: "hidden",
+          datatype: "string",
+        },
+        navigator: {
+          type: "hidden",
+          datatype: "string",
+        },
+        admin: {
+          type: "hidden",
+          datatype: "boolean",
+        },
       };
     };
 
@@ -221,11 +240,15 @@ async function* CancelSubscription(props) {
      */
     const getInitialData = () => ({
       subscription_id: `${subscription.attributes.subscription_id}`,
+      charge_id: `${subscription.attributes.charge_id}`,
       includes: JSON.stringify(subscription.includes),
       updates: JSON.stringify(subscription.updates),
       properties: JSON.stringify(subscription.properties),
       attributes: JSON.stringify(subscription.attributes),
       cancellation_reason: "",
+      now: dateStringNow(),
+      navigator: userNavigator(),
+      admin: props.admin,
     });
 
     /*
@@ -243,8 +266,10 @@ async function* CancelSubscription(props) {
         { loading && <BarLoader /> }
         { fetchError && <Error msg={fetchError} /> }
         <p class="lh-copy tl">
-          Are you sure you want to cancel this box subscription? You will be able to reactivate it at any time.<br />
-          Perhaps you would prefer to pause the subscription instead?<br />
+          Are you sure you want to cancel this box subscription?<br />
+          Perhaps you would prefer to <strong>pause</strong> the subscription instead?<br />
+          Or perhaps you would prefer to <strong>change</strong> the subscription to a different box?<br />
+          Once cancelled you will be able to <strong>reactivate</strong> it at any time.<br />
         </p>
         { !loading && (
           <Fragment>

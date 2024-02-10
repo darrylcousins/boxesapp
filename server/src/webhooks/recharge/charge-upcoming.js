@@ -6,6 +6,7 @@ import { updateSubscriptions } from "../../lib/recharge/helpers.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
 import chargeUpcomingMail from "../../mail/charge-upcoming.js";
 import { getMetaForCharge, writeFileForCharge } from "./helpers.js";
+import { upsertPending } from "../../api/recharge/lib.js";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * This will trigger X days before the upcoming charge is scheduled. The default
@@ -60,30 +61,28 @@ export default async function chargeUpcoming(topic, shop, body) {
         const props = boxSubscription.properties.reduce(
           (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
           {});
-        const doc= {
+
+        const pendingData = {
+          action: "upcoming",
           subscription_id: boxSubscription.subscription_id,
           address_id: meta.recharge.address_id,
           customer_id: meta.recharge.customer_id,
           charge_id: meta.recharge.charge_id,
           scheduled_at: meta.recharge.scheduled_at,
           title: meta.recharge.title,
-          label: `CHARGE-UPCOMING-UPDATE`,
           rc_subscription_ids,
-          timestamp: new Date(),
+          deliver_at: props["Delivery Date"],
         };
+        const entry_id = await upsertPending(pendingData);
         for (const [key, value] of Object.entries(props)) {
-          doc[key] = value;
+          pendingData[key] = value;
         };
-        // set up the pending flag
-        await _mongodb.collection("updates_pending").updateOne(
-          { charge_id: meta.recharge.charge_id },
-          { "$set" : doc },
-          { "upsert": true }
-        );
-        _logger.notice(`Recharge charge upcoming updates.`, { meta: { recharge: doc } });
+        console.log(pendingData);
+        _logger.notice(`Recharge charge upcoming updates.`, { meta: { recharge: pendingData } });
 
         // Reconcile the items in the subscription with the new box
         await updateSubscriptions({ updates: subscription.updates });
+        // XXX failed to fix the updaes_pending on updates
 
         // Fix up the lists for the charge upcoming email
 
@@ -122,6 +121,7 @@ export default async function chargeUpcoming(topic, shop, body) {
 
     };
 
+    console.log(result);
     await chargeUpcomingMail({ subscriptions: result });
 
   } catch(err) {

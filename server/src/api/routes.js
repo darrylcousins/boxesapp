@@ -90,6 +90,9 @@ router.get(
   "/current-logs/:page/:level/:object", 
   await import("./log/current-logs.js").then(({ default: fn }) => fn));
 router.get(
+  "/current-logs/:page/:level/:object/:object_id", 
+  await import("./log/current-logs.js").then(({ default: fn }) => fn));
+router.get(
   "/customer-logs", 
   await import("./log/customer-logs.js").then(({ default: fn }) => fn));
 router.get(
@@ -180,9 +183,6 @@ router.post(
   "/recharge-reactivate-subscription", 
   await import("./recharge/recharge-reactivate-subscription.js").then(({ default: fn }) => fn));
 router.post(
-  "/recharge-subscription-update", 
-  await import("./recharge/recharge-subscription-update.js").then(({ default: fn }) => fn));
-router.post(
   "/recharge-change-box",
   await import("./recharge/recharge-change-box.js").then(({ default: fn }) => fn));
 router.get(
@@ -218,6 +218,12 @@ router.get(
 router.post(
   "/recharge-update-cancel-options", 
   await import("./recharge/recharge-update-cancel-options.js").then(({ default: fn }) => fn));
+router.post(
+  "/recharge-remove-pending-entries", 
+  await import("./recharge/recharge-remove-pending-entries.js").then(({ default: fn }) => fn));
+router.post(
+  "/recharge-verify-customer-subscriptions", 
+  await import("./recharge/recharge-verify-customer-subscriptions.js").then(({ default: fn }) => fn));
 router.post(
   "/add-setting", 
   await import("./setting/add-setting.js").then(({ default: fn }) => fn));

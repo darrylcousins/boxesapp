@@ -22,18 +22,19 @@ const _filename = (_meta) => _meta.url.split("/").pop();
 // necessary path resolution for running as cron job
 dotenv.config({ path: path.resolve(_filename(import.meta), "../.env") });
 
-const paths = [
-  'addresses',
-  'customers',
-  'subscriptions',
-  'plans',
-  'products',
-  'store',
-  'webhooks',
-  'metafields',
-  'charges',
-  'orders',
-];
+const pathMap = {
+  'addresses': 'address',
+  'customers': 'customer',
+  'subscriptions': 'subscription',
+  'plans': 'plan',
+  'products': 'product',
+  'store': 'store',
+  'webhooks': 'webhook',
+  'metafields': 'metafield',
+  'charges': 'charge',
+  'orders': 'order',
+};
+const paths = Object.keys(pathMap);
 
 const methods = [
   'GET',
@@ -69,8 +70,14 @@ const run = async () => {
     {
       type: 'text',
       name: 'id',
-      message: 'id?',
+      message: 'Enter the id of the resource if required?',
       default: 'null',
+    },
+    {
+      type: 'confirm',
+      name: 'save',
+      message: 'save the result?',
+      default: false,
     }
     ]).then(async result => {
       console.log(result);
@@ -103,10 +110,25 @@ const run = async () => {
         console.log(await fetch(url, options));
       } else {
         const data = await fetch(url, options).then(result => result.json());
-        console.log(JSON.stringify(data, null, 2));
-        //writeFileSync("recharge.charge.json", JSON.stringify(data, null, 2));
+        if (result.save) {
+          inquirer
+            .prompt([
+            {
+              type: 'text',
+              name: 'fileName',
+              message: 'File name to save as',
+              default: `${pathMap[result.path]}-${result.id}.json`,
+            },
+          ]).then(async res => {
+            writeFileSync(res.fileName, JSON.stringify(data, null, 2));
+            console.log(`Data saved as ${res.fileName}`);
+            process.exit(1);
+          });
+        } else {
+          console.log(JSON.stringify(data, null, 2));
+          process.exit(1);
+        };
       };
-      process.exit(1);
     })
 };
 

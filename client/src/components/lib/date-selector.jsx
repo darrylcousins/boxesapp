@@ -112,7 +112,7 @@ function* DateSelector({fetchDates, selectedDate, variantTitle}) {
                 </Fragment>
               ) : (
                 <div style={ wrapperStyle }>
-                  <div class="ma1 pa2">
+                  <div class="ma1 pa2" id="delivery-date">
                     <span class="b">Next delivery: </span>
                     <span class="b fr">{ selectedDate }</span>
                   </div>

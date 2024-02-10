@@ -325,7 +325,7 @@ div.button-wrapper > button:hover {
   box-sizing: border-box;
   font-weight: 700;
   padding-top: .5rem;
-  border-bottom: 1px solid white;
+  border-bottom: 1px solid;
 }
 .pill-wrapper {
   font-weight: 400;
@@ -390,11 +390,11 @@ div.button-wrapper > button:hover {
   box-sizing: border-box;
   width: 100%;
   background-color: transparent;
-  color: white;
-  border-bottom: 1px solid white;
+  color: inherit;
+  border-bottom: 1px solid;
 }
 #quantityModal .listing-title {
-  color: white;
+  color: inherit;
   margin-bottom: 15px;
   text-align: center;
 }

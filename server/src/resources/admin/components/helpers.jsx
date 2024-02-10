@@ -16,6 +16,27 @@ export const LABELKEYS = [
 ];
 
 /*
+ * Helper method to get time taken as a mins:secs string
+ */
+export const findTimeTaken = (d) => {
+  const now = new Date();
+  const millis = now.getTime() - d.getTime();
+  const minutes = Math.floor(millis / 60000);
+  const seconds = ((millis % 60000) / 1000).toFixed(0);
+  return seconds == 60 ?
+      (minutes+1) + ":00" :
+      minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+};
+
+/*
+ * Helper method to return a date string for this moment
+ */
+export const dateStringNow = () => {
+  const date = new Date();
+  return `${date.toDateString()} ${date.toLocaleTimeString()}`;
+};
+
+/*
  * Format a date yyy-mm-dd
  * Was formally using:
     const offset = yourDate.getTimezoneOffset()
@@ -143,9 +164,11 @@ export const floatToString = fToString; // is this how it should be done?
  *
  * @param {number} num The integer number to use
  * @returns {string} Price string
+ *
+ * Rather return empty string than "NaN"
  */
 export const toPrice = (num) => {
-  return `$${fToString(num)}`;
+  return ( typeof num === "undefined" || Boolean(`${num}` === "NaN") ) ? "" : `$${fToString(num)}`;
 };
 
 /**
@@ -241,7 +264,7 @@ export const isValidDateString = (str) => {
 export const findNextWeekday = (day, now) => {
   // return the date of next Thursday as 14/01/2021 for example
   // Thursday day is 4, Saturday is 6
-  let current = now;
+  let current = new Date(now);
   if (typeof now === "undefined") {
     current = new Date();
   };
@@ -423,3 +446,50 @@ export const sleepUntil = async (f, timeoutMs) => {
 }
 
 
+/*
+ * @function userNavigator
+ *
+ */
+export const userNavigator = () => {
+  const browserList = [
+    { name: "Firefox", value: "Firefox" },
+    { name: "Opera", value: "OPR" },
+    { name: "Edge", value: "Edg" },
+    { name: "Chrome", value: "Chrome" },
+    { name: "Safari", value: "Safari" },
+  ];
+  const osList = [
+    { name: "Android", value: "Android" },
+    { name: "iPhone", value: "iPhone" },
+    { name: "iPad", value: "Mac" },
+    { name: "Macintosh", value: "Mac" },
+    { name: "Linux", value: "Linux" },
+    { name: "Windows", value: "Win" },
+  ];
+
+  const browserChecker = () => {
+    let data = {};
+    //Useragent contains browser details and OS  details but we need to separate them
+    const userDetails = window.navigator.userAgent;
+    for (let i in browserList) {
+      //check if the string contains any value from the array
+      if (userDetails.includes(browserList[i].value)) {
+        //extract browser name and version from the string
+        data.browser = browserList[i].name || "Unknown Browser";
+        break;
+      };
+    };
+    for (let i in osList) {
+      //check if string contains any value from the object
+      if (userDetails.includes(osList[i].value)) {
+        //display name of OS from the object
+        data.os =  osList[i].name;
+        break;
+      };
+    };
+    return data;
+  };
+
+  const { browser, os } = browserChecker();
+  return `${browser}/${os}`;
+};

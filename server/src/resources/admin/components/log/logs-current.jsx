@@ -12,6 +12,8 @@ import { Fetch } from "../lib/fetch";
 import SelectMenu from "../lib/select-menu";
 import Pagination from "../lib/pagination";
 import { titleCase, animateFadeForAction } from "../helpers";
+import IconButton from "../lib/icon-button";
+import { SearchIcon, ClearSearchIcon, SyncIcon } from "../lib/icon";
 
 /**
  * Uses fetch to collect current boxes from api and then passes data to
@@ -51,7 +53,7 @@ function* CurrentLogs() {
    * @member possibleObjects
    * @type {array}
    */
-  let possibleObjects = ["order", "product", "recharge", "shopify", "mail"];
+  let possibleObjects = ["order", "recharge", "shopify", "mail", "all"];
   /**
    * Display loading indicator while fetching data
    *
@@ -59,6 +61,18 @@ function* CurrentLogs() {
    * @type {boolean}
    */
   let loading = true;
+  /**
+   * The search term entered
+   *
+   * @member {object|string} searchTerm
+   */
+  let searchTerm = null;
+  /**
+   * If the search term is invalid
+   *
+   * @member {object|string} searchError
+   */
+  let searchError = null;
   /**
    * Logs fetched from api for the filters
    *
@@ -72,6 +86,20 @@ function* CurrentLogs() {
    * @type {object|string|null}
    */
   let fetchError = null;
+  /**
+   * Capture pageSize
+   *
+   * @member pageSize
+   * @type {object|null}
+   */
+  let pageSize;
+  /**
+   * Capture count of fetch objects
+   *
+   * @member fetchCount
+   * @type {object|null}
+   */
+  let fetchCount;
   /**
    * Capture pageNumber
    *
@@ -119,11 +147,12 @@ function* CurrentLogs() {
     } else if (name === "DIV") {
       const item = target.getAttribute("data-item");
       if (possibleObjects.includes(item)) {
-        // do something
-        selectedObject = item;
-        loading = true;
-        await this.refresh();
-        getLogs();
+        if (item === "all") {
+          selectedObject = null;
+        } else {
+          selectedObject = item;
+        };
+        await refreshLogs();
       };
       closeMenu();
     } else {
@@ -142,7 +171,7 @@ function* CurrentLogs() {
 
   const movePage = async (page) => {
     pageNumber = parseInt(page.pageTarget);
-    return await getLogs();
+    return await refreshLogs();
   };
 
   /**
@@ -156,6 +185,10 @@ function* CurrentLogs() {
     if (selectedObject) {
       uri = `${uri}/${selectedObject}`;
     };
+    if (searchTerm) {
+      uri = `${uri}/${searchTerm}`;
+    };
+    console.log(uri);
     Fetch(uri)
       .then((result) => {
         const { error, json } = result;
@@ -169,6 +202,8 @@ function* CurrentLogs() {
           pageCount = json.pageCount;
           pageNumber = json.pageNumber;
           fetchLogs = json.logs;
+          fetchCount = json.count;
+          pageSize = json.pageSize;
           if (document.getElementById("logs-table")) {
             animateFadeForAction("logs-table", async () => await this.refresh());
           } else {
@@ -181,6 +216,47 @@ function* CurrentLogs() {
         loading = false;
         this.refresh();
       });
+  };
+
+  /**
+   * Clear search from button icon
+   *
+   * @function clearSearchTerm
+   */
+  const clearSearchTerm = async () => {
+    const button = document.querySelector("button[name='Clear Search'");
+    if (button) button.blur();
+    const input = document.querySelector("#searchTerm");
+    if (input) {
+      input.value = "";
+      //input.focus();
+    };
+    if (!searchTerm || searchTerm.length === 0) return;
+    searchError = null;
+    searchTerm = null;
+    logLevel = "all";
+    await refreshLogs();
+  };
+
+  /**
+   * Handle the controlled input field
+   *
+   * @param {object} ev Event emitted
+   * @function handleSearchTerm
+   */
+  const handleSearchTerm = async (ev) => {
+    const input = document.querySelector("#searchTerm");
+    searchTerm = input.value.trim();
+    searchError = null;
+    const button = document.querySelector("button[name='Search'");
+    if (button) button.blur();
+    if (searchTerm.length > 0 && ev.key === "Enter") {
+      selectedObject = "recharge"; // at this stage only searching on recharge messages??
+      logLevel = "notice";
+      console.log(searchTerm);
+      return await refreshLogs();
+    };
+    await this.refresh();
   };
 
   getLogs();
@@ -204,9 +280,7 @@ function* CurrentLogs() {
   const changeLevel = async (level) => {
     logLevel = level;
     if (logLevel === "error") selectedObject = null;
-    loading = true;
-    await this.refresh();
-    getLogs();
+    await refreshLogs();
   };
 
   /**
@@ -264,6 +338,109 @@ function* CurrentLogs() {
   };
 
   /*
+   * Helper method to render comma separated list
+   */
+  const formatList = (str) => {
+    if (str === null) return "None";
+    if (str.length === 0) return "None";
+    return (
+      str.split(",").map(el => <div>{ el }</div>)
+    );
+  };
+
+  /*
+   * Helper method to render objects
+   */
+  const formatObj = (obj, title) => {
+    if (obj === null) return <div>{ title }: null</div>;
+
+    const final = [];
+    let classes;
+    // assumes an object
+    for (const [key, value] of Object.entries(obj)) {
+      classes = [];
+      if (Number.isInteger(parseInt(key))) { // arrays
+        if (typeof value === "object") { // array of objects
+          final.push(formatObj(value, key));
+          classes.push("bb b--black-20");
+        } else {
+          final.push(value);
+        };
+      } else if (typeof value === "object") {
+        final.push(formatObj(value, key));
+        classes.push("bb b--black-20");
+      } else {
+        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+          final.push(`${key}: ${value}`);
+        } else if (value === null) {
+          final.push(`${key}: null`);
+        } else {
+          final.push(formatObj(value, key));
+        };
+      };
+    };
+    if (title) {
+      if (Number.isInteger(parseInt(title))) { // arrays
+        return (
+          final.map(el => <div class={ classes.join(" ") }>{ el }</div>)
+        );
+      } else {
+        return (
+          <div class="dt-row w-100">
+            <div class="dtc gray tr pr2">
+              { title }:
+            </div>
+            <div class="dtc">
+              { final.map(el => <div class={ classes.join(" ") }>{ el }</div>) }
+            </div>
+          </div>
+        );
+      };
+    } else {
+      return (
+        final.map(el => <div class={ classes.join(" ") }>{ el }</div>)
+      );
+    };
+  };
+
+  /*
+   * Helper method to render everything
+   */
+  const formatOther = (obj, title) => {
+
+    // Special case, not sure how else to figure this one out
+    const attributes = ["Including", "Add on Items", "Removed Items", "Swapped Items"];
+    if (attributes.includes(title)) {
+      return formatList(obj);
+    };
+
+    // attempt parse any json strings
+    try {
+      obj = JSON.parse(obj);
+    } catch(e) {
+      obj = obj;
+    };
+
+    if (JSON.stringify(obj, null, 2) === "null") {
+      return "null";
+    };
+
+    if (typeof obj !== "object") {
+      return `${obj}`;
+    };
+
+    // now want to format the json
+    try {
+      return formatObj(obj);
+    } catch(e) {
+      console.warn(e);
+      console.warn(title);
+      console.warn(obj);
+      return JSON.stringify(obj);
+    };
+  };
+
+  /*
    * Helper method to render log.meta
    */
   const formatMeta = (el) => {
@@ -283,8 +460,8 @@ function* CurrentLogs() {
                 <div class="dtc w-20 gray tr pr2">
                   { title }:
                 </div>
-                <div class="dtc w-80">
-                  { (typeof str === "string") ? `${ str }` : `${JSON.stringify(str)}` }
+                <div class="dtc w-80" style="width: 400px; word-wrap: break-word;">
+                  { formatOther(str, title) }
                 </div>
               </div>
           ))}
@@ -324,7 +501,9 @@ function* CurrentLogs() {
     yield (
       <div class="w-100 pb2">
         <h4 class="pt0 lh-title ma0 mb2 fg-streamside-maroon" id="boxes-title">
-          { logLevel && formatLevel(logLevel) } Logs
+          { logLevel && formatLevel(logLevel) } Logs {" "}
+          { pageSize && fetchCount > pageSize && <span>{ pageSize } of</span> } {" "}
+          { fetchCount && <span>{ fetchCount }</span> }
         </h4>
         {fetchLogs.length > 0 && (
           <Pagination callback={ movePage } pageCount={ parseInt(pageCount) } pageNumber={ parseInt(pageNumber) } />
@@ -335,21 +514,52 @@ function* CurrentLogs() {
             Only logs more recent than two days ago are available here.
           </p>
         </div>
-        <div class="w-100 flex">
-          { true && (
-            <div class="w-20 v-bottom">
-                <SelectMenu
-                  id="selectObject"
-                  menu={possibleObjects.map(el => ({text: el.toUpperCase(), item: el}))}
-                  title="Filter by Object"
-                  active={menuSelectObject}
-                  style={{border: 0, color: "brown"}}
-                >
-                  { selectedObject ? `${selectedObject} messages`.toUpperCase() : "FILTER BY" }&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#9662;
-                </SelectMenu>
+        <div class="w-100 flex-container">
+          <div class="w-30 v-bottom tl flex">
+            <div class="w-100 flex-container">
+              <div class="w-70 flex">
+                <input 
+                  class="dib pa0 mr2 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
+                  style="padding: 0 6px"
+                  type="text"
+                  valid={ !searchError }
+                  id="searchTerm"
+                  onkeydown={ (ev) => handleSearchTerm(ev) }
+                  value={ searchTerm && searchTerm }
+                  placeholder={`customer or subscription id`}
+                  name="searchTerm" />
+              </div>
+              <div class="w-30 flex" style="height: 1.8em">
+                <div onclick={ () => handleSearchTerm({key: "Enter"}) }>
+                  <IconButton color="dark-gray" title="Search" name="Search">
+                    <SearchIcon />
+                  </IconButton>
+                </div>
+                <div onclick={ () => clearSearchTerm() }>
+                  <IconButton color="dark-gray" title="Clear Search" name="Clear Search">
+                    <ClearSearchIcon />
+                  </IconButton>
+                </div>
+              </div>
             </div>
-          )}
-          <div class="w-60 v-bottom tr">
+            { searchError && (
+              <div class="alert-box dark-blue ma2 br3 ba b--dark-blue bg-washed-blue">
+                <p class="tc">{ searchError }</p>
+              </div>
+            )}
+          </div>
+          <div class="w-20 v-bottom tr">
+              <SelectMenu
+                id="selectObject"
+                menu={possibleObjects.map(el => ({text: el, item: el}))}
+                title="Filter by Object"
+                active={menuSelectObject}
+                style={{border: 0}}
+              >
+                { selectedObject ? `${selectedObject} messages` : "Filter by" }&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#9662;
+              </SelectMenu>
+          </div>
+          <div class="w-50 v-bottom tr">
             <button
               class={
                 `${
@@ -387,7 +597,7 @@ function* CurrentLogs() {
                 <span class="v-mid di">All</span>
             </button>
           </div>
-          <div class="w-20 v-bottom tl mh1">
+          <div class="w-20 v-bottom tr mh1">
             <button
               class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-50  pv1 outline-0 b--grey ba br2 br--right mv1 pointer` }
               title="Refresh"
@@ -415,16 +625,16 @@ function* CurrentLogs() {
               <tbody class="lh-copy tl" id="boxes-table">
                 { fetchLogs.map((el, idx) => (
                   <tr class={`w-100 ${idx %2 ? "bg-transparent" : "bg-near-white"} `}>
-                    <td class="w-20 v-top">
+                    <td class="w-20 v-top" style="max-width: 100px">
                       { dateString(el) }
                     </td>
-                    <td class="w-10 v-top">
+                    <td class="w-10 v-top" style="max-width: 50px">
                       { getMetaObject(el) }
                     </td>
-                    <td class="w-20 v-top">
+                    <td class="w-20 v-top" style="max-width: 100px">
                       { el.message }
                     </td>
-                    <td class="w-50 v-top">
+                    <td class="w-50 v-top" style="max-width: 500px">
                       { formatMeta(el) }
                     </td>
                   </tr>

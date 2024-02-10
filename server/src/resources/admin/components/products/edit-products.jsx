@@ -13,7 +13,7 @@ import { CloseIcon } from "../lib/icon";
 import { groupProducts, weekdays } from "../helpers";
 import { toastEvent, productsChangeEvent } from "../lib/events";
 import { Fetch } from "../lib/fetch";
-import { getSelectModalOptions } from "./select-choices";
+import { getSelectModalOptions, isSwappable } from "./select-choices";
 import {
   animateFadeForAction,
   matchNumberedString,
@@ -131,22 +131,21 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
    * @param {object} ev Event emitted
    * @listens window.keyup
    */
-  const hideSelectModal = (ev) => {
+  const hideSelectModal = async (ev) => {
+
     let target = ev.target;
     if (target.tagName.toLowerCase() === "path") target = target.parentNode.parentNode;
     if (target.tagName.toLowerCase() === "svg") target = target.parentNode;
-    try {
-      if ((target && target.tagName.toLowerCase() === "button") || (ev.key && ev.key === "Escape")) {
-        showSelectModal = false;
-        clearSelectModalOptions();
-        this.refresh();
-      };
-    } catch(err) {
-      console.error(err.message);
+    if ((target &&
+      target.tagName.toLowerCase() === "button" &&
+      ["Cancel", "OK", "Close info"].includes(target.title)) || (ev.key && ev.key === "Escape")) {
+      showSelectModal = false;
+      clearSelectModalOptions();
+      await this.refresh(); // how to prevent this call when component is ummounted and therefor the console error?
     };
   };
 
-  window.document.addEventListener("keyup", (ev) => { if (this) hideSelectModal(ev) });
+  window.document.addEventListener("keyup", hideSelectModal);
 
   /**
    * Map lists and collect extra items to calculate and list prices
@@ -251,7 +250,7 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
       modalSelect: {from: "possibleAddons", to: to_list_name},
       modalType: "add",
       modalNote: (
-        <h3 class="fw4 tl fg-streamside-maroon">Select item to add to the box.</h3>
+        <h4 class="fw4 tl fg-streamside-maroon">Select item to add to the box.</h4>
       ),
       hideModal: hideSelectModal,
       modalStore: null,
@@ -614,6 +613,15 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
 
   function *Body({properties, name, idx}) {
     const value = properties[name];
+
+    const isRemovable = (product, listName) => {
+      if (listName !== "Including") return true;
+
+      // do we have a similarly priced item to swap from possible addons?
+      const res = isSwappable(boxLists["possibleAddons"], product);
+      return res;
+    };
+
     for ({ properties, name, idx } of this) { // eslint-disable-line no-unused-vars
       yield (
         <div class={`w-100 h-100`}>
@@ -643,14 +651,18 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
                         { !isEditable || (name === "Including" && boxLists["Swapped Items"] && boxLists["Swapped Items"].length >= 2) ? (
                           <div class="dtc w-10">&nbsp;</div>
                         ) : (
-                          <div class="dtc w-10 tr pr1 hover-dark-red pointer"
-                            onclick={() => removeProduct({shopify_product_id: product.shopify_product_id, from_list_name: name})}
-                            role="button"
-                            title={`Remove ${product.shopify_title} from ${name}`}>
-                            <span class="v-mid">
-                              <CloseIcon styleSize="1.35em" />
-                            </span>
-                          </div>
+                          isRemovable(product, name) ? (
+                            <div class="dtc w-10 tr pr1 hover-dark-red pointer"
+                              onclick={() => removeProduct({shopify_product_id: product.shopify_product_id, from_list_name: name})}
+                              role="button"
+                              title={`Remove ${product.shopify_title} from ${name}`}>
+                              <span class="v-mid">
+                                <CloseIcon styleSize="1.35em" />
+                              </span>
+                            </div>
+                          ) : (
+                            <div class="dtc w-10">&nbsp;</div>
+                          )
                         )}
                       </div>
                     </li>
@@ -759,145 +771,151 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
   // this is handled by collapseAnimator
   //window.addEventListener("resize", (event) => this.refresh() );
 
-  for (const { box, properties, nextChargeDate, isEditable, key } of this) { // eslint-disable-line no-unused-vars
+  try {
 
-    yield (
-      <Fragment>
-        { showSelectModal && (
-          <SelectModal
-            { ...selectModalOptions }
-          />
-        )}
-        { fetchError && <Error msg={fetchError} /> }
-        <div id={ `overlay-${key}` } class="dn aspect-ratio--object bg-black o-90"></div>
-        <div id={ `edit-products-${key}` } class="mt2 ph1 relative w-100" style="font-size: 1.3rem">
-          <div class="tc center">
-            <h3 class="fw4 tl mb0 fg-streamside-maroon">{box.shopify_title}</h3>
-          </div>
-          <div class="flex-container w-100">
-            <div class="mb2 w-100">
-              { !loading && showDetails ? (
-                <Fragment>
-                  { getListData().map(([title, value]) => (
-                    <div class="dt">
-                      <div class="dtc gray tr pr3 pv1">
-                        { title }:
-                      </div>
-                      <div class="dtc pv1">
-                        { loading ? (
-                          <div class="skeleton mr1" />
-                        ) : (
-                          <span>{ value }</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  </Fragment>
-                ) : " "
-              }
+    for (const { box, properties, nextChargeDate, isEditable, key } of this) { // eslint-disable-line no-unused-vars
+
+      yield (
+        <Fragment>
+          { showSelectModal && (
+            <SelectModal
+              { ...selectModalOptions }
+            />
+          )}
+          { fetchError && <Error msg={fetchError} /> }
+          <div id={ `overlay-${key}` } class="dn aspect-ratio--object bg-black o-90"></div>
+          <div id={ `edit-products-${key}` } class="mt2 ph1 relative w-100" style="font-size: 1.3rem">
+            <div class="tc center">
+              <h4 class="fw4 tl mb0 fg-streamside-maroon">{box.shopify_title}</h4>
             </div>
-            <div id="pricedItems" class="mr2 w-100">
-              <div class="ml2 mb0 mt1 pt1 flex bt">
-                <div class="w-20 ma0">
-                  { loading && (
-                    <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
-                  )}
-                  { !loading && (
-                    <Image
-                      src={ getImageUrl(box.shopify_product_id) }
-                      title={ box.shopify_title }
-                      id={`image-${key}-${box.shopify_product_id}`}
-                      crank-key={`image-${key}-${box.shopify_product_id}`}
-                    />
-                  )}
-                </div>
-                <div class="w-60 bold" style={ lineHeightStyle }>
-                  { box.shopify_title }
-                </div>
-                <div class="pricing w-20 tr" style={ lineHeightStyle }>
-                  { loading ? (
-                    <div class="skeleton mr1" />
-                  ) : (
-                    <span>{ toPrice(box.shopify_price ? box.shopify_price * 100 : null) }</span>
-                  )}
-                </div>
+            <div class="flex-container w-100">
+              <div class="mb2 w-100">
+                { !loading && showDetails ? (
+                  <Fragment>
+                    { getListData().map(([title, value]) => (
+                      <div class="dt">
+                        <div class="dtc gray tr pr3 pv1">
+                          { title }:
+                        </div>
+                        <div class="dtc pv1">
+                          { loading ? (
+                            <div class="skeleton mr1" />
+                          ) : (
+                            <span>{ value }</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    </Fragment>
+                  ) : " "
+                }
               </div>
-              { pricedItems.map((el, idx) => (
-                <div class="ml2 mb1 flex">
+              <div id="pricedItems" class="mr2 w-100">
+                <div class="ml2 mb0 mt1 pt1 flex bt">
                   <div class="w-20 ma0">
                     { loading && (
                       <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
                     )}
                     { !loading && (
                       <Image
-                        title={ el.name }
-                        id={`image-${key}-${el.shopify_product_id}`}
-                        crank-key={`image-${key}-${el.shopify_product_id}`}
-                        src={ getImageUrl(el.shopify_product_id) }
+                        src={ getImageUrl(box.shopify_product_id) }
+                        title={ box.shopify_title }
+                        id={`image-${key}-${box.shopify_product_id}`}
+                        crank-key={`image-${key}-${box.shopify_product_id}`}
                       />
                     )}
                   </div>
-                  <div class="w-50 bold" style={{
-                    "text-overflow": "ellipsis",
-                    "white-space": "nowrap",
-                    "overflow": "hidden",
-                    ...lineHeightStyle
-                  }}>
-                    { el.name }
+                  <div class="w-60 bold" style={ lineHeightStyle }>
+                    { box.shopify_title }
                   </div>
-                  <div class="pricing w-10 tr" style={ lineHeightStyle }>
-                    <span>{ toPrice(el.price) }</span>
-                  </div>
-                  <div class="w-10 tc" style={ lineHeightStyle }>({ el.count })</div>
-                  <div class="pricing w-10 tr" style={ lineHeightStyle }>
-                    <span>{ toPrice(el.count * el.price) }</span>
+                  <div class="pricing w-20 tr" style={ lineHeightStyle }>
+                    { loading ? (
+                      <div class="skeleton mr1" />
+                    ) : (
+                      <span>{ toPrice(box.shopify_price ? box.shopify_price * 100 : null) }</span>
+                    )}
                   </div>
                 </div>
-              ))}
-              <div class="ml2 mb1 pt1 flex bt">
-                <div class="w-80 bold">Total (excl. shipping)</div>
-                <div class="pricing w-20 tr bold">
-                  { loading ? (
-                    <div class="skeleton mr1" />
-                  ) : (
-                    <span>{ toPrice(totalPrice()) }</span>
-                  )}
+                { pricedItems.map((el, idx) => (
+                  <div class="ml2 mb1 flex">
+                    <div class="w-20 ma0">
+                      { loading && (
+                        <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
+                      )}
+                      { !loading && (
+                        <Image
+                          title={ el.name }
+                          id={`image-${key}-${el.shopify_product_id}`}
+                          crank-key={`image-${key}-${el.shopify_product_id}`}
+                          src={ getImageUrl(el.shopify_product_id) }
+                        />
+                      )}
+                    </div>
+                    <div class="w-50 bold" style={{
+                      "text-overflow": "ellipsis",
+                      "white-space": "nowrap",
+                      "overflow": "hidden",
+                      ...lineHeightStyle
+                    }}>
+                      { el.name }
+                    </div>
+                    <div class="pricing w-10 tr" style={ lineHeightStyle }>
+                      <span>{ toPrice(el.price) }</span>
+                    </div>
+                    <div class="w-10 tc" style={ lineHeightStyle }>({ el.count })</div>
+                    <div class="pricing w-10 tr" style={ lineHeightStyle }>
+                      <span>{ toPrice(el.count * el.price) }</span>
+                    </div>
+                  </div>
+                ))}
+                <div class="ml2 mb1 pt1 flex bt">
+                  <div class="w-80 bold">Total (excl. shipping)</div>
+                  <div class="pricing w-20 tr bold">
+                    { loading ? (
+                      <div class="skeleton mr1" />
+                    ) : (
+                      <span>{ toPrice(totalPrice()) }</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div class="flex-container w-100 h-100 mt1 pt2">
-            { sortedListNames.map((name, idx) => (
-              <Fragment>
-                { Array.isArray(name) && testVisibility(name) ? (
-                  <div class={`flex flex-column w-100 b--silver ${ getLeftBorder(name, idx) }`}>
-                    { name.map((item, index) => (
-                      <div class={`w-100 h-100 flex flex-column b--silver ${ getTopBorder(name, index) }`}>
-                        <Title name={ item } idx={ idx } />
-                        <div class="w-100">
-                          <Body properties={ boxLists } name={ item } idx={ idx } />
+            <div class="flex-container w-100 h-100 mt1 pt2">
+              { sortedListNames.map((name, idx) => (
+                <Fragment>
+                  { Array.isArray(name) && testVisibility(name) ? (
+                    <div class={`flex flex-column w-100 b--silver ${ getLeftBorder(name, idx) }`}>
+                      { name.map((item, index) => (
+                        <div class={`w-100 h-100 flex flex-column b--silver ${ getTopBorder(name, index) }`}>
+                          <Title name={ item } idx={ idx } />
+                          <div class="w-100">
+                            <Body properties={ boxLists } name={ item } idx={ idx } />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    testVisibility(name) && (
+                      <div id={ name } class={`w-100 flex flex-column ${ getLeftBorder(name, idx) } ${ getWrapperBottomBorder(name, idx) } b--silver`}>
+                        <Title name={ name } idx={ idx } />
+                        <div class={ `w-100 ${ getTableBottomPadding(name, idx) }` }>
+                          <Body properties={ boxLists } name={ name } idx={ idx } />
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  testVisibility(name) && (
-                    <div id={ name } class={`w-100 flex flex-column ${ getLeftBorder(name, idx) } ${ getWrapperBottomBorder(name, idx) } b--silver`}>
-                      <Title name={ name } idx={ idx } />
-                      <div class={ `w-100 ${ getTableBottomPadding(name, idx) }` }>
-                        <Body properties={ boxLists } name={ name } idx={ idx } />
-                      </div>
-                    </div>
-                  )
-                )}
-              </Fragment>
-            ))}
+                    )
+                  )}
+                </Fragment>
+              ))}
+            </div>
           </div>
-        </div>
-        <div class="pa1">&nbsp;</div>
-      </Fragment>
-    );
+          <div class="pa1">&nbsp;</div>
+        </Fragment>
+      );
+    };
+  } finally {
+    window.document.removeEventListener("keyup", hideSelectModal);
   };
+
 };
 
 export default EditProducts;

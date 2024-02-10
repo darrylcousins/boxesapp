@@ -30,9 +30,9 @@
         <p style="padding:0;margin:0;line-height:1.5">
         Payment will be charged to your nominated payment method three days prior to delivery. Please make sure you have sufficient funds available on that day.
         </p>
-        {% if attributes.delivery_schedule %}
+        {% if attributes.frequency %}
           <p style="padding:5px 0;margin:0">
-            Delivery is scheduled {{ attributes.delivery_schedule }}.
+            Subscription is scheduled for {{ attributes.frequency | downcase }}.
           </p>
         {% endif %}
         <p style="padding:0;margin:0;line-height:1.5">

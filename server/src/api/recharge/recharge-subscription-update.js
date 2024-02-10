@@ -11,6 +11,9 @@ import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
  * @param (Http response object) res
  * @param (function) next
  */
+
+// XXX Unused!
+
 export default async (req, res, next) => {
   const data = {...req.body};
   const subscription_id = req.body.id;

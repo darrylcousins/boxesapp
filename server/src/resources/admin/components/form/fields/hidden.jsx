@@ -43,6 +43,9 @@ function* HiddenField(props) {
       if (datatype === "array") {
         value = value.split(",").filter((item) => item !== "");
       };
+      if (datatype === "boolean") {
+        value = Boolean(value);
+      };
       this.dispatchEvent(
         new CustomEvent("form.data.feed", {
           bubbles: true,

@@ -2,10 +2,71 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import "dotenv/config";
+import fs from "fs/promises";
 import { makeShopQuery } from "../shopify/helpers.js";
 import { getNZDeliveryDay } from "../dates.js";
 import { makeApiJob } from "../../bull/job.js";
 import { winstonLogger } from "../../../config/winston.js"
+
+/*
+ * Helper method for debugging the flow of updates made to recharge so that we
+ * can allow the user to further edit their box. See registry.js.
+*/
+export const logWebhook = async (topic, body) => {
+  const dt = new Date();
+  let month = ("0" + (dt.getMonth() + 1)).slice(-2);
+  let day = ("0" + dt.getDate()).slice(-2);
+  let printDate = `${dt.getFullYear()}-${month}-${day} ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`;
+
+  let data = {};
+  if (topic === "CHARGE_DELETED") {
+    data.charge_id = body.charge.id;
+  } else if (topic.startsWith("CHARGE")) {
+    const { charge } = body;
+    let properties = {};
+    let title;
+    for (const line_item of charge.line_items) {
+      if (line_item.properties.some(el => el.name === "Including")) {
+        title = line_item.title;
+        properties = line_item.properties.reduce(
+          (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
+          {});
+      };
+    };
+    data = {
+      charge_id: charge.id,
+      address_id: charge.address_id,
+      customer_id: charge.customer.id,
+      scheduled_at: charge.scheduled_at,
+      box_title: title,
+      deliver_at: properties["Delivery Date"],
+      rc_subscription_ids: charge.line_items.map(el => {
+        return {
+          shopify_product_id: el.external_product_id.ecommerce,
+          subscription_id: el.purchase_item_id,
+          quantity: el.quantity,
+          title: el.title,
+        };
+      }),
+    };
+  } else if (topic.startsWith("SUBSCRIPTION")) {
+    const { subscription } = body;
+    const properties = subscription.properties.reduce(
+      (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
+      {});
+    data = {
+      subscription_id: subscription.id,
+      address_id: subscription.address_id,
+      customer_id: subscription.customer_id,
+      scheduled_at: subscription.next_charge_scheduled_at,
+      deliver_at: properties["Delivery Date"],
+      quantity: subscription.quantity,
+      title: subscription.product_title,
+    };
+  };
+  await fs.appendFile("webhooks.txt", `${printDate} ${topic}\n`, "utf8");
+  await fs.appendFile("webhooks.txt", `${JSON.stringify(data, null, 2)}\n`, "utf8");
+};
 
 /*
  * Recharge error codes
@@ -169,9 +230,10 @@ export const updateSubscriptions = async ({ updates, io, session_id }) => {
       options.path = `subscriptions/${update.subscription_id}`;
       if (update.quantity === 0) {
         options.method = "DELETE";
+        options.title = `Deleting ${update.title}`;
       } else {
         options.method = "PUT"; // updating a subscription
-        options.title = update.title;
+        options.title = `Updating ${update.title}`;
         const body = {
           properties: update.properties,
           quantity: update.quantity,
@@ -189,7 +251,7 @@ export const updateSubscriptions = async ({ updates, io, session_id }) => {
       };
     } else {
       // creating a new subscription requires post to subscriptions
-      options.title = update.product_title;
+      options.title = `Creating ${update.product_title}`;
       options.path = "subscriptions";
       options.method = "POST";
       options.body = JSON.stringify(update);
@@ -197,8 +259,9 @@ export const updateSubscriptions = async ({ updates, io, session_id }) => {
 
     options.io = io;
     options.session_id = session_id;
+
     // need to pass in the finish call so to know that all have completed and we
-    // can emit "finished"
+    // can emit "final"
     if (i === updates.length - 1) {
       options.finish = true;
     };
@@ -255,16 +318,99 @@ export const getLastOrder = async ({ customer_id, address_id, subscription_id, p
     };
     delete order.tags;
     order.line_items = order.line_items
-      .filter(el => el.product_id === product_id)
-      .map(el => {
-      return {
-        name: el.name,
-        properties: el.properties,
-        price: el.price,
-        product_id: el.product_id
-      };
-    });
+        .map(el => {
+        return {
+          name: el.name,
+          properties: el.properties,
+          price: el.price,
+          product_id: el.product_id,
+          title: el.title,
+          variant_title: el.variant_title,
+        };
+      });
+    order.box = order.line_items.find(el => el.properties.some(e => e.name === "Including"));
+    delete order.line_items; // more data than required
     return order;
   };
   return {}; // always return an object
+};
+
+/*
+ * @function findBoxes
+ * @returns { fetchBox, previousBox, hasNextBox }
+ */
+export const findBoxes = async ({ days, nextDeliveryDate, shopify_product_id }) => {
+  let fetchBox = null;
+  let previousBox = null;
+  let hasNextBox = false;
+  let delivered = new Date(nextDeliveryDate);
+  const dayOfWeek = delivered.getDay();
+
+  const pipeline = [
+    { "$match": { 
+      active: true,
+      shopify_product_id,
+    }},
+    { "$project": {
+      deliverDate: {
+        $dateFromString: {dateString: "$delivered", timezone: "Pacific/Auckland"}
+      },
+      delivered: "$delivered",
+      deliverDay: { "$dayOfWeek": { $dateFromString: {dateString: "$delivered", timezone: "Pacific/Auckland"} }},
+    }},
+    { "$match": { deliverDay: dayOfWeek } },
+    { "$project": {
+      delivered: "$delivered",
+      deliverDate: "$deliverDate",
+      deliverDay: "$deliverDay",
+    }},
+  ];
+
+  let dates = await _mongodb.collection("boxes").aggregate(pipeline).toArray();
+  dates = dates.map(el => el.delivered).reverse();
+
+  // if our date is in the array then we have the next box
+  if (dates.indexOf(delivered.toDateString()) !== -1) hasNextBox = true;
+
+  // if not then we need to dial back the deliver date until we find a box
+  if (!hasNextBox) {
+
+    // to avoid dropping into an infinite loop first check that our date is at
+    // least greater than the earliest date of the list
+    if (new Date(dates[dates.length - 1]).getTime() < delivered.getTime()) {
+      while (dates.indexOf(delivered.toDateString()) === -1) {
+        delivered.setDate(delivered.getDate() - days);
+      };
+    };
+  };
+
+  // first find if the targeted date is in the list by splicing the list to that date
+  for (const d of dates) {
+    if (!fetchBox) {
+      if (d === delivered.toDateString()) { // do we have the upcoming box? i.e. nextBox
+        fetchBox = await _mongodb.collection("boxes").findOne({delivered: d, shopify_product_id});
+        delivered.setDate(delivered.getDate() - days); // do we have the next box?
+      };
+    } else if (!previousBox) {
+      if (d === delivered.toDateString()) { // do we have the upcoming box? i.e. nextBox
+        previousBox = await _mongodb.collection("boxes").findOne({delivered: d, shopify_product_id});
+        delivered.setDate(delivered.getDate() - days); // do we have the next box?
+      };
+    };
+  };
+
+  // create a mock box
+  if (!fetchBox) {
+    fetchBox = {
+      shopify_title: "",
+      includedProducts: [],
+      addOnProducts: [],
+    };
+  };
+
+  return {
+    fetchBox,
+    previousBox,
+    hasNextBox
+  };
 };

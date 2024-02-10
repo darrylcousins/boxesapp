@@ -57,6 +57,7 @@ export default async (req, res, next) => {
     // because when reactivating the charge will initially not have all line_items
     // only called from components: Customer and Cancelled, only cancelled passed a subscription_id
     // note that the updated subscription may have been merged in an existing charge
+    /* XXX stop this to only use the webhook charge-updated
     if (charges.length === 1 && subscription_id) {
       const charge = charges[0];
       // charge_id matches here also by now
@@ -99,6 +100,15 @@ export default async (req, res, next) => {
         };
       };
     };
+    for (const charge of charges) {
+      console.log(charge.line_items);
+      for (const item of charge.line_items) {
+        console.log(item.title, item.properties);
+      };
+      console.log("==============================================");
+    };
+    return;
+    */
     const groups = await reconcileGetGroups({ charges });
     let result = [];
 
@@ -127,6 +137,14 @@ export default async (req, res, next) => {
     // we may still have some healthy subscriptions
     for (const grouped of revisedGroups) {
       result = await gatherData({ grouped, result });
+    };
+    //console.log(result);
+    for (const item of result) {
+      //console.log(item.updates);
+      for (const up of item.updates) {
+        //console.log(up);
+      };
+      //console.log(item.properties);
     };
 
     if (subscription_id) {

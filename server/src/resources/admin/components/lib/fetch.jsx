@@ -22,7 +22,7 @@ import { hasOwnProp } from "../helpers";
  */
 const Fetch = async (src) => {
   const proxy = localStorage.getItem("proxy-path");
-  console.log("fetching", `${proxy}${src}`);
+  console.log("Fetching", `${proxy}${src}`);
   let error = null;
   return fetch(`${proxy}${src}`)
     .then(async (response) => {
@@ -103,7 +103,7 @@ const PostFetch = async ({ src, data, headers }) => {
   if (headers) opts.headers = headers;
 
   const proxy = localStorage.getItem("proxy-path");
-  console.log("posting", `${proxy}${src}`);
+  console.log("Postfetching", `${proxy}${src}`);
   return fetch(`${proxy}${src}`, opts)
     .then(async (response) => {
       let json;
@@ -126,7 +126,7 @@ const PostFetch = async ({ src, data, headers }) => {
     })
     .then((json) => {
       if (hasOwnProp.call(json, "error")) {
-        return { formError: json, error: null, json: null };
+        return { formError: json, error: json.error, json: null };
       };
       return { error: null, formError: null, json };
     })

@@ -15,8 +15,12 @@ import { SearchIcon, ClearSearchIcon, SyncIcon } from "../lib/icon";
 import Pagination from "../lib/pagination";
 import { Fetch } from "../lib/fetch";
 import PushMenu from "../lib/push-menu";
+import { toastEvent } from "../lib/events";
+import Toaster from "../lib/toaster";
 import { animateFadeForAction } from "../helpers";
 import Customer from "./customer";
+import PendingUpdates from "./pending-updates";
+import VerifySubscriptions from "./verify-subscriptions";
 
 /**
  * Create subscription listing
@@ -96,6 +100,20 @@ async function* Customers() {
    * @type {object|null}
    */
   let pageCount = null;
+  /**
+   * Capture any customers on updates_pending table
+   *
+   * @member updatesPending
+   * @type {object|null}
+   */
+  let updatesPending = null;
+  /**
+   * Capture any faulty subscriptions found in nightly verify-subscriptions script
+   *
+   * @member faultySubscriptions
+   * @type {object|null}
+   */
+  let faultySubscriptions = null;
 
   /**
    * Handle the event calling to load another customer
@@ -107,6 +125,7 @@ async function* Customers() {
     fetchError = null;
     loading = false;
     fetchCustomer = null;
+    // also reload pending and verify?
     await this.refresh();
     if (document.getElementById("searchTerm")) {
       document.querySelector("#searchTerm").focus();
@@ -156,8 +175,11 @@ async function* Customers() {
           this.refresh();
           return null;
         };
+        //console.log(json);
         pageCount = json.pageCount;
         pageNumber = json.pageNumber;
+        updatesPending = json.updatesPending;
+        faultySubscriptions = json.faultySubscriptions;
         customerCount = json.customerCount;
         rechargeCustomers = json.customers;
         loading = false;
@@ -174,6 +196,9 @@ async function* Customers() {
         return null;
       });
   };
+
+  // reload customers after fixing updates pending or similar
+  this.addEventListener("reloadCustomers", fetchCustomers);
 
   /**
    * Fetch recharge customer
@@ -309,12 +334,14 @@ async function* Customers() {
     </div>,
   ];
 
+  this.addEventListener("toastEvent", Toaster);
+
   for await (const props of this) { // eslint-disable-line no-unused-vars
     yield (
       <div class="w-100 pa2" id="subscriptions">
         <PushMenu children={sideMenu} />
-        <div class="pl5" style="margin-top: -35px">
-          <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
+        <div class="pl5" style="margin-top: -25px">
+          <h4 class="pt0 lh-title ma0 mb4 fg-streamside-maroon" id="boxes-title">
             Recharge Customers {""}
             { fetchCustomer ? (
               <span style="font-size: smaller;" class="ml4">
@@ -330,12 +357,12 @@ async function* Customers() {
         { fetchError && <Error msg={fetchError} /> }
         { !fetchCustomer && (
           <Fragment>
-            <div class="cf dark-blue pa2 mt2 mb3 br3 ba b--dark-blue bg-washed-blue">
+            <div class="alert-box cf dark-blue pa2 mt2 mb4 br3 ba b--dark-blue bg-washed-blue">
               Customers here may not be synchronised to Recharge customers. They are updated nightly, but may also be re-sychronised here.
               For example if they have cancelled or reactivated charges since last night's update.
             </div>
             <div class="w-100 flex-container">
-              <div class="w-20 v-bottom tl flex">
+              <div class="w-30 v-bottom tl flex">
                 <div class="w-100 flex-container">
                   <div class="w-70 flex">
                     <input 
@@ -349,7 +376,7 @@ async function* Customers() {
                       placeholder={`id, first or last name`}
                       name="searchTerm" />
                   </div>
-                  <div class="w-30 flex" style="height: 1.8em">
+                  <div class="w-30 flex pl3" style="height: 1.8em">
                     <div onclick={ () => handleSearchTerm({key: "Enter"}) }>
                       <IconButton color="dark-gray" title="Search" name="Search">
                         <SearchIcon />
@@ -363,12 +390,12 @@ async function* Customers() {
                   </div>
                 </div>
                 { searchError && (
-                  <div class="dark-blue ma2 br3 ba b--dark-blue bg-washed-blue">
+                  <div class="alert-box dark-blue ma2 br3 ba b--dark-blue bg-washed-blue">
                     <p class="tc">{ searchError }</p>
                   </div>
                 )}
               </div>
-              <div class="w-80 v-bottom tr">
+              <div class="w-70 v-bottom tr">
                 <button
                   class={
                     `${
@@ -415,6 +442,8 @@ async function* Customers() {
             <Customer customer={ fetchCustomer } admin={ true } /> 
         ) : (
           <Fragment>
+            { updatesPending && updatesPending.length > 0 && <PendingUpdates pendingUpdates={ updatesPending } /> }
+            { faultySubscriptions && faultySubscriptions.length > 0 && <VerifySubscriptions customers={ faultySubscriptions } /> }
             { rechargeCustomers && (
               <Fragment>
                 { rechargeCustomers.length > 0 && (

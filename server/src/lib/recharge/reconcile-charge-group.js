@@ -2,9 +2,9 @@
  * @module api/recharge/reconcile-charge-group.js
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
-import { sortObjectByKeys, matchNumberedString } from "../helpers.js";
+import { sortObjectByKeys, matchNumberedString, compareArrays } from "../helpers.js";
 import { getNZDeliveryDay } from "../dates.js";
-import { getLastOrder, makeRechargeQuery } from "./helpers.js";
+import { getLastOrder, makeRechargeQuery, findBoxes } from "./helpers.js";
 import isEqual from "lodash.isequal";
 import { winstonLogger } from "../../../config/winston.js";
 
@@ -70,10 +70,16 @@ export const reconcileGetGrouped = async ({ charge }) => {
         rc_subscription_id.updated_at = line_item.updated_at;
       };
       if (Object.hasOwnProperty.call(line_item, "cancelled_at")) {
-        rc_subscription_id.updated_at = line_item.cancelled_at;
+        rc_subscription_id.cancelled_at = line_item.cancelled_at;
+      };
+      // would like to get delivery_at in here too
+      const deliveryProp = line_item.properties.find(el => el.name === "Delivery Date");
+      if (deliveryProp) {
+        rc_subscription_id.delivery_at = deliveryProp.value;
       };
       grouped[box_subscription_id].rc_subscription_ids.push(rc_subscription_id);
       grouped[box_subscription_id].charge = charge;
+
 
     };
     for (const [box_subscription_id, group] of Object.entries(grouped)) {
@@ -84,9 +90,7 @@ export const reconcileGetGrouped = async ({ charge }) => {
         scheduled_at: group.charge.scheduled_at,
         subscription_id: parseInt(box_subscription_id),
       };
-      //console.log("reconcile grouped finding pending", query);
       grouped[box_subscription_id].pending = Boolean(await _mongodb.collection("updates_pending").findOne(query));
-      //console.log("reconcile grouped found pending", grouped[box_subscription_id].pending);
 
     };
   } catch(err) {
@@ -152,90 +156,17 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     total_price: subscription.price, // strange but a subscription only as a single price attribute
   });
 
-  // the scheduled box may not be added yet but we do want a box to compare against
-  // We will not update the box unless it matches the scheduled date
-  // XXX I need to create an aggregate pipeline to do this as now I also want
-  // to get the previous box
-  let fetchBox = null;
-  let previousBox = null;
-  let hasNextBox = false;
   const nextDeliveryDate = boxProperties["Delivery Date"];
-  let days;
-  if (subscription.order_interval_unit === "week") {
-    days = subscription.order_interval_frequency * 7;
-  } else if (subscription.order_interval_unit === "day") {
-    days = subscription.order_interval_frequency;
-  };
+  // subscription.order_interval_unit === "week" Always, boxesapp insists on it
+  const days = subscription.order_interval_frequency * 7;
 
-  // tried using a while loop here but failed to make it work
-  let delivered = new Date(Date.parse(boxProperties["Delivery Date"]));
-  const query = {
-    delivered: delivered.toDateString(),
-    shopify_product_id: parseInt(subscription.external_product_id.ecommerce),
-    active: true
-  };
-  let box = await _mongodb.collection("boxes").findOne(query);
-  if (box) { // do we have the next box created?
-    hasNextBox = true;
-    fetchBox = { ...box };
-  };
-  // so dial back the delivered date by the subscription interval
-  delivered.setDate(delivered.getDate() - days);
-  query.delivered = delivered.toDateString();
-
-  // this should always find a box, see next note as to why it didn't
-  box = await _mongodb.collection("boxes").findOne(query);
-  if (box && fetchBox) {
-    previousBox = { ...box };
-  } else if (box) {
-    fetchBox = { ...box };
-  };
-  /*
-   * But sometimes it didn't until I realised why.
-   *
-   * Long before boxesapp had Recharge subscriptions I added a cronjob to clean
-   * the database nightly, both to save hard drive and to avoid storing any
-   * personal data (name, email etc in orders). Boxes were also included for
-   * the hard drive space. So with fortnightly subscriptions the old box was
-   * gone ... doh!
-   *
-   * So in the next couple of lines I keep trying to set a date where I can
-   * find a box, and express my frustration, and just make a mock box ... I say again, doh.
-   *
-   * Today 24 Jun 2023 it dawned on me that I need to keep box data longer
-   * (still only 7 days for orders, but 21 days for boxes).
-   *
-   * This all caused a lot of problems because a throw here meant that
-   * subscription boxes were not correctly updated on the charge/upcoming
-   * event.
-   *
-   */
-
-  delivered.setDate(delivered.getDate() - days);
-  query.delivered = delivered.toDateString();
-  if (!previousBox) { // try one more time the last fetch may be fetchbox only
-    box = await _mongodb.collection("boxes").findOne(query);
-    if (box) previousBox = { ...box };
-  };
-
-  // XXX if still no current box then fudge it this can happen for **two week** subscriptions
-  if (!fetchBox && previousBox) {
-    fetchBox = { ...previousBox };
-    previousBox = null;
-  };
-
-  // can be that no box is found (this line would throw)
-  if (fetchBox && fetchBox.delivered === boxProperties["Delivery Date"]) {
-    hasNextBox = true;
-  };
-  // create a mock box
-  if (!fetchBox) {
-    fetchBox = {
-      shopify_title: "",
-      includedProducts: [],
-      addOnProducts: [],
-    };
-  };
+  // if a box matches the delivery date, then we have a next box
+  // otherwise just trying to find matches
+  const { fetchBox, previousBox, hasNextBox } = await findBoxes({
+      nextDeliveryDate,
+      days,
+      shopify_product_id: parseInt(subscription.external_product_id.ecommerce),
+    });
 
   let newIncludedInThisBox = [];
   let notIncludedInThisBox = [];
@@ -254,18 +185,19 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
       .filter(x => !previousBox.includedProducts.map(el => el.shopify_title).includes(x));
   };
 
-  // init the boxLists for the subscription
-  const boxLists = { ...boxProperties };
+  // init the boxProps for the subscription without mutating the original
+  const boxProps = { ...boxProperties };
   // i.e Beetroot (2),Celeriac ... etc
-  delete boxLists["Delivery Date"];
-  delete boxLists["box_subscription_id"];
+  delete boxProps["Delivery Date"];
+  delete boxProps["box_subscription_id"];
+
 
   // init arrays that we can change later
   const boxListArrays = {};
 
   // fix for null values
-  Object.entries(boxLists).forEach(([name, product_string]) => {
-    if (product_string === null) boxLists[name] = ""; // may be null from recharge
+  Object.entries(boxProps).forEach(([name, product_string]) => {
+    if (product_string === "None" || product_string === null) product_string = ""; // may be null from recharge
     boxListArrays[name] = product_string.split(",").map(el => el.trim()).filter(el => el !== "");
   });
   // figure out what extras should be/are in the box
@@ -273,17 +205,16 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     .map(el => matchNumberedString(el))
     .filter(el => el.quantity > 1)
     .map(el => ({ title: el.title, quantity: el.quantity - 1 }));
+
   // keeping all quantities
   let boxSwappedExtras = boxListArrays["Swapped Items"]
-    .filter(el => el !== "None")
     .map(el => matchNumberedString(el))
     .map(el => ({ title: el.title, quantity: el.quantity - 1 }));
-  // XXX Saw a single case where an included subscription did not appear here
   let boxAddOnExtras = boxListArrays["Add on Items"]
-    .filter(el => el !== "None")
     .map(el => matchNumberedString(el));
-  let boxRemovedItems = boxListArrays["Removed Items"]
-    .filter(el => el !== "None")
+  const boxRemovedItems = boxListArrays["Removed Items"]
+    .map(el => matchNumberedString(el));
+  let boxIncludedItems = boxListArrays["Including"]
     .map(el => matchNumberedString(el));
 
   // subscribedExtras are subscribed items in the package - should also be in boxListExtras
@@ -302,6 +233,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   // this array to only update items that are subscribed
   const titledSubscribedExtras = subscribedExtras.map(el => el.title);
 
+  // careful here because these lists may be from an old box
   const addOnProducts = fetchBox.addOnProducts.map(el => el.shopify_title);
   const includedProducts = fetchBox.includedProducts.map(el => el.shopify_title);
 
@@ -313,6 +245,16 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   let quantity;
 
   if (hasNextBox) {
+    /* if the includes don't match then we should update the subscription */
+    // merge any swaps back in to the full list
+    let currentIncludedItems = [ ...boxListArrays["Including"], ...boxListArrays["Removed Items"] ]
+      .filter(el => el !== "None")
+      .map(el => matchNumberedString(el))
+      .map(el => el.title);
+    if (!compareArrays(currentIncludedItems, includedProducts)) {
+      messages.push(`Included items do not match items in the upcoming box.`);
+    };
+
     /* REMOVED ITEMS one only is allowed with the matching swap */
     for  (const item of [ ...boxRemovedItems ]) {
       if (includedProducts.indexOf(item.title) === -1) { // not included this week
@@ -549,20 +491,25 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     return item;
   });
 
-  // merge the includedextras with the actual listing
-  const tempIncludedExtras = boxIncludedExtras.map(el => el.title);
-  const boxIncludes = includedProducts
-    .filter(el => !boxRemovedItems.find(item => item.title === el))
-    .map(el => {
-    let item;
-    if (tempIncludedExtras.includes(el)) {
-      item = boxIncludedExtras.find(x => x.title === el);
-      item.quantity = item.quantity + 1;
-    } else {;
-      item = {title: el, quantity: 1};
-    };
-    return item;
-  });
+  let boxIncludes;
+  if (hasNextBox) {
+    // merge the includedextras with the actual listing
+    const tempIncludedExtras = boxIncludedExtras.map(el => el.title);
+    boxIncludes = includedProducts
+      .filter(el => !boxRemovedItems.find(item => item.title === el))
+      .map(el => {
+      let item;
+      if (tempIncludedExtras.includes(el)) {
+        item = boxIncludedExtras.find(x => x.title === el);
+        item.quantity = item.quantity + 1;
+      } else {;
+        item = {title: el, quantity: 1};
+      };
+      return item;
+    });
+  } else {
+    boxIncludes = boxIncludedItems; // just use the saved subscription includes
+  };
 
   // add the box subscription itself to the updates required
   // can we push this through to the front end when customer, or admin goes to their update
@@ -617,7 +564,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     });
   };
 
-  let lastOrder;
+  let lastOrder = {};
   try {
     const orderQuery = {
       customer_id: subscription.customer_id,
@@ -634,24 +581,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   if (fetchBox.shopify_title === "") {
     messages = [];
     subscriptionUpdates = [];
-  };
-
-  // we need a box for ui display, so without a fetchBox we can try again for a previousBox
-  // user can only pause for at most 2 weeks so this should always be successful
-  // but I'll try at least once more
-  if (!previousBox) {
-    delivered.setDate(delivered.getDate() - days);
-    query.delivered = delivered.toDateString();
-    box = await _mongodb.collection("boxes").findOne(query);
-    if (box) {
-      previousBox = { ...box };
-    } else {
-      // one more time
-      delivered.setDate(delivered.getDate() - days);
-      query.delivered = delivered.toDateString();
-      box = await _mongodb.collection("boxes").findOne(query);
-      if (box) previousBox = { ...box };
-    };
   };
 
   return {
@@ -698,7 +627,6 @@ export const gatherData = async ({ grouped, result }) => {
 
         // XXX try/catch? This can fail with 404 when subscriptions have been
         // orphaned so the box_subscription_id value is dead
-        console.log("FETCHING SUBSCRIPTION");
         res = await makeRechargeQuery({
           path: `subscriptions/${item_id}`,
           title: group.box.title

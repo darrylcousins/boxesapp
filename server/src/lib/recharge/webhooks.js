@@ -9,6 +9,7 @@ import { Recharge } from "./index.js";
 import chargeCreated from "../../webhooks/recharge/charge-created.js";
 import chargeUpcoming from "../../webhooks/recharge/charge-upcoming.js";
 import chargeUpdated from "../../webhooks/recharge/charge-updated.js";
+import chargeDeleted from "../../webhooks/recharge/charge-deleted.js";
 import orderProcessed from "../../webhooks/recharge/order-processed.js";
 import subscriptionCreated from "../../webhooks/recharge/subscription-created.js";
 import subscriptionDeleted from "../../webhooks/recharge/subscription-deleted.js";
@@ -26,6 +27,7 @@ export const webhook_topics = {
   "CHARGE_CREATED": chargeCreated,
   "CHARGE_UPCOMING": chargeUpcoming,
   "CHARGE_UPDATED": chargeUpdated,
+  "CHARGE_DELETED": chargeDeleted,
 };
 
 export const addRechargeWebhooks = () => {

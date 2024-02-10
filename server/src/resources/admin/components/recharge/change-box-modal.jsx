@@ -16,7 +16,15 @@ import Form from "../form";
 import { PostFetch, Fetch } from "../lib/fetch";
 import CollapseWrapper from "../lib/collapse-animator";
 import EditProducts from "../products/edit-products";
-import { formatDate, animateFadeForAction, weekdays, findNextWeekday, dateStringSort } from "../helpers";
+import {
+  animateFadeForAction,
+  formatDate,
+  weekdays,
+  findNextWeekday,
+  dateStringSort,
+  userNavigator,
+  dateStringNow,
+} from "../helpers";
 
 /**
  * Helper method
@@ -28,17 +36,20 @@ import { formatDate, animateFadeForAction, weekdays, findNextWeekday, dateString
  * @function calculateDates
  * @returns { deliveryDate (obj), chargeDate (obj), orderDayOfWeek (int) }
  */
-const calculateDates = (deltaDays, newVariant, currentDate) => {
-  // deltaDays is calculated from the current delivery to match a similar time in the future
-  const deliveryDate = findNextWeekday(weekdays.map(el => el.toLowerCase()).indexOf(newVariant.toLowerCase()));
-  deliveryDate.setDate(deliveryDate.getDate() + deltaDays);
+const calculateDates = (newVariant, currentDate, lastOrderDate) => {
 
-  // however always make the days later than the current day regardless of weekday
-  // currentDate comes from the original subscription
   const currentDeliveryDate = new Date(Date.parse(currentDate));
-  if (deliveryDate.getTime() < currentDeliveryDate.getTime()) {
-    deliveryDate.setDate(deliveryDate.getDate() + 7);
-  };
+  const dayIdx = weekdays.map(el => el.toLowerCase()).indexOf(newVariant.toLowerCase());
+
+  const deliveryDate = findNextWeekday(dayIdx, currentDeliveryDate);
+
+  // dial it back a week, it will be corrected below if too early
+  // mainly to try to pin a date which has an active box
+  deliveryDate.setDate(deliveryDate.getDate() - 7);
+
+  // don't have to go forward, but must keep later the lastOrder date a day or two of the charge date
+  // lastOrderDate may be undefined, so make it infinitly in the past
+  const lastOrderTime = lastOrderDate ? new Date(Date.parse(lastOrderDate)).getTime() : 0;
 
   /* Match "order_day_of_week" to 3 days before "Delivery Date"
    * "normal" weekdays in javascript are numbered Sunday = 0 but recharges uses Monday = 0
@@ -51,8 +62,16 @@ const calculateDates = (deltaDays, newVariant, currentDate) => {
   // with the delivery date we fix the next_charge_scheduled_at to 3 days prior
   //const offset = deliveryDate.getTimezoneOffset()
   //const chargeDate = new Date(deliveryDate.getTime() - (offset*60*1000));
-  const chargeDate = new Date(deliveryDate.toDateString());
+  const chargeDate = new Date(deliveryDate);
   chargeDate.setDate(chargeDate.getDate() - 3);
+
+  // finally a sanity check that the chargeDate is in the future and later than the last order
+  const now = new Date();
+
+  while (chargeDate.getTime() <= now.getTime() || chargeDate.getTime() <= lastOrderTime) {
+    chargeDate.setDate(chargeDate.getDate() + 7);
+    deliveryDate.setDate(deliveryDate.getDate() + 7);
+  };
 
   // Put to the required yyyy-mm-dd format
   // Not returned, just testing
@@ -64,6 +83,20 @@ const calculateDates = (deltaDays, newVariant, currentDate) => {
 
 };
 
+/*
+ * Helper method to sort variants
+ */
+const sortVariants = (o) => {
+  const key = "title";
+  o.sort((a, b) => {
+    let intA = weekdays.indexOf(a[key]);
+    let intB = weekdays.indexOf(b[key]);
+    if (intA < intB) return -1;
+    if (intA > intB) return 1;
+    return 0;
+  });
+  return o;
+};
 /**
  * Icon component for link to expand modal
  *
@@ -96,7 +129,7 @@ const options = {
   color: "orange",
   src: "/api/recharge-change-box",
   ShowLink,
-  saveMsg: "Updating subscription ... please be patient, it will take some seconds.",
+  saveMsg: "Updating subscription ... please be patient, it will take some minutes.",
   successMsg: "Updates have been queued, reloading ...",
   useSession: true, // set up socket.io to get feedback, requires passing a div id for messages
 };
@@ -189,34 +222,6 @@ async function* ChangeBox(props) {
    * @member {object|string} fetchError
    */
   let fetchError = null;
-  /**
-   * Calculate the days out from now the current delivery date is so that when
-   * new delivery dates are calculated they will be a similar time out into the
-   * future
-   *
-   * @function getDayDiff
-   * @returns {integer} days
-   */
-  const getDayDiff = () => {
-    const nextDeliveryDate = new Date(Date.parse(boxAttributes.nextDeliveryDate));
-    // get closest day to now
-    const searchDate = findNextWeekday(weekdays.map(el => el.toLowerCase()).indexOf(boxAttributes.variant.toLowerCase()));
-    // get difference between this and the delivery date so we move to a similar distance in the future
-    const deltaTime = nextDeliveryDate.getTime() - searchDate.getTime();
-    let deltaDays = Math.ceil(deltaTime / (1000 * 3600 * 24));
-    // add 7 to keep it always ahead of the current delivery date
-    //deltaDays += 7;
-    // if negative make positive
-    deltaDays = Math.abs(deltaDays);
-    return deltaDays;
-  };
-
-  /**
-   * Keep the day difference as a constant variable
-   *
-   * @member {integer} deltaDays
-   */
-  const deltaDays = getDayDiff();
 
   /**
    * The initial data of the form
@@ -253,6 +258,15 @@ async function* ChangeBox(props) {
     data.subscription_id = boxAttributes.subscription_id;
     data.order_day_of_week = boxAttributes.orderDayOfWeek;
     data.do_update = false;
+    data.now = dateStringNow();
+    data.type = "paused";
+    data.navigator = userNavigator();
+    data.admin = props.admin;
+    data.customer = JSON.stringify(boxAttributes.customer);
+    data.last_order = JSON.stringify(boxAttributes.lastOrder);
+    data.properties = JSON.stringify(boxProperties);
+    data.box = JSON.stringify(selectedBox);
+    data.messages = JSON.stringify(boxMessages);
 
     return data;
   };
@@ -309,6 +323,42 @@ async function* ChangeBox(props) {
         type: "hidden",
         datatype: "integer",
       },
+      type: {
+        type: "hidden",
+        datatype: "string",
+      },
+      now: {
+        type: "hidden",
+        datatype: "string",
+      },
+      navigator: {
+        type: "hidden",
+        datatype: "string",
+      },
+      admin: {
+        type: "hidden",
+        datatype: "boolean",
+      },
+      customer: {
+        type: "hidden",
+        datatype: "string",
+      },
+      last_order: {
+        type: "hidden",
+        datatype: "string",
+      },
+      properties: {
+        type: "hidden",
+        datatype: "string",
+      },
+      box: {
+        type: "hidden",
+        datatype: "string",
+      },
+      messages: {
+        type: "hidden",
+        datatype: "string",
+      },
     };
   };
 
@@ -346,7 +396,7 @@ async function* ChangeBox(props) {
     loading = true;
     this.refresh();
 
-    let { error, json } = await Fetch(encodeURI(`/api/current-boxes-by-product/${currentBox.id}`))
+    let { error, json } = await Fetch(encodeURI(`/api/current-boxes-by-product/${currentBox.id}/${currentVariant.title.toLowerCase()}`))
       .then((result) => {
         return result;
         const { error, json } = result;
@@ -374,6 +424,9 @@ async function* ChangeBox(props) {
     };
     let foundDate = Object.keys(json).find(el => el === boxAttributes.nextDeliveryDate);
 
+    console.log(boxAttributes.nextDeliveryDate);
+    console.log(Object.keys(json).sort(dateStringSort));
+    // better would be to get by weekday date
     if (!foundDate) {
       foundDate = Object.keys(json).sort(dateStringSort).pop();
     };
@@ -437,7 +490,7 @@ async function* ChangeBox(props) {
       case "title":
         // update variants for the box
         currentBox = currentBoxes.find(el => parseInt(el.id) === parseInt(itemId));
-        currentVariants = currentBox.variants;
+        currentVariants = sortVariants(currentBox.variants);
         // what if it doesn't have the currently selected variant?
         //const searchVariant = currentBox.variants.find(el => el.title === currentVariant.title);
         const searchVariant = currentBox.variants.find(el => el.title === boxAttributes.variant);
@@ -451,9 +504,9 @@ async function* ChangeBox(props) {
             alertMessage = `${value} does not have a ${boxAttributes.variant} option so ${currentVariant.title} has been selected instead`;
             // now must set the boxAttributes for this option
             const { deliveryDate, chargeDate, orderDayOfWeek } = calculateDates(
-              deltaDays, // day difference into future
               currentVariant.title, // our new variant
               subscription.attributes.nextDeliveryDate, // the original date
+              subscription.attributes.lastOrder.delivered,
             );
             // assign to collected data
             boxAttributes.nextDeliveryDate = deliveryDate.toDateString();
@@ -488,9 +541,9 @@ async function* ChangeBox(props) {
         } else {
           // calculate dates
         const { deliveryDate, chargeDate, orderDayOfWeek } = calculateDates(
-          deltaDays, // day difference into future
           value, // our new variant
           subscription.attributes.nextDeliveryDate, // the original date
+          subscription.attributes.lastOrder.delivered,
         );
           // assign to collected data
           boxAttributes.nextDeliveryDate = deliveryDate.toDateString();
@@ -541,7 +594,7 @@ async function* ChangeBox(props) {
         { fetchError && <Error msg={fetchError} /> }
         { loading && <BarLoader /> }
         <div id="box-header">
-          <h4 class="fw4 tl fg-streamside-maroon">
+          <h5 class="fw4 tl">
             { boxAttributes.title }
             { " - " }
             { boxAttributes.variant }
@@ -549,13 +602,13 @@ async function* ChangeBox(props) {
             { boxAttributes.frequency }
             { " - " }
             ${ boxAttributes.boxPrice }
-          </h4>
-          <h5 class="fw4 tc fg-streamside-maroon">
+          </h5>
+          <p class="fw4 tc">
             <div>
               <div class="dt w-100">
                 <div class="dt-row w-100">
                   <div class="dt-cell w-50 fl tr pr2">
-                    <span class="o-50">Charge date:</span>
+                    <span class="black-80">Charge date:</span>
                   </div>
                   <div class="tl dt-cell w-50 fl pl2">
                     { boxAttributes.nextChargeDate }
@@ -563,7 +616,7 @@ async function* ChangeBox(props) {
                 </div>
                 <div class="dt-row w-100">
                   <div class="dt-cell w-50 fl tr pr2">
-                    <span class="o-50">Delivery date:</span>
+                    <span class="black-80">Delivery date:</span>
                   </div>
                   <div class="tl dt-cell w-50 fl pl2">
                     { boxAttributes.nextDeliveryDate }
@@ -571,9 +624,9 @@ async function* ChangeBox(props) {
                 </div>
               </div>
             </div>
-          </h5>
+          </p>
           { currentBoxes && (
-            <div class="dark-blue pa2 mt0 mb3 br3 ba b--dark-blue bg-washed-blue">
+            <div class="alert-box dark-blue pa3 mt0 mb3 br3 ba b--dark-blue bg-washed-blue">
               Delivery dates can be paused or rescheduled after changes are saved.
             </div>
           )}
@@ -583,52 +636,54 @@ async function* ChangeBox(props) {
             </div>
           )}
         </div>
-        <p class="lh-copy tc">
-          <div class="cf mt3">
-            <div class="fl w-100 mb2 pv1 b ba br3 b--silver">
-              { currentBoxes && currentBoxes.map(box => (
-                <Button
-                  type="alt-secondary"
-                  title={box.title}
-                  data-id={box.id}
-                  name="title"
-                  onclick={ onClick }
-                  classes={ box.title === boxAttributes.title ? "disable b" : "b" }
-                  selected={ box.title === boxAttributes.title }>
-                    { box.title }
-                </Button>
-              ))}
+        { currentBoxes && currentVariants && currentPlans &&  (
+          <p class="lh-copy tc">
+            <div class="cf mt3">
+              <div class="fl w-100 mb2 pv1 b ba br3 b--silver">
+                { currentBoxes && currentBoxes.map(box => (
+                  <Button
+                    type="alt-secondary"
+                    title={box.title}
+                    data-id={box.id}
+                    name="title"
+                    onclick={ onClick }
+                    classes={ box.title === boxAttributes.title ? "disable b" : "b" }
+                    selected={ box.title === boxAttributes.title }>
+                      { box.title }{ `${ box.title === boxAttributes.title ? " ✓" : "" }` }
+                  </Button>
+                ))}
+              </div>
+              <div class="fl w-100 mb2 pv1 b ba br3 b--silver">
+                { currentVariants && currentVariants.map(variant => (
+                  <Button
+                    type="alt-secondary"
+                    title={variant.title}
+                    name="variant"
+                    data-id={variant.id}
+                    onclick={ onClick }
+                    classes={ variant.title === boxAttributes.variant ? "disable b" : "b" }
+                    selected={ variant.title === boxAttributes.variant }>
+                      { variant.title }{ `${ variant.title === boxAttributes.variant ? " ✓" : "" }` }
+                  </Button>
+                ))}
+              </div>
+              <div class="fl w-100 pv1 b ba br3 b--silver">
+                { currentPlans && currentPlans.map(plan => (
+                  <Button
+                    type="alt-secondary"
+                    title={plan.name}
+                    name="frequency"
+                    data-id={plan.id}
+                    onclick={ onClick }
+                    classes={ plan.name === boxAttributes.frequency ? "disable b" : "b" }
+                    selected={ plan.name === boxAttributes.frequency }>
+                      { plan.name }{ `${ plan.name === boxAttributes.frequency ? " ✓" : "" }` }
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div class="fl w-100 mb2 pv1 b ba br3 b--silver">
-              { currentVariants && currentVariants.map(variant => (
-                <Button
-                  type="alt-secondary"
-                  title={variant.title}
-                  name="variant"
-                  data-id={variant.id}
-                  onclick={ onClick }
-                  classes={ variant.title === boxAttributes.variant ? "disable b" : "b" }
-                  selected={ variant.title === boxAttributes.variant }>
-                    { variant.title }
-                </Button>
-              ))}
-            </div>
-            <div class="fl w-100 pv1 b ba br3 b--silver">
-              { currentPlans && currentPlans.map(plan => (
-                <Button
-                  type="alt-secondary"
-                  title={plan.name}
-                  name="frequency"
-                  data-id={plan.id}
-                  onclick={ onClick }
-                  classes={ plan.name === boxAttributes.frequency ? "disable b" : "b" }
-                  selected={ plan.name === boxAttributes.frequency }>
-                    { plan.name }
-                </Button>
-              ))}
-            </div>
-          </div>
-        </p>
+          </p>
+        )}
         <div class="w-100 pl7 mb3">
           <Form
             data={getInitialData()}
@@ -646,6 +701,7 @@ async function* ChangeBox(props) {
               </Button>
             )}
             <Button type={ selectedBox ? "secondary" : "primary" } 
+              classes={ selectedBox ? "dn" : "" }
               onclick={thisPreview}>
               Preview
             </Button>
@@ -657,23 +713,30 @@ async function* ChangeBox(props) {
         { selectedBox && (
           <div class="tl">
             { boxMessages.length > 0 ? (
-              <div class="w-95 tl ba br2 pa2 mh2 mb3 dark-blue bg-washed-blue" role="alert">
-                <h5 class="tc dark-blue mt1 mb3">
+              <div class="alert-box w-95 tl ba br3 pa3 mh2 mb3 dark-blue bg-washed-blue" role="alert">
+                <div class="i tl dark-blue mt1 mb3">
+                    <span>You will be able to edit your products once the changes have been saved.</span>
+                </div>
+                <p class="tl dark-blue mt1 mb3">
                   { boxMustReconcile ? (
                     <span>The following changes will be made to match your subscription with the upcoming box.</span>
                   ) : (
                     <span>Changes to your box are indicative only and dependent on upcoming boxes.</span>
                   )}
-                </h5>
-                <div class="i tc dark-blue mt1 mb3">
-                    <span>You will be able to edit your products once the changes have been saved.</span>
-                </div>
-                { boxMessages.map(message => (
-                  <p class="mv1">{message}</p> 
-                ))}
+                </p>
+                { boxMessages.length > 0 && (
+                  <div class="tl dark-blue mt1 mb3">
+                      <span>Unmatched items listed here can be edited once the box is updated.</span>
+                  </div>
+                )}
+                <ul class="">
+                  { boxMessages.map(message => (
+                    <li class="mv1">{message}</li> 
+                  ))}
+                </ul>
               </div>
             ) : (
-              <div class="w-95 tl ba br2 pa2 mh2 mb3 dark-blue bg-washed-blue" role="alert">
+              <div class="alert-box w-95 tl ba br2 pa3 mh2 mb3 dark-blue bg-washed-blue" role="alert">
                 <p class="mv1">
                   The included products are indicative only and may change for upcoming boxes.
                 </p> 
@@ -700,7 +763,7 @@ async function* ChangeBox(props) {
 
       currentBoxes = [ ...boxes ];
       currentBox = currentBoxes.find(el => el.id === boxAttributes.product_id);
-      currentVariants = currentBox.variants;
+      currentVariants = sortVariants(currentBox.variants);
       currentVariant = currentVariants.find(el => el.id === boxAttributes.variant_id);
       currentPlans = currentBox.plans;
       currentPlan = currentBox.plans.find(el => el.name === boxAttributes.frequency);

@@ -10,7 +10,12 @@ import { createElement, Fragment } from "@b9g/crank";
 import Button from "../lib/button";
 import FormModalWrapper from "../form/form-modal";
 import Form from "../form";
-import { animateFadeForAction, findNextWeekday } from "../helpers";
+import {
+  animateFadeForAction,
+  findNextWeekday,
+  userNavigator,
+  dateStringNow,
+} from "../helpers";
 
 /**
  * Icon component for link to expand modal
@@ -44,7 +49,7 @@ const options = {
   color: "dark-red",
   src: "/api/recharge-reactivate-subscription",
   ShowLink,
-  saveMsg: "Reactivating box subscription ... please be patient, it will take some seconds.",
+  saveMsg: "Reactivating box subscription ... please be patient, it will take some minutes.",
   successMsg: "Reactivation has been queued, reloading ...",
   useSession: true, // set up socket.io to get feedback
 };
@@ -97,6 +102,18 @@ async function* ReactivateSubscription(props) {
     nextDeliveryDate: {
       type: "hidden",
       datatype: "string",
+    },
+    now: {
+      type: "hidden",
+      datatype: "string",
+    },
+    navigator: {
+      type: "hidden",
+      datatype: "string",
+    },
+    admin: {
+      type: "hidden",
+      datatype: "boolean",
     },
   };
 
@@ -170,6 +187,9 @@ async function* ReactivateSubscription(props) {
           variant: subscription.box.variant_title,
           lastOrder: subscription.lastOrder,
         }),
+        now: dateStringNow(),
+        navigator: userNavigator(),
+        admin: props.admin,
       };
     };
 

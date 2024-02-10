@@ -8,14 +8,8 @@ import "./styles/styles.scss";
 
 const init = async () => {
 
-  /* this worked on other themes but not with the Taste theme
-  const page_type = document.querySelector("[role='main']").getAttribute("data-page-type");
+  let boxAppInit = false;
 
-  if (page_type !== "product") return;
-  */
-
-
-  // this is how I can test for product page with the Taste theme
   if (document.querySelector("#boxesapp")) {
 
     const productJsonEl = document.getElementById("product-json");
@@ -38,9 +32,8 @@ const init = async () => {
 
     boxApp.init({ productJson, cartJson });
   } else {
-    return;
+    return false;
   };
-
 };
 
 document.addEventListener("DOMContentLoaded", async () => {

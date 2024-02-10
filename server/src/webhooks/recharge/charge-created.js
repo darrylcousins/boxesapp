@@ -4,6 +4,7 @@
 import { ObjectID } from "mongodb";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import { formatDate, sortObjectByKeys, matchNumberedString } from "../../lib/helpers.js";
+import { upsertPending } from "../../api/recharge/lib.js";
 import { updateSubscription, updateChargeDate, getSubscription } from "../../lib/recharge/helpers.js";
 import subscriptionCreatedMail from "../../mail/subscription-created.js";
 import { getBoxesForCharge, getMetaForCharge, writeFileForCharge, buildMetaForBox, itemStringToList  } from "./helpers.js";
@@ -16,7 +17,7 @@ import { getBoxesForCharge, getMetaForCharge, writeFileForCharge, buildMetaForBo
  * delivery
  *
  */
-export default async function chargeCreated(topic, shop, body) {
+export default async function chargeCreated(topic, shop, body, { io, sockets }) {
 
   const mytopic = "CHARGE_CREATED";
   if (topic !== mytopic) {
@@ -27,16 +28,16 @@ export default async function chargeCreated(topic, shop, body) {
 
   const charge = JSON.parse(body).charge;
 
+  const my_query = {
+    customer_id: charge.customer.id,
+    address_id: charge.address_id,
+  };
+
+  const my_pending = await _mongodb.collection("updates_pending").findOne(my_query);
+
   writeFileForCharge(charge, mytopic.toLowerCase().split("_")[1]);
 
   let meta;
-
-  /* 
-   * Here look for updates_pending, has the charge been created because
-   * scheduled_at has been changed. Status will still be queued.
-   * If the match is correct then we can update the charge_id on the table
-   * may be more that one box_subscription on a charge created ie merged with existing charge
-   */
 
   // hold a list of box subscription centred meta data for logging ie hold subscription_id for a box
   let listOfMeta = [];
@@ -45,108 +46,20 @@ export default async function chargeCreated(topic, shop, body) {
   // and a simple list of box subscription ids already updated with box_subscription_id
   const { box_subscriptions_possible, box_subscription_ids } = getBoxesForCharge(charge);
 
-  if (box_subscription_ids.length > 0) {
-    // do we have pending changes to resolve?
-    try {
-      for (const id of box_subscription_ids) {
-        // need to create new meta for each grouped items
-        meta = buildMetaForBox(id, charge);
-        const query = {
-          subscription_id: id,
-          customer_id: charge.customer.id,
-          address_id: charge.address_id,
-          scheduled_at: charge.scheduled_at,
-        };
-        // all rc_subscription_ids are true for this query
-        const updates_pending = await _mongodb.collection("updates_pending").findOne(query);
-        if (updates_pending) {
-          meta.recharge.label = updates_pending.label;
-          const allUpdated = updates_pending.rc_subscription_ids.every(el => {
-            // check that all subscriptions have updated or been created
-            return el.updated === true && Number.isInteger(el.subscription_id);
-          });
-          // filter out the updates that were deleted items
-          const rc_ids_removed = updates_pending.rc_subscription_ids.filter(el => el.quantity > 0);
-          //const countMatch = updates_pending.rc_subscription_ids.length === meta.recharge.rc_subscription_ids.length;
-          const countMatch = rc_ids_removed.length === meta.recharge.rc_subscription_ids.length;
-          if (allUpdated && countMatch) {
-            if (updates_pending.charge_id === charge.id) {
-              meta.recharge.updates_pending = "COMPLETED";
-            } else { // if label === CHARGE_DATE?
-              // Should ok then to update the charge_id??
-              const res = await _mongodb.collection("updates_pending").updateOne(
-                { _id: ObjectID(updates_pending._id) },
-                { $set: { charge_id : charge.id, updated_charge_date: true } },
-              );
-              _logger.info(`charge-created updating charge id`);
-              meta.recharge.updates_pending = "UPDATING CHARGE ID";
-            };
-          } else {
-            meta.recharge.updates_pending = "PENDING COMPLETION";
-          };
-          const desired_rc_ids = [ ...updates_pending.rc_subscription_ids ];
-          const rc_subscription_ids = meta.recharge.rc_subscription_ids;
-          // more work required here - compare with charge rc_subscription_ids?
-        } else {
-          meta.recharge.updates_pending = "NOT FOUND";
-        };
-        listOfMeta.push(meta);
-      };
-    } catch(err) {
-      _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-    };
-  };
-
   // Only process charges that have been successful
   // could use status=success
   //if ( !charge.processed_at) {
   if ( charge.status !== "success") {
-    // similarly must make different log for mulitple charges
-    // once through for box_subscription_ids and secondly for line_items
-    for (const id of box_subscription_ids) {
-      // find meta
-      meta = listOfMeta.find(el => el.recharge.subscription_id === id);
-
-      if (meta && meta.recharge) {
-        meta.recharge = sortObjectByKeys(meta.recharge);
-        _logger.notice(`Charge not processed ${topicLower}, exiting.`, { meta });
-      } else {
-        _logger.notice(`Charge not processed ${topicLower}, exiting.`, {
-          meta: { recharge: { charge_id: charge.id, subscription_id: id } } 
-        });
-      };
-    };
-    for (const item of box_subscriptions_possible) {
-      // need to create new meta for each grouped items
-      const tempCharge = { ...charge };
-      // remove any line items not linked to this box subscription
-      tempCharge.line_items =  item.line_items;
-      meta = getMetaForCharge(tempCharge, "charge/created");
-      meta.recharge = sortObjectByKeys(meta.recharge);
-      _logger.notice(`Charge not processed ${topicLower}, exiting.`, { meta });
-    };
     return;
   };
 
-  // items are udated already, logging only
-  if (box_subscription_ids.length > 0) {
-    for (const id of box_subscription_ids) {
-      // need to create new meta for each grouped items
-      meta = buildMetaForBox(id, charge);
-      meta.recharge = sortObjectByKeys(meta.recharge);
-      _logger.notice(`Charge items box_subscription_id already set, exiting.`, { meta });
-    };
-
-    // nothing further to process if this empty
-    if (box_subscriptions_possible.length === 0) {
-      return; // returns out of the method altogether after logging each subscription
-    };
+  // nothing further to process if this is empty
+  if (box_subscriptions_possible.length === 0) {
+    return; // returns out of the method altogether
   };
 
   /* 
-   * Above here we are looking a charges created because next_scheduled_at was updated
-   * From here down for newly created subscriptions through shopfiy
-   * So again we need to create a flag entry in updates_pending
+   * From here down for newly created subscriptions through shopfiy which is the only thing we care about
    */
   try {
 
@@ -257,38 +170,13 @@ export default async function chargeCreated(topic, shop, body) {
 
       const updatedSubscription = { ...subscription };
       updatedSubscription.properties = [ ...boxSubscription.properties ];
-      try {
-        updatedCharge.scheduled_at = nextChargeScheduledAt;
-        updatedCharge.line_items = updatedLineItems;
-        updatedCharge.subscription = updatedSubscription;
 
-        /* Initially I was wrong here for the email template
-         * It has created properties on the next box and messages on the next box
-         * I need to gatherData differently
-         */
-        //const grouped = await reconcileGetGrouped({ charge: updatedCharge });
-        //grouped[boxSubscription.purchase_item_id].subscription = updatedSubscription; // pass subscription to avoid api call
-
-        const grouped = await reconcileGetGrouped({ charge });
-        grouped[boxSubscription.purchase_item_id].subscription = subscription; // pass subscription to avoid api call
-
-        let result = [];
-        result = await gatherData({ grouped, result });
-        result[0].attributes.charge_id = null;
-        //console.log(JSON.stringify(result[0], null, 2));
-        //console.log(result.length);
-
-        let admin_email = _mongodb.collection("settings").findOne({handle: "admin-email"});
-        if (admin_email) admin_email = admin_email.value;
-        await subscriptionCreatedMail({ subscriptions: result, admin_email });
-
-      } catch(err) {
-        _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-      };
+      updatedCharge.scheduled_at = nextChargeScheduledAt;
+      updatedCharge.line_items = updatedLineItems;
+      updatedCharge.subscription = updatedSubscription;
 
       meta = getMetaForCharge(updatedCharge, "charge/created via first order");
       meta.recharge = sortObjectByKeys(meta.recharge);
-      _logger.notice(`Charge created, subsciptions updated, and email sent ${topicLower}.`, { meta });
 
       /*
        * Register this subscription as updating - ie awaiting webhooks
@@ -297,32 +185,42 @@ export default async function chargeCreated(topic, shop, body) {
       const subscription_ids = meta.recharge.rc_subscription_ids.map(el => {
         return { ...el, updated: false };
       });
-      const update = {
-        label: "NEW SUBSCRIPTION",
-        charge_id: updatedCharge.id,
+
+      const entry_id = await upsertPending({
+        action: "created",
+        charge_id: charge.id,
         customer_id: updatedCharge.customer.id,
         address_id: updatedCharge.address_id,
         subscription_id: boxSubscription.purchase_item_id,
         scheduled_at: nextChargeScheduledAt,
+        deliver_at: deliveryDate,
         rc_subscription_ids: subscription_ids,
-        updated_charge_date: false,
         title: boxSubscription.title,
-        timestamp: new Date(),
-      };
-      delete boxSubscription.properties.Likes;
-      delete boxSubscription.properties.Dislikes;
-      const props = boxSubscription.properties.reduce(
-        (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
-        {});
-      for (const [key, value] of Object.entries(props)) {
-        update[key] = value;
-      };
-      //console.log(`Updating pending table with ${updatedCharge.id}`);
-      await _mongodb.collection("updates_pending").updateOne(
-        { charge_id: updatedCharge.id },
-        { "$set" : update },
-        { "upsert": true }
-      );
+        session_id: null,
+      });
+
+      // the following is simply to gather data for the email
+      const grouped = await reconcileGetGrouped({ charge });
+      grouped[boxSubscription.purchase_item_id].subscription = subscription; // pass subscription to avoid api call
+
+      let result = [];
+      result = await gatherData({ grouped, result });
+
+      result[0].attributes.charge_id = null; // can I get this from the updates_pending entry?
+      const mailOpts = { subscriptions: result };
+
+      let entry;
+      let timer;
+      // only once all updates are complete do we send the email
+      timer = setInterval(async () => {
+        entry = await _mongodb.collection("updates_pending").findOne({ "_id": entry_id });
+        if (!entry) {
+          clearInterval(timer);
+          // compile data for email to customer the updates have been completed
+          await subscriptionCreatedMail(mailOpts);
+          _logger.notice(`Charge created, subscriptions updated, and email sent ${topicLower}.`, { meta });
+        };
+      }, 5000);
 
       /*
        * do all the work and now run the updates
@@ -344,7 +242,6 @@ export default async function chargeCreated(topic, shop, body) {
         };
         await updateChargeDate(opts);
       };
-
 
     };
 

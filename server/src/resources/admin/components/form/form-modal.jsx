@@ -176,7 +176,6 @@ function FormModalWrapper(Component, options) {
       const callback = async (data) => {
         await PostFetch({ src: encodeURI(uri), data, headers })
           .then((result) => {
-            //console.log('Submit result:', JSON.stringify(result, null, 2));
             const { formError, error, json } = result;
             if (error !== null) {
               fetchError = error;
@@ -189,33 +188,45 @@ function FormModalWrapper(Component, options) {
               resetFields();
               this.refresh();
             } else {
-              resetFields();
-              success = true;
-              this.refresh();
-              setTimeout(() => {
-                closeModal();
-                if (success) {
-                  if (Object.keys(toastData).length) {
-                    // string notice via form data-* html attributes passed to Form as 'meta'
-                    const templateString = toastData.template;
-                    delete toastData.template;
-                    const notice = parseStringTemplate(templateString, toastData);
-                    this.dispatchEvent(toastEvent({
-                      notice,
-                      bgColour: "black",
-                      borderColour: "black"
-                    }));
-                  };
-                };
+
+              if (typeof useSession !== "undefined" && useSession) {
                 this.dispatchEvent(
                   new CustomEvent("listing.reload", {
                     bubbles: true,
                     detail: { src, json },
                   })
                 );
-                success = false;
-              }, 2000);
-            }
+                closeModal(); // when using session pass control straight back to parent component
+              } else {
+                resetFields();
+                success = true;
+                this.refresh();
+
+                setTimeout(() => {
+                  if (success) {
+                    if (Object.keys(toastData).length) {
+                      // string notice via form data-* html attributes passed to Form as 'meta'
+                      const templateString = toastData.template;
+                      delete toastData.template;
+                      const notice = parseStringTemplate(templateString, toastData);
+                      this.dispatchEvent(toastEvent({
+                        notice,
+                        bgColour: "black",
+                        borderColour: "black"
+                      }));
+                    };
+                  };
+                  this.dispatchEvent(
+                    new CustomEvent("listing.reload", {
+                      bubbles: true,
+                      detail: { src, json },
+                    })
+                  );
+                  success = false;
+                  closeModal();
+                }, 2000);
+              };
+            };
           })
           .catch((err) => {
             console.warn("ERROR:", err);
@@ -226,8 +237,9 @@ function FormModalWrapper(Component, options) {
       };
 
       if (typeof useSession !== "undefined" && useSession && Object.hasOwnProperty.call(props, "socketMessageId")) {
-        const messageDiv = document.getElementById(props.socketMessageId);
-        await getSessionId(callback, data, props.socketMessageId);
+        await getSessionId(callback, data, props.socketMessageId, this);
+        // in this case the modal is closed immediately so as to push feedback to parent component
+        // should I close the modal here and send messages to parent component?
       } else {
         await callback(data);
       };
@@ -353,15 +365,15 @@ function FormModalWrapper(Component, options) {
                 withCloseButton={ withCloseButton }
                 withClose={ withClose }>
                 <div class="tc center">
-                  <h3 class="fw4 tl fg-streamside-maroon">{title}</h3>
+                  <h4 class="fw4 tl fg-streamside-maroon">{title}</h4>
                 </div>
                 {saving && (
-                  <div class="mv2 pt2 pl2 navy br3 ba b--navy bg-washed-blue">
+                  <div class="alert-box mv2 pt2 pl2 navy br3 ba b--navy bg-washed-blue">
                     <p class="tc">{saveMsg}</p>
                   </div>
                 )}
                 {success && (
-                  <div class="mv2 pt2 pl2 br3 dark-green ba b--dark-green bg-washed-green">
+                  <div class="alert-box mv2 pt2 pl2 br3 dark-green ba b--dark-green bg-washed-green">
                     <p class="tc">{successMsg}</p>
                   </div>
                 )}
@@ -376,8 +388,10 @@ function FormModalWrapper(Component, options) {
                     closeModal={closeModal}
                   />
                 )}
-                { Object.hasOwnProperty.call(props, "socketMessageId") && (
-                  <div id={ props.socketMessageId } class="tl socketMessages"></div>
+                { false && Object.hasOwnProperty.call(props, "socketMessageId") && (
+                  <div id={ props.socketMessageId } class="tl socketMessages">
+                    Removed this to close the modal first and send messages to parent component
+                  </div>
                 )}
               </ModalTemplate>
             </Portal>

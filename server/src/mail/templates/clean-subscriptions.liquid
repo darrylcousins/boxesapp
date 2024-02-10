@@ -48,6 +48,17 @@
           </mj-text>
         </mj-column>
       {% endif %}
+      {% if item.price_mismatch.length > 0 %}
+        <mj-divider border-width="1px" border-color="#ddd" width="100%" />
+        <mj-column width="100%" padding-top="10px">
+          <mj-text align="left">
+            <span style="padding-left: 10px; font-weight: bold">Price mismatches</span>
+            <ul style="list-style: none; padding: 0; padding-top: 5px; font-style:normal; margin: 0px">
+              {% render "dtable", items: item.price_mismatch %}
+            </ul>
+          </mj-text>
+        </mj-column>
+      {% endif %}
       {% if item.updates_pending.length > 0 %}
         <mj-divider border-width="1px" border-color="#ddd" width="100%" />
         <mj-column width="100%" padding-top="10px">

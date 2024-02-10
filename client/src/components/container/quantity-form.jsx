@@ -55,7 +55,7 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
         "display": "inline-flex",
         "justify-content": "center",
         "align-items": "center",
-        "border": "1px solid rgba(255, 255, 255, 0.5)",
+        "border": "1px solid",
         "width": "20%",
         "padding-right": "10px",
         "padding-left": "10px",

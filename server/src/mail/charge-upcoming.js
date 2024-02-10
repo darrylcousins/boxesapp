@@ -24,6 +24,7 @@ export default async ({ subscriptions }) => {
     email,
   };
 
+  // need to add the box details to this email
   const opts = {
     to: email,
     title,

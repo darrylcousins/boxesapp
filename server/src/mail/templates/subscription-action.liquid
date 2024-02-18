@@ -17,7 +17,7 @@
         {{ descriptiveType }} a box subscription
         {% if admin %}on your behalf{% endif %}
         with <a href="https://{{ env.SHOP }}">{{ env.SHOP_TITLE }}</a> on
-        {{ now }} ({{ navigator }}).
+        {{ now }}{% unless admin %} ({{ navigator }}){% endunless %}.
         </p>
       {% endif %}
       <p style="padding:5px 0;margin:0">
@@ -31,24 +31,7 @@
     </mj-text>
   </mj-column>
 </mj-section>
-{% if change_messages %}
-  <mj-section padding-top="0px">
-    <mj-column>
-      <mj-table>
-        <tr>
-          <td>
-            {% for message in change_messages %}
-              <p style="padding:0;margin:0">
-                {{ message }}
-              </p>
-            {% endfor %}
-          </td>
-        </tr>
-      </mj-table>
-    </mj-column>
-  </mj-section>
-{% endif %}
-{% if attributes.cancellation_reason and type == "cancelled" %}
+{% if attributes.cancellation_reason %}
   <mj-section padding="0px">
     <mj-column>
       <mj-text align="left" color="#666">
@@ -61,90 +44,73 @@
       </mj-text>
     </mj-column>
   </mj-section>
-{% else %}
-  <mj-section padding="0px">
+{% endif %}
+{% if type != "deleted" and type != "cancelled" %}
+  <mj-section padding-top="0px">
+    <mj-column width="100%">
+      {% include "address" %}
+    </mj-column>
+  </mj-section>
+  <mj-section>
     <mj-column>
-      <mj-table align="center" width="100%">
-        {% if attributes.previousChargeDate %}
-          {% if false %}
-          <tr>
-            <td style="color:#777;text-align:right;padding-right:20px;">Previous Payment Date</td>
-            <td>{{ attributes.previousChargeDate }}</td>
-          </tr>
-        {% endif %}
-          <tr>
-            <td style="color:#777;text-align:right;padding-right:20px;padding-bottom:20px;">Previous Scheduled Delivery</td>
-            <td style="font-weight:bold;padding-bottom:20px;">{{ attributes.previousDeliveryDate }}</td>
-          </tr>
-        {% endif %}
-        {% if attributes.nextChargeDate %}
-          <tr>
-            <td style="color:#777;text-align:right;padding-right:20px;">Next Payment Date</td>
-            <td>{{ attributes.nextChargeDate }}</td>
-          </tr>
-          <tr>
-            <td style="color:#777;text-align:right;padding-right:20px">Next Scheduled Delivery</td>
-            <td style="font-weight:bold">{{ attributes.nextDeliveryDate }}</td>
-          </tr>
-          {% if attributes.frequency %}
-            <tr>
-              <td style="color:#777;text-align:right;padding-right:20px;">Delivery Schedule</td>
-              <td>{{ attributes.frequency }}</td>
-            </tr>
-          {% endif %}
-        {% endif %}
+      <mj-text align="center" font-size="20px" font-style="bold">
+      {{ attributes.title }} - {{ attributes.variant }}
+      </mj-text>
+    </mj-column>
+  </mj-section>
+  {% if change_messages %}
+    <mj-section padding-bottom="0px" full-width="true">
+      <mj-divider border-width="1px" color="#666" />
+      <mj-column width="100%" padding-top="20px">
+        <mj-text align="left" color="#444">
+          {% for message in change_messages %}
+            <p style="padding:0;margin:0">
+              &#9679; {{ message }}
+            </p>
+          {% endfor %}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  {% endif %}
+  <mj-section padding-bottom="0px" full-width="true">
+    <mj-divider border-width="1px" color="#666" />
+    <mj-column width="100%">
+      {% include "charge-summary" %}
+    </mj-column>
+  </mj-section>
+  <mj-section padding-bottom="0px" full-width="true">
+    <mj-divider border-width="1px" color="#666" />
+    <mj-section padding-top="0px">
+      <mj-column>
+        {% include "properties" %}
+      </mj-column>
+    </mj-section>
+  </mj-section>
+  <mj-section padding-bottom="0px" full-width="true">
+    <mj-divider border-width="1px" color="#666" />
+    <mj-column width="100%">
+      <mj-table>
+        {% for product in includes %}
+          {% include "includes" %}
+        {% endfor %}
+        {% assign totalPrice = attributes.totalPrice %}
+        {% include "total-price" %}
       </mj-table>
     </mj-column>
   </mj-section>
 {% endif %}
 <mj-section padding-bottom="0px" full-width="true">
-  <mj-divider border-width="1px" color="#333" />
-  <mj-column width="100%">
-    <mj-text align="left" color="#666">
-      <p style="padding:5px 0px;margin:0">
-        Your box subscription includes:
-      </p>
-    </mj-text>
-    <mj-table padding="20px 0px 0px 0px">
-      {% for product in includes %}
-        <tr>
-          <td width="50px" style="padding: 3px 0px">
-            <img src="{{ env.HOST }}/product-images/{{ product.shopify_product_id }}.jpg" 
-                width="40px" style="border:1px solid #666;border-radius:2px;" align="left" />
-          </td>
-          <td>
-            {{ product.title }}
-          </td>
-          <td>
-            <span>$</span>{{ product.price | money }}
-          </td>
-          <td>
-            {{ product.quantity }}
-          </td>
-          <td width="40px" style="text-align:right">
-            <span>$</span>{{ product.total_price | money }}
-          </td>
-        </tr>
-      {% endfor %}
-      <tr>
-        <td colspan="4" style="text-align:left;border-top:1px solid #333">
-          Total (excl. shipping).
-        </td>
-        <td width="40px" style="text-align:right;border-top:1px solid #333">
-          <span>$</span>{{ attributes.totalPrice | money }}
-        </td>
-      </tr>
-    </mj-table>
-  </mj-column>
-</mj-section>
-<mj-section padding-bottom="0px" full-width="true">
-  <mj-divider border-width="1px" color="#333" />
+  <mj-divider border-width="1px" color="#666" />
   <mj-column width="100%">
     {% if attributes.lastOrder.order_number %}
+      {% assign today_date = 'now' | date: '%s' %}
+      {% assign delivered = attributes.lastOrder.delivered | date: '%s' %}
       <mj-text align="left" color="#666">
         <p style="padding:5px 0;margin:0">
-        Your last order, <strong>{{ attributes.lastOrder.box.name }} (#{{ attributes.lastOrder.order_number }})</strong>,
-        was delivered on {{ attributes.lastOrder.delivered }}.
+        Your {% if today_date < delivered %}current{% else %}last{% endif %} order,
+        <strong>{{ attributes.lastOrder.box.name }} (#{{ attributes.lastOrder.order_number }})</strong>,
+        {% if today_date < delivered %}will be{% else %}was{% endif %} delivered on
+        {{ attributes.lastOrder.delivered }}.
         </p>
       </mj-text>
     {% endif %}

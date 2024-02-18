@@ -11,9 +11,13 @@ import Error from "../lib/error";
 import { Fetch } from "../lib/fetch";
 import SelectMenu from "../lib/select-menu";
 import Pagination from "../lib/pagination";
-import { titleCase, animateFadeForAction } from "../helpers";
+import Help from "../lib/help";
+import Toaster from "../lib/toaster";
+import { toastEvent } from "../lib/events";
+import { titleCase, animateFadeForAction, formatDate } from "../helpers";
 import IconButton from "../lib/icon-button";
 import { SearchIcon, ClearSearchIcon, SyncIcon } from "../lib/icon";
+import { formatMeta, possibleObjects, dateString } from "./helpers";
 
 /**
  * Uses fetch to collect current boxes from api and then passes data to
@@ -48,13 +52,6 @@ function* CurrentLogs() {
    */
   let selectedObject = null;
   /**
-   * Possible selections to make on object type
-   *
-   * @member possibleObjects
-   * @type {array}
-   */
-  let possibleObjects = ["order", "recharge", "shopify", "mail", "all"];
-  /**
    * Display loading indicator while fetching data
    *
    * @member loading
@@ -86,6 +83,27 @@ function* CurrentLogs() {
    * @type {object|string|null}
    */
   let fetchError = null;
+  /**
+   * Capture oldestDate from api
+   *
+   * @member oldestDate
+   * @type {object|null}
+   */
+  let oldestDate;
+  /**
+   * Capture fromDate
+   *
+   * @member fromDate
+   * @type {object|null}
+   */
+  let fromDate = formatDate(new Date(0));
+  /**
+   * Capture toDate
+   *
+   * @member toDate
+   * @type {object|null}
+   */
+  let toDate = formatDate(new Date());
   /**
    * Capture pageSize
    *
@@ -155,7 +173,7 @@ function* CurrentLogs() {
         await refreshLogs();
       };
       closeMenu();
-    } else {
+    } else if (name !== "SVG") { // clicking the search button
       closeMenu();
     };
   };
@@ -186,10 +204,11 @@ function* CurrentLogs() {
       uri = `${uri}/${selectedObject}`;
     };
     if (searchTerm) {
-      uri = `${uri}/${searchTerm}`;
+      uri = `${uri}/${encodeURIComponent(searchTerm)}`;
     };
-    console.log(uri);
-    Fetch(uri)
+    uri = `${uri}?from=${ Date.parse(fromDate) }&to=${ Date.parse(toDate) }`;
+    console.log(encodeURI(uri));
+    Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
         if (error !== null) {
@@ -204,6 +223,15 @@ function* CurrentLogs() {
           fetchLogs = json.logs;
           fetchCount = json.count;
           pageSize = json.pageSize;
+          oldestDate = json.oldestDate;
+          if (Date.parse(oldestDate) > Date.parse(fromDate)) {
+            fromDate = oldestDate;
+            this.dispatchEvent(toastEvent({
+              notice: `Oldest logs are from ${oldestDate}.`,
+              bgColour: "black",
+              borderColour: "black"
+            }));
+          };
           if (document.getElementById("logs-table")) {
             animateFadeForAction("logs-table", async () => await this.refresh());
           } else {
@@ -216,6 +244,54 @@ function* CurrentLogs() {
         loading = false;
         this.refresh();
       });
+  };
+
+  /**
+   * Handle changes to search dates
+   *
+   * @function searchDates
+   */
+  const searchDates = async (direction, ev) => {
+    ev.target.blur();
+    let from;
+    let to;
+    let el;
+    if (direction === "from") {
+      el = document.getElementById("to-date");
+      to = Date.parse(el.value);
+      from = Date.parse(ev.target.value);
+    } else if (direction === "to") {
+      el = document.getElementById("from-date");
+      from = Date.parse(el.value);
+      to = Date.parse(ev.target.value);
+    };
+    // add a day to the to date to get the correct range used in the query
+    const dateTo = new Date(to);
+    dateTo.setDate(dateTo.getDate() + 1);
+
+    let fromTemp;
+    let toTemp;
+    if (dateTo.getTime() <= from) {
+      console.log("to cannot be later than from");
+      // need propert alert box
+      this.dispatchEvent(toastEvent({
+        notice: `To date ${formatDate(new Date(to))} cannot be earlier than from date ${formatDate(new Date(from))}.`,
+        bgColour: "black",
+        borderColour: "black"
+      }));
+      this.refresh();
+      return;
+    } else {
+      fromTemp = formatDate(new Date(from));
+      toTemp = formatDate(new Date(to));
+      if (fromTemp !== fromDate || toTemp !== toDate) {
+        fromDate = fromTemp;
+        toDate = toTemp;
+        // and collect the data
+        return getLogs(); // refreshed on fetch
+      };
+    };
+    this.refresh();
   };
 
   /**
@@ -234,7 +310,8 @@ function* CurrentLogs() {
     if (!searchTerm || searchTerm.length === 0) return;
     searchError = null;
     searchTerm = null;
-    logLevel = "all";
+    selectedObject = null;
+    logLevel = "notice";
     await refreshLogs();
   };
 
@@ -244,19 +321,22 @@ function* CurrentLogs() {
    * @param {object} ev Event emitted
    * @function handleSearchTerm
    */
-  const handleSearchTerm = async (ev) => {
+  const handleSearchTerm = (ev) => {
     const input = document.querySelector("#searchTerm");
     searchTerm = input.value.trim();
     searchError = null;
     const button = document.querySelector("button[name='Search'");
     if (button) button.blur();
     if (searchTerm.length > 0 && ev.key === "Enter") {
-      selectedObject = "recharge"; // at this stage only searching on recharge messages??
-      logLevel = "notice";
-      console.log(searchTerm);
-      return await refreshLogs();
+      if (selectedObject) {
+        logLevel = "notice";
+        return getLogs();
+      } else {
+        logLevel = "notice";
+        menuSelectObject = true;
+      }
     };
-    await this.refresh();
+    return this.refresh();
   };
 
   getLogs();
@@ -283,39 +363,6 @@ function* CurrentLogs() {
     await refreshLogs();
   };
 
-  /**
-   * Help/info for the logs
-   *
-   * @member Help
-   * @type {object}
-   */
-  const Help = ({id}) => {
-    const showHelp = (e) => {
-      document.querySelector(`#${id}`).style.display = "block";
-      window.addEventListener('click', (e) => {
-        document.querySelector(`#${id}`).style.display = "none";
-      });
-    };
-    const hideHelp = (e) => {
-      document.querySelector(`#${id}`).style.display = "none";
-    };
-    return (
-      <div style="font-weight: 700;">
-        <div class="dib pa2 pointer tr" style="display: inline"
-          onmouseover={ showHelp }
-          onmouseout={ hideHelp }
-        >&#63;</div></div>
-    );
-  };
-
-  /*
-   * Helper method for tidy date strings from timestamp
-   */
-  const dateString = (el) => {
-    const date = new Date(el.timestamp);
-    return `${date.toDateString()} ${date.toLocaleTimeString()}`;
-  };
-
   /*
    * Helper method
    */
@@ -338,154 +385,6 @@ function* CurrentLogs() {
   };
 
   /*
-   * Helper method to render comma separated list
-   */
-  const formatList = (str) => {
-    if (str === null) return "None";
-    if (str.length === 0) return "None";
-    return (
-      str.split(",").map(el => <div>{ el }</div>)
-    );
-  };
-
-  /*
-   * Helper method to render objects
-   */
-  const formatObj = (obj, title) => {
-    if (obj === null) return <div>{ title }: null</div>;
-
-    const final = [];
-    let classes;
-    // assumes an object
-    for (const [key, value] of Object.entries(obj)) {
-      classes = [];
-      if (Number.isInteger(parseInt(key))) { // arrays
-        if (typeof value === "object") { // array of objects
-          final.push(formatObj(value, key));
-          classes.push("bb b--black-20");
-        } else {
-          final.push(value);
-        };
-      } else if (typeof value === "object") {
-        final.push(formatObj(value, key));
-        classes.push("bb b--black-20");
-      } else {
-        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-          final.push(`${key}: ${value}`);
-        } else if (value === null) {
-          final.push(`${key}: null`);
-        } else {
-          final.push(formatObj(value, key));
-        };
-      };
-    };
-    if (title) {
-      if (Number.isInteger(parseInt(title))) { // arrays
-        return (
-          final.map(el => <div class={ classes.join(" ") }>{ el }</div>)
-        );
-      } else {
-        return (
-          <div class="dt-row w-100">
-            <div class="dtc gray tr pr2">
-              { title }:
-            </div>
-            <div class="dtc">
-              { final.map(el => <div class={ classes.join(" ") }>{ el }</div>) }
-            </div>
-          </div>
-        );
-      };
-    } else {
-      return (
-        final.map(el => <div class={ classes.join(" ") }>{ el }</div>)
-      );
-    };
-  };
-
-  /*
-   * Helper method to render everything
-   */
-  const formatOther = (obj, title) => {
-
-    // Special case, not sure how else to figure this one out
-    const attributes = ["Including", "Add on Items", "Removed Items", "Swapped Items"];
-    if (attributes.includes(title)) {
-      return formatList(obj);
-    };
-
-    // attempt parse any json strings
-    try {
-      obj = JSON.parse(obj);
-    } catch(e) {
-      obj = obj;
-    };
-
-    if (JSON.stringify(obj, null, 2) === "null") {
-      return "null";
-    };
-
-    if (typeof obj !== "object") {
-      return `${obj}`;
-    };
-
-    // now want to format the json
-    try {
-      return formatObj(obj);
-    } catch(e) {
-      console.warn(e);
-      console.warn(title);
-      console.warn(obj);
-      return JSON.stringify(obj);
-    };
-  };
-
-  /*
-   * Helper method to render log.meta
-   */
-  const formatMeta = (el) => {
-    if (!Object.hasOwnProperty.call(el, 'meta')) {
-      return <div>&nbsp;</div>;
-    };
-    if (el.meta === null) {
-      return <div>&nbsp;</div>;
-    };
-    // expecting just one object on meta 'order', 'product', 'customer', 'subscription'?
-    const obj = Object.keys(el.meta)[0];
-    if (possibleObjects.includes(obj) && el.meta[obj]) {
-      return (
-        <div class="dt w-100 mv1">
-          { Object.entries(el.meta[obj]).map(([title, str]) => (
-              <div class="dt-row w-100">
-                <div class="dtc w-20 gray tr pr2">
-                  { title }:
-                </div>
-                <div class="dtc w-80" style="width: 400px; word-wrap: break-word;">
-                  { formatOther(str, title) }
-                </div>
-              </div>
-          ))}
-        </div>
-      );
-    } else {
-      return (
-        <div class="dt w-100 mv1">
-          { Object.entries(el.meta).map(([title, str]) => (
-              <div class="dt-row w-100">
-                <div class="dtc w-30 gray tr pr2">
-                  { title }:
-                </div>
-                <div class="dtc w-70">
-                  { str }
-                </div>
-              </div>
-          ))}
-        </div>
-      );
-    };
-  };
-
-  /*
    * Helper method to render format level
    */
   const formatLevel = (el) => {
@@ -496,31 +395,53 @@ function* CurrentLogs() {
     return titleCase(word);
   };
 
+  this.addEventListener("toastEvent", Toaster);
+
   for (const _ of this) { // eslint-disable-line no-unused-vars
 
     yield (
       <div class="w-100 pb2">
         <h4 class="pt0 lh-title ma0 mb2 fg-streamside-maroon" id="boxes-title">
           { logLevel && formatLevel(logLevel) } Logs {" "}
-          { pageSize && fetchCount > pageSize && <span>{ pageSize } of</span> } {" "}
-          { fetchCount && <span>{ fetchCount }</span> }
+          <span style="font-size: smaller;" class="ml4">
+            { pageSize && fetchCount > pageSize && <span>{ pageSize } of</span> } {" "}
+            { fetchCount && <span class="mr5">{ fetchCount }</span> } {" "}
+
+            { oldestDate && <span>{"("}Oldest entry: { oldestDate }{")"}</span> } {" "}
+            { fromDate && <span class="ml5">From: { fromDate }</span> } {" "}
+            { toDate && <span> - To: { toDate }</span> } {" "}
+          </span>
         </h4>
         {fetchLogs.length > 0 && (
           <Pagination callback={ movePage } pageCount={ parseInt(pageCount) } pageNumber={ parseInt(pageNumber) } />
         )}
         <div class="relative w-100 tr pr2">
           <Help id="logsInfo" />
-          <p id="logsInfo" class="info tr" role="alert">
+          <p id="logsInfo" class="alert-box info info-right tr" role="alert">
             Only logs more recent than two days ago are available here.
           </p>
         </div>
+        { searchError && (
+          <div class="alert-box dark-blue ma2 br3 ba b--dark-blue bg-washed-blue">
+            <p class="tc">{ searchError }</p>
+          </div>
+        )}
         <div class="w-100 flex-container">
-          <div class="w-30 v-bottom tl flex">
+          <div class="w-100 w-60-ns v-bottom tl">
             <div class="w-100 flex-container">
               <div class="w-70 flex">
+                <div class="relative pt2">
+                  <Help id="searchInfo" />
+                  <p id="searchInfo" class="alert-box info info-left tl lh-copy" role="alert">
+                      &#x2022; Recharge logs can be searched on customer_id, charge_id,
+                      or subscription_id
+                      <br />
+                      &#x2022; Order logs can be searched on the shopify_order_id or the
+                      order_number (e.g. #44444).
+                  </p>
+                </div>
                 <input 
-                  class="dib pa0 mr2 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
-                  style="padding: 0 6px"
+                  class="dib pa2 mr2 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
                   type="text"
                   valid={ !searchError }
                   id="searchTerm"
@@ -530,41 +451,58 @@ function* CurrentLogs() {
                   name="searchTerm" />
               </div>
               <div class="w-30 flex" style="height: 1.8em">
-                <div onclick={ () => handleSearchTerm({key: "Enter"}) }>
+                <div onclick={ () => handleSearchTerm({key: "Enter"}) } class="dib">
                   <IconButton color="dark-gray" title="Search" name="Search">
                     <SearchIcon />
                   </IconButton>
                 </div>
-                <div onclick={ () => clearSearchTerm() }>
+                <div onclick={ () => clearSearchTerm() } class="dib">
                   <IconButton color="dark-gray" title="Clear Search" name="Clear Search">
                     <ClearSearchIcon />
                   </IconButton>
                 </div>
               </div>
             </div>
-            { searchError && (
-              <div class="alert-box dark-blue ma2 br3 ba b--dark-blue bg-washed-blue">
-                <p class="tc">{ searchError }</p>
-              </div>
-            )}
           </div>
-          <div class="w-20 v-bottom tr">
+          <div class="w-100 w-10-ns v-bottom tr mr2">
               <SelectMenu
                 id="selectObject"
                 menu={possibleObjects.map(el => ({text: el, item: el}))}
                 title="Filter by Object"
                 active={menuSelectObject}
-                style={{border: 0}}
+                style={{border: 1}}
               >
                 { selectedObject ? `${selectedObject} messages` : "Filter by" }&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#9662;
               </SelectMenu>
           </div>
-          <div class="w-50 v-bottom tr">
+          <div class="w-100 w-40-ns v-bottom tr flex">
+            <div class="w-50">
+              <input
+                class="mh1 pa2 ba bg-transparent hover-bg-near-white w-90 input-reset br2"
+                type="date"
+                value={ fromDate }
+                id="from-date"
+                onchange={(ev) => searchDates("from", ev)}
+              />
+            </div>
+            <div class="w-50">
+              <input
+                class="ml1 mr0 pa2 ba bg-transparent hover-bg-near-white w-90 input-reset br2"
+                type="date"
+                value={ toDate }
+                id="to-date"
+                onchange={(ev) => searchDates("to", ev)}
+              />
+            </div>
+          </div>
+        </div>
+        <div class="w-100 flex-container mt3">
+          <div class="w-100 w-50-ns v-bottom tl">
             <button
               class={
                 `${
                     logLevel === "notice" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
-                  } dib w-25 pv1 outline-0 b--grey ba br2 br--left mv1 pointer`
+                  } dib w-third pv2 outline-0 b--grey ba br2 br--left mv1 pointer`
                 }
               title="Notices"
               type="button"
@@ -576,7 +514,7 @@ function* CurrentLogs() {
               class={
                 `${
                     logLevel === "error" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
-                  } dib w-25 pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
+                  } dib w-third pv2 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
                 }
               title="Errors"
               type="button"
@@ -588,7 +526,7 @@ function* CurrentLogs() {
               class={
                 `${
                     logLevel === "all" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
-                  } dib w-25 pv1 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
+                  } dib w-third pv2 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
                 }
               title="Fatal"
               type="button"
@@ -597,9 +535,9 @@ function* CurrentLogs() {
                 <span class="v-mid di">All</span>
             </button>
           </div>
-          <div class="w-20 v-bottom tr mh1">
+          <div class="w-100 w-20-ns v-bottom tr mh1">
             <button
-              class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-50  pv1 outline-0 b--grey ba br2 br--right mv1 pointer` }
+              class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-50 pv2 outline-0 b--grey ba br2 br--right mv1 pointer` }
               title="Refresh"
               type="button"
               onclick={refreshLogs}
@@ -634,7 +572,7 @@ function* CurrentLogs() {
                     <td class="w-20 v-top" style="max-width: 100px">
                       { el.message }
                     </td>
-                    <td class="w-50 v-top" style="max-width: 500px">
+                    <td class="w-50 v-top" style="max-width: 600px">
                       { formatMeta(el) }
                     </td>
                   </tr>
@@ -642,7 +580,7 @@ function* CurrentLogs() {
               </tbody>
             </table>
           ) : (
-            <div>None</div>
+            <div class="ma5">None</div>
           )}
         </Fragment>
       </div>

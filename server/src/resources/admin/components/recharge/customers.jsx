@@ -101,6 +101,13 @@ async function* Customers() {
    */
   let pageCount = null;
   /**
+   * Capture pageSize
+   *
+   * @member pageSize
+   * @type {object|null}
+   */
+  let pageSize = null;
+  /**
    * Capture any customers on updates_pending table
    *
    * @member updatesPending
@@ -177,6 +184,7 @@ async function* Customers() {
         };
         //console.log(json);
         pageCount = json.pageCount;
+        pageSize = json.pageSize;
         pageNumber = json.pageNumber;
         updatesPending = json.updatesPending;
         faultySubscriptions = json.faultySubscriptions;
@@ -349,7 +357,8 @@ async function* Customers() {
               </span>
             ) : (
               <span style="font-size: smaller;" class="ml4">
-                { rechargeCustomers && `(${ customerCount })` }
+                { pageSize && customerCount > pageSize && <span>{ pageSize } of</span> } {" "}
+                { customerCount && <span>{ customerCount }</span> }
               </span>
             )}
           </h4>

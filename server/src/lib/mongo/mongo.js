@@ -20,7 +20,7 @@ async function makeMongoConnection() {
 
   // assign the client from MongoClient
   return await MongoClient
-    .connect(mongo_uri, { useNewUrlParser: true, useUnifiedTopology: true })
+    .connect(mongo_uri)
     .then(async (client) => {
       const DB = client.db();
 

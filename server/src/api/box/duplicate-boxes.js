@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb"; // only after mongodb@ -> mongodb@6
 import { getNZDeliveryDay } from "../../lib/dates.js";
 
 /*
@@ -16,36 +16,37 @@ export default async (req, res, next) => {
 
   // collect the boxes by date
   const collection = _mongodb.collection("boxes");
+  // date from which we're duplicating
   const deliveryDay = getNZDeliveryDay(new Date(req.body.currentDate).getTime());
+  // duplicating to
   const delivered = getNZDeliveryDay(new Date(req.body.delivered).getTime());
   try {
-    collection.find({ delivered: deliveryDay })
-      .toArray((err, result) => {
-        if (err) throw err;
-        const boxes = result.filter(el => req.body.boxes.includes(el.shopify_title));
-        const foundBoxes = []; // collect found boxes and report back to form!
-        boxes.forEach(boxDoc => {
-          collection.findOne({ delivered, shopify_product_id: boxDoc.shopify_product_id }, async (e, box) => {
-            if (e) _logger.info(`${_filename(import.meta)} Got error ${e}`);
-            if (!box) {
-              boxDoc.delivered = delivered;
-              boxDoc._id = new ObjectID();
-              boxDoc.addOnProducts = boxDoc.addOnProducts.map(prod => {
-                prod._id = new ObjectID();
-                return prod;
-              });
-              boxDoc.includedProducts = boxDoc.includedProducts.map(prod => {
-                prod._id = new ObjectID();
-                return prod;
-              });
-              boxDoc.active = false; // default to inactive
-              _logger.info(`${_filename(import.meta)} Inserting duplicate ${boxDoc.shopify_title} for ${boxDoc.delivered}`);
-              await collection.insertOne(boxDoc);
-            };
-          });
+    const target = await collection.find({ delivered, shopify_title: { "$in": req.body.boxes } }).toArray();
+    if (target.length > 0) {
+      const found_titles = target.map(el => el.shopify_title).join(" ");
+      return res.status(200).json({ error: `Found ${found_titles} already scheduled for ${delivered}` });
+    };
+
+    const result = await collection.find({ delivered: deliveryDay }).toArray();
+    const boxes = result.filter(el => req.body.boxes.includes(el.shopify_title));
+    boxes.forEach(async (boxDoc) => {
+      const box = await collection.findOne({ delivered, shopify_product_id: boxDoc.shopify_product_id });
+      if (!box) {
+        boxDoc.delivered = delivered;
+        boxDoc._id = new ObjectId();
+        boxDoc.addOnProducts = boxDoc.addOnProducts.map(prod => {
+          prod._id = new ObjectId();
+          return prod;
         });
-        res.status(200).json(req.body);
-      });
+        boxDoc.includedProducts = boxDoc.includedProducts.map(prod => {
+          prod._id = new ObjectId();
+          return prod;
+        });
+        boxDoc.active = false; // default to inactive
+        await collection.insertOne(boxDoc);
+      };
+    });
+    res.status(200).json(req.body);
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

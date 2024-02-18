@@ -6,7 +6,7 @@
 import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
 import { reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
-import { formatDate } from "../../lib/helpers.js";
+import { formatDate, delay } from "../../lib/helpers.js";
 
 const isValidDateString = (str) => {
   const d = new Date(Date.parse(str));
@@ -112,6 +112,8 @@ export default async (req, res, next) => {
                   session_id,
                 };
                 await updateSubscription(opts);
+
+                await delay(1000); // delay a second before making next call
 
                 title = `Updating charge date ${subscription.title}`;
                 opts = {

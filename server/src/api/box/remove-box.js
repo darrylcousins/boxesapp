@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb";
 
 /*
  * @function box/remove-box.js
@@ -15,12 +15,12 @@ export default async (req, res, next) => {
 
   const collection = _mongodb.collection("boxes");
   try {
-    collection.findOne(req.body, async (e, box) => {
-      if (e) _logger.info(`${_filename(import.meta)} Got error ${e}`);
-      await collection.deleteOne({_id: ObjectID(req.body._id)}, (e, result) => {
-        res.status(200).json(result);
-      });
-    });
+    const box = await collection.findOne({_id: new ObjectId(req.body._id)});
+    if (box) {
+      const result = await collection.deleteOne({_id: new ObjectId(box._id)});
+      return res.status(200).json(result);
+    };
+    return res.status(200).json({ error: "Unable to find the box" });
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

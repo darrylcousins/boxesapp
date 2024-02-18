@@ -29,6 +29,14 @@ export const findTimeTaken = (d) => {
 };
 
 /*
+ * Helper method for tidy date strings from timestamp
+ */
+export const dateTimeString = (timestampStr) => {
+  const date = new Date(timestampStr);
+  return `${date.toDateString()} ${date.toLocaleTimeString()}`;
+};
+
+/*
  * Helper method to return a date string for this moment
  */
 export const dateStringNow = () => {
@@ -147,7 +155,7 @@ export const matchNumberedString = (str) => {
     count = parseInt(str.slice(match.index+1, match.index+match[0].length-1));
     str = str.slice(0, match.index).trim();
   }
-  return { str, count };
+  return { title: str, count };
 };
 
 /**
@@ -389,7 +397,7 @@ export const collapseElement = (element) => {
  */
 export const transitionElementHeight = (element, start) => {
   if (!element) return;
-  let calculatedHeight = start ? start : 5;
+  let calculatedHeight = start ? start : 25; // needs extra space because appears to shrink a little on each refresh
   // simply using el.scrollHeight can give some odd results when element is shrinking
   element.childNodes.forEach(el => {
     calculatedHeight += el.scrollHeight;

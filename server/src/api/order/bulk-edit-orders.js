@@ -3,8 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
-
+import { ObjectId } from "mongodb";
 /*
  * @function order/bulk-edit-orders.js
  * @param (Http request object) req
@@ -18,7 +17,7 @@ export default async (req, res, next) => {
   try {
     const { _ids, ...parts } = req.body;
     const result = await collection.updateMany(
-      { _id: { $in: _ids.map(id => ObjectID(id)) } },
+      { _id: { $in: _ids.map(id => new ObjectId(id)) } },
       { $set: { ...parts } }
     );
     _logger.info(JSON.stringify(result, null, 2));

@@ -1,10 +1,9 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb";
 import { sortObjectByKeys } from "../../lib/helpers.js";
-import { reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
-import { getBoxesForCharge, getMetaForCharge, writeFileForCharge, buildMetaForBox } from "./helpers.js";
+import { getBoxesForCharge, getMetaForCharge, writeFileForCharge, getMetaForBox } from "./helpers.js";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
@@ -46,7 +45,7 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
    */
   try {
     for (const box_subscription_id of box_subscription_ids) {
-      meta = buildMetaForBox(box_subscription_id, charge, topicLower);
+      meta = getMetaForBox(box_subscription_id, charge, topicLower);
       const query = {
         subscription_id: parseInt(box_subscription_id),
         customer_id: parseInt(charge.customer.id),
@@ -60,8 +59,6 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
       // failing my query do the query match here
       if (updates_pending) {
 
-        //console.log('webhook, charge updated, ids', meta.recharge.rc_subscription_ids);
-
         // items with quantity set to zero will be removed on subscription/deleted
         const allUpdated = updates_pending.rc_subscription_ids.every(el => {
           // check that all subscriptions have updated or have been created
@@ -74,18 +71,37 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
           const rc_ids_removed = updates_pending.rc_subscription_ids.filter(el => el.quantity > 0);
           countMatch = rc_ids_removed.length === meta.recharge.rc_subscription_ids.length;
           if (countMatch) {
-            meta.recharge.update_pending = "UPDATE COMPLETED";
             meta.recharge.update_label = updates_pending.action;
+
+            if (updates_pending.action === "update" || updates_pending.action === "reconcile") {
+              // try to get the change_messags to add to the log
+              const logQuery = {};
+              logQuery[`meta.recharge.customer_id`] = query.customer_id;
+              logQuery[`meta.recharge.subscription_id`] = query.subscription_id;
+              logQuery[`meta.recharge.address_id`] = query.address_id;
+              logQuery[`meta.recharge.scheduled_at`] = query.scheduled_at;
+              logQuery[`meta.recharge.label`] = updates_pending.action;
+              // get the most recent and one only
+              const result = await _mongodb.collection("logs").find(logQuery).sort({ timestamp: -1 }).limit(1).toArray();
+              if (result.length > 0) {
+                console.log("found a log entry", result[0].meta.change_messages);
+                meta.recharge.change_messages = result[0].meta.change_messages;
+              } else {
+                console.log("Didn't find log entry", logQuery);
+              };
+            };
+
+            // make log entry before removing so that it is available to get
+            // charge_id from log when reactivating a subscription
+            meta.recharge = sortObjectByKeys(meta.recharge);
+            // this is the only place I've used await for logger notice
+            await _logger.notice(`Charge ${updates_pending.action} for subscription.`, { meta });
 
             // safely and surely remove the entry, only other place is on charge/deleted
             console.log("=======================");
             console.log("Deleting updates pending enty");
             console.log("=======================");
-            await _mongodb.collection("updates_pending").deleteOne({ _id: ObjectID(updates_pending._id) });
-
-            // only here do we log the updated entry
-            meta.recharge = sortObjectByKeys(meta.recharge);
-            _logger.notice(`Charge updated for subscription.`, { meta });
+            await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(updates_pending._id) });
 
           };
         };

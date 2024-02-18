@@ -2,8 +2,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
-import { getBoxesForCharge, getMetaForCharge, writeFileForCharge, buildMetaForBox, itemStringToList  } from "./helpers.js";
+import { ObjectId } from "mongodb";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
@@ -22,18 +21,22 @@ export default async function chargeDeleted(topic, shop, body, { io, sockets }) 
   };
   const topicLower = topic.toLowerCase().replace(/_/g, "/");
 
-  const charge = JSON.parse(body);
-  console.log(charge);
+  const { charge } = JSON.parse(body);
 
   try {
 
     const my_query = {
-      charge_id: charge.id,
-      action: "cancelled",
+      charge_id: parseInt(charge.id),
     };
 
     const entry = await _mongodb.collection("updates_pending").findOne(my_query);
-    if (entry) {
+    /*
+    console.log("Charge DELETED ================");
+    console.log("Charge:", charge);
+    console.log("updates_pending?:", entry);
+    console.log("End charge DELETED ================");
+    */
+    if (entry && entry.action === "cancelled") {
 
       if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
         const socket_id = sockets[entry.session_id];
@@ -52,9 +55,9 @@ export default async function chargeDeleted(topic, shop, body, { io, sockets }) 
 
       // we can remove this entry
       console.log("=======================");
-      console.log("Deleting updates pending enty");
+      console.log("Deleting updates pending entry on cancelled");
       console.log("=======================");
-      await _mongodb.collection("updates_pending").deleteOne({ _id: ObjectID(entry._id) });
+      await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
     };
 
 

@@ -1,0 +1,36 @@
+{% layout "layout" %}
+{% block content %}
+  <mj-section padding-bottom="0px">
+    <mj-column>
+      <mj-text align="left">
+        <p style="padding:5px 0;margin:0">
+        Hi {{ attributes.customer.first_name }} {{ attributes.customer.last_name }},
+        </p>
+        <p style="padding:5px 0;margin:0;line-height:1.5">
+          You are receiving this email because you have a box subscription with <a href="https://{{ env.SHOP }}">{{ env.SHOP_TITLE }}</a>.
+          A new order ({{ attributes.order_name }}) on your shopify account with the subscription{% if subscriptions.size > 1 %}s{% endif %} listed below.
+        </p>
+        <p style="padding:5px 0;margin:0;line-height:1.5">
+          If you have any queries about this email please contact <a href="mailto:{{ admin_email }}">{{ admin_email }}</a>.
+        </p>
+        <p style="padding:5px 0;margin:0;line-height:1.5">
+        You can view, edit, pause or cancel your subscription{% if subscriptions.size > 1 %}s{% endif %} from your
+        <a href="https://{{ env.SHOP }}/account">account page</a>.
+        </p>
+        <p style="padding:5px 0;padding-top:15px;margin:0;line-height:1.5">
+          You have until the next payment date in which to add items or otherwise update your box.
+        </p>
+      </mj-text>
+    </mj-column>
+  </mj-section>
+  <mj-section padding-top="0px" full-width="true">
+    <mj-column width="100%">
+      {% assign address = attributes.address %}
+      {% include "address" %}
+    </mj-column>
+  </mj-section>
+  {% include "subscription" %}
+{% endblock %}
+
+
+

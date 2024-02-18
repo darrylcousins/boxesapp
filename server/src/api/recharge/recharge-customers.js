@@ -63,6 +63,7 @@ export default async (req, res, next) => {
 
     const response = {
       pageCount,
+      pageSize,
       pageNumber: currentPage,
       updatesPending,
       faultySubscriptions,

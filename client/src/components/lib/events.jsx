@@ -78,8 +78,9 @@ export const selectorOpenEvent = (selector) =>
  * @param {string} from Identify the from list
  * @param {string} to Identify the target list
  */
-export const quantityUpdateEvent = (id, quantity, list) =>
-  new CustomEvent("quantityUpdateEvent", {
+export const quantityUpdateEvent = (id, quantity, list) => {
+  return new CustomEvent("quantityUpdateEvent", {
     bubbles: true,
     detail: { id, quantity, list },
   });
+};

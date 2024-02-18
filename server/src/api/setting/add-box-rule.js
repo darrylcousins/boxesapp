@@ -4,7 +4,7 @@
  */
 
 import { mongoInsert } from "../../lib/mongo/mongo.js";
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb";
 
 /*
  * @function setting/add-box-rule.js
@@ -22,7 +22,7 @@ export default async (req, res, next) => {
     { shopify_title: { $in: boxes } },
     { projection: { _id: 0, shopify_product_id: 1 } });
 
-  doc._id = new ObjectID();
+  doc._id = new ObjectId();
   try {
     const result = await mongoInsert(_mongodb.collection("settings"), doc);
     res.status(200).json(result);

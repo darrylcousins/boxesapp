@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb"; // only after mongodb@ -> mongodb@6
 import { makeShopQuery } from "../../lib/shopify/helpers.js";
 import { getNZDeliveryDay } from "../../lib/dates.js";
 
@@ -19,10 +19,15 @@ export default async (req, res, next) => {
   const { shopify_product_id } = req.body;
   const collection = _mongodb.collection("boxes");
   try {
-    const boxId = ObjectID(req.body.boxId);
+    const boxId = new ObjectId(req.body.boxId);
     const box = await collection.findOne({_id: boxId});
     const doc = { ...box };
-    box._id = new ObjectID();
+    box._id = new ObjectId();
+
+    const check = await collection.findOne({delivered: box.delivered, shopify_product_id});
+    if (check) {
+      return res.status(200).json({ error: `A box ${check.shopify_title} already exists for ${box.delivered}.` });
+    };
 
     const path = "products.json";
     const fields = ["id", "title", "handle"];

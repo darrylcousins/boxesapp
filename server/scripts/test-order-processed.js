@@ -3,12 +3,14 @@ import fs from "fs";
 import path from "path";
 import { MongoClient, ObjectID } from "mongodb";
 import { getMongoConnection, MongoStore } from "../src/lib/mongo/mongo.js";
+import { winstonLogger } from "../config/winston.js";
 
 global._filename = (_meta) => _meta.url.split("/").pop();
 dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
-global._logger = console;
+global._logger = winstonLogger;
+//global._logger = console;
 global._mongodb;
-_logger.notice = (e, meta) => console.log(e, meta);
+//_logger.notice = (e, meta) => console.log(e, meta);
 
 import orderProcessed from "../src/webhooks/recharge/order-processed.js";
 import order from "../recharge.order.json" assert { type: "json" };
@@ -18,7 +20,7 @@ const run = async () => {
   try {
     console.log('this ran');
     const mytopic = "ORDER_PROCESSED";
-    await orderProcessed("ORDER_PROCESSED", "shop", JSON.stringify({ order }));
+    await orderProcessed("ORDER_PROCESSED", "shop", JSON.stringify({ order: order.order }));
 
   } catch(e) {
     console.error(e);

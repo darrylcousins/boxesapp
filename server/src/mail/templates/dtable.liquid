@@ -18,6 +18,21 @@
           margin: 0 0 0 160px;
           padding: 0 0 0.5em 0;
                         ">{{ thing.title }}</dd>
+                        {% if thing.message %}
+                          <dt style="
+            float: left;
+            clear: left;
+            width: 150px;
+            text-align: right;
+            font-weight: bold;
+            color: grey;
+                          ">Note</dt>
+                          <dd style="
+            margin: 0 0 0 160px;
+            padding: 0 0 0.5em 0;
+                          ">
+                          {{ thing.message }}</dd>
+                        {% endif %}
                         <dt style="
           float: left;
           clear: left;

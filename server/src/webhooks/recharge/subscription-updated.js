@@ -29,13 +29,6 @@ export default async function subscriptionUpdated(topic, shop, body, { io, socke
     const topic = "updated";
     const { updated, entry } = await updatePendingEntry(meta, topic);
     if (updated) {
-      // only logging on a completed update
-      /* Start logging only the final events
-      meta.recharge.update_label = entry.action;
-      meta.recharge.updates_pending = `UPDATED ON ${topic.toUpperCase()}`;
-      meta.recharge = sortObjectByKeys(meta.recharge);
-      _logger.notice(`Subscription ${topic}.`, { meta });
-      */
 
       if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
         const socket_id = sockets[entry.session_id];

@@ -1,0 +1,35 @@
+<mj-table align="center" width="100%">
+  <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
+    <td valign="top" width="100px" style="color:#777;text-align:left;padding:0px 20px 20px 0px;">
+      Includes:
+    </td>
+    <td valign="top">
+      {{ properties["Including"] | replace: ",", ", " }}
+    </td>
+  </tr>
+  <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
+    <td valign="top" width="100px" style="color:#777;text-align:left;">
+      Add on items:
+    </td>
+    <td valign="top">
+      {{ properties["Add on Items"] | replace: ",", ", " }}
+    </td>
+  </tr>
+  <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
+    <td valign="top" width="100px" style="color:#777;text-align:left;">
+      Swapped items:
+    </td>
+    <td valign="top">
+      {{ properties["Swapped Items"] | replace: ",", ", " }}
+    </td>
+  </tr>
+  <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
+    <td valign="top" width="100px" style="color:#777;text-align:left;">
+      Removed items:
+    </td>
+    <td valign="top">
+      {{ properties["Removed Items"] | replace: ",", ", " }}
+    </td>
+  </tr>
+</mj-table>
+

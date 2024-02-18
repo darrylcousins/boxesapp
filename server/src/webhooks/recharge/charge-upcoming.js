@@ -5,7 +5,7 @@ import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-ch
 import { updateSubscriptions } from "../../lib/recharge/helpers.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
 import chargeUpcomingMail from "../../mail/charge-upcoming.js";
-import { getMetaForCharge, writeFileForCharge } from "./helpers.js";
+import { getMetaForCharge, getMetaForBox, writeFileForCharge } from "./helpers.js";
 import { upsertPending } from "../../api/recharge/lib.js";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
@@ -29,11 +29,7 @@ export default async function chargeUpcoming(topic, shop, body) {
 
   writeFileForCharge(charge, mytopic.toLowerCase().split("_")[1]);
 
-  const meta = getMetaForCharge(charge, topicLower);
-
-  meta.recharge = sortObjectByKeys(meta.recharge);
-
-  _logger.notice(`Charge upcoming.`, { meta });
+  let meta = getMetaForCharge(charge, topicLower);
 
   // First up we may assume that multiple boxes are present to find them we can
   // group the line_items by a common box_subscription_id
@@ -43,12 +39,12 @@ export default async function chargeUpcoming(topic, shop, body) {
   try {
     result = await gatherData({ grouped, result });
 
+
     for (const [idx, subscription] of result.entries()) {
       if (subscription.updates && subscription.updates.length) {
 
         // need to set data in updates_pending to prevent user from editing
-        // subscription in this timeframe from updates and figure the
-        // deletions?
+        // subscription in this timeframe from updates
         const update_shopify_ids = subscription.updates.map(el => el.shopify_product_id);
         let updated;
         const rc_subscription_ids = subscription.attributes.rc_subscription_ids.map(el => {
@@ -73,16 +69,18 @@ export default async function chargeUpcoming(topic, shop, body) {
           rc_subscription_ids,
           deliver_at: props["Delivery Date"],
         };
-        const entry_id = await upsertPending(pendingData);
+        const entry_id = await upsertPending(
+          pendingData
+        );
+        // just to add to the logging
         for (const [key, value] of Object.entries(props)) {
           pendingData[key] = value;
         };
-        console.log(pendingData);
-        _logger.notice(`Recharge charge upcoming updates.`, { meta: { recharge: pendingData } });
+        pendingData.change_messages = subscription.messages;
+        _logger.notice(`Charge upcoming updates required.`, { meta: { recharge: sortObjectByKeys(pendingData) } });
 
         // Reconcile the items in the subscription with the new box
         await updateSubscriptions({ updates: subscription.updates });
-        // XXX failed to fix the updaes_pending on updates
 
         // Fix up the lists for the charge upcoming email
 
@@ -117,12 +115,19 @@ export default async function chargeUpcoming(topic, shop, body) {
         subscription.attributes.totalPrice = `${totalPrice.toFixed(2)}`;
 
         result[idx] = subscription;
+
+      } else {
+
+        meta = getMetaForBox(subscription.attributes.subscription_id, charge, topicLower);
+        meta.recharge = sortObjectByKeys(meta.recharge); 
+        _logger.notice(`Charge upcoming without updates.`, { meta });
+
       };
 
     };
 
-    console.log(result);
-    await chargeUpcomingMail({ subscriptions: result });
+    //console.log(result);
+    await chargeUpcomingMail({ subscriptions: result, attributes: { ...result[0].attributes, address: charge.shipping_address } });
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

@@ -4,7 +4,7 @@
  */
 
 import { mongoUpdate } from "../../lib/mongo/mongo.js";
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb";
 
 /*
  * @function setting/edit-setting.js
@@ -13,13 +13,11 @@ import { ObjectID } from "mongodb";
  * @param (function) next
  */
 export default async (req, res, next) => {
-  _logger.info(JSON.stringify(req.body, null, 2));
   const doc = {...req.body};
-  doc._id = ObjectID(doc._id);
-  _logger.info(JSON.stringify(doc, null, 2));
+  doc._id = new ObjectId(doc._id);
   try {
     const result = await mongoUpdate(_mongodb.collection("settings"), doc);
-    _logger.info(JSON.stringify(result, null, 2));
+    console.log(result);
     res.status(200).json(result);
   } catch(err) {
     res.status(200).json({ error: err.message });

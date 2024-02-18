@@ -1,167 +1,47 @@
 {% for subscription in subscriptions %}
   <mj-section>
     <mj-column>
-      <mj-text align="center" font-size="25px" font-style="bold">
+      <mj-text align="center" font-size="20px" font-style="bold">
       {{ subscription.box.shopify_title }} - {{ subscription.attributes.variant }}
       </mj-text>
     </mj-column>
   </mj-section>
-  <mj-section padding="0px">
+  <mj-section padding="0px" full-width="true">
     <mj-column>
-      <mj-table align="center">
-        {% if type == "upcoming" %}
-          <tr>
-            <td style="color:#777;text-align:right;padding-right:20px;">Next Order Date</td>
-            <td>{{ subscription.attributes.nextChargeDate }}</td>
-          </tr>
-          <tr>
-            <td style="color:#777;text-align:right;padding-right:20px;">Next Scheduled Delivery</td>
-            <td style="font-weight:bold">{{ subscription.attributes.nextDeliveryDate }}</td>
-          </tr>
-        {% endif %}
-        <tr>
-          <td style="color:#777;text-align:right;padding-right:20px;">Delivery Schedule</td>
-          <td>{{ subscription.attributes.frequency }}</td>
-        </tr>
-        <tr>
-          <td style="color:#777;text-align:right;padding-right:20px;">Price (excl. shipping)</td>
-          <td><span>$</span>{{ subscription.attributes.totalPrice | money }}</td>
-        </tr>
-        {% if type == "upcoming" %}
-          {% if subscription.attributes.lastOrder %}
-            <tr>
-              <td style="color:#777;text-align:right;padding-right:20px;">Last Order</td>
-              <td>#{{ subscription.attributes.lastOrder.order_number }}</td>
-            </tr>
-          {% endif %}
-        {% else %}
-          <tr>
-            <td style="color:#777;text-align:right;padding-right:20px;">Current Order</td>
-            <td>#{{ subscription.attributes.lastOrder.order_number }}</td>
-          </tr>
-        {% endif %}
-        <tr>
-          <td style="color:#777;text-align:right;padding-right:20px;">Subscription ID</td>
-          <td>{{ subscription.attributes.subscription_id }}</td>
-        </tr>
-      </mj-table>
+      {% assign attributes = subscription.attributes %}
+      {% include "charge-summary" %}
     </mj-column>
   </mj-section>
-  <mj-section padding-top="0px">
-    <mj-column>
-      <mj-table>
-        <tr>
-          <td style="color:#777">Delivering To:</td>
-        </tr>
-        <tr>
-          <td>{{ subscription.address.name }}</td>
-        </tr>
-        <tr>
-          <td>{{ subscription.address.address1 }}</td>
-        </tr>
-        {% if subscription.address.address2 %}
-          <tr>
-            <td>{{ subscription.address.address2 }}</td>
-          </tr>
-        {% endif %}
-        <tr>
-          <td>{{ subscription.address.city }}</td>
-        </tr>
-        <tr>
-          <td>{{ subscription.address.zip }}</td>
-        </tr>
-      </mj-table>
+  <mj-section padding-top="0px" full-width="true">
+    <mj-column width="100%">
+      <mj-text align="left" color="#444">
+        {% for message in subscription.messages %}
+          <p style="padding:0;margin:0">
+            &#9679; {{ message }}
+          </p>
+        {% endfor %}
+      </mj-text>
     </mj-column>
   </mj-section>
-  <mj-section padding-top="0px">
-    <mj-column>
-      <mj-table>
-        <tr>
-          <td>
-            {% for message in subscription.messages %}
-              <p style="padding:0;margin:0">
-                {{ message }}
-              </p>
-            {% endfor %}
-          </td>
-        </tr>
-      </mj-table>
+  <mj-section padding-top="0px" full-width="true">
+    <mj-column width="100%">
+      {% assign properties = subscription.properties %}
+      {% include "properties" %}
     </mj-column>
   </mj-section>
-  <mj-section padding-top="0px">
-    <mj-column>
-      <mj-table>
-        <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-          <td valign="top" width="100px" style="color:#777;text-align:left;padding:0px 20px 20px 0px;">
-            Includes:
-          </td>
-          <td valign="top">
-            {{ subscription.properties["Including"] | replace: ",", ", " }}
-          </td>
-        </tr>
-        <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-          <td valign="top" width="100px" style="color:#777;text-align:left;">
-            Add on items:
-          </td>
-          <td valign="top">
-            {{ subscription.properties["Add on Items"] | replace: ",", ", " }}
-          </td>
-        </tr>
-        <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-          <td valign="top" width="100px" style="color:#777;text-align:left;">
-            Swapped items:
-          </td>
-          <td valign="top">
-            {{ subscription.properties["Swapped Items"] | replace: ",", ", " }}
-          </td>
-        </tr>
-        <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-          <td valign="top" width="100px" style="color:#777;text-align:left;">
-            Removed items:
-          </td>
-          <td valign="top">
-            {{ subscription.properties["Removed Items"] | replace: ",", ", " }}
-          </td>
-        </tr>
-      </mj-table>
-    </mj-column>
-  </mj-section>
-  <mj-section padding-top="0px">
-    <mj-column>
+  <mj-section padding-top="0px" full-width="true">
+    <mj-column width="100%">
       <mj-table>
         {% for product in subscription.includes %}
-          <tr>
-            <td width="50px" style="padding: 3px 0px">
-              <img src="{{ env.HOST }}/product-images/{{ product.shopify_product_id }}.jpg" 
-                width="40px" style="border:1px solid #666;border-radius:2px;" align="left" />
-            </td>
-            <td>
-              {{ product.title }}
-            </td>
-            <td>
-              <span>$</span>{{ product.price | money }}
-            </td>
-            <td>
-              {{ product.quantity }}
-            </td>
-            <td width="45px" style="text-align:right">
-              <span>$</span>{{ product.total_price | money }}
-            </td>
-          </tr>
+          {% include "includes" %}
         {% endfor %}
-        <tr>
-          <td colspan="4" style="text-align:left;border-top:1px solid #333">
-            Total (excl. shipping).
-          </td>
-          <td width="45px" style="text-align:right;border-top:1px solid #333">
-            <span>$</span>{{ subscription.attributes.totalPrice | money }}
-          </td>
-        </tr>
+        {% assign totalPrice = subscription.attributes.totalPrice %}
+        {% include "total-price" %}
       </mj-table>
     </mj-column>
   </mj-section>
   {% if type == "upcoming" %}
-    <mj-section padding="0px 0px">
+    <mj-section padding="0px 0px" full-width="true">
       <mj-column>
         <mj-table>
           {% if subscription.attributes.newIncludedInThisBox.size > 0 %}

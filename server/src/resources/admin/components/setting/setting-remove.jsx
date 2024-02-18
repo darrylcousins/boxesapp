@@ -77,6 +77,18 @@ function* RemoveSetting(props) {
     },
   };
 
+  /*
+   * Data passed to form to create the toast message to user on doSave of form
+   * These values can be arbitary provided that match the template string
+   */
+  const toastTemplate = (typeof setting === "undefined") ?
+    {
+      template: "Deleted setting.",
+    } : {
+      template: "Deleted setting ${handle}.",
+      handle: setting.handle,
+  };
+
   /**
    * The initial data of the form
    *
@@ -98,6 +110,7 @@ function* RemoveSetting(props) {
           fields={fields}
           title={title}
           id={formId}
+          meta={toastTemplate}
         />
         <div class="w-90 center ph1">
           <Button type="primary" onclick={doSave}>

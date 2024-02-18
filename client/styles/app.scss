@@ -14,20 +14,6 @@
 .bold { font-weight: bold }
 .b { font-weight: bold }
 .list { list-style-type: none }
-.pill.link {
-  text-decoration: none;
-}
-.pill.pointer, .pill.link {
-  text-decoration: none;
-  transition: opacity .15s ease-in;
-  -webkit-transition: opacity .15s ease-in;
-  -moz-transition: opacity .15s ease-in;
-  -ms-transition: opacity .15s ease-in;
-  -o-transition: opacity .15s ease-in;
-}
-.pill.pointer:hover, .pill.link:hover {
-  opacity: 0.8;
-}
 .fl { float: left }
 .fr { float: right }
 .cf:before,
@@ -55,47 +41,10 @@
   margin-right: var(--spacing-extra-small);
 }
 /* specific classes */
-.box-button-wrapper {
-  display: flex;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  margin-top: var(--spacing-extra-small);
-  margin-bottom: var(--spacing-medium);
-}
-.box-button {
-  text-decoration: none;
-  transition: opacity .15s ease-in;
-  -webkit-transition: opacity .15s ease-in;
-  -moz-transition: opacity .15s ease-in;
-  -ms-transition: opacity .15s ease-in;
-  -o-transition: opacity .15s ease-in;
-  border: 1px solid rgba(255, 255, 255);
-  background-color: transparent;
-  color: rgba(255, 255, 255);
-  border-radius: 40px;
-  color: rgb(255, 255, 255);
-  display: inline-block;
-  margin: .7rem .5rem .2rem 0;
-  padding: 1rem 2rem;
-  font-size: 1.4rem;
-  letter-spacing: .1rem;
-  line-height: 1;
-  text-align: center;
-  transition: border 1s ease;
-  cursor: pointer;
-  position: relative;
-}
-.box-button:hover {
-  opacity: 0.8;
-}
-.box-button-selected {
-  background-color: rgb(225, 255, 255);
-  color: black;
-}
 #container-box {
   position: relative;
 }
-.boxOverlay {
+.boxesAppOverlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -254,111 +203,12 @@
 .select-dropdown-wrapper > button > div:hover {
   opacity: 0.5;
 }
-div.button-wrapper {
-  margin-top: 0.5em;
-}
-div.button-wrapper > .button-wrap {
-  margin: 0 0.1em;
-  //flex-grow: 1;
-}
-div.button-wrapper > button,
-div.button-wrapper > .button-wrap > button {
-  display: flex;
-  font-family: inherit;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-decoration: none;
-  text-align: center;
-  //text-transform: uppercase;
-  line-height: 1.15;
-  margin: 0;
-  overflow: visible;
-  -webkit-appearance: button;
-  //outline: 0;
-  border: 1px solid rgb(255, 255, 255);
-  //border-radius: .25rem;
-  letter-spacing: .1em;
-  width: 100%;
-  padding: 10px 20px;
-  margin-bottom: .25rem;
-  opacity: 1;
-  transition: opacity .15s ease-in;
-  -webkit-transition: opacity .15s ease-in;
-  -moz-transition: opacity .15s ease-in;
-  -ms-transition: opacity .15s ease-in;
-  -o-transition: opacity .15s ease-in;
-  cursor: pointer;
-}
-div.button-wrapper > .button-wrap > button {
-}
-div.button-wrapper > .button-wrap > button:hover,
-div.button-wrapper > button:hover {
-  opacity: 0.8;
-  outline: 1;
-  border: 1px solid rgb(255, 255, 255);
-}
-.notice {
-  font-weight: 400;
-  line-height: 1.5;
-  font-family: inherit;
-  box-sizing: border-box;
-  border-style: solid;
-  border-color: #ccc;
-  border-width: 1px;
-  border-radius: .25rem;
-  width: 100%;
-  margin-bottom: .5rem;
-  text-align: center;
-  color: #333;
-  padding: 3px;
-}
-.notice > p {
-  padding: 0;
-  margin: 0;
-}
-.notice > p:before {
-  content: "! ";
-  font-weight: bold;
-}
 .listing-title {
   line-height: 1.5;
   box-sizing: border-box;
   font-weight: 700;
   padding-top: .5rem;
   border-bottom: 1px solid;
-}
-.pill-wrapper {
-  font-weight: 400;
-  line-height: 1.5;
-  box-sizing: border-box;
-  border-bottom-style: solid;
-  border-bottom-width: 1px;
-  border-color: #999;
-  float: left;
-  width: 100%;
-  padding-top: .5rem;
-  padding-bottom: .5rem;
-  margin-bottom: .5rem;
-}
-.pill-wrapper:after { /* clear float magic */
-  content: " ";
-  display: block;
-  clear: both;
-}
-.pill {
-  font-weight: 400;
-  line-height: 1.5;
-  font-family: inherit;
-  white-space: nowrap;
-  box-sizing: border-box;
-  border-style: solid;
-  border-width: 1px;
-  /* border-radius: 9999px; */
-  border-radius: 3px;
-  float: left;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-  margin: .25rem;
 }
 .close-button {
   font-family: inherit;

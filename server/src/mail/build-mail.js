@@ -75,7 +75,8 @@ export default async (opts) => {
           html: htmlOutput.html
         });
         if (opts.meta) {
-          getLogger().notice(`Recharge ${opts.title.toLowerCase()} email sent.`, { meta: { recharge: opts.meta } });
+          const description = `${opts.title.charAt(0).toUpperCase()}${opts.title.substring(1).toLowerCase()}`;
+          getLogger().notice(`${description} email sent.`, { meta: { recharge: opts.meta } });
         };
       });
 

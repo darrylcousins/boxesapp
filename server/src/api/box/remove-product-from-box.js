@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb"; // only after mongodb@ -> mongodb@6
 
 /*
  * @function box/remove-product-from-box.js
@@ -21,7 +21,7 @@ export default async (req, res, next) => {
   const collection = _mongodb.collection("boxes");
   try {
     const result = await collection.updateOne(
-      { _id: ObjectID(box_id) },
+      { _id: new ObjectId(box_id) },
       { $pull: pullCmd }
     );
     res.status(200).json(result);

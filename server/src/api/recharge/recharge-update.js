@@ -3,9 +3,8 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import subscriptionActionMail from "../../mail/subscription-action.js";
 import { updateSubscriptions } from "../../lib/recharge/helpers.js";
-import { sortObjectByKeys } from "../../lib/helpers.js";
+import { sortObjectByKeys, formatDate } from "../../lib/helpers.js";
 import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
 
 /*
@@ -22,7 +21,7 @@ export default async (req, res, next) => {
   const { change_messages, updates, attributes, properties, includes, now, navigator, admin } = req.body;
 
   const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
-  // can be 'edit' or 'reconcile' (reconcile when required updates for new box)
+  // can be 'updated' or 'reconciled' (reconcile when required updates for new box)
   const label = req.query.label;
 
   // add updated flag to rec_subscription_ids
@@ -33,15 +32,23 @@ export default async (req, res, next) => {
     return { ...el, updated };
   });
 
+  // because subscription_ids are sound, then run includes through the same
+  let rc_el;
+  for (const item of includes) {
+    rc_el = subscription_ids.find(el => el.shopify_product_id === item.shopify_product_id);
+    if (rc_el) {
+      item.quantity = rc_el.quantity; // this will correct for zero'd items
+    };
+  };
+
   // make sure that the box is last
   for(var x in updates) updates[x].properties.some(el => el.name === "Including") ? updates.push( updates.splice(x,1)[0] ) : 0;
 
-  const topicLower = "charge/update";
+  const scheduled_at_date = new Date(Date.parse(attributes.nextChargeDate));
   const meta = {
     recharge: {
-      topic: topicLower,
       title: `${attributes.title} - ${attributes.variant}`,
-      label: `${label.toLowerCase()}`,
+      label,
       charge_id,
       customer_id: customer.id,
       address_id,
@@ -50,6 +57,8 @@ export default async (req, res, next) => {
       next_delivery: attributes.nextDeliveryDate,
       next_charge_date: attributes.nextChargeDate,
       rc_subscription_ids: subscription_ids,
+      scheduled_at: formatDate(scheduled_at_date),
+      change_messages,
     }
   };
   for (const [key, value] of Object.entries(properties)) {
@@ -59,8 +68,9 @@ export default async (req, res, next) => {
   try {
 
     const entry_id = await upsertPending({
-      action: "updated", // no need to alter this if reconciling or editing
+      action: label, // updated or reconciled
       customer_id: customer.id,
+      charge_id,
       address_id,
       subscription_id,
       scheduled_at,
@@ -73,17 +83,18 @@ export default async (req, res, next) => {
     try {
 
       let descriptiveType = "updated the products for"; // default
-      if (label === "edit") {
+      if (label === "updated") {
         descriptiveType = "edited and updated the products for";
-      } else if (label === "reconcile") {
+      } else if (label === "reconciled") {
         descriptiveType = "reconciled the products against the upcoming box for";
       };
 
       const mailOpts = {
-        type: "updated",
+        type: label,
         descriptiveType,
-        includes: includes.filter(el => el.quantity > 0),
+        includes: includes.filter(el => el.quantity > 0), // fixed above
         attributes,
+        properties,
         now,
         navigator,
         admin,
@@ -99,12 +110,12 @@ export default async (req, res, next) => {
       throw err;
     };
 
+    res.status(200).json({ message: "Updates scheduled" });
+
     meta.recharge = sortObjectByKeys(meta.recharge);
-    _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
+    _logger.notice(`Boxesapp api request subscription ${label}.`, { meta });
 
     await updateSubscriptions({ updates, io, session_id });
-
-    res.status(200).json({ message: "Updates scheduled" });
 
   } catch(err) {
     res.status(200).json({ error: err.message });

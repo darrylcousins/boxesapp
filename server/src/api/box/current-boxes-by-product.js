@@ -25,18 +25,18 @@ export default async (req, res, next) => {
   const dates = await getDeliveryDays(db, product_id, weekday)
   
   try {
-    db.boxes.find({
+    const result = await db.boxes.find({
       delivered: {$in: dates},
       active: true,
       shopify_product_id: product_id
-    }).toArray((err, result) => {
-      if (err) throw err;
-      result.forEach(el => {
-        //el.selling_plans = selling_plans;
-        response[el.delivered] = el;
-      });
-      res.status(200).json(response);
+    }).toArray();
+
+    result.forEach(el => {
+      //el.selling_plans = selling_plans;
+      response[el.delivered] = el;
     });
+    res.status(200).json(response);
+
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

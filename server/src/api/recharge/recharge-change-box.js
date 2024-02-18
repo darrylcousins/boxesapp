@@ -7,7 +7,7 @@ import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeShopQuery } from "../../lib/shopify/helpers.js";
 import { makeRechargeQuery, updateSubscriptions,  updateChargeDate, findBoxes } from "../../lib/recharge/helpers.js";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
-import { sortObjectByKeys, matchNumberedString, makeItemString } from "../../lib/helpers.js";
+import { sortObjectByKeys, matchNumberedString, makeItemString, delay } from "../../lib/helpers.js";
 import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
 
 /*
@@ -77,9 +77,8 @@ export default async (req, res, next) => {
     });
 
     const box = JSON.parse(data.box);
-    console.log(box.delivered);
     const boxProperties = JSON.parse(data.properties);
-    const boxMessages = JSON.parse(data.messages);
+    const boxMessages = JSON.parse(data.change_messages);
     // so these are the updated properties for the subscription - how now to get the updates?
     // I know I have the code to figure the updates
 
@@ -254,11 +253,6 @@ export default async (req, res, next) => {
       updates.push(final);
     };
 
-    console.log("the updates ====================");
-    for (const el of updates) {
-      console.log(el);
-    };
-
     // add updated flag to rc_subscription_ids
     const update_shopify_ids = updates.map(el => el.external_product_id.ecommerce);
 
@@ -274,18 +268,12 @@ export default async (req, res, next) => {
       });
     };
 
-    for (const el of rc_subscription_ids) {
-      console.log(el);
-    };
 
-    res.status(200).json({});
-
+    const type = "changed";
     // log the request
-    const topicLower = "charge/change-box";
     const meta = {
       recharge: {
-        label: "CHANGE BOX",
-        topic: topicLower,
+        label: type,
         title: `${data.product_title} - ${data.variant_title}`,
         customer_id: charge.customer.id,
         shopify_customer_id: charge.customer.external_customer_id.ecommerce,
@@ -303,7 +291,7 @@ export default async (req, res, next) => {
     };
 
     meta.recharge = sortObjectByKeys(meta.recharge);
-    _logger.notice(`Recharge customer api reqest ${topicLower}.`, { meta });
+    _logger.notice(`Recharge customer api reqest subscription ${type}.`, { meta });
 
     // compile data for email to customer
     let includes = updates.filter(el => el.quantity > 0).map(el => {
@@ -328,6 +316,7 @@ export default async (req, res, next) => {
 
     const attributes = {
       customer: JSON.parse(data.customer),
+      address_id: parseInt(data.address_id),
       nextChargeDate: new Date(Date.parse(data.scheduled_at)).toDateString(),
       nextDeliveryDate: data.delivery_date,
       title: data.product_title,
@@ -335,40 +324,38 @@ export default async (req, res, next) => {
       subscription_id: data.subscription_id,
       frequency: data.plan.name,
       lastOrder: data.last_order !== "undefined" ? JSON.parse(data.last_order) : null,
+      scheduled_at: data.scheduled_at, // "yyyy-mm-dd" this will match the updated subscriptions and charges
     };
 
     const totalPrice = includes.map(el => parseFloat(el.price) * el.quantity).reduce((sum, el) => sum + el, 0);
     attributes.totalPrice = `${totalPrice.toFixed(2)}`;
 
-    /*
-    console.log("updates ========================");
-    for (const el of updates) console.log(el);
-    console.log("includes ========================");
-    for (const el of includes) console.log(el);
-    */
-
     const entry_id = await upsertPending({
-      action: "changed",
+      action: type,
+      address_id: parseInt(data.address_id),
       customer_id: charge.customer.id,
-      address_id: charge.address_id,
+      charge_id: parseInt(data.charge_id),
       subscription_id: parseInt(data.subscription_id),
-      scheduled_at: data.scheduled_at, // this will match the updated subscriptions and charges
+      scheduled_at: data.scheduled_at, // "yyyy-mm-dd" this will match the updated subscriptions and charges
       rc_subscription_ids,
-      scheduled_at: data.scheduled_at, // formatted "yyyy-mm-dd"
       deliver_at: data.delivery_date, // formatted "Tue Sep 21 2023"
-      title: data.title,
+      title: `${data.product_title} - ${data.variant_title}`,
       session_id,
     });
+
+    res.status(200).json({});
 
     try {
 
       const mailOpts = {
-        type: "changed",
+        type,
         attributes,
         includes,
         now,
         navigator,
         admin,
+        properties: boxProperties,
+        change_messages: boxMessages,
       };
 
       if (io) {
@@ -381,6 +368,8 @@ export default async (req, res, next) => {
     };
 
     await updateSubscriptions({ updates, io, session_id });
+
+    await delay(10000); // avoid possibly making second call to same resource
 
     if (charge.scheduled_at !== data.scheduled_at) {
       console.log("Changing charge date", data.scheduled_at, charge.scheduled_at);

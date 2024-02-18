@@ -220,7 +220,7 @@ function* EditOrders({selectedOrders}) {
                     </div>
                   ))}
                   {success && (
-                    <div class="mv2 pt2 pl2 br3 dark-green ba b--dark-green bg-washed-green">
+                    <div class="alert-box dark-green ma2 br3 ba b--dark-green bg-washed-green">
                       <p class="tc">Orders updated, reloading page</p>
                     </div>
                   )}

@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { matchNumberedString } from "../lib/helpers.js";
+import { matchNumberedString, makeItemString, compareArrays } from "../lib/helpers.js";
 
 /*
  * @function compareArrayElements
@@ -34,24 +34,28 @@ const compareArrayElements = (a, b) => {
 export default async function reconcileLists(box, boxLists) {
 
   // this differs from reconile-charge-group which starts with the properties as strings
-  // here they all aready converted to arrays or strings
+  // here they all aready converted to arrays of strings
   // init arrays that we can change later
   const boxListArrays = { ...boxLists };
 
   // figure out what extras should be/are in the box
+  // decremented includes and addons to the number that should match includes
   let boxIncludedExtras = boxListArrays["Including"]
     .map(el => matchNumberedString(el))
     .filter(el => el.quantity > 1)
     .map(el => ({ title: el.title, quantity: el.quantity - 1 }));
 
-  // keeping all quantities
   let boxSwappedExtras = boxListArrays["Swapped Items"]
     .map(el => matchNumberedString(el))
     .map(el => ({ title: el.title, quantity: el.quantity - 1 }));
+
   let boxAddOnExtras = boxListArrays["Add on Items"]
     .map(el => matchNumberedString(el));
   let boxRemovedItems = boxListArrays["Removed Items"]
     .map(el => matchNumberedString(el));
+
+  // XXX and surely boxIncludedExtras - aren't I needing all subscribed items!!!
+  const includes = [ ...boxIncludedExtras, ...boxSwappedExtras, ...boxAddOnExtras ].map(el => el.title);
 
   const addOnProducts = box.addOnProducts.map(el => el.shopify_title);
   const includedProducts = box.includedProducts.map(el => el.shopify_title);
@@ -64,7 +68,8 @@ export default async function reconcileLists(box, boxLists) {
   const tempAddOnExtras = [ ...boxAddOnExtras ]; // because it gets mutated before used in possible
 
   // remove the quantity values and titles only
-  const currentIncludes = boxListArrays["Including"]
+  // and include the swapped out items, i.e. the removed items
+  const currentIncludes = [ ...boxListArrays["Including"], ...boxListArrays["Removed Items"] ]
     .map(el => matchNumberedString(el))
     .map(el => el.title);
   // match includes - could be the order has a date or box change
@@ -82,28 +87,39 @@ export default async function reconcileLists(box, boxLists) {
   
 
   /* REMOVED ITEMS one only is allowed with the matching swap */
-  for  ([idx, item] of Object.entries(boxRemovedItems)) {
+  for  (const [idx, item] of Object.entries(boxRemovedItems).reverse()) {
     if (item.title === "None") continue;
     if (includedProducts.indexOf(item.title) === -1) { // not included this week
       // remove from removedItem list
       boxRemovedItems.splice(idx, 1);
       messages.push(`Removed item ${item.title} not in the box.`);
-      // so sort out the swapped item
-      for ([idx, item] of Object.entries(boxSwappedExtras)) {
+      // so sort out the swapped item only one of course
+      let swapped = false;
+      for (const [idx, item] of Object.entries(boxSwappedExtras).reverse()) {
+        if (swapped) continue;
         if (item.quantity === 0) {
           // only a swap and no subscribed item
           boxSwappedExtras.splice(idx, 1);
           messages.push(`Swapped item ${item.title} not swapped for this box.`);
+          swapped = true;
         } else {
-          if (addOnProducts.indexOf(item.title) === -1) { // not included this week
+          if (addOnProducts.indexOf(item.title) === -1 &&
+              includedProducts.indexOf(item.title) === -1) { // not included this week
             // drop the subscription altogether
             messages.push(`Extra swapped item ${item.title} not available for this box.`);
             boxSwappedExtras.splice(idx, 1);
+            swapped = true;
             item.quantity = 0;
+          } else if (includedProducts.indexOf(item.title) > -1) { // but is in includes
+            messages.push(`Extra swapped item ${item.title} included as an extra include for this box.`);
+            boxSwappedExtras.splice(idx, 1); // query me - did this when looking at a custom box
+            boxIncludedExtras.push(item);
+            swapped = true;
           } else {
-            messages.push(`Extra swapped item ${item.title} included as an add for this box.`);
+            messages.push(`Extra swapped item ${item.title} included as an add on for this box.`);
             boxSwappedExtras.splice(idx, 1); // query me - did this when looking at a custom box
             boxAddOnExtras.push(item);
+            swapped = true;
           };
         };
       };
@@ -111,7 +127,7 @@ export default async function reconcileLists(box, boxLists) {
   };
 
   /* SWAPPED ITEMS one only is allowed with the matching swap */
-  for ([idx, item] of Object.entries(boxSwappedExtras)) {
+  for ([idx, item] of Object.entries(boxSwappedExtras).reverse()) {
     if (item.title === "None") continue;
     if (addOnProducts.indexOf(item.title) === -1) { // not included this week
       boxSwappedExtras.splice(idx, 1);
@@ -144,10 +160,12 @@ export default async function reconcileLists(box, boxLists) {
           .filter(x => !tempAddOnExtras.map(el => el.title).includes(x))
           .filter(x => !tempIncludedExtras.map(el => el.title).includes(x))
           .filter(x => !tempSwappedExtras.map(el => el.title).includes(x));
+        /*
         console.log(tempSwappedExtras);
         console.log(tempAddOnExtras);
         console.log(tempIncludedExtras);
         console.log(possible)
+        */
         if (possible.length) {
           let title = possible[Math.floor(Math.random() * possible.length)];
           boxSwappedExtras.push({title, quantity: 0});
@@ -164,7 +182,7 @@ export default async function reconcileLists(box, boxLists) {
   };
 
   /* ADD ON ITEMS */
-  for ([idx, item] of Object.entries([ ...boxAddOnExtras ])) {
+  for ([idx, item] of Object.entries([ ...boxAddOnExtras ]).reverse()) {
     if (item.title === "None") continue;
     if (addOnProducts.indexOf(item.title) === -1) { // not included this week
       if (includedProducts.indexOf(item.title) === -1) {
@@ -185,7 +203,7 @@ export default async function reconcileLists(box, boxLists) {
   };
 
   /* EXTRA INCLUDED ITEMS */
-  for ([idx, item] of Object.entries(boxIncludedExtras)) {
+  for ([idx, item] of Object.entries(boxIncludedExtras).reverse()) {
     if (item.title === "None") continue;
     if (includedProducts.indexOf(item.title) === -1) { // not included this week
       boxIncludedExtras.splice(idx, 1);
@@ -194,7 +212,7 @@ export default async function reconcileLists(box, boxLists) {
         item.quantity = 0;
       } else {
         boxAddOnExtras.push(item);
-        messages.push(`Included extra item ${item.title} included as an addon for this box.`);
+        messages.push(`Included extra item ${item.title}${item.quantity > 1 ? ` (${item.quantity})` : ""} included as an addon for this box.`);
       };
     };
   };
@@ -237,5 +255,5 @@ export default async function reconcileLists(box, boxLists) {
       "Removed Items": makeItemString(boxRemovedItems, ","),
   };
 
-  return { properties, messages };
+  return { properties, messages, includes };
 };

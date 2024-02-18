@@ -1,0 +1,23 @@
+<mj-table>
+  <tr>
+    <td style="color:#777">Delivering To:</td>
+  </tr>
+  <tr>
+    <td>{{ address.name }}</td>
+  </tr>
+  <tr>
+    <td>{{ address.address1 }}</td>
+  </tr>
+  {% if address.address2 %}
+    <tr>
+      <td>{{ address.address2 }}</td>
+    </tr>
+  {% endif %}
+  <tr>
+    <td>{{ address.city }}</td>
+  </tr>
+  <tr>
+    <td>{{ address.zip }}</td>
+  </tr>
+</mj-table>
+

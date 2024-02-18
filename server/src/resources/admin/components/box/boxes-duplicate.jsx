@@ -161,37 +161,31 @@ async function* DuplicateBoxes(props) {
 
     yield (
       <Fragment>
-        {error ? (
-          <Error msg={fetchError} />
-        ) : (
-          <Fragment>
-            <div class="near-black">
-              <p class="lh-copy tl dark-grey">
-                Duplicating boxes from { currentDate }.
-              </p>
-              <p class="lh-copy tl">
-                Select a delivery date for the duplicate boxes.
-              </p>
-            </div>
-            <div class="w-100 center ph1">
-              <Form
-                data={getInitialData()}
-                fields={fields}
-                title={title}
-                id={formId}
-                meta={toastTemplate}
-              />
-              <div class="tr">
-                <Button type="primary" onclick={doSave}>
-                  Duplicate Boxes
-                </Button>
-                <Button type="secondary" onclick={closeModal}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </Fragment>
-        )}
+        <div class="near-black">
+          <p class="lh-copy tl dark-grey">
+            Duplicating boxes from { currentDate }.
+          </p>
+          <p class="lh-copy tl">
+            Select a delivery date for the duplicate boxes.
+          </p>
+        </div>
+        <div class="w-100 center ph1">
+          <Form
+            data={getInitialData()}
+            fields={fields}
+            title={title}
+            id={formId}
+            meta={toastTemplate}
+          />
+          <div class="tr">
+            <Button type="primary" onclick={doSave}>
+              Duplicate Boxes
+            </Button>
+            <Button type="secondary" onclick={closeModal}>
+              Cancel
+            </Button>
+          </div>
+        </div>
       </Fragment>
     );
   }

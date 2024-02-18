@@ -69,6 +69,7 @@ const options = {
 async function* SkipCharge(props) {
   const { doSave, closeModal, title, subscription, formId } = props;
 
+  console.log("skip charge component, admin?", props.admin);
   const deliveryDays = [];
   const chargeDays = [];
   const intervalDays = [];
@@ -123,7 +124,6 @@ async function* SkipCharge(props) {
    * returns the box else compiles reasonable defaults.
    */
   const getInitialData = () => {
-    console.log(subscription.attributes);
     const data = {
       attributes: JSON.stringify(subscription.attributes),
       includes: JSON.stringify(subscription.includes),

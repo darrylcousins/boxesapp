@@ -3,8 +3,8 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
+import { ObjectId } from "mongodb";
 import { makeShopQuery } from "../../lib/shopify/helpers.js";
-import { ObjectID } from "mongodb";
 import { getNZDeliveryDay } from "../../lib/dates.js";
 
 /*
@@ -13,6 +13,8 @@ import { getNZDeliveryDay } from "../../lib/dates.js";
  * @param (Http response object) res
  * @param (function) next
  */
+
+// Feb 2024 - this is old! no try/catch/error
 export default async (req, res, next) => {
 
   const {delivered, shopify_product_id, useCoreBox} = req.body;
@@ -47,7 +49,7 @@ export default async (req, res, next) => {
 
   const makeDoc = (product) => {
     return {
-      _id: new ObjectID(),
+      _id: new ObjectId(),
       delivered: deliveryDay,
       shopify_title: product.title,
       shopify_handle: product.handle,
@@ -76,11 +78,11 @@ export default async (req, res, next) => {
 
   if (coreBox) {
     productDoc.addOnProducts = coreBox.addOnProducts.map(prod => {
-      prod._id = new ObjectID();
+      prod._id = new ObjectId();
       return prod;
     });
     productDoc.includedProducts = coreBox.includedProducts.map(prod => {
-      prod._id = new ObjectID();
+      prod._id = new ObjectId();
       return prod;
     });
   };

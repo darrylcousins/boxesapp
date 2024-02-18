@@ -15,19 +15,19 @@ export default async (req, res, next) => {
   const response = {};
   try {
     // get order counts by date
-    const cursor = await collection.aggregate(
-      [{
-        $group: {
+    const cursor = await _mongodb.collection("orders").aggregate([
+      { $group: {
           _id: "$delivered",
           count: { $sum: 1 }
-        }
-      },
-      {
-        $sort: { _id: -1 }
-      },
-    ]);
-    // sort cursor by dates using date objects
-    for await (const {_id, count} of cursor) {
+      }},
+      { "$project": {
+        delivered: "$_id",
+        count: "$count",
+        iso: { "$dateFromString": {dateString: "$_id", timezone: "Pacific/Auckland"}},
+      }},
+      { "$sort" : { iso: 1 } },
+    ]).toArray();
+    for (const { _id, count } of cursor) {
       response[_id] = {"orders": count};
     };
     

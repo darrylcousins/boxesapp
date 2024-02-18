@@ -25,7 +25,7 @@
          <a href="https://{{ env.SHOP }}/account">account page</a>.
         </p>
         <p style="padding:5px 0;margin:0;line-height:1.5">
-        You will receive a `charge upcoming` email three days before payment is charged, the week prior to delivery. Your next box can be customised anytime prior to the payment being charged.
+        You will receive a 'charge upcoming' email three days before payment is charged, the week prior to delivery. Your next box can be customised anytime prior to the payment being charged.
         </p>
         <p style="padding:0;margin:0;line-height:1.5">
         Payment will be charged to your nominated payment method three days prior to delivery. Please make sure you have sufficient funds available on that day.
@@ -42,6 +42,12 @@
           If you have any questions or concerns regarding your order please email <a href="mailto:{{ admin_email }}">{{ admin_email }}</a>.
         </p>
       </mj-text>
+    </mj-column>
+  </mj-section>
+  <mj-section padding-top="0px" full-width="true">
+    <mj-column width="100%">
+      {% assign address = attributes.address %}
+      {% include "address" %}
     </mj-column>
   </mj-section>
   {% include "subscription" %}

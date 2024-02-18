@@ -7,7 +7,7 @@ import path from "path";
 import fs from "fs";
 import { queryStoreGraphQL } from "../../lib/shopify/helpers.js";
 import sharp from "sharp";
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb";
 
 /*
  * async job to fetch and save product images
@@ -91,7 +91,6 @@ export default async (req, res, next) => {
 
   const makeDoc = (product) => {
     return {
-      _id: new ObjectID(),
       shopify_title: product.title.replace(/,/g, ""),
       shopify_handle: product.handle,
       shopify_product_id: parseInt(shopify_product_id, 10),
@@ -144,7 +143,7 @@ export default async (req, res, next) => {
   } else {
     const collection = _mongodb.collection("boxes");
     const result = await collection.updateOne(
-      { _id: ObjectID(box_id) },
+      { _id: new ObjectId(box_id) },
       { $push: { 
         [product_type] : {
           "$each": [ productDoc ],

@@ -36,6 +36,7 @@ import {
   dateStringNow,
   floatToString,
   findTimeTaken,
+  matchNumberedString,
 } from "../helpers";
 
 /**
@@ -51,7 +52,7 @@ import {
  */
 async function *Subscription({ subscription, customer, idx, admin }) {
 
-  console.log(subscription);
+  //console.log(subscription);
   /*
   console.log("TITLE", subscription.attributes.title);
   console.log("Box", subscription.box);
@@ -243,6 +244,21 @@ async function *Subscription({ subscription, customer, idx, admin }) {
   };
 
   /*
+   * @function titlesOnly
+   * 
+   * Helper function
+   */
+  const titlesOnly = (str) => {
+    return str
+      .split(',')
+      .map(el => el.trim())
+      .filter(el => el !== "")
+      .map(el => matchNumberedString(el))
+      .map(el => el.title)
+      .join(",");
+  };
+
+  /*
    * @function getChangeMessages
    * 
    * Gather list of messages detailing the changes made to the box
@@ -250,7 +266,15 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    * e.g. Carrots quantity incresed to 2, Beetroot deleted etc
    */
   const getChangeMessages = (updates) => {
-    const messages = [];
+    let messages = [];
+
+    if (subscription.messages && subscription.messages.length > 0) {
+      messages = subscription.messages;
+      if (subscription.attributes.nowAvailableAsAddOns.length > 0) {
+        messages.push(`New available this week: ${ subscription.attributes.nowAvailableAsAddOns.join(", ") }`);
+      };
+      return subscription.messages;
+    };
 
     // add updated flag to rec_subscription_ids
     const update_shopify_ids = updates.map(el => el.shopify_product_id);
@@ -259,11 +283,13 @@ async function *Subscription({ subscription, customer, idx, admin }) {
       updated = update_shopify_ids.indexOf(el.shopify_product_id) === -1;
       return { ...el, updated };
     });
+    //for (const el of subscription_ids) console.log(el);
 
-    if (subscription.properties["Removed Items"]
-        !== subscriptionSwaps_orig["Removed Items"]
-      || subscription.properties["Swapped Items"]
-        !== subscriptionSwaps_orig["Swapped Items"]) {
+    // only check titles here, don't care if a quantity has changed
+    if (titlesOnly(subscription.properties["Removed Items"])
+        !== titlesOnly(subscriptionSwaps_orig["Removed Items"])
+      || titlesOnly(subscription.properties["Removed Items"])
+        !== titlesOnly(subscriptionSwaps_orig["Removed Items"])) {
       messages.push("Swaps have changed.");
     };
 
@@ -271,9 +297,10 @@ async function *Subscription({ subscription, customer, idx, admin }) {
       if (!item.updated) {
         const orig = rc_subscription_ids_orig.find(el => el.shopify_product_id === item.shopify_product_id);
         if (item.quantity === 0) {
-          messages.push(`${item.title} ${orig && `(${orig.quantity}) ` }has been removed from your box.`);
+          messages.push(`${item.title} ${orig && orig.quantity > 0 && `(${orig.quantity}) ` }has been removed from your box.`);
         } else {
           if (orig) {
+            console.log(orig.quantity, item.quantity);
             if (orig.quantity !== item.quantity) {
               messages.push(`${item.title} quantity has changed from ${orig.quantity} to ${item.quantity}.`);
             };
@@ -284,6 +311,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
         };
       };
     };
+    for (const el of messages) console.log(el);
     return messages;
   };
 
@@ -292,21 +320,24 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    * 
    * Gather data as if to make changes and log to console
    */
-  const testChanges = async () => {
+  const testChanges = async (type) => {
 
-    const updates = getUpdatesFromIncludes();
+    let updates;
+    if (type === "updates") {
+      updates = subscription.updates;
+    } else {
+      updates = getUpdatesFromIncludes();
+    };
 
     const change_messages = getChangeMessages(updates);
     console.log(change_messages);
+
+    console.log("updates", JSON.stringify(updates, null, 2));
     /*
-    const filtered = updates.filter(el => el.subscription_id !== subscription.attributes.subscription_id);
-    console.log(filtered);
-    console.log(JSON.stringify(updates, null, 2));
-    console.log(JSON.stringify(subscription_ids, null, 2));
-    console.log(JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
-    console.log(JSON.stringify(updates, null, 2));
-    console.log(JSON.stringify(subscription.includes, null, 2));
-    console.log(JSON.stringify(subscription.attributes, null, 2));
+    console.log(JSON.stringify("subscription_ids", subscription_ids, null, 2));
+    console.log(JSON.stringify("rc_subscription_ids", subscription.attributes.rc_subscription_ids, null, 2));
+    console.log(JSON.stringify("includes", subscription.includes, null, 2));
+    console.log(JSON.stringify("attributes", subscription.attributes, null, 2));
     */
 
     const title = hasDuplicates();
@@ -328,10 +359,10 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     let label; // stored on pending_updates table
     if (key === "includes") {
       updates = getUpdatesFromIncludes();
-      label = "edit";
+      label = "updated";
     } else { // key = "updates"
       updates = subscription.updates;
-      label = "reconcile";
+      label = "reconciled";
     };
     let src = `/api/recharge-update`;
     src = `${src}?label=${label}`;
@@ -358,7 +389,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     };
 
     const change_messages = getChangeMessages(updates);
-    console.log(change_messages);
 
     // start the timer - can get this from the socket.closed event detail
     timer = new Date();
@@ -415,7 +445,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     const { type, product, properties: props, total_price } = ev.detail;
     // type shape is "to": the to list, "from: the from list, "count?": a quantity change
     // props are lists of { shopify_title, quantity } entries
-
 
     let rc_subscription_ids = [ ...subscription.attributes.rc_subscription_ids ];
     changed.push(product.shopify_product_id); // used to figure product toggling
@@ -743,11 +772,12 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    * Reload this particular charge from the server as a 'subsciption' object
    * @listens socket.closed
    */
-  const reloadCharge = async ({ detail }) => {
+  const reloadCharge = async (ev) => {
+
+    const { detail } = ev;
 
     if (detail.action === "reactivated") return; // could do better here
 
-    console.log(detail);
     const { charge_id, session_id, subscription_id, action } = detail;
 
     // session_id consumed by socket.js
@@ -771,6 +801,11 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     } else {
       console.log("Charge id matches");
     };
+
+    console.log(detail);
+    ev.stopPropagation(); // otherwise other listening components catch this on the window
+
+    // do I need a delay here?
 
     // get the message blocks to remove them
     const socketMessages = document.getElementById(messageDivId);
@@ -798,77 +833,73 @@ async function *Subscription({ subscription, customer, idx, admin }) {
       console.warn("No timer object");
     };
 
-    // use timeoout to wait for the collapse to complete
-    setTimeout(async () => {
-      if (socketMessages) {
-        // clear the socket messaages
-        socketMessages.innerHTML = "";
-      } else {
-        console.warn("No socketMessages object");
-      };
+    if (socketMessages) {
+      // clear the socket messaages
+      socketMessages.innerHTML = "";
+    } else {
+      console.warn("No socketMessages object");
+    };
 
-      if (action === "cancelled") {
-        // in this case we must remove the subscription and load it as a cancelled subscription
+    if (action === "cancelled") {
+      // in this case we must remove the subscription and load it as a cancelled subscription
 
-        const cancelled = await getCancelledSubscription();
-        // then dispatch event to Customer which will shuffle the grouped subscriptions
-        const subdiv = document.querySelector(`#subscription-${cancelled.box.id}`);
-        setTimeout(() => {
-          animateFadeForAction(subdiv, () => {
-            this.dispatchEvent(
-              new CustomEvent("subscription.cancelled", {
-                bubbles: true,
-                detail: {
-                  subscription: cancelled,
-                  //list: "chargeGroups",
-                  subscription_id: cancelled.box.id,
-                },
-              })
-            );
-          });
-        }, 100);
-        return; // and return out of here
+      const cancelled = await getCancelledSubscription();
+      // then dispatch event to Customer which will shuffle the grouped subscriptions
+      const subdiv = document.querySelector(`#subscription-${cancelled.box.id}`);
+      setTimeout(() => {
+        animateFadeForAction(subdiv, () => {
+          this.dispatchEvent(
+            new CustomEvent("subscription.cancelled", {
+              bubbles: true,
+              detail: {
+                subscription: cancelled,
+                //list: "chargeGroups",
+                subscription_id: cancelled.box.id,
+              },
+            })
+          );
+        });
+      }, 100);
+      return; // and return out of here
 
-      } else {
+    } else {
 
-        // forces reload of component to make it again editable
-        CollapsibleProducts = CollapseWrapper(EditProducts);
-        editsPending = false;
+      // forces reload of component to make it again editable
+      CollapsibleProducts = CollapseWrapper(EditProducts);
 
-        // otherwise reloading the updated charge
-        // refetch the charge and adapt to subscription object
+      // otherwise reloading the updated charge
+      // refetch the charge and adapt to subscription object
+      if (editsPending) {
         const charge = await getCharge(subscription.attributes.charge_id);
 
         //console.log(charge);
+        editsPending = false;
 
-        for (const key of Object.keys(charge)) {
-          subscription[key] = charge[key];
-        };
-
-        // reset ids_orig
-        rc_subscription_ids_orig = subscription.attributes.rc_subscription_ids.map(el => { return {...el}; });
-
-        try {
-          // finally refresh the component
-          await this.refresh();
-        } catch(err) {
-          console.warn(err.message);
-        };
-
-        if (collapsed) {
-          // restore buttons
-          this.dispatchEvent(
-            new CustomEvent("customer.enableevents", {
-              bubbles: true,
-              detail: { subscription_id },
-            })
-          );
+        if (charge) {
+          for (const key of Object.keys(charge)) {
+            subscription[key] = charge[key];
+          };
         };
       };
 
-    }, 100);
+      unskippable = isUnSkippable();
 
-    await getLogs();  // refresh the logs
+      // reset ids_orig
+      rc_subscription_ids_orig = subscription.attributes.rc_subscription_ids.map(el => { return {...el}; });
+
+      if (collapsed) {
+        // restore buttons
+        this.dispatchEvent(
+          new CustomEvent("customer.enableevents", {
+            bubbles: true,
+            detail: { subscription_id },
+          })
+        );
+      };
+    };
+
+    console.log("REFRESHING THIS");
+    await this.refresh();
 
   };
 
@@ -1010,18 +1041,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
   };
 
   /*
-   * Determine if pausable
-   * Cannot pause if within timeframe of frequency
-   */
-  const isSkippable = () => {
-    return true;
-    const now = new Date();
-    const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
-    const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
-    return diffDays <= subscription.attributes.days * 2; //i.e. 7 or 14
-  };
-
-  /*
    * Determine if can be rescheduled
    * Cannot reschedule if it means going back to scheduled delivery date
    * which can happen on two week subscriptions and original order out in the future
@@ -1030,31 +1049,23 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    */
 
   const isUnSkippable = () => {
-    /*
-    const ts = Date.parse(subscription.attributes.lastOrder.delivered);
-    if (isNaN(ts)) return false; // can happen if the order is not completed
-    const lastDeliveryDate = new Date(ts);
-    const delivered = new Date(Date.parse(subscription.attributes.nextDeliveryDate));
-    const diffDays = Math.ceil(Math.abs(delivered - lastDeliveryDate) / (1000 * 60 * 60 * 24));
-    */
 
-    /*
-     * Determine if pausable
-     * however this is the method used in the modal
-     * otherwise no dates are selectable
-     */
     const getDiffDays = (subscription) => {
       const now = new Date();
       const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
+      // adjust to get delivery day so I'm not comparing charge and delivery
+      nextCharge.setDate(nextCharge.getDate() + 3); // adjust to get delivery day
+      // days between next charge date and now
       let diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
 
       // XXX need to also account for the lastOrder.delivered date
       const ts = Date.parse(subscription.attributes.lastOrder.delivered); // could be null ie lastOrder = {}
-      let lastOrderDate;
+      let lastDelivered;
       let orderDiffDays;
       if (!isNaN(ts)) { // can happen if the order is not completed or found by the api
-        lastOrderDate = new Date(ts);
-        orderDiffDays = Math.ceil(Math.abs(nextCharge - lastOrderDate ) / (1000 * 60 * 60 * 24));
+        // note that we're comparing a charge date against a delivery date
+        lastDelivered = new Date(ts);
+        orderDiffDays = Math.ceil(Math.abs(nextCharge - lastDelivered ) / (1000 * 60 * 60 * 24));
         diffDays = orderDiffDays > diffDays ? diffDays : orderDiffDays;
       };
 
@@ -1069,10 +1080,17 @@ async function *Subscription({ subscription, customer, idx, admin }) {
 
   };
 
+  /**
+   * Hold flag as to subscription being unskippable (i.e. Reschedule)
+   *
+   * @member {array} unskippable
+   */
+  let unskippable = isUnSkippable();
   /*
    * @member addressData
    * Layout helper
    */
+
   const addressData = () => {
     return [
       `${subscription.address.first_name} ${subscription.address.last_name}`,
@@ -1092,7 +1110,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    */
   const chargeData = () => {
     const data = [
-      ["Next Order Date", subscription.attributes.nextChargeDate],
+      ["Next Payment Date", subscription.attributes.nextChargeDate],
       ["Next Scheduled Delivery", subscription.attributes.nextDeliveryDate],
       ["Frequency", subscription.attributes.frequency],
       //["Order Delivered", subscription.attributes.lastOrder.delivered],
@@ -1100,8 +1118,15 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     ];
     if (Boolean(subscription.attributes.lastOrder)
       && Object.hasOwnProperty.call(subscription.attributes.lastOrder, "order_number")) {
+      const now = new Date();
+      let title;
+      if (Date.parse(subscription.attributes.lastOrder.delivered) < now.getTime()) {
+        title = "Last Order Delivered";
+      } else {
+        title = "Current Order Scheduled For";
+      };
       data.push(
-        ["Last Order Delivered", `${subscription.attributes.lastOrder.delivered} (#${subscription.attributes.lastOrder.order_number})`],
+        [title, `${subscription.attributes.lastOrder.delivered} (#${subscription.attributes.lastOrder.order_number})`],
       );
     };
     return data;
@@ -1221,19 +1246,17 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                       subscription={ subscription }
                       admin={ admin }
                       socketMessageId={ `${messageDivId}` } />
-                    { isSkippable() === true && (
-                      <SkipChargeModal subscription={ subscription }
-                        admin={ admin }
-                        socketMessageId={ `${messageDivId}` } />
-                    )}
-                    { isUnSkippable() === true && (
+                    <SkipChargeModal subscription={ subscription }
+                      admin={ admin }
+                      socketMessageId={ `${messageDivId}` } />
+                    { unskippable && (
                       <UnSkipChargeModal subscription={ subscription }
                         admin={ admin }
                         socketMessageId={ `${messageDivId}` } />
                     )}
-                        <CancelSubscriptionModal subscription={ subscription }
-                          admin={ admin }
-                          socketMessageId={ `${messageDivId}` } />
+                    <CancelSubscriptionModal subscription={ subscription }
+                      admin={ admin }
+                      socketMessageId={ `${messageDivId}` } />
                   </Fragment>
                 )}
                 <Button type="success-reverse"
@@ -1290,6 +1313,13 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                       <p class="pl5">New available this week: { subscription.attributes.nowAvailableAsAddOns.join(", ") }</p>
                     )}
                     <div class="tr mv2 mr3">
+                      { admin && (
+                        <Button
+                          onclick={ () => testChanges("updates") }
+                          type="primary-reverse">
+                          Test changes
+                        </Button>
+                      )}
                       <Button type="primary-reverse"
                         title="Continue"
                         onclick={(ev) => saveChanges("updates", ev)}>
@@ -1314,7 +1344,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                 { admin && (
                   <div class="dib pr2 nowrap">
                     <Button
-                      onclick={ () => testChanges() }
+                      onclick={ () => testChanges("includes") }
                       type="transparent/dark">
                       Test changes
                     </Button>

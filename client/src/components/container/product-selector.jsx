@@ -167,7 +167,6 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
    * @listens selectorOpenEvent
    */
   const handleSelectorOpen = async (ev) => {
-    console.log("here in selector open from event");
     if ("addItem" === ev.detail.selector) {
       addItemOpen = !addItemOpen;
       removeItemOpen = false;
@@ -192,6 +191,7 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
    * @function confirmSwap
    */
   const confirmSwap = async (product) => {
+
     const removed = { ...removedItem };
     removedItem = null;
     possibleSwaps = [];
@@ -227,14 +227,25 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
             <Fragment>
               { selectedExcludes.length < 2 && (
                 <Fragment>
-                  <button
-                    class="select-dropdown-button"
-                    title="Remove items to your box"
-                    id="removeItem"
-                    type="button"
-                    >
-                    {getSetting("Translation", "select-excludes")}&nbsp;&nbsp;&nbsp;{ removeItemOpen ? "▴" : "▾" }
-                  </button>
+                  { !removeItemOpen ? (
+                    <button
+                      class="select-dropdown-button"
+                      title="Remove items to your box"
+                      id="removeItem"
+                      type="button"
+                      >
+                      {getSetting("Translation", "select-excludes")}&nbsp;&nbsp;&nbsp;▾
+                    </button>
+                  ) : (
+                    <button
+                      class="select-dropdown-button"
+                      title="Cancel"
+                      id="removeItem"
+                      type="button"
+                      >
+                      Done&nbsp;&nbsp;&nbsp;▴
+                    </button>
+                  )}
                   <SwapSelector
                     possibleSwaps={ possibleSwaps }
                     removedItem={ removedItem }
@@ -246,7 +257,7 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
                   <ProductListing
                     possibleProducts={selectedIncludes}
                     name="removeItem"
-                    title="Remove items from your box"
+                    title="Remove product from your box"
                     type="excluded"
                     collapsed={!removeItemOpen}
                     id="product-includes"
@@ -258,18 +269,29 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
 
           { (possibleAddons.length > 0) && (
             <Fragment>
-              <button
-                class="select-dropdown-button"
-                title="Add items to your box"
-                id="addItem"
-                type="button"
-                >
-                {getSetting("Translation", "select-addons")}&nbsp;&nbsp;&nbsp;{ addItemOpen ? "▴" : "▾" }
-              </button>
+              { !addItemOpen ? (
+                <button
+                  class="select-dropdown-button"
+                  title="Add items to your box"
+                  id="addItem"
+                  type="button"
+                  >
+                  {getSetting("Translation", "select-addons")}&nbsp;&nbsp;&nbsp;▾
+                </button>
+              ) : (
+                <button
+                  class="select-dropdown-button"
+                  title="Cancel"
+                  id="addItem"
+                  type="button"
+                  >
+                  Done&nbsp;&nbsp;&nbsp;▴
+                </button>
+              )}
               <ProductListing
                 possibleProducts={possibleAddons}
                 name="addItem"
-                title="Add item to your box"
+                title="Add product to your box"
                 type="available"
                 collapsed={!addItemOpen}
                 id="product-addons"
@@ -285,4 +307,3 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
 };
 
 export default ProductSelector;
-//export default CollapseWrapper(ProductSelector);

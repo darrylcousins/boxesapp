@@ -87,6 +87,18 @@ function* UpsertSettingModal(props) {
     };
   };
 
+  /*
+   * Data passed to form to create the toast message to user on doSave of form
+   * These values can be arbitary provided that match the template string
+   */
+  const toastTemplate = (typeof setting === "undefined") ?
+    {
+      template: "Added setting.",
+    } : {
+      template: "Edited setting ${handle}.",
+      handle: setting.handle,
+  };
+
   while (true) {
     yield (
       <Fragment>
@@ -96,6 +108,7 @@ function* UpsertSettingModal(props) {
             fields={fields}
             title={title}
             id={formId}
+            meta={toastTemplate}
           />
           <Button type="primary" onclick={doSave}>
             Save

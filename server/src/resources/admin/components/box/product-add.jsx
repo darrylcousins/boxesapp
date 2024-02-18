@@ -252,8 +252,8 @@ async function* AddProductToBox(props) {
                 (delivered:{" "}
                 <span class="near-black">{box.delivered})</span>.
               </p>
-              <div class="mt3">
-                <label class="db fw6 lh-copy" for="product-search">Search</label>
+              <div class="mt3 mb4">
+                <label class="db fw6 lh-copy mt3 mb2" for="product-search">Search</label>
                 <input class="pa2 input-reset ba bg-transparent hover-bg-near-white w-100 br2" autofocus
                   type="text" name="product-search"  id="product-search" oninput={() => inputSearch()} />
               </div>

@@ -1,0 +1,18 @@
+<tr>
+  <td width="50px" style="padding: 3px 0px">
+    <img src="{{ env.HOST }}/product-images/{{ product.shopify_product_id }}.jpg" 
+      width="40px" style="border:1px solid #666;border-radius:2px;" align="left" />
+  </td>
+  <td>
+    {{ product.title }}
+  </td>
+  <td>
+    <span>$</span>{{ product.price | money }}
+  </td>
+  <td>
+    {{ product.quantity }}
+  </td>
+  <td width="45px" style="text-align:right">
+    <span>$</span>{{ product.total_price | money }}
+  </td>
+</tr>

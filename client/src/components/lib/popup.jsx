@@ -54,13 +54,13 @@ function Popup ({ text, buttons, callback }) {
       <div id={`popup-inner`}>
         <p>{text}</p>
         { buttons && (
-          <div class="button-wrapper">
+          <div>
             <button
               type="button"
               name="cancel"
               aria-label="Cancel"
               onclick={popupDeny}
-              class="button button--secondary"
+              class="button button--secondary boxesapp-button"
             >
               Not yet
             </button>
@@ -69,7 +69,7 @@ function Popup ({ text, buttons, callback }) {
               name="yes"
               aria-label="Yes"
               onclick={popupAffirm}
-              class="button button--secondary"
+              class="button button--secondary boxesapp-button"
             >
               Yes
             </button>

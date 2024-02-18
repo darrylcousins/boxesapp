@@ -32,12 +32,6 @@ export default async (req, res, next) => {
   const attributes = JSON.parse(req.body.attributes);
   const properties = JSON.parse(req.body.properties);
 
-  // update attributes - presented in the email - old/updated
-  attributes.previousChargeDate = attributes.nextChargeDate;
-  attributes.nextChargeDate = nextchargedate;
-  attributes.previousDeliveryDate = attributes.nextDeliveryDate;
-  attributes.nextDeliveryDate = nextdeliverydate;
-
   const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
 
   // add updated flag to rc_subscription_ids
@@ -63,11 +57,9 @@ export default async (req, res, next) => {
   // ensure the box subscription is the first to create a new charge
   for(var x in updates) updates[x].properties.some(el => el.name === "Including") ? updates.unshift(updates.splice(x,1)[0]) : 0;
 
-  const topicLower = `charge/${type}-charge`;
   const meta = {
     recharge: {
-      label: "CHARGE DATE",
-      topic: topicLower,
+      label: type, // paused or rescheduled
       title: `${attributes.title} - ${attributes.variant}`,
       charge_id: attributes.charge_id,
       customer_id: attributes.customer.id,
@@ -85,7 +77,13 @@ export default async (req, res, next) => {
   };
 
   meta.recharge = sortObjectByKeys(meta.recharge);
-  _logger.notice(`Recharge customer api reqest ${topicLower}.`, { meta });
+  _logger.notice(`Boxesapp api reqest subscription ${type}.`, { meta });
+
+  // update attributes - presented in the email - old/updated
+  attributes.previousChargeDate = attributes.nextChargeDate;
+  attributes.nextChargeDate = nextchargedate;
+  attributes.previousDeliveryDate = attributes.nextDeliveryDate;
+  attributes.nextDeliveryDate = nextdeliverydate;
 
   // return early so as to close the modal and return control to parent component
   // This data is passed by form-modal back to initiator using 'listing.reload' event
@@ -119,6 +117,7 @@ export default async (req, res, next) => {
         descriptiveType: type,
         attributes,
         includes,
+        properties,
         now,
         navigator,
         admin,
@@ -155,8 +154,7 @@ export default async (req, res, next) => {
       await updateSubscription(opts);
     };
 
-    // also tempted to add a time pause here
-    await delay(10000); // wait 10 seconds
+    await delay(10000); // wait 10 seconds to avoid making call to same route
 
     for (const update of updates) {
       const opts = {

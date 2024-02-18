@@ -110,6 +110,7 @@ async function* VerifySubscriptions({ customers }) {
   };
 
   for await (const props of this) { // eslint-disable-line no-unused-vars
+    if (customers && customers.length) {
     yield (
       <div class="w-100 pv4 ph5 br3 ba b--black-20 bw1" id="updates_pending" style="border-top: 3px red solid">
         <div class="center">
@@ -172,6 +173,9 @@ async function* VerifySubscriptions({ customers }) {
         )}
       </div>
     );
+    } else {
+      yield "";
+    };
   };
 };
 

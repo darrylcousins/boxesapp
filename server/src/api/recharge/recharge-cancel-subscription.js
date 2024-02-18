@@ -43,11 +43,11 @@ export default async (req, res, next) => {
   // make sure that the box is last
   for(var x in includes) includes[x].properties.some(el => el.name === "Including") ? includes.push( includes.splice(x,1)[0] ) : 0;
 
-  const topicLower = "subscription/cancelled";
+  const type = "cancelled";
+
   const meta = {
     recharge: {
-      label: "CANCEL",
-      topic: topicLower,
+      label: type,
       charge_id,
       customer_id: customer.id,
       address_id,
@@ -64,12 +64,12 @@ export default async (req, res, next) => {
   };
 
   meta.recharge = sortObjectByKeys(meta.recharge);
-  _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
+  _logger.notice(`Recharge customer api request subscription ${type}.`, { meta });
 
   try {
 
     const entry_id = await upsertPending({
-      action: "cancelled",
+      action: type,
       charge_id: parseInt(charge_id), // the only time charge id is included - this charge will be deleted
       customer_id: customer.id,
       address_id,
@@ -84,7 +84,7 @@ export default async (req, res, next) => {
     try {
 
       const mailOpts = {
-        type: "cancelled",
+        type,
         includes,
         attributes,
         now,

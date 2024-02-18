@@ -4,7 +4,7 @@
  */
 
 import { mongoInsert } from "../../lib/mongo/mongo.js";
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb"; // only after mongodb@ -> mongodb@6
 
 /*
  * @function setting/add-setting.js
@@ -15,7 +15,7 @@ import { ObjectID } from "mongodb";
 export default async (req, res, next) => {
   _logger.info(JSON.stringify(req.body, null, 2));
   const doc = {...req.body};
-  doc._id = new ObjectID();
+  doc._id = new ObjectId();
   try {
     const result = await mongoInsert(_mongodb.collection("settings"), doc);
     res.status(200).json(result);

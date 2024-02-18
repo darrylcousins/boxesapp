@@ -56,6 +56,15 @@ cd boxesapp/server
 npm install
 ```
 
+## Update to latest versions
+
+To update packages and `package.json` to latest versions:
+
+```bash
+npx npm-check-updates -u
+npm install
+```
+
 ## Mongo DB
 
 Setting up the database can all be done using mongo shell. The database name,
@@ -307,6 +316,9 @@ uploaded. Change `vite.config.js` to reflect a different `output.dir` if require
 
 I've been directly building
 and uploading the built files into the assets directory of the theme.
+
+----
+**Warning** Publishing a theme while having `theme watch` running does bad stuff.
 
 ```bash
 cd boxesapp/client

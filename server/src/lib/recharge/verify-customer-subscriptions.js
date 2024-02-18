@@ -85,6 +85,11 @@ export const verifyCustomerSubscriptions = async ({ customer, box_price_table })
           scheduled_at,
         }
       });
+
+      let currentIdx;
+      let dayOfWeek;
+      let diff;
+      let dayDiff;
       for (const [id, group] of Object.entries(grouped)) {
         // rc_subscription_ids, all grouped to the box
         // need to compare the count to actual extras
@@ -128,20 +133,26 @@ export const verifyCustomerSubscriptions = async ({ customer, box_price_table })
 
           const scheduled = new Date(group.charge.scheduled_at);
           const delivered = new Date(properties["Delivery Date"]);
-          let diff = delivered.getTime() - scheduled.getTime();
-          let dayDiff = Math. ceil(diff / (1000 * 3600 * 24));
+          diff = delivered.getTime() - scheduled.getTime();
+          dayDiff = Math. ceil(diff / (1000 * 3600 * 24));
+
+          currentIdx = new Date(Date.parse(properties["Delivery Date"])).getDay() - 4;
+          if (currentIdx < 0) currentIdx = currentIdx + 7; // fix to ensure the future
+          dayOfWeek = currentIdx % 7;
 
           // trying to pick up when charge and delivery day has been put out of sync
-          if (dayDiff !== 3) {
+          if (dayDiff !== 3 || dayOfWeek !== group.box.order_day_of_week) {
             // we can push the whole group because we have already grouped by scheduled_at
             tempDate = new Date(group.box.updated_at);
             date_mismatch.push({
+              message: dayDiff !== 3 ? "Incorrect delivery day" : "Incorrect order day",
               subscription_id: group.box.id,
               title: group.box.product_title,
               next_charge_scheduled_at: new Date(group.charge.scheduled_at).toDateString(),
               delivery_at: properties["Delivery Date"],
               updated_at: `${tempDate.toDateString()} ${tempDate.toLocaleTimeString()}`,
               cancelled_at: group.box.cancelled_at,
+              order_day_of_week: group.box.order_day_of_week,
             });
           };
 

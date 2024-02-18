@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import reconcileLists from "../lib.js";
+import reconcileBoxLists from "../reconcile-box-lists.js";
 
 /*
  * @function order/get-reconciled-preview.js
@@ -17,9 +17,8 @@ export default async (req, res, next) => {
 
   try {
     const { box, boxLists } = req.body;
-    console.log(box.delivered, box.shopify_product_id);
 
-    const { properties, messages } = await reconcileLists(box, boxLists);
+    const { properties, messages } = await reconcileBoxLists(box, boxLists);
     return res.status(200).json({ properties, messages });
 
   } catch(err) {

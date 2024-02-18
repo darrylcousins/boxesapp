@@ -28,6 +28,7 @@ import {
  */
 async function* Cancelled({ subscription, customer, idx, admin }) {
 
+  console.log("cancelled.jsx subscription", subscription);
   /**
    * True while loading data from api
    * Starts false until search term submitted
@@ -320,6 +321,7 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
           { !editsPending && (
             <div id={`reactivate-${subscription.box.id}`} class="w-100 pv2 tr">
               <DeleteSubscriptionModal subscription={ subscription } customer={ customer }
+                admin={ admin }
                 socketMessageId={ `${messageDivId}` } />
               <ReactivateSubscriptionModal subscription={ subscription } customer={ customer }
                 admin={ admin }

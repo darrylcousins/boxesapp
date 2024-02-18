@@ -22,6 +22,9 @@ crossroads.addRoute("/logs", () => import(`/src/resources/admin/components/route
 crossroads.addRoute("/settings", () => import(`/src/resources/admin/components/routes/settings`).then(({ default: Settings }) => {
   return renderer.render(<Settings />, document.getElementById("app"));
 }));
+crossroads.addRoute("/settings-plus", () => import(`/src/resources/admin/components/routes/settings-plus`).then(({ default: SettingsPlus }) => {
+  return renderer.render(<SettingsPlus />, document.getElementById("app"));
+}));
 crossroads.addRoute("/orders", () => import(`/src/resources/admin/components/routes/orders`).then(({ default: Orders }) => {
   return renderer.render(<Orders />, document.getElementById("app"));
 }));

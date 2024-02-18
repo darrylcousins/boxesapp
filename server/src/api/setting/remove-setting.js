@@ -4,7 +4,7 @@
  */
 
 import { mongoRemove } from "../../lib/mongo/mongo.js";
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb"; // only after mongodb@ -> mongodb@6
 
 /*
  * @function setting/remove-setting.js
@@ -14,7 +14,7 @@ import { ObjectID } from "mongodb";
  */
 export default async (req, res, next) => {
   const doc = {...req.body};
-  doc._id = ObjectID(doc._id);
+  doc._id = new ObjectId(doc._id);
   _logger.info(JSON.stringify(doc, null, 2));
   try {
     const result = await mongoRemove(_mongodb.collection("settings"), doc);

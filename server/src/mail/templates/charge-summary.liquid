@@ -1,0 +1,72 @@
+<mj-table align="center" width="100%">
+  {% if attributes.previousChargeDate %}
+    <tr>
+      <td valign="top" style="color:#777;text-align:right;padding-right:20px;">Previous Payment Date</td>
+      <td valign="top">{{ attributes.previousChargeDate }}</td>
+    </tr>
+    <tr>
+      <td valign="top" style="color:#777;text-align:right;padding-right:20px;padding-bottom:20px;">Previous Delivery</td>
+      <td valign="top" style="padding-bottom:20px;">{{ attributes.previousDeliveryDate }}</td>
+    </tr>
+  {% endif %}
+  {% if attributes.nextChargeDate %}
+    <tr>
+      <td valign="top" style="color:#777;text-align:right;padding-right:20px;">
+        {% if attributes.previousChargeDate %}Updated{% else %}Next{% endif %}
+        Payment Date
+      </td>
+      <td valign="top">{{ attributes.nextChargeDate }}</td>
+    </tr>
+    <tr>
+      <td valign="top" style="color:#777;text-align:right;padding-right:20px">
+        {% if attributes.previousChargeDate %}Updated{% else %}Next{% endif %}
+        Scheduled Delivery
+      </td>
+      <td valign="top" style="font-weight:bold">{{ attributes.nextDeliveryDate }}</td>
+    </tr>
+    {% if attributes.frequency %}
+      <tr>
+        <td valign="top" style="color:#777;text-align:right;padding-right:20px;">Delivery Schedule</td>
+        <td valign="top">{{ attributes.frequency }}</td>
+      </tr>
+    {% endif %}
+    <tr>
+      <td valign="top" style="color:#777;text-align:right;padding-right:20px;">Price (excl. shipping)</td>
+      <td valign="top"><span>$</span>{{ attributes.totalPrice | money }}</td>
+    </tr>
+  {% endif %}
+  {% if attributes.lastOrder %}
+    <tr>
+      <td valign="top" style="color:#777;text-align:right;padding-right:20px;">
+      {% if attributes.lastOrder.current %}Current{% else %}Last{% endif %}
+      Order
+      {% if attributes.lastOrder.current %}Delivery Date{% else %}Delivered{% endif %}
+      </td>
+      <td valign="top">{{ attributes.lastOrder.delivered }}</td>
+    </tr>
+    <tr>
+      <td valign="top" style="color:#777;text-align:right;padding-right:20px;">
+        {% if attributes.lastOrder.current %}Current{% else %}Last{% endif %} Order
+      </td>
+      <td valign="top">#{{ attributes.lastOrder.order_number }} {{ attributes.lastOrder.box.name }}</td>
+    </tr>
+    {% comment %}
+      {% assign today_date = 'now' | date: '%s' %}
+      {% assign delivered = attributes.lastOrder.delivered | date: '%s' %}
+      <tr>
+        <td valign="top" style="color:#777;text-align:right;padding-right:20px;">
+        {% if today_date < delivered %}Current{% else %}Last{% endif %}
+        Order
+        {% if today_date < delivered %}Delivery Date{% else %}Delivered{% endif %}
+        </td>
+        <td valign="top">{{ attributes.lastOrder.delivered }}</td>
+      </tr>
+      <tr>
+        <td valign="top" style="color:#777;text-align:right;padding-right:20px;">
+          {% if today_date < delivered %}Current{% else %}Last{% endif %} Order
+        </td>
+        <td valign="top">#{{ attributes.lastOrder.order_number }} {{ attributes.lastOrder.box.name }}</td>
+      </tr>
+    {% endcomment %}
+  {% endif %}
+</mj-table>

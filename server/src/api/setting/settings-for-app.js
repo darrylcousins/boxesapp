@@ -13,23 +13,24 @@ export default async (req, res, next) => {
   const collection = _mongodb.collection("settings");
   const response = {};
   try {
-    collection.aggregate(
+    const result = await collection.aggregate(
       [{
         $group: {
           _id: "$tag",
           settings: { $push: { handle: "$handle", value: "$value" } }
         },
       },
-      ]).toArray((err, result) => {
-        if (err) throw err;
-        result.forEach(el => {
-          response[el._id] = {};
-          el.settings.forEach(setting => {
-            response[el._id][setting.handle] = setting.value;
-          });
-        });
-        res.status(200).json(response);
+      ]).toArray();
+
+    result.forEach(el => {
+      response[el._id] = {};
+      el.settings.forEach(setting => {
+        response[el._id][setting.handle] = setting.value;
+      });
     });
+    console.log(response);
+    res.status(200).json(response);
+
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

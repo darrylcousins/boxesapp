@@ -39,12 +39,12 @@ function* VariantSelector({boxVariants, selectedVariant}) {
       <div id="variantSelector">
         { (boxVariants.length > 0) ? (
           <Fragment>
-            <div class="relative box-button-wrapper">
+            <div class="relative boxesapp-choice-wrapper">
               {boxVariants.map((el, idx, arr) => (
                 <button 
                   data-item={el.item}
                   data-title={el.text}
-                  class={ `box-button${selectedVariant.title === el.text ? " box-button-selected" : ""}` }>
+                  class={ `boxesapp-choice${selectedVariant.title === el.text ? " boxesapp-choice-selected" : ""}` }>
                   { el.text }
                 </button>
               ))}

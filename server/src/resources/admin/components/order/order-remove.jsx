@@ -74,22 +74,6 @@ function* RemoveOrder(props) {
       type: "hidden",
       datatype: "string",
     },
-    subscription_box_id: {
-      type: "hidden",
-      datatype: "string",
-    },
-    shopify_customer_id: {
-      type: "hidden",
-      datatype: "integer",
-    },
-    shopify_order_id: {
-      type: "hidden",
-      datatype: "integer",
-    },
-    delivery_date: {
-      type: "hidden",
-      datatype: "string",
-    },
   };
 
   /**
@@ -99,13 +83,14 @@ function* RemoveOrder(props) {
    * @returns {object} The initial data for the form
    * returns the order else compiles reasonable defaults.
    */
-  const getInitialData = () => ({ 
-    _id: order._id,
-    subscription_box_id: order.subscription_box_id,
-    shopify_customer_id: order.shopify_customer_id,
-    shopify_order_id: order.shopify_order_id,
-    delivery_date: order.delivered,
-  });
+  const getInitialData = () => {
+    const data = { 
+      _id: order._id,
+    };
+    console.log(order);
+    console.log(data);
+    return data;
+  };
 
   const FormatSource = ({ source }) => {
     return (typeof source === "string") ? (

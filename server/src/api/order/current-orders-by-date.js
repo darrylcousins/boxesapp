@@ -35,21 +35,10 @@ export default async (req, res, next) => {
   });
 
   try {
-    collection.find(query).sort({ "product_title": 1, "last_name": 1 }).toArray((err, result) => {
-      if (err) throw err;
-
-      // order by box title
-      response.orders = result;
-      response.headers = headersPartial;
-
-      // !old style - returning res.status(200).json() would work,
-      // I clearly wrote this around 3 years ago but I'll leave it here as a
-      // reminder to self of time passing :-)
-
-      res.set('Content-Type', 'application/json');
-      res.write(JSON.stringify(response));
-      res.end();
-    });
+    const result = await collection.find(query).sort({ "product_title": 1, "last_name": 1 }).toArray();
+    response.orders = result
+    response.headers = headersPartial;
+    res.status(200).json(response);
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

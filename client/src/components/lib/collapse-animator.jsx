@@ -64,23 +64,27 @@ function CollapseWrapper(Component) {
       tempEl = element.childNodes[0];
     };
 
-    if (tempEl.getAttribute("name") === "noChildren") {
-      calculatedHeight += tempEl.offsetHeight;
-      element.style.height = `${calculatedHeight}px`;
-      return;
-    };
-
-    tempEl.childNodes.forEach(el => {
-      if (el.getAttribute("name") === "hasChildren") {
-        el.childNodes.forEach(child => {
-          calculatedHeight += child.offsetHeight;
-        });
-      } else {
-        calculatedHeight += el.offsetHeight;
+    if (tempEl) {
+      if (tempEl.getAttribute("name") === "noChildren") {
+        calculatedHeight += tempEl.offsetHeight;
+        element.style.height = `${calculatedHeight}px`;
+        return;
       };
-    });
-    calculatedHeight += 10;
-    element.style.height = `${calculatedHeight}px`;
+
+      tempEl.childNodes.forEach(el => {
+        if (!el) return; // Node.TEXT_NODE === 3
+        if (el.getAttribute("name") === "hasChildren") { // Node.TEXT_NODE (3)
+          el.childNodes.forEach(child => {
+            if (!child) return;
+            calculatedHeight += child.offsetHeight;
+          });
+        } else {
+          calculatedHeight += el.offsetHeight;
+        };
+      });
+      calculatedHeight += 10;
+      element.style.height = `${calculatedHeight}px`;
+    };
     return;
   }
   

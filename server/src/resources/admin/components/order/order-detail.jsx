@@ -6,7 +6,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
-import { capWords } from "../helpers";
+import { capWords, dateTimeString } from "../helpers";
 
 /**
  * Create a DOM representation of order properties.
@@ -17,6 +17,7 @@ import { capWords } from "../helpers";
  * @param {object} props.order The order to be displayed
  */
 function OrderDetail({ order }) {
+
   return (
     <Fragment>
       <h3 class="fw4 tl fg-streamside-maroon mb0">
@@ -30,8 +31,8 @@ function OrderDetail({ order }) {
       <h4 class="dib fg-streamside-maroon mb1">
       {order.variant_name} - {order.delivered}
       </h4>
-      <div class="fg-streamside-maroon mb2">
-      Created: {order.inserted}
+      <div class="fg-streamside-maroon mv2">
+      Created: { order.created ? dateTimeString(order.created) : order.inserted }
       </div>
       <div class="dn">{ order.inserted }</div>
       <div class="dt dt--fixed">

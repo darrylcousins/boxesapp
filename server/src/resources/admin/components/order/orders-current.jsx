@@ -19,7 +19,9 @@ import Error from "../lib/error";
 import SelectMenu from "../lib/select-menu";
 import { Fetch } from "../lib/fetch";
 import Button from "../lib/button";
-import { Help } from "../lib/help";
+import Help from "../lib/help";
+import { toastEvent } from "../lib/events";
+import Toaster from "../lib/toaster";
 import { SaveAltIcon } from "../lib/icon";
 import { animateFadeForAction, hasOwnProp, dateStringSort } from "../helpers";
 
@@ -89,6 +91,8 @@ function* CurrentOrders() {
   let filterFields = {
     pickup: 'Pickup Date',
     zip: 'Postcode',
+    source: 'Source Type',
+    box_title: 'Box Title',
   };
   /**
    * Form filter field
@@ -115,12 +119,14 @@ function* CurrentOrders() {
    */
   let checkedOrders = [];
 
+  this.addEventListener("toastEvent", Toaster);
+
   /**
    * Fetch available dates, includes order count by date
    *
    * @function getDates
    */
-  const getDates = () => {
+  const getDates = async () => {
     const uri = `/api/current-order-dates`;
     Fetch(uri)
       .then((result) => {
@@ -132,7 +138,6 @@ function* CurrentOrders() {
           this.refresh();
         } else {
           fetchDates = Object.keys(json);
-          fetchDates.sort(dateStringSort);
           orderCounts = {};
           for (const d of fetchDates) {
             if (hasOwnProp.call(json[d], 'orders')) {
@@ -162,12 +167,26 @@ function* CurrentOrders() {
    */
   const getUriFilters = (uri, includeProxy) => {
     if (filterField && filterValue && filterType) {
+
+      let field, value, type;
+
+      if (filterField === "source") {
+        // need to fix the strings
+        value = filterValue.replace(" ", "_").toLowerCase();
+        field = "source.type";
+      } else {
+        value = filterValue;
+        field = filterField;
+      };
+
+      type = filterType;
+
       uri += `?filter_field=${
-        encodeURIComponent(filterField)
+        encodeURIComponent(field)
       }&filter_value=${
-        encodeURIComponent(filterValue)
+        encodeURIComponent(value)
       }&filter_type=${
-        encodeURIComponent(filterType)
+        encodeURIComponent(type)
       }`;
     };
     if (includeProxy) {
@@ -199,6 +218,7 @@ function* CurrentOrders() {
           const { headers, orders } = json;
           fetchHeaders = headers;
           fetchOrders = orders;
+          console.log(fetchOrders);
           loading = false;
           if (document.getElementById("orders-table")) {
             animateFadeForAction("orders-table", async () => await this.refresh());
@@ -303,24 +323,6 @@ function* CurrentOrders() {
   });
 
   /**
-   * Hide the select dropdown on escape key
-   *
-   * @function hideModal
-   * @param {object} ev Event emitted
-   * @listens window.keyup
-   */
-  const keyEvent = async (ev) => {
-    if (ev.key && ev.key === "Escape") {
-      if (menuSelectDate) {
-        menuSelectDate = !menuSelectDate;
-        this.refresh();
-      }
-    }
-  };
-
-  this.addEventListener("keyup", keyEvent);
-
-  /**
    * Event handler when {@link
    * module:form/form-modal~FormModalWrapper|FormModalWrapper} saves the data
    *
@@ -415,7 +417,6 @@ function* CurrentOrders() {
    * @function normalizeFilterValue
    */
   const normalizeFilterValue = (value) => {
-    console.log("normalising", value);
     if (filterType === "date") {
       const testDate = new Date(parseInt(value));
       return (!Boolean(testDate)) ? value : testDate.toDateString();
@@ -436,12 +437,12 @@ function* CurrentOrders() {
   for (const _ of this) { // eslint-disable-line no-unused-vars
     yield (
       <div class="w-100 pb2 center">
-        <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
+        <h4 class="tl lh-title fg-streamside-maroon" id="boxes-title">
           Current Orders {selectedDate ? `for ${selectedDate}` : ""}
         </h4>
         <p class="lh-copy">
           {loading ? (
-            <div class="ba br2 pa3 mh2 mv1 orange bg-light-yellow" role="alert">
+            <div class="alert-box dark-blue ma2 br3 ba b--dark-blue bg-washed-blue">
               <p>
                 <i class="b">Hold tight.</i> Collecting and collating{" "}
               </p>
@@ -449,7 +450,7 @@ function* CurrentOrders() {
           ) : (
             <div class="relative w-100 tr pr2">
               <Help id="ordersInfo" />
-              <div id="ordersInfo" class="info w-95" role="alert">
+              <div id="ordersInfo" class="alert-box info info-right w-95" role="alert">
                 <ul>
                 <li>
                 Orders are removed two weeks after delivery date. A back up file will be available for a short time thereafter.
@@ -477,11 +478,11 @@ function* CurrentOrders() {
         <div class="overflow-visible">
           {fetchError && <Error msg={fetchError} />}
           {checkedOrders.length ? (
-            <div class="ba br2 pa3 mh2 mv1 orange bg-light-yellow" role="alert">
-              <p class="fl w-50">
+            <div class="alert-box dark-blue pa2 ph3 ma2 br3 ba b--dark-blue bg-washed-blue">
+              <p class="tl">
                 <strong>{checkedOrders.length}</strong> {pluralize(checkedOrders.length, "order")} selected.
               </p>
-              <div class="w-50 tr dib">
+              <div class="tr">
                 <EditOrders selectedOrders={checkedOrders} />
                 <Button
                   type="secondary"
@@ -508,7 +509,7 @@ function* CurrentOrders() {
               <Fragment>
                 {new Date(selectedDate).toString() !== "Invalid Date" && (
                   <div class="flex w-70 tr v-bottom relative">
-                    <FilterOrders updateFilter={updateFilter} />
+                    <FilterOrders delivered={selectedDate} updateFilter={updateFilter} />
                     <PickingModal delivered={selectedDate} getUriFilters={getUriFilters}/>
                     <PackingModal delivered={selectedDate} getUriFilters={getUriFilters}/>
                     <button
@@ -547,28 +548,28 @@ function* CurrentOrders() {
           </div>
           <div class="cf"></div>
           {filterField && filterValue && (
-            <div class="ba br2 pa3 ma2 orange bg-light-yellow" role="alert">
+            <div class="alert-box dark-blue pb2 ph3 ma2 br3 ba b--dark-blue bg-washed-blue">
               {fetchOrders.length ? (
-                <p class="w-50">
+                <p class="tl">
 
                   { filterField !== "pickup" && (
                     <div class="tl">List previews and downloads only look for a filter on pickup.</div>
                   )}
-                  <div class="mb2 tl">
+                  <div class="mv2 tl">
                     Filtered  { " " }
                     <strong>{fetchOrders.length}</strong>{ " " }
-                    orders by <strong>{filterFields[filterField]}</strong> for { " " }
+                    order{fetchOrders.length>1 ? "s" : ""} by <strong>{filterFields[filterField]}</strong> for { " " }
                     <strong>{normalizeFilterValue(filterValue)}</strong>.
                   </div>
                 </p>
               ) : (
-                <p class="w-50 tl">
+                <p class="tl">
                   No orders found filtering on <strong>{filterFields[filterField]}</strong> by <strong>{normalizeFilterValue(filterValue)}</strong>.
                 </p>
               )}
-              <div class="w-50 tr dib cf">
+              <div class="tr">
                 <Button
-                  type="secondary"
+                  type="primary"
                   onclick={clearFilter}
                 >Clear Filter</Button>
               </div>
@@ -592,7 +593,7 @@ function* CurrentOrders() {
                     selected={checkedOrders}
                   />
                 ) : (
-                  <div class="ba br2 pa3 mh2 mv1 orange bg-light-yellow" role="alert">
+                  <div class="alert-box dark-blue ma2 br3 ba b--dark-blue bg-washed-blue">
                     <p>
                       No orders here.
                     </p>

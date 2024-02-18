@@ -67,6 +67,7 @@ const options = {
 async function* DeleteSubscription(props) {
   const { doSave, closeModal, title, subscription, customer, formId } = props;
 
+  console.log(subscription);
   /**
    * The form fields - required by {@link module:app/form/form~Form|Form}.
    *
@@ -134,6 +135,7 @@ async function* DeleteSubscription(props) {
           title: subscription.box.product_title,
           variant: subscription.box.variant_title,
           lastOrder: subscription.lastOrder,
+          address_id: subscription.box.address_id,
         }),
         now: dateStringNow(),
         navigator: userNavigator(),
@@ -155,8 +157,8 @@ async function* DeleteSubscription(props) {
     yield (
       <Fragment>
         <p class="lh-copy tl">
-          Permanently delete box subscription? { "" }
-            <span class="b">{ subscription.box.product_title } - { subscription.box.variant_title }</span>
+          Permanently delete box subscription { "" }
+            <span class="b">{ subscription.box.product_title } - { subscription.box.variant_title }?</span>
           <br />
           <strong>This cannot be undone.</strong>
         </p>

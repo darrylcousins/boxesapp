@@ -19,7 +19,7 @@ import Boxes from "./boxes";
 import BoxSettings from "./box-settings";
 import PushMenu from "../lib/push-menu";
 import { animateFadeForAction, dateStringSort } from "../helpers";
-import { Help } from "../lib/help";
+import Help from "../lib/help";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
 import {
@@ -386,7 +386,7 @@ function* CurrentBoxes({ timestamp }) {
         </div>
         <div class="relative w-100 tr pr2">
           <Help id="ordersInfo" />
-          <p id="ordersInfo" class="info w-95" role="alert">
+          <p id="ordersInfo" class="alert-box info info-right w-95" role="alert">
             Boxes are removed two weeks after delivery date. A back up file will be available for a short time thereafter.
           </p>
         </div>

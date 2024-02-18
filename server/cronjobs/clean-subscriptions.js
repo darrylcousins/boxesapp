@@ -82,6 +82,8 @@ const main = async () => {
           { "upsert": true }
         );
 
+        console.log(date_mismatch);
+
         result.push({
           customer,
           orphans,

@@ -61,7 +61,6 @@ export async function createServer(
 ) {
 
   const app = express();
-
   /*
   morgan.token('host', function(req, res) {
     return req.hostname;
@@ -121,7 +120,9 @@ export async function createServer(
   const path = isProd ? PROD_INDEX_PATH : DEV_INDEX_PATH;
   const tpl = isProd ? "" : "-portal";
 
+  // these two do nothing
   app.use("/proxy/admin-portal/docs", docWrite({ app, vite, path }));
+
   app.use("/proxy/customer-portal", proxyWrite({ app, vite, template: `customer${tpl}`, path }));
   app.use("/proxy/admin-portal", proxyWrite({ app, vite, template: `admin${tpl}`, path }));
 

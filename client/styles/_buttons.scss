@@ -1,0 +1,41 @@
+.boxesapp-button {
+  width: 100%;
+  margin: 2px 0;
+}
+.boxesapp-choice-wrapper {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: var(--spacing-extra-small);
+  margin-bottom: var(--spacing-medium);
+}
+.boxesapp-choice {
+  text-decoration: none;
+  transition: opacity .15s ease-in;
+  -webkit-transition: opacity .15s ease-in;
+  -moz-transition: opacity .15s ease-in;
+  -ms-transition: opacity .15s ease-in;
+  -o-transition: opacity .15s ease-in;
+  border: 1px solid;
+  background-color: transparent;
+  color: inherit;
+  border-radius: 40px;
+  display: inline-block;
+  margin: .7rem .5rem .2rem 0;
+  padding: 1rem 2rem;
+  font-size: 1.4rem;
+  letter-spacing: .1rem;
+  line-height: 1;
+  text-align: center;
+  transition: border 1s ease;
+  cursor: pointer;
+  position: relative;
+}
+.boxesapp-choice:hover {
+  opacity: 0.8;
+}
+.boxesapp-choice-selected {
+  background-color: rgb(44, 51, 47);
+  border-color: #666;
+  color: white;
+}

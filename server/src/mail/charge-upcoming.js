@@ -8,9 +8,7 @@ import buildMail from "./build-mail.js";
  * @function mail/charge-upcoming.js
  * @param (object) data
  */
-export default async ({ subscriptions }) => {
-  const subscription = subscriptions[0];
-  const attributes = subscription.attributes;
+export default async ({ subscriptions, attributes }) => {
   const email = attributes.customer.email;
   const title = "Charge Upcoming";
   const subject = `${title} ${attributes.title} - ${attributes.variant}`;
@@ -18,8 +16,9 @@ export default async ({ subscriptions }) => {
 
   // logging meta data - becomes meta.recharge for notices
   const meta = {
-    customer_id: subscription.attributes.customer.id,
-    charge_id: subscription.attributes.charge_id,
+    customer_id: attributes.customer.id,
+    charge_id: attributes.charge_id,
+    subscription_id: attributes.subscription_id,
     subject,
     email,
   };

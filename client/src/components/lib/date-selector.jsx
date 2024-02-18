@@ -88,23 +88,19 @@ function* DateSelector({fetchDates, selectedDate, variantTitle}) {
         { (fetchDates.length > 0) ? (
           <Fragment>
             { !selectedDate &&  (
-              <div class="notice"
-                    style={{
-                      "color": getSetting("Colour", "notice-fg"),
-                      "background-color": getSetting("Colour", "notice-bg")
-                    }}>
+              <div class="boxesapp-notice">
                 <p>{getSetting("Translation", "notice-choose-date")}</p>
               </div>
             )}
             <div class="relative">
               { (fetchDates.length > 1) ? (
                 <Fragment>
-                  <div class="relative box-button-wrapper">
+                  <div class="relative boxesapp-choice-wrapper">
                     {getDates().map(el => ({text: el, item: el})).map((el, idx, arr) => (
                       <button 
                         data-item={el.item}
                         data-title={el.text}
-                        class={ `box-button${selectedDate === el.text ? " box-button-selected" : ""}` }>
+                        class={ `boxesapp-choice${selectedDate === el.text ? " boxesapp-choice-selected" : ""}` }>
                         { el.text }
                       </button>
                     ))}
@@ -121,11 +117,7 @@ function* DateSelector({fetchDates, selectedDate, variantTitle}) {
             </div>
           </Fragment>
         ) : (
-          <div class="notice"
-                style={{
-                  "color": getSetting("Colour", "notice-fg"),
-                  "background-color": getSetting("Colour", "notice-bg")
-                }}>
+          <div class="boxesapp-notice">
             <p>{getSetting("Translation", "notice-no-boxes")}</p>
           </div>
         )}

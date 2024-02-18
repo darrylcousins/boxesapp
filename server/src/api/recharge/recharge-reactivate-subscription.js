@@ -4,7 +4,7 @@
  */
 
 import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
-import { formatDate, sortObjectByKeys } from "../../lib/helpers.js";
+import { formatDate, sortObjectByKeys, delay } from "../../lib/helpers.js";
 import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
 
 /*
@@ -46,11 +46,11 @@ export default async (req, res, next) => {
   let chargeDate = new Date(Date.parse(nextchargedate));
   const nextChargeDate = formatDate(chargeDate);
 
-  const topicLower = "subscription/reactivated";
+  const type = "reactivated";
+
   const meta = {
     recharge: {
-      label: "REACTIVATE",
-      topic: topicLower,
+      label: type,
       charge_id: null,
       customer_id: customer_id,
       address_id,
@@ -92,12 +92,10 @@ export default async (req, res, next) => {
     });
   };
 
-  const type = "reactivated";
-
   try {
 
     const entry_id = await upsertPending({
-      action: "reactivated",
+      action: type,
       customer_id,
       address_id,
       subscription_id,
@@ -122,10 +120,21 @@ export default async (req, res, next) => {
       const totalPrice = includes.map(el => parseFloat(el.price) * el.quantity).reduce((sum, el) => sum + el, 0);
       attributes.totalPrice = `${totalPrice.toFixed(2)}`;
 
+      // update for email template
+      for (const el of includes) {
+        el.title = el.product_title;
+        el.shopify_product_id = el.external_product_id.ecommerce;
+      };
+      attributes.nextChargeDate = nextchargedate; // usual string format
+      attributes.nextDeliveryDate = nextdeliverydate; // usual string format
+      attributes.scheduled_at = nextChargeDate; // formatted yyy-mm-dd
+      attributes.address_id = address_id;
+
       const mailOpts = {
         type,
         includes: adjusted,
-        attributes,
+        attributes, // missing charge_id here, can we insert it later?
+        properties,
         now,
         navigator,
         admin,
@@ -150,15 +159,7 @@ export default async (req, res, next) => {
     });
 
     meta.recharge = sortObjectByKeys(meta.recharge);
-    _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
-
-    // update for email template
-    for (const el of includes) {
-      el.title = el.product_title;
-      el.shopify_product_id = el.external_product_id.ecommerce;
-    };
-    attributes.nextChargeDate = nextchargedate;
-    attributes.nextDeliveryDate = nextdeliverydate;
+    _logger.notice(`Boxesapp api request subscription ${type}.`, { meta });
 
     // first activated the subscription, curious to see what charge date it gives, still don't know
     for (const update of updates) {
@@ -172,6 +173,8 @@ export default async (req, res, next) => {
       };
       await makeRechargeQuery(opts)
     };
+
+    await delay(10000); // wait 10 seconds to avoid making call to same route
 
     // then update properties [Delivery Date]
     for (const update of updates) {

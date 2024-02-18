@@ -4,7 +4,7 @@
  */
 
 import { mongoUpdate } from "../../lib/mongo/mongo.js";
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb";
 
 /*
  * @function setting/edit-settings.js
@@ -17,7 +17,7 @@ export default async (req, res, next) => {
   const response = [];
   try {
     await req.body.forEach(async (doc) => {
-      doc._id = ObjectID(doc._id);
+      doc._id = new ObjectId(doc._id);
       const result = await mongoUpdate(_mongodb.collection("settings"), doc);
       response.push(result);
     });

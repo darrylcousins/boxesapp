@@ -3,8 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
-
+import { ObjectId } from "mongodb"; // only after mongodb@ -> mongodb@6
 /*
  * @function box/toggle-box-active.js
  * Remove a product from the box, parameters from req.body:
@@ -18,28 +17,19 @@ export default async (req, res, next) => {
   const collection = _mongodb.collection("boxes");
 
   try {
+    let result;
     if (box_id && !delivered) {
-      collection.updateOne(
-        {_id: ObjectID(box_id)},
+      result = await collection.updateOne(
+        {_id: new ObjectId(box_id)},
         {$set: {active}}
-        , async (err, result) => {
-        if (err) {
-          _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-        };
-
-        res.status(200).json(result);
-      });
+      );
+      res.status(200).json(result);
     } else if (!box_id && delivered) {
-      collection.updateMany(
+      result = await collection.updateMany(
         {delivered},
         {$set: {active}}
-        , async (err, result) => {
-        if (err) {
-          _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-        };
-
-        res.status(200).json(result);
-      });
+      );
+      res.status(200).json(result);
     };
   } catch(err) {
     res.status(200).json({ error: err.message });

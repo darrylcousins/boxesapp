@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb";
 import { mongoUpdate } from "../../lib/mongo/mongo.js";
 import { getNZDeliveryDay } from "../../lib/dates.js";
 import { updateStoreObject } from "../../lib/shopify/helpers.js";
@@ -16,7 +16,7 @@ import { updateStoreObject } from "../../lib/shopify/helpers.js";
  */
 export default async (req, res, next) => {
   const data = {...req.body};
-  data._id = ObjectID(data._id);
+  data._id = new ObjectId(data._id);
   data.delivered = getNZDeliveryDay(new Date(data.delivered).getTime());
   data.pickup = getNZDeliveryDay(new Date(data.pickup).getTime());
   data.shipping = JSON.parse(data.shipping);

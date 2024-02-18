@@ -8,6 +8,7 @@
 import { createElement, Fragment, Portal} from "@b9g/crank";
 import Button from "../lib/button";
 import ModalTemplate from "../lib/modal-template";
+import { formatMeta, dateString } from "./helpers";
 
 /**
  * Display a modal containing {@link
@@ -25,13 +26,6 @@ async function* LogsModal({ logs, box_title, admin }) {
    * @member {boolean} visible
    */
   let visible = false;
-  /**
-   * Possible selections to make on object type
-   *
-   * @member possibleObjects
-   * @type {array}
-   */
-  let possibleObjects = ["order", "product", "recharge", "shopify"];
 
   /**
    * Close the modal
@@ -41,60 +35,6 @@ async function* LogsModal({ logs, box_title, admin }) {
   const closeModal = () => {
     visible = false;
     this.refresh();
-  };
-
-  /*
-   * Helper method to render log.meta
-   */
-  const formatMeta = (el) => {
-    const user = [ "Delivery Date", "title", "topic", "charge_status", "subscription_id", "scheduled_at" ];
-    if (!Object.hasOwnProperty.call(el, 'meta')) {
-      return <div>&nbsp;</div>;
-    };
-    if (el.meta === null) {
-      return <div>&nbsp;</div>;
-    };
-    // expecting just one object on meta 'order', 'product', 'customer', 'subscription'?
-    const obj = Object.keys(el.meta)[0];
-    if (possibleObjects.includes(obj)) {
-      let mapper;
-      if (admin) {
-        mapper = Object.entries(el.meta[obj]);
-      } else {
-        mapper = Object.entries(el.meta[obj]).filter(([title, str]) => {
-          return user.includes(title) ? [title, str] : false;
-        });
-      };
-      return (
-        <div class="dt w-100 mv1">
-          { mapper.map(([title, str]) => (
-              <div class="dt-row w-100">
-                <div class="dtc w-30 gray tr pr2">
-                  { title }:
-                </div>
-                <div class="dtc w-70">
-                  { (typeof str === "string") ? `${ str }` : `${JSON.stringify(str)}` }
-                </div>
-              </div>
-          ))}
-        </div>
-      );
-    } else {
-      return (
-        <div class="dt w-100 mv1">
-          { Object.entries(el.meta).map(([title, str]) => (
-              <div class="dt-row w-100">
-                <div class="dtc w-50 gray tr pr2">
-                  { title }:
-                </div>
-                <div class="dtc w-50">
-                  { str }
-                </div>
-              </div>
-          ))}
-        </div>
-      );
-    };
   };
 
   /**
@@ -125,14 +65,6 @@ async function* LogsModal({ logs, box_title, admin }) {
   this.addEventListener("click", hideModal);
 
   this.addEventListener("keyup", hideModal);
-
-  /*
-   * Helper method for tidy date strings from timestamp
-   */
-  const dateString = (timestamp) => {
-    const date = new Date(timestamp);
-    return `${date.toDateString()} ${date.toLocaleTimeString()}`;
-  };
 
   const main = document.getElementById("modal-window");
 
@@ -165,7 +97,7 @@ async function* LogsModal({ logs, box_title, admin }) {
                   <ul class="list pl0 mt0">
                    { logs.map((log) => (
                      <li class="dt w-100">
-                       <div class="dib b w-30">{ dateString(log.timestamp) }</div>
+                       <div class="dib b w-30">{ dateString(log) }</div>
                        <div class="dib w-70 pl2">
                          <div class="db b i w-100">{ log.message }</div>
                          <div class="dtc db w-100">

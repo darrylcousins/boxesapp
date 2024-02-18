@@ -229,7 +229,6 @@ const getOrderFields = async (order, delivered, onBoxChange, onDeliveredChange, 
         type: "input-select",
         datatype: "string",
         datalist: [],
-        onchange: onDeliveredChange,
         required: true,
         /*
         type: "date", // needs to be calendar select

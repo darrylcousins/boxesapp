@@ -56,16 +56,11 @@ function* ProductListing({possibleProducts, name, title, type}) {
             <div class="pill-wrapper">
               {products.map(el =>
                 <div
-                  class="pill pointer"
-                  style={{
-                    "color": getSetting("Colour", `${type}-product-fg`),
-                    "background-color": getSetting("Colour", `${type}-product-bg`),
-                    "border-color": getSetting("Colour", `${type}-product-bg`)
-                  }}
+                  class={ `pill pointer ${type}-product ${el.quantity > 1 ? `${type}-product-hi` : ""}` }
                   data-item={el.shopify_product_id}
                   data-title={el.shopify_title}
                   name={name}
-                  title={title}
+                  title={ title }
                 >
                     &nbsp;{getTitle(el)}&nbsp;
                 </div>

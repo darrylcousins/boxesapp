@@ -161,7 +161,7 @@ export const doRechargeQuery = async ({method, path, limit, query, body, title, 
     json.method = http_method;
 
     if (parseInt(response.status) > 299) {
-      throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}"`);
+      throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}", fetching ${path}${searchString}`);
     };
 
     return json;

@@ -2,13 +2,11 @@
 used for hover info
 */
 .info {
-  line-height: 1.15;
+  line-height: 1.5;
   box-sizing: border-box;
   z-index: 9999;
   position: absolute;
   top: 1em;
-  right: 0;
-/*  width: 100%; */
   border: 1px solid #162842;
   text-align: left;
   border-style: solid;
@@ -22,5 +20,12 @@ used for hover info
   margin-left: .5rem;
   margin-right: 1rem;
   display: none;
+  white-space: nowrap;
+}
+.info-right {
+  right: 0;
+}
+.info-left {
+  left: 0;
 }
 

@@ -21,7 +21,7 @@ import Toaster from "../lib/toaster";
 import BarLoader from "../lib/bar-loader";
 import Form from "../form";
 import getOrderFields from "./order-fields";
-import { getLoader, capWords, dateStringForInput, animateFadeForAction } from "../helpers";
+import { getLoader, capWords, dateStringForInput, dateTimeString, animateFadeForAction } from "../helpers";
 
 /**
  * Create a modal to add or edit an order..
@@ -85,6 +85,12 @@ async function* UpsertOrderModal(props) {
    * @member {object} properties
    */
   let properties = null;
+  /**
+   * rc_subscription_ids as fetched from api/get-reconciled-box
+   *
+   * @member {object} rc_subscription_ids
+   */
+  let rc_subscription_ids = [];
   /**
    * Messages fetched from api defining updates to properties
    *
@@ -413,6 +419,7 @@ async function* UpsertOrderModal(props) {
         if (!error) {
           box = json.box;
           properties = json.properties;
+          rc_subscription_ids = json.rc_subscription_ids;
           isBoxReconciled = json.reconciled;
           if (!json.reconciled) messages = json.messages;
           isBoxEditable = isBoxReconciled; // no messages, no updates required
@@ -526,11 +533,21 @@ async function* UpsertOrderModal(props) {
               {fetchError && <Error msg={fetchError} />}
               {formError && <Error msg={formError} />}
             </div>
+            <div class="tc center">
+              { order && (
+                <h4 class="fw4 tc fg-streamside-maroon">{order.variant_name} {order.delivered}</h4>
+              )}
+            </div>
             { (!isBoxEditable && isBoxReconciled && !box) && (
               <div class="tl ba br2 pa3 mh2 mv1 orange bg-light-yellow" role="alert">
                 <p>
                   The delivery date should be updated and saved before products can be edited.
                 </p>
+              </div>
+            )}
+            { order && order.created && (
+              <div class="tl">
+                Created: { order.created ? dateTimeString(order.created) : order.inserted }
               </div>
             )}
             <Form
@@ -543,28 +560,28 @@ async function* UpsertOrderModal(props) {
             { !loading && box && messages.length > 0 && (
               <Fragment>
                 { !isBoxEditable && (
-                  <div class="tl ba br2 pa3 mh2 mv1 orange bg-light-yellow" role="alert">
-                    <p>
+                  <div class="alert-box tl ma2 pt3 pb2 ph3 dark-blue br3 ba b--dark-blue bg-washed-blue">
+                    <p class="mv3">
                       Products cannot be edited because the items in the order do
-                      match those for the current box. Other fields may be edited
-                      and the order can be reconciled with the box to allow the
+                      match those for the current box. Choose <strong>ignore</strong> to allow other fields to be edited
+                      or choose <strong>reconcile</strong> to match the order with the box and allow the
                       editing of products.
                     </p>
                   </div>
                 )}
                 { (isBoxEditable && isBoxReconciled) && (
-                  <div class="tl ba br2 pa3 mh2 mv1 orange bg-light-yellow" role="alert">
+                  <div class="alert-box tl ma2 pt3 pb2 ph3 dark-blue br3 ba b--dark-blue bg-washed-blue">
                     <p>
                       The order has been reconciled with the box but is unsaved.
                     </p>
                   </div>
                 )}
-                <div class="w-95 tl ba br2 pa3 mh2 mb3 dark-blue bg-washed-blue" role="alert">
+                <div class="alert-box tl ma2 pt3 pb2 ph3 dark-blue br3 ba b--dark-blue bg-washed-blue">
                   { messages.map(message => (
-                    <p>{message}</p> 
+                    <p class="mv1">{message}</p> 
                   ))}
                   { !isBoxReconciled && (
-                    <div class="tr">
+                    <div class="tr pa2">
                       <Button type="primary" onclick={async () => await doReconcileBox() }>
                         Reconcile box
                       </Button>
@@ -592,6 +609,7 @@ async function* UpsertOrderModal(props) {
               <div class="tl">
                 <EditProducts
                   properties={ properties }
+                  rc_subscription_ids={ rc_subscription_ids }
                   box={box}
                   hideDetails={ true }
                   id="edit-products"

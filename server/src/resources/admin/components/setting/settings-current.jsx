@@ -15,7 +15,8 @@ import BarLoader from "../lib/bar-loader";
 import Error from "../lib/error";
 import Button from "../lib/button";
 import { Fetch, PostFetch } from "../lib/fetch";
-import AppView from "./settings-app-view";
+import { toastEvent } from "../lib/events";
+import Toaster from "../lib/toaster";
 import {
   CaretUpIcon,
   CaretDownIcon,
@@ -47,24 +48,11 @@ function *Settings() {
    */
   let fetchError = null;
   /**
-   * Are we editing?
-   *
-   * @member loading
-   * @type {boolean}
-   */
-  let editing = false;
-  /**
    * Settings fetched from api as object keyed by handle (see saveSettings)
    *
    * @member {object} fetchSettings
    */
   let allSettings = {};
-  /**
-   * Settings fetched from api and passed to AppView
-   *
-   * @member {object} fetchSettings
-   */
-  let appSettings = {};
   /**
    * Settings fetched from api as array grouped by tag trimmed for accessibility
    *
@@ -82,27 +70,15 @@ function *Settings() {
    *
    * @member {object} collapsedSettings
    */
-  let collapsedSettings = true;
-
+  let collapsedGeneral = true;
   /**
-   * Keep clickable settings in view
+   * Translation settings are collapsible
    *
-   * @function onScroll
+   * @member {object} collapsedSettings
    */
-  const onScroll = () => {
-    const fixSettings = document.getElementById("other-settings");
-    let y;
-    if (fixSettings) {
-      const y = fixSettings.offsetTop - 50;
-      if (window.scrollY > y) {
-        fixSettings.classList.add("sticky-settings");
-      } else {
-        fixSettings.classList.remove("sticky-settings");
-      };
-    };
-  };
+  let collapsedTranslation = false;
 
-  window.addEventListener("scroll", onScroll);
+  this.addEventListener("toastEvent", Toaster);
 
   /**
    * Fetch settings data on mounting of component
@@ -122,11 +98,9 @@ function *Settings() {
           loading = false;
           json.forEach(el => {
             fetchSettings[el._id] = {}; // for this component
-            appSettings[el._id] = {}; // for the AppView component
             el.settings.forEach(setting => {
               allSettings[setting.handle] = setting;
               fetchSettings[el._id][setting.handle] = [setting.note, setting.value];
-              appSettings[el._id][setting.handle] = setting.value;
             });
           });
           if (document.getElementById("settings-table")) {
@@ -173,76 +147,15 @@ function *Settings() {
   this.addEventListener("listing.reload", reloadSettings);
 
   /**
-   * Event handler when {@link
-   * module:components/settings-app-view~SettingsAppView} hovers over editable settings
-   *
-   * @function hoverSettings
-   * @param {object} ev The event
-   * @listens appview.hover
-   */
-  const mouseoverSettings = (ev) => {
-    if (editing) return;
-    const {types, keys} = ev.detail;
-    let i;
-    for (i=0; i<types.length; i++) {
-      if (!hasOwnProp.call(selectedSettings, types[i])) {
-        selectedSettings[types[i]] = [];
-      };
-      selectedSettings[types[i]].push(keys[i]);
-    };
-    this.refresh();
-  };
-
-  this.addEventListener("appview.mouseover", mouseoverSettings);
-
-  /**
-   * Event handler when {@link
-   * module:components/settings-app-view~SettingsAppView} moves off editable settings
-   *
-   * @function mouseoutSettings
-   * @param {object} ev The event
-   * @listens appview.hover
-   */
-  const mouseoutSettings = (ev) => {
-    if (editing) return;
-    selectedSettings = {};
-    this.refresh();
-  };
-
-  this.addEventListener("appview.mouseout", mouseoutSettings);
-
-  /**
-   * Event handler when {@link
-   * module:components/settings-app-view~SettingsAppView} is clicked
-   *
-   * @function mouseclickSettings
-   * @param {object} ev The event
-   * @listens appview.click
-   */
-  const mouseclickSettings = (ev) => {
-    editing = true;
-    this.refresh();
-  };
-
-  this.addEventListener("appview.mouseclick", mouseclickSettings);
-
-  /**
    * Event handler when editing is cancelled by user
    *
    * @function cancelEdit
    * @param {object} ev The event
    */
   const cancelEdit = (ev) => {
-    editing = false;
     selectedSettings = {};
-    // reset appSettings if changed by colour
-    for (const key of ["Colour", "Translation"]) {
+    for (const key of ["General", "Translation"]) {
       for (const handle of Object.keys(allSettings)) {
-        if (hasOwnProp.call(appSettings[key], handle)) {
-          if (allSettings[handle].value !== appSettings[key][handle]) {
-            appSettings[key][handle] = allSettings[handle].value;
-          };
-        };
         if (hasOwnProp.call(fetchSettings[key], handle)) {
           if (allSettings[handle].value !== fetchSettings[key][handle][1]) {
             fetchSettings[key][handle][1] = allSettings[handle].value;
@@ -259,22 +172,26 @@ function *Settings() {
    * @function saveEdit
    * @param {object} ev The event
    */
-  const saveEdit = async (ev) => {
-    const inputs = document.querySelectorAll("input[name='setting']");
-    const data = [];
-    inputs.forEach(el => {
-      console.log(el.id);
-      const setting = {...allSettings[el.id]};
-      setting.value = el.value;
-      data.push(setting);
-    });
+  const saveEdit = async (ev, handle) => {
+    const el = document.getElementById(`saveBox-${handle}`);
+    if (el) el.classList.add("closed");
+    const data = allSettings[handle];
+    const input = document.getElementById(handle);
+    data.value = input.value.trim();
     const headers = { "Content-Type": "application/json" };
     const { error, json } = await PostFetch({
-      src: "/api/edit-settings",
+      src: "/api/edit-setting",
       data,
       headers,
     })
-      .then((result) => result)
+      .then((result) => {
+        this.dispatchEvent(toastEvent({
+          notice: "Saved setting",
+          bgColour: "black",
+          borderColour: "black"
+        }));
+        return result;
+      })
       .catch((e) => ({
         error: e,
         json: null,
@@ -286,6 +203,27 @@ function *Settings() {
 
   getSettings();
 
+  const inputChange = (ev) => {
+    const id = ev.target.id;
+
+    // revert any other fields back to fetched data
+    const saveBoxes = document.querySelectorAll("div.saveBox:not(.closed)");
+    saveBoxes.forEach(el => {
+      const handle = el.id.slice(8);
+      if (handle !== id) {
+        el.classList.add("closed");
+        const input = document.getElementById(handle);
+        if (input) {
+          input.value = allSettings[handle].value;
+        };
+      };
+    });
+
+    const el = document.getElementById(`saveBox-${id}`);
+    if (el) el.classList.remove("closed");
+    return;
+  };
+
   /**
    * Products component - will be wrapped in collapsible component
    *
@@ -293,37 +231,38 @@ function *Settings() {
    * @param {string} type included or addon
    * @generator Products
    */
-  function *GeneralSettings ({}) {
+  function *PartialSettings ({category}) {
 
     for (const _ of this) {
       yield (
-        <div class="mt1 bb b--black-30">
-          {hasOwnProp.call(fetchSettings, "General") && (
+        <div class="mt1 bb b--black-30" id={ category.toLowerCase() }>
+          {hasOwnProp.call(fetchSettings, category) && (
             <Fragment>
-              {Object.keys(fetchSettings.General).map(setting => getSetting("General", setting)).map(el => (
+              {Object.keys(fetchSettings[category]).map(setting => getSetting(category, setting)).map(el => (
                 <div class="w-100">
                   <label
                     for={el[2]}
-                    class="db mb2"
-                    style="font-size: 1em">
-                      {el[0]}
+                    class="db mb2 mt4">
+                      {el[0]} {el[2]}
                     </label>
                   <input 
                     id={el[2]}
                     name="setting"
                     class="input-reset ba b--black-20 pa2 mv2 db w-100"
+                    style="outline: 0"
                     type="text" value={el[1]}
+                    onkeyup={ inputChange }
                   />
+                  <div class="tr mv3 w-100 saveBox closed" id={ `saveBox-${el[2]}` }>
+                    <Button type="primary" onclick={(ev) => saveEdit(ev, el[2])}>
+                      Save
+                    </Button>
+                    <Button type="secondary" onclick={(ev) => cancelEdit(ev, el[2])}>
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
               ))}
-              <div class="tr w-100">
-                <Button type="primary" onclick={saveEdit}>
-                  Save
-                </Button>
-                <Button type="secondary" onclick={cancelEdit}>
-                  Cancel
-                </Button>
-              </div>
             </Fragment>
           )}
         </div>
@@ -331,133 +270,51 @@ function *Settings() {
     };
   };
 
-  /*
-   * Wrap general settings in collapsible wrapper
-   */
-  const CollapsibleSettings = CollapseWrapper(GeneralSettings);
+  const CollapsibleSettings = CollapseWrapper(PartialSettings);
 
   /*
    * Control the collapse of general settings
    */
-  const toggleCollapse = () => {
-    collapsedSettings = !collapsedSettings;
+  const toggleCollapse = (type) => {
+    if (type === "General") {
+      collapsedGeneral = !collapsedGeneral;
+    } else if (type === "Translation" ){
+      collapsedTranslation = !collapsedTranslation;
+    };
     this.refresh();
-  };
-
-  /*
-   * Watch for input changes
-   */
-  const watchInputChanges = (target, key) => {
-    const {id: handle, value} = target;
-    const appId = Object.keys(appSettings[key]).find(el => el === handle);
-    appSettings[key][handle] = value;
-    fetchSettings[key][handle][1] = value;
-    this.refresh();
-  };
-
-  /*
-   * Watch for colour picker changes
-   */
-  const watchColourChanges = (ev) => {
-    watchInputChanges(ev.target, "Colour");
-  };
-
-  /*
-   * Watch for translation changes
-   */
-  const watchTranslationChanges = (ev) => {
-    watchInputChanges(ev.target, "Translation");
   };
 
   for (const _ of this) {
     yield (
-      <div class="pb2">
+      <div class="pb2 w-100">
         {loading && <BarLoader />}
         <div class="mt3" id="settings-table">
           {fetchError && <Error msg={fetchError} />}
           {Object.keys(fetchSettings).length > 0 && (
             <Fragment>
-              {hasOwnProp.call(fetchSettings, "General") && (
-                  <div class="dn">{JSON.stringify(fetchSettings.General)}</div>
-              )}
-              <div class="">
-                <div class="w-40-ns fl">
-                  <AppView settings={appSettings} />
-                </div>
-                <div class="w-60-ns fl ph3">
+              <div class="mw8 tl center">
+                <div>
                   <div class="pb3">
-                    <h5 class="fw3 black bb b--black-30 pointer mb0"
-                      onclick={toggleCollapse}
+                    <h3 class="fw3 black bb b--black-30 pointer mb0"
+                      onclick={ () => toggleCollapse("General") }
                       >
                       General Settings
                       <span class="v-mid">
-                        {collapsedSettings ? <CaretDownIcon /> : <CaretUpIcon />}
+                        {collapsedGeneral ? <CaretDownIcon /> : <CaretUpIcon />}
                       </span>
-                    </h5>
-                    <CollapsibleSettings collapsed={collapsedSettings} id="general-settings" />
+                    </h3>
+                    <CollapsibleSettings collapsed={collapsedGeneral} id="general-settings" category="General" />
                   </div>
-                  <h5 class="fw3 bb b--black-30 black">Other Settings</h5>
-                  <div id="other-settings">
-                    <div class="bold fw3 pv2 fg-streamside-maroon">
-                      Hover over the pictured box app to find and change available settings. Click to edit.
-                    </div>
-                    {hasOwnProp.call(selectedSettings, "Translation") && (
-                      <Fragment>
-                        <h5 class="fw3 bb b--black-30">Translations</h5>
-                        <div>
-                          {selectedSettings["Translation"].map(setting => getSetting("Translation", setting)).map(el => (
-                            <div class="w-100">
-                              <label
-                                for={el[2]}
-                                class="db mb2"
-                                style="font-size: 1em">
-                                  {el[0]}
-                                </label>
-                              <input 
-                                id={el[2]}
-                                oninput={watchTranslationChanges}
-                                name="setting"
-                                class="input-reset ba b--black-20 pa2 mv2 db w-100"
-                                type="text" value={el[1]} />
-                            </div>
-                          ))}
-                        </div>
-                      </Fragment>
-                    )}
-                    {hasOwnProp.call(selectedSettings, "Colour") && (
-                      <Fragment>
-                        <h5 class="fw3 bb b--black-30">Colours <span class="fw2">(click to edit)</span></h5>
-                        <div>
-                          {selectedSettings["Colour"].map(setting => getSetting("Colour", setting)).map(el => (
-                            <div>
-                              <input 
-                                id={el[2]}
-                                oninput={watchColourChanges}
-                                name="setting"
-                                class="mv2"
-                                type="color"
-                                value={el[1]} />
-                              <label
-                                for={el[2]}
-                                class="dib ma2"
-                                style="font-size: 1em">
-                                  {el[0]}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      </Fragment>
-                    )}
-                    {editing && (
-                      <div class="tr w-100">
-                        <Button type="primary" onclick={saveEdit}>
-                          Save
-                        </Button>
-                        <Button type="secondary" onclick={cancelEdit}>
-                          Cancel
-                        </Button>
-                      </div>
-                    )}
+                  <div class="pb3">
+                    <h3 class="fw3 black bb b--black-30 pointer mb0"
+                      onclick={ () => toggleCollapse("Translation") }
+                      >
+                      Translation Settings
+                      <span class="v-mid">
+                        {collapsedTranslation ? <CaretDownIcon /> : <CaretUpIcon />}
+                      </span>
+                    </h3>
+                    <CollapsibleSettings collapsed={collapsedTranslation} id="translation-settings" category="Translation" />
                   </div>
                 </div>
               </div>

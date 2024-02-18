@@ -3,12 +3,12 @@ import fs from "fs";
 import path from "path";
 import { MongoClient, ObjectID } from "mongodb";
 import { getMongoConnection, MongoStore } from "../src/lib/mongo/mongo.js";
+import { winstonLogger } from "../config/winston.js";
 
 global._filename = (_meta) => _meta.url.split("/").pop();
 dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
-global._logger = console;
+global._logger = winstonLogger;
 global._mongodb;
-_logger.notice = (e) => console.log(e);
 
 import chargeUpcoming from "../src/webhooks/recharge/charge-upcoming.js";
 import charge from "../recharge.charge.json" assert { type: "json" };

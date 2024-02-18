@@ -11,24 +11,27 @@
  */
 export default async (req, res, next) => {
   const collection = _mongodb.collection("settings");
+
   try {
-    collection.aggregate(
-      [{
+    const result = await collection.aggregate([
+      { $sort: { "handle": 1 } },
+      {
         $group: {
           _id: "$tag",
           settings: { $push: "$$ROOT" }
-        }
+        },
       },
-      ]).toArray((err, result) => {
-        if (err) throw err;
-        if (Object.hasOwnProperty.call(req.params, "tag")) {
-          const tags = result.find(el => el._id === req.params.tag);
-          if (tags) {
-            return res.status(200).json(tags);
-          };
-        };
-        res.status(200).json(result);
-    });
+      ]).toArray();
+
+    console.log(result[1]);
+    if (Object.hasOwnProperty.call(req.params, "tag")) {
+      const tags = result.find(el => el._id === req.params.tag);
+      if (tags) {
+        return res.status(200).json(tags);
+      };
+    };
+    return res.status(200).json(result);
+
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

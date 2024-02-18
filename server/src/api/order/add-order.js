@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb";
 import { mongoInsert } from "../../lib/mongo/mongo.js";
 import { getNZDeliveryDay } from "../../lib/dates.js";
 
@@ -15,11 +15,11 @@ import { getNZDeliveryDay } from "../../lib/dates.js";
  */
 export default async (req, res, next) => {
   const data = {...req.body};
-  data._id = new ObjectID();
   data.name = `${data.first_name} ${data.last_name}`;
   data.shopify_order_id = null;
   data.shopify_customer_id = null;
   data.inserted = new Date().toDateString();
+  data.created = new Date();
   data.shipping = {
     carrier_identifier: null,
     code: "Standard",
@@ -30,6 +30,8 @@ export default async (req, res, next) => {
     name: "Admin",
     type: "Manual",
   };
+  data.created = new Date();
+  data._id = new ObjectId();
   const meta = {
     order: {
       box: data.variant_name,
@@ -41,7 +43,8 @@ export default async (req, res, next) => {
   _logger.notice(`Order created through admin api.`, { meta });
 
   try {
-    const result = await mongoInsert(_mongodb.collection("orders"), data);
+    const result = await _mongodb.collection("orders").insertOne(data);
+    console.log("add-order", result)
     res.status(200).json(result);
   } catch(err) {
     res.status(200).json({ error: err.message });

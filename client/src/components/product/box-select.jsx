@@ -180,14 +180,6 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
 
   function *IncludedProducts({ includedProducts, addOnProducts }) {
 
-    const foregroundColour = getSetting("Colour", "included-product-fg");
-    const foregroundColourHi = getSetting("Colour", "included-product-fg-hi");
-    const backgroundColour = getSetting("Colour", "included-product-bg");
-
-    const getColour = (el) => {
-      return selectedProduct.title === el.shopify_title ? foregroundColourHi : foregroundColour;
-    };
-
     const getQuantity = (item) => {
       let found;
       if (idx.includes("addons")) {
@@ -212,11 +204,6 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
               href={`/products/${el.shopify_handle}`}
               class="pill link product"
               title={ `Go to ${el.shopify_title}` }
-              style={{
-                "color": getColour(el),
-                "background-color": backgroundColour,
-                "border-color": backgroundColour,
-              }}
             >
                 { el.shopify_title } { getQuantity(el) }
             </a>
@@ -224,11 +211,6 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
           { addOnProducts.map(el => (
               <div
                 class="pill pointer"
-                style={{
-                  "color": getSetting("Colour", `available-product-fg`),
-                  "background-color": getSetting("Colour", `available-product-bg`),
-                  "border-color": getSetting("Colour", `available-product-bg`)
-                }}
                 title={el.title}
               >
                 { el.title } { getQuantity(el) }
@@ -273,15 +255,16 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
 
   // just provide a list of links to the box for now
   // note that the boxes here are lists  by delivery date
+  // could try to highlight a box already in the cart
   for ({box, boxes, dates, title, initialProducts, idx} of this) {
     yield (
       <Fragment>
         <div>{ box.title }</div>
-        <div class="relative box-button-wrapper">
+        <div class="relative boxesapp-choice-wrapper">
          { dates.map((el) => (
             <button 
               onclick={ () => window.location = `/products/${box.handle}?ts=${Date.parse(el)}` }
-              class="box-button">
+              class="boxesapp-choice">
               { el }
             </button>
           ))}
@@ -358,11 +341,6 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
                         aria-label="Customize box"
                         title="Customize box"
                         onclick={customizeBox}
-                        style={{
-                          color: getSetting("Colour", "button-foreground"),
-                          "background-color": getSetting("Colour", "button-background"),
-                          "border-color": getSetting("Colour", "button-background"),
-                          }}
                       >
                         { idx.includes("addons") && !cartAddons.find(el => el.product_id === selectedProduct.id)  ?
                             `Add ${selectedProduct.title} to box` :
@@ -378,11 +356,6 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
                         title="View cart"
                         data-add-to-cart=""
                         onclick={() => window.location = "/cart"}
-                        style={{
-                          color: getSetting("Colour", "button-foreground"),
-                          "background-color": getSetting("Colour", "button-background"),
-                          "border-color": getSetting("Colour", "button-background"),
-                          }}
                       >
                           View cart
                       </button>
@@ -397,11 +370,6 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
                         aria-label="Add to box"
                         title="Add to box"
                         onclick={customizeBox}
-                        style={{
-                          color: getSetting("Colour", "button-foreground"),
-                          "background-color": getSetting("Colour", "button-background"),
-                          "border-color": getSetting("Colour", "button-background"),
-                          }}
                         >
                         { idx.includes("addons") ?
                               `Add ${selectedProduct.title} to box` :
@@ -418,11 +386,6 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
                       aria-label="Close"
                       title="Close"
                       onclick={closeDisplay}
-                      style={{
-                        color: getSetting("Colour", "button-foreground"),
-                        "background-color": getSetting("Colour", "button-background"),
-                        "border-color": getSetting("Colour", "button-background"),
-                        }}
                     >
                       Close
                     </button>

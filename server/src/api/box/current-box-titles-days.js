@@ -23,7 +23,7 @@ export default async (req, res, next) => {
     'Sunday': 7
   };
   try {
-    collection.aggregate([
+    const result = collection.aggregate([
       {
         $group: {
           _id: {
@@ -39,18 +39,19 @@ export default async (req, res, next) => {
           shopify_title: "$_id.shopify_title"
         }
       }
-      ]).toArray((err, result) => {
-        const boxes = result.filter(el => Object.hasOwnProperty.call(el, 'shopify_title'));
-        if (err) throw err;
-        response.boxes = [...new Set(boxes
-          .map(el => el.shopify_title))].sort();
-        response.weekdays = [ ...new Set(boxes
-          .map(el => new Date(el.delivered))
-          .map(d => new Intl.DateTimeFormat('en-NZ', {weekday: 'long'}).format(d))
-          .sort((a, b) => dayMap[a] - dayMap[b])
-        )];
-        res.status(200).json(response);
-    });
+      ]).toArray();
+
+    const boxes = result.filter(el => Object.hasOwnProperty.call(el, 'shopify_title'));
+
+    response.boxes = [...new Set(boxes
+      .map(el => el.shopify_title))].sort();
+    response.weekdays = [ ...new Set(boxes
+      .map(el => new Date(el.delivered))
+      .map(d => new Intl.DateTimeFormat('en-NZ', {weekday: 'long'}).format(d))
+      .sort((a, b) => dayMap[a] - dayMap[b])
+    )];
+    res.status(200).json(response);
+
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

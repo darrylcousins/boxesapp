@@ -39,6 +39,12 @@ async function *Customer({ customer, admin }) {
    */
   let loading = true;
   /**
+   * Label which is being loaded
+   *
+   * @member {string} loadingLabel, current or cancelled
+   */
+  let loadingLabel = "current";
+  /**
    * Messages received from api customer-charges
    *
    * @member {string} messages
@@ -183,6 +189,7 @@ async function *Customer({ customer, admin }) {
         };
         cancelledGroups = json;
         loading = false;
+        loadingLabel = "";
         this.refresh();
       })
       .catch((err) => {
@@ -363,6 +370,7 @@ async function *Customer({ customer, admin }) {
         if (res) {
           getChargeGroups(res.id).then(result => {
             loading = true;
+            loadingLabel = "cancelled";
             this.refresh();
             getCancelledGroups(res.id);
           });
@@ -372,6 +380,7 @@ async function *Customer({ customer, admin }) {
       rechargeCustomer = customer;
       getChargeGroups(customer.id).then(result => {
         loading = true;
+        loadingLabel = "cancelled";
         this.refresh();
         getCancelledGroups(customer.id);
       });
@@ -386,6 +395,7 @@ async function *Customer({ customer, admin }) {
    */
   const reloadAll = (ev) => {
     loading = true;
+    loadingLabel = "current";
     this.refresh();
 
     // reset originalChargeGroups?
@@ -466,7 +476,7 @@ async function *Customer({ customer, admin }) {
     yield (
       <div id="customer-wrapper" class="pr3 pl3 w-100">
         { loading && <BarLoader /> }
-        { loading && <div>Loading subscriptions ...</div> }
+        { loading && <div>Loading { loadingLabel } subscriptions ...</div> }
         { fetchError && <Error msg={fetchError} /> }
         <div id={ `customer-${rechargeCustomer.id}` }>
           <Fragment>

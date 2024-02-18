@@ -92,3 +92,70 @@ export const getDeliveryDays = async (db, product_id, weekday) => {
 
 
 
+/*
+ * Helper method to get a tag for a produc title
+ * This is used by picking/packing data when shop administrator makes changes
+ * to boxes after orders have been placed meaning that the product and tag may
+  * not be found in the box
+ */
+export const getProductDetails = async (product_title) => {
+  let searchArray = product_title;
+  if (typeof product_title === "string") {
+    searchArray = [ product_title ];
+  };
+  const pipeline = [
+    { "$unwind": "$includedProducts" },
+    { "$unwind": "$addOnProducts" },
+    { "$project": {
+      shopify_title: "$shopify_title",
+      included: "$includedProducts.shopify_title",
+      included_price: "$includedProducts.shopify_price",
+      included_product_id: "$includedProducts.shopify_product_id",
+      included_tag: "$includedProducts.shopify_tag",
+      addon: "$addOnProducts.shopify_title",
+      addon_price: "$addOnProducts.shopify_price",
+      addon_product_id: "$addOnProducts.shopify_product_id",
+      addon_tag: "$addOnProducts.shopify_tag",
+    }},
+    //{ "$match": { "$or": [ {included: product_title}, {addon: product_title} ] }},
+    { "$match": { "$or": 
+      [
+        {included: { "$in" : searchArray}},
+        {addon: { "$in" : searchArray}},
+      ] }},
+    { "$project": {
+      title: {
+        "$cond": {
+          if: { "$eq": [ "$included", product_title ] },
+          then: "$included",
+          else: "$addon"
+      }},
+      price: {
+        "$cond": {
+          if: { "$eq": [ "$included", product_title ] },
+          then: "$included_price",
+          else: "$addon_price"
+      }},
+      shopify_product_id: {
+        "$cond": {
+          if: { "$eq": [ "$included", product_title ] },
+          then: "$included_product_id",
+          else: "$addon_product_id"
+      }},
+      tag: {
+        "$cond": {
+          if: { "$eq": [ "$included", product_title ] },
+          then: "$included_tag",
+          else: "$addon_tag"
+      }},
+    }},
+    { "$group": { "_id": "$title", "doc" : {"$first": "$$ROOT"}} },
+    { "$replaceRoot": { "newRoot": "$doc"} },
+  ];
+
+  const result = await _mongodb.collection("boxes").aggregate(pipeline).toArray();
+  if (typeof product_title === "string") {
+    return result[0];
+  };
+  return result;
+};

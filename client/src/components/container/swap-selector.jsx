@@ -28,18 +28,12 @@ function *SwapSelector({ possibleSwaps, removedItem, confirmSwap, cancelSwap }) 
           <Fragment>
             { possibleSwaps.length > 0 ? (
               <Fragment>
-                <div>Removing { removedItem.shopify_title }.</div>
-                <div class="tr">To continue please select a replacement.</div>
+                <div>Removing <strong>{ removedItem.shopify_title }</strong>.</div>
+                <div>To continue please select a replacement.</div>
                 <div class="pill-wrapper">
                   {possibleSwaps.map(el =>
                     <div
-                      class="pill"
-                      style={{
-                        "color": getSetting("Colour", "excluded-product-fg"),
-                        "background-color": getSetting("Colour", "excluded-product-bg"),
-                        "border-color": getSetting("Colour", "excluded-product-bg"),
-                        "cursor": "pointer",
-                      }}
+                      class="pill available-product pointer"
                       onclick={ () => confirmSwap(el) }
                     >
                       {el.shopify_title}
@@ -48,25 +42,8 @@ function *SwapSelector({ possibleSwaps, removedItem, confirmSwap, cancelSwap }) 
                 </div>
               </Fragment>
             ) : (
-              <div>Unable to swap { removedItem.shopify_title }.</div>
+              <div><span>Unable to swap { removedItem.shopify_title }.</span></div>
             )}
-            <button
-              name="close"
-              type="button"
-              class="button button--secondary"
-              id="selectSwapClose"
-              title="Cancel"
-              onclick={ cancelSwap }
-              style={{
-                color: getSetting("Colour", "button-foreground"),
-                "background-color": getSetting("Colour", "button-background"),
-                "border-color": getSetting("Colour", "button-background"),
-                "font-size": "0.9em",
-                "width": "100%"
-                }}
-            >
-              { possibleSwaps.length === 0 ? "Continue" : "Cancel" }
-            </button>
           </Fragment>
         )}
       </Fragment>

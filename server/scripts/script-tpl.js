@@ -4,6 +4,15 @@ import path from "path";
 import { MongoClient, ObjectID } from "mongodb";
 import { Shopify } from "../src/lib/shopify/index.js";
 import { getMongo } from "../src/lib/mongo/mongo.js";
+import { winstonLogger } from "../config/winston.js";
+
+const getLogger = () => {
+  if (typeof _logger === "undefined") {
+    return winstonLogger;
+  } else {
+    return _logger;
+  };
+};
 
 global._filename = (_meta) => _meta.url.split("/").pop();
 dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
@@ -23,7 +32,18 @@ const run = async () => {
   const { mongo: mongodb, client: dbClient } = await getMongo();
   global._mongodb = mongodb;
 
-  await Shopify.initialize(); // if shopify query required
+  //await Shopify.initialize(); // if shopify query required
+
+  // can log messages if required
+  //await winstonLogger.notice(`Test logger`);
+
+  const now = new Date("2024-02-12");
+  console.log(now.toLocaleString());
+
+  console.log(now.getTimezoneOffset());
+
+  now.setMinutes(now.getMinutes() + now.getTimezoneOffset());
+  console.log(now.toLocaleString());
 
   try {
     console.log('this ran');
@@ -32,12 +52,13 @@ const run = async () => {
     console.error(e);
   } finally {
     dbClient.close();
-    //process.emit('SIGINT'); // will close mongo connection
+    process.emit('SIGINT'); // will close mongo connection
   };
 };
 
 const main = async () => {
   await run();
+  process.emit('SIGINT'); // will close mongo connection
 };
 
 main().catch(console.error);

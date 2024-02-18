@@ -24,12 +24,11 @@ export default async (req, res, next) => {
   const { now, admin, navigator } = req.body;
   const counter = new Date();
 
-  const topicLower = "subscription/deleted";
+  const type = "deleted";
   const meta = {
     recharge: {
-      label: "DELETE",
-      topic: topicLower,
-      charge_id: null,
+      label: type,
+      charge_id: "cancelled",
       customer_id: box.customer_id,
       address_id: box.address_id,
       subscription_id: box.id,
@@ -53,7 +52,7 @@ export default async (req, res, next) => {
       attributes.totalPrice = `${totalPrice.toFixed(2)}`;
 
       const mailOpts = {
-        type: "deleted",
+        type,
         includes: adjusted,
         attributes,
         now,
@@ -61,8 +60,7 @@ export default async (req, res, next) => {
         admin,
       };
 
-      console.log(session_id);
-      const entry_id = null; // will complete almost immediately
+      const entry_id = null; // will complete almost immediately because no entry
       if (io) {
         io.emit("message", `Deleting subscription`);
         makeIntervalForFinish({req, io, session_id, entry_id, counter, admin, mailOpts });
@@ -88,9 +86,9 @@ export default async (req, res, next) => {
     };
 
     meta.recharge = sortObjectByKeys(meta.recharge);
+    _logger.notice(`Boxesapp api request subscription ${type}.`, { meta });
 
-    _logger.notice(`Recharge customer api request ${topicLower}.`, { meta });
-
+    // close session almost immediately
     setTimeout(() => {
       io.emit("completed", "Subscription deleted");
       io.emit("finished", {

@@ -23,7 +23,6 @@ export default async function subscriptionActivated(topic, shop, body, { io, soc
   // these updates are queued from api/recharge-reactivate-subscription
   try {
     meta.recharge = sortObjectByKeys(meta.recharge);
-    _logger.notice(`Subscription activated.`, { meta });
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

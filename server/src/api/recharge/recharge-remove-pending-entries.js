@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb";
 
 /*
  * @function recharge/remove-pending-entries
@@ -13,15 +13,12 @@ import { ObjectID } from "mongodb";
  */
 export default async (req, res, next) => {
 
-  console.log(req.body);
-  const entries = req.body.selectedEntries.map(el => ObjectID(el));
+  const entries = req.body.selectedEntries.map(el => new ObjectId(el));
 
   try {
     const query = { "_id": {"$in": entries }};
-    console.log(query);
 
     const result = await _mongodb.collection("updates_pending").deleteMany(query);
-    console.log(result);
     if (result.deletedCount > 0) return res.status(200).json(result);
 
     return res.status(200).json({ error: "None deleted" });

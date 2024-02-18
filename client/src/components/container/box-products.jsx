@@ -66,13 +66,7 @@ function* BoxProducts({selectedIncludes, selectedAddons, selectedExcludes, selec
           ) : (
            selectedIncludes.map(el => 
             <div
-              class="pill"
-              style={{
-                "color": el.quantity > 1 ? getSetting("Colour", "included-product-fg-hi") : getSetting("Colour", "included-product-fg"),
-                "background-color": getSetting("Colour", "included-product-bg"),
-                "border-color": getSetting("Colour", "included-product-bg")
-              }}
-            >
+              class={ `pill included-product ${el.quantity > 1 ? "included-product-hi" : ""}` }>
               {el.shopify_title}
               { el.quantity > 1 && (
                 <span>
@@ -83,13 +77,7 @@ function* BoxProducts({selectedIncludes, selectedAddons, selectedExcludes, selec
           ))}
           {selectedAddons.map(el => 
             <div
-              class="pill"
-              style={{
-                "color": el.quantity > 1 ? getSetting("Colour", "available-product-fg-hi") : getSetting("Colour", "available-product-fg"),
-                "background-color": getSetting("Colour", "available-product-bg"),
-                "border-color": getSetting("Colour", "available-product-bg")
-              }}
-            >
+              class={ `pill available-product ${el.quantity > 1 ? "available-product-hi" : ""}` }>
                 {el.shopify_title} ({el.quantity}) {getPrice(el)}
               <div class="dib pointer"
                 name="selectedAddons"
@@ -102,13 +90,7 @@ function* BoxProducts({selectedIncludes, selectedAddons, selectedExcludes, selec
           )}
           {selectedSwaps.map(el => 
             <div
-              class="pill"
-              style={{
-                "color": el.quantity > 1 ? getSetting("Colour", "excluded-product-fg-hi") : getSetting("Colour", "excluded-product-fg"),
-                "background-color": getSetting("Colour", "excluded-product-bg"),
-                "border-color": getSetting("Colour", "excluded-product-bg")
-              }}
-            >
+              class={ `pill excluded-product ${el.quantity > 1 ? "excluded-product-hi" : ""}` }>
               {el.shopify_title}
               { el.quantity > 1 && (
                 <span>
@@ -137,13 +119,7 @@ function* BoxProducts({selectedIncludes, selectedAddons, selectedExcludes, selec
             <div class="pill-wrapper">
               {selectedExcludes.map(el =>
                 <div
-                  class="pill"
-                  style={{
-                    "color": getSetting("Colour", "excluded-product-fg"),
-                    "background-color": getSetting("Colour", "excluded-product-bg"),
-                    "border-color": getSetting("Colour", "excluded-product-bg")
-                  }}
-                >
+                  class={ `pill excluded-product ${el.quantity > 1 ? "excluded-product-hi" : ""}` }>
                   {el.shopify_title}
                   <div class="dib pointer"
                     name="selectedExcludes"

@@ -156,10 +156,10 @@ async function* ReactivateSubscription(props) {
     const ts = Date.parse(subscription.lastOrder.delivered); // could be null ie lastOrder = {}
     if (!isNaN(ts)) { // can happen if the order is not completed or found by the api
       const lastOrderDate = new Date(ts);
-      do {
+      while (lastOrderDate >= nextDelivery) {
         nextDelivery.setDate(nextDelivery.getDate() + 7);
         nextCharge.setDate(nextCharge.getDate() + 7);
-      } while (lastOrderDate >= nextDelivery);
+      };
     };
   };
 

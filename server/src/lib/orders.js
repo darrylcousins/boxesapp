@@ -1,10 +1,11 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb"; // only after mongodb@ -> mongodb@6
 import { LABELKEYS, NODELIVER_STRING } from "./constants.js";
 import { getPickingData, getPackingData } from "./picking.js";
 import { matchNumberedString } from "./helpers.js";
+import { getProductDetails } from "./boxes.js";
 
 /*
  * function getQueryFilters
@@ -159,12 +160,16 @@ export const collatePickingData = async (options) => {
         if (name === "None") continue;
         const key = (order.product_id === custom_box_id) ? "custom" : column;
         let tag = null;
-        try {
+        if (Object.hasOwnProperty.call(order.products, name)) {
           tag = `${order.products[name]}`;
-        } catch(err) {
-          _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err})
         };
-
+        if (!tags.includes(tag)) {
+          // this can happen when shop admin have either changed a box after an
+          // order was made or have changed the order to include products not
+          // in the box
+          const product = await getProductDetails(name);
+          if (product) tag = product.tag;
+        };
         if (!Object.hasOwnProperty.call(final, tag)) {
           final[tag] = {}; // allowing incorrect tags e.g. null 
         };
@@ -361,13 +366,15 @@ export const processOrderJson = async (json) => {
     .split(',').map(el => el.trim()).filter(el => el !== '');
 
   const pickup = delivered;
-  const inserted = new Date().toDateString();
+  const inserted = new Date().toDateString(); // replaced by 'created' Feb 2024
+  const created = new Date(); // changed Feb 2024
 
   const order = {
-    _id: new ObjectID(),
+    _id: new ObjectId(),
     shopify_order_id: parseInt(id),
     shopify_customer_id,
     order_number: order_number.toString(),
+    created,
     delivered,
     pickup,
     inserted,

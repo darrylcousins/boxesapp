@@ -406,7 +406,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       const selling_plans = product.selling_plan_groups[0].selling_plans;
       const selling_plan = selling_plans.find(el => el.name === selling_plan_name);
       const selling_plan_id = selling_plan ? selling_plan.id : null;
-      if (selling_plan) console.log(selling_plan);
+      //if (selling_plan) console.log(selling_plan);
       return selling_plan_id;
     };
     return null;
@@ -1010,7 +1010,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               // boxHasChanged if we have loaded a different variant
               if (selectedVariant.id !== item.variant_id && item.product_id === productJson.id) {
                 boxHasChanged = true;
-                console.log("different variant to the cart item");
+                //console.log("different variant to the cart item");
               };
             }; // end if ts url parameter
 
@@ -1187,7 +1187,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
   for await ({ productJson } of this) {
     yield (
       <div id="container-box">
-        <div id="containerBoxOverlay" class="boxOverlay"></div>
+        <div id="containerBoxOverlay" class="boxAppOverlay"></div>
         {loading ? (
           <BarLoader />
         ) : (
@@ -1195,11 +1195,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
             <VariantSelector boxVariants={getVariants()} selectedVariant={selectedVariant} />
             <DateSelector fetchDates={fetchDates} selectedDate={selectedDate} variantTitle={selectedVariant.title} />
             { selectedDate && boxRules.length > 0 && (
-              <div class="notice"
-                  style={{
-                    "color": getSetting("Colour", "notice-fg"),
-                    "background-color": getSetting("Colour", "notice-bg")
-                  }}>
+              <div class="boxesapp-notice">
                 {boxRules.map(rule => (
                   <p>{rule}</p>
                 ))}
@@ -1218,19 +1214,15 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 id={`defaultbox`}
               />
             ) : (
-              <div class="notice"
-                  style={{
-                    "color": getSetting("Colour", "notice-fg"),
-                    "background-color": getSetting("Colour", "notice-bg")
-                  }}>
+              <div class="boxesapp-notice">
                 No products included in this box, please see description.
               </div>
             )}
             { showBoxActive && selectedDate && !boxIsEmpty && (
-              <div class="button-wrapper" style="margin-bottom: 0.5em">
+              <div style="margin-bottom: 0.5em">
                 <button
                   title="Change product quantities"
-                  class="button button--secondary"
+                  class="button boxesapp-button"
                   id="toggleQuantityForm"
                   type="button"
                   >
@@ -1254,19 +1246,15 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 />
               )}
               { showBoxActive && selectedDate && (
-                <div class="button-wrapper" id="add-button-wrapper">
+                <div id="add-button-wrapper">
                   { cartBoxId && (selectedBox.shopify_product_id !== cartBoxId) && (
-                    <div class="notice"
-                        style={{
-                          "color": getSetting("Colour", "notice-fg"),
-                          "background-color": getSetting("Colour", "notice-bg")
-                        }}>
+                    <div class="boxesapp-notice">
                       <p>{getSetting("Translation", "existing-box-warn")}</p>
                     </div>
                   )}
                   <button
                     type="button"
-                    class="button button--secondary"
+                    class="button boxesapp-button"
                     name="add"
                     id="add-button"
                     aria-label="Add to cart"
@@ -1274,24 +1262,9 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                     onclick={initSubmitCart}
                   >
                     <span data-add-to-cart-text="">{ getButtonText() }</span>{" "}
-                    <span style="display:none" data-loader="">
-                      <svg
-                        aria-hidden="true"
-                        focusable="false"
-                        role="presentation"
-                        class="icon icon-spinner"
-                        viewbox="0 0 20 20"
-                      >
-                        <path
-                          d="M7.229 1.173a9.25 9.25 0 1 0 11.655 11.412 1.25 1.25 0 1 0-2.4-.698 6.75 6.75 0 1 1-8.506-8.329 1.25 1.25 0 1 0-.75-2.385z"
-                          fill="#fad14d"
-                        ></path>
-                      </svg>
-                    </span>
                   </button>
                   { !loadedFromCart && (
                       <Popup
-                        class="w-third-ns"
                         id={ `popup` }
                         buttons={true}
                         callback={popupCallback}

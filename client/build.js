@@ -22,6 +22,10 @@ const inputName = Object.keys(viteConfig.build.rollupOptions.input)[0];
 const outputFile = viteConfig.build.rollupOptions.output.entryFileNames.replace("[name]", inputName);
 const outputDir = viteConfig.build.rollupOptions.output.dir;
 
+/* 
+ * Suddenly, wierdly this script (or the npm build?) hammered all the files in the target directory - perhaps normal?
+ */
+
 const spawnBuild = () => {
   const build = spawn("npm", ["run", "build"]);
 

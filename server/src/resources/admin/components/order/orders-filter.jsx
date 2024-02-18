@@ -10,7 +10,9 @@ import { createElement, Fragment, Portal } from "@b9g/crank";
 import { CloseIcon, FilterIcon } from "../lib/icon";
 import Button from "../lib/button";
 import Error from "../lib/error";
+import { Fetch } from "../lib/fetch";
 import ModalTemplate from "../lib/modal-template";
+import { capWords } from "../helpers";
 
 /**
  * Creates element to render a modal for selecting order filter.
@@ -18,29 +20,8 @@ import ModalTemplate from "../lib/modal-template";
  * @generator
  * @yields {Element}
  */
-function* FilterOrders({updateFilter}) {
+async function* FilterOrders({ delivered, updateFilter }) {
 
-  /**
-   * Fields we can filter on
-   *
-   * @member {boolean} fields
-   */
-  let fields = [
-    {
-      title: "Pickup Date",
-      id: "pickup",
-      input_type: "date",
-      type: "date",
-      hint: "Select date",
-    },
-    {
-      title: "Postcode",
-      id: "zip",
-      input_type: "text",
-      type: "array",
-      hint: "A postcode or a list of comma separated values",
-    }
-  ];
   /**
    * Form errors
    *
@@ -48,17 +29,11 @@ function* FilterOrders({updateFilter}) {
    */
   let formError = null;
   /**
-   * Form filter field
+   * If fetch returns an error
    *
-   * @member {boolean} filter_field
+   * @member {object|string} fetchError
    */
-  let filter_field = fields[0];
-  /**
-   * Form filter value
-   *
-   * @member {string} filter_value
-   */
-  let filter_value = "";
+  let fetchError = null;
   /**
    * Is the modal visible?
    *
@@ -86,6 +61,106 @@ function* FilterOrders({updateFilter}) {
     visible = true;
     this.refresh();
   };
+
+  /*
+   * Get possible order sources
+   */
+  const getSources = async (delivered) => {
+    const timestamp = new Date(Date.parse(delivered)).getTime();
+    const uri = `/api/order-sources/${timestamp}`;
+    return await Fetch(encodeURI(uri))
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          return [];
+        } else {
+          return json.map(el => capWords(el.split("_")).join(" "));
+        };
+      })
+      .catch((err) => {
+        fetchError = err;
+        return [];
+      });
+  };
+
+  const orderSources = await getSources(delivered);
+
+  /*
+   * Get the boxes for the selected date
+   */
+  const getBoxTitles = async (delivered) => {
+    const timestamp = new Date(Date.parse(delivered)).getTime();
+    const uri = `/api/titles-for-date/${timestamp}`;
+    return await Fetch(encodeURI(uri))
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          return [];
+        } else {
+          return json.map(el => el.shopify_title);
+        };
+      })
+      .catch((err) => {
+        fetchError = err;
+        return [];
+      });
+  };
+
+  // regardless of the order
+  const boxTitles = await getBoxTitles(delivered);
+
+  /**
+   * Fields we can filter on
+   *
+   * @member {boolean} fields
+   */
+  let fields = [
+    {
+      title: "Pickup Date",
+      id: "pickup",
+      input_type: "date",
+      type: "date",
+      hint: "Select date",
+    },
+    {
+      title: "Postcode",
+      id: "zip",
+      input_type: "text",
+      type: "array",
+      hint: "A postcode or a list of comma separated values",
+    },
+    {
+      title: "Source",
+      id: "source",
+      input_type: "text",
+      type: "string",
+      hint: "Sources",
+      datalist: orderSources,
+    },
+    {
+      title: "Box Title",
+      id: "product_title",
+      input_type: "text",
+      type: "string",
+      hint: "Boxes",
+      datalist: boxTitles,
+    },
+  ];
+
+  /**
+   * Form filter field
+   *
+   * @member {boolean} filter_field
+   */
+  let filter_field = fields[0];
+  /**
+   * Form filter value
+   *
+   * @member {string} filter_value
+   */
+  let filter_value = "";
 
   /**
    * Select the filter, one of fields
@@ -124,6 +199,8 @@ function* FilterOrders({updateFilter}) {
       } else {
         value = filter_value.split(",").map(el => el.trim()).filter(el => el.length > 0);
       };
+    } else {
+      value = filter_value;
     };
     if (error) {
       formError = error;
@@ -136,6 +213,10 @@ function* FilterOrders({updateFilter}) {
       filter_value: value,
       filter_type: filter_field.type,
     });
+
+    // also need to clear this modal so it can be reused
+    filter_field = fields[0];
+    filter_value = "";
     closeModal();
   };
 
@@ -156,7 +237,7 @@ function* FilterOrders({updateFilter}) {
 
   const main = document.getElementById("modal-window");
 
-  for (const _ of this) { // eslint-disable-line no-unused-vars
+  for await (const _ of this) { // eslint-disable-line no-unused-vars
     yield (
       <Fragment>
         <button
@@ -206,8 +287,16 @@ function* FilterOrders({updateFilter}) {
                       type={ filter_field.input_type }
                       value={filter_value}
                       id="filter"
+                      list={ filter_field.id }
                       onchange={(ev) => updateValue(ev.target.value)}
                     />
+                    { filter_field.datalist && (
+                      <datalist id={ filter_field.id }>
+                        { filter_field.datalist.map(el => (
+                          <option value={ el } />
+                        ))}
+                      </datalist>
+                    )}
                   </div>
                 </div>
               </div>

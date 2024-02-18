@@ -19,9 +19,6 @@ export const updatePendingEntry = async (meta, topic) => {
    * end up, i.e. a new quantity, or delivery/charge date 
    */
 
-  console.log("updatePendingEntry ===============");
-  console.log("topic", topic);
-  console.log("title", meta.recharge.title);
   const quantity = (topic === "deleted") ? 0 : meta.recharge.quantity;
 
   let match = [
@@ -50,7 +47,7 @@ export const updatePendingEntry = async (meta, topic) => {
     rc_subscription_ids:
       { $elemMatch: { $and: match } }
   };
-  console.log("match", match);
+  //console.log("match", match);
 
   // deleted and cancelled subscriptions have this set to null already so match will be found
   if (topic !== "deleted" && topic !== "cancelled") query.scheduled_at = meta.recharge.scheduled_at;
@@ -80,7 +77,7 @@ export const updatePendingEntry = async (meta, topic) => {
   };
 
   const res =  await _mongodb.collection("updates_pending").updateOne(query, update, options);
-  console.log("query", query);
+  //console.log("query", query);
 
   let result = {};
 
@@ -101,7 +98,7 @@ export const updatePendingEntry = async (meta, topic) => {
     }];
     result = { entry: query, updated: false };
   };
-  console.log("updated?", result.updated);
+  //console.log("updated?", result.updated);
   return result;
 };
 
@@ -128,8 +125,6 @@ export const getMetaForCharge = (charge, topic) => {
       title: line_item.title,
     });
   };
-  const shopify_order_id = isNaN(parseInt(charge.external_order_id.ecommerce)) ? 
-    "" : parseInt(charge.external_order_id.ecommerce);
   const meta = {
     recharge: {
       topic,
@@ -139,12 +134,14 @@ export const getMetaForCharge = (charge, topic) => {
       email: charge.customer.email,
       address_id: charge.address_id,
       charge_status: charge.status,
-      shopify_order_id,
       charge_processed_at: charge.processed_at,
       scheduled_at: charge.scheduled_at,
       rc_subscription_ids,
     },
   };
+  const shopify_order_id = isNaN(parseInt(charge.external_order_id.ecommerce)) ? 
+    "" : parseInt(charge.external_order_id.ecommerce);
+  if (shopify_order_id) meta.recharge.shopify_order_id = shopify_order_id;
   if (properties) {
     delete properties.Likes;
     delete properties.Dislikes;
@@ -242,9 +239,9 @@ export const writeFileForOrder = (order, topic) => {
 
 /*
  * helper method to build logging meta for multiple subscriptions
- * @function buildMetaForBox
+ * @function getMetaForBox
  */
-export const buildMetaForBox = (id, charge, topic) => {
+export const getMetaForBox = (id, charge, topic) => {
   const tempCharge = { ...charge };
   // remove any line items not linked to this box subscription
   tempCharge.line_items =  charge.line_items.filter(el => {
@@ -258,7 +255,7 @@ export const buildMetaForBox = (id, charge, topic) => {
 
 /*
  * helper method to build list of title, quantity from string
- * @ function buildMetaForBox
+ * @ function itemStringToList
  */
 export const itemStringToList = (props, name) => {
   if (Boolean(props.find(el => el.name === name).value)) {

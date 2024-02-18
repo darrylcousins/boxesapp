@@ -17,9 +17,15 @@
         <a href="https://{{ env.SHOP }}/account">account page</a>.
         </p>
         <p style="padding:5px 0;padding-top:15px;margin:0;line-height:1.5">
-          You have until the next order date in which to add items or otherwise update your box.
+          You have until the next payment date in which to add items or otherwise update your box.
         </p>
       </mj-text>
+    </mj-column>
+  </mj-section>
+  <mj-section padding-top="0px" full-width="true">
+    <mj-column width="100%">
+      {% assign address = attributes.address %}
+      {% include "address" %}
     </mj-column>
   </mj-section>
   {% include "subscription" %}

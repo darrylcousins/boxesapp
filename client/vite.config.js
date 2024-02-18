@@ -9,6 +9,7 @@ export default {
   },
   build: {
     // minify: false,
+    emptyOutDir: false, // don't empty the assets directory!
     rollupOptions: {
       // https://rollupjs.org/guide/en/#big-list-of-options
       input: {

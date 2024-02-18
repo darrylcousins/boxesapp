@@ -13,11 +13,9 @@ export default async (req, res, next) => {
   const collection = _mongodb.collection("settings");
   const response = {};
   try {
-    collection.find({handle: "box-rule"},
-      {projection: {boxes: 1, box_product_ids: 1,  weekday: 1, value: 1}}).toArray((err, result) => {
-        if (err) throw err;
-        res.status(200).json(result);
-    });
+    const result = await collection.find({handle: "box-rule"},
+      {projection: {boxes: 1, box_product_ids: 1,  weekday: 1, value: 1}}).toArray();
+    res.status(200).json(result);
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

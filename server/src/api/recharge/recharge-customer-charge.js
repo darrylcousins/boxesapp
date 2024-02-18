@@ -3,7 +3,6 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import { gatherData, reconcileChargeGroup, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import fs from "fs";
@@ -35,26 +34,25 @@ export default async (req, res, next) => {
       });
 
     } catch(err) {
-      // so we don't have the correct charge_id - send message back
-      // this will catch when the charge is not found
-      // err.message.contains("404") ??
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+      // err.message.contains("404") ??
       return res.status(200).json({ error: err.message });
     };
 
-    const groups = [];
-    const grouped = await reconcileGetGrouped({ charge: result.charge });
-    //console.log(result.charge);
-    //console.log(JSON.stringify(result.charge.line_items, null, 2));
-
-    groups.push(grouped);
-    let data = [];
-
-    for (const grouped of groups) {
-      data = await gatherData({ grouped, result: data });
-    };
 
     if (result.charge) {
+      const groups = [];
+      const grouped = await reconcileGetGrouped({ charge: result.charge });
+      //console.log(result.charge);
+      //console.log(JSON.stringify(result.charge.line_items, null, 2));
+
+      groups.push(grouped);
+      let data = [];
+
+      for (const grouped of groups) {
+        data = await gatherData({ grouped, result: data });
+      };
+
       const subscription = data.find(el => el.attributes.subscription_id === parseInt(subscription_id));
       //console.log(subscription);
       //console.log(subscription.attributes.rc_subscription_ids);

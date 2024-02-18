@@ -13,6 +13,16 @@ import { io } from "socket.io-client";
  */
 const appendMessage = (data, colour, divId) => {
   //console.log(data);
+
+  /* helper method to check if we to scroll messages into view
+  */
+  const checkVisible = (elm) => {
+      var rect = elm.getBoundingClientRect();
+      var viewHeight = Math.max(document.documentElement.clientHeight, window.innerHeight);
+    //return !(rect.bottom < 0 || rect.top - viewHeight >= 0);
+      return !(rect.bottom - viewHeight >= 0);
+  };
+
   const socketMessages = document.getElementById(divId);
   if (socketMessages) {
     socketMessages.classList.add("pa3"); // only add padding when we have content - whitespace fix
@@ -29,6 +39,9 @@ const appendMessage = (data, colour, divId) => {
       top: socketMessages.scrollHeight,
       behavior: "smooth",
     });
+    if (!checkVisible(socketMessages)) {
+      socketMessages.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
+    };
   };
 };
 

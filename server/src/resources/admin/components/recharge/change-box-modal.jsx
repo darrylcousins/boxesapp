@@ -255,6 +255,7 @@ async function* ChangeBox(props) {
     data.scheduled_at = formatDate(new Date(Date.parse(boxAttributes.nextChargeDate)));
     data.delivery_date = boxAttributes.nextDeliveryDate;
     data.charge_id = boxAttributes.charge_id;
+    data.address_id = boxAttributes.address_id;
     data.subscription_id = boxAttributes.subscription_id;
     data.order_day_of_week = boxAttributes.orderDayOfWeek;
     data.do_update = false;
@@ -266,7 +267,7 @@ async function* ChangeBox(props) {
     data.last_order = JSON.stringify(boxAttributes.lastOrder);
     data.properties = JSON.stringify(boxProperties);
     data.box = JSON.stringify(selectedBox);
-    data.messages = JSON.stringify(boxMessages);
+    data.change_messages = JSON.stringify(boxMessages);
 
     return data;
   };
@@ -315,6 +316,10 @@ async function* ChangeBox(props) {
         type: "hidden",
         datatype: "string",
       },
+      address_id: {
+        type: "hidden",
+        datatype: "string",
+      },
       subscription_id: {
         type: "hidden",
         datatype: "string",
@@ -355,7 +360,7 @@ async function* ChangeBox(props) {
         type: "hidden",
         datatype: "string",
       },
-      messages: {
+      change_messages: {
         type: "hidden",
         datatype: "string",
       },
@@ -424,8 +429,6 @@ async function* ChangeBox(props) {
     };
     let foundDate = Object.keys(json).find(el => el === boxAttributes.nextDeliveryDate);
 
-    console.log(boxAttributes.nextDeliveryDate);
-    console.log(Object.keys(json).sort(dateStringSort));
     // better would be to get by weekday date
     if (!foundDate) {
       foundDate = Object.keys(json).sort(dateStringSort).pop();
@@ -714,7 +717,7 @@ async function* ChangeBox(props) {
           <div class="tl">
             { boxMessages.length > 0 ? (
               <div class="alert-box w-95 tl ba br3 pa3 mh2 mb3 dark-blue bg-washed-blue" role="alert">
-                <div class="i tl dark-blue mt1 mb3">
+                <div class="i b tl dark-blue mt1 mb3">
                     <span>You will be able to edit your products once the changes have been saved.</span>
                 </div>
                 <p class="tl dark-blue mt1 mb3">

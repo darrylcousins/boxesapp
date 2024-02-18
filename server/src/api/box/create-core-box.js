@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb"; // only after mongodb@ -> mongodb@6
 
 /*
  * @function box/create-core-box.js
@@ -17,7 +17,7 @@ export default async (req, res, next) => {
   const delivered = "Core Box";
   const collection = _mongodb.collection("boxes");
   const doc = {
-    _id: new ObjectID(),
+    _id: new ObjectId(),
     delivered,
     addOnProducts: [],
     includedProducts: []

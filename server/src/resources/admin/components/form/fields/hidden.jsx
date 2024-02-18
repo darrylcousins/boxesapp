@@ -26,6 +26,23 @@ function* HiddenField(props) {
           required={required}
           */
 
+  const getValue = (value) => {
+    if (datatype === "integer") {
+      return parseInt(value, 10);
+    };
+    if (datatype === "array") {
+      return value.split(",").filter((item) => item !== "");
+    };
+    if (datatype === "boolean") {
+      if (typeof value === "boolean") return value; // probably never the case
+      if (value === "true") {
+        return true;
+      } else if (value === "false") {
+        return false;
+      };
+    };
+    return value;
+  };
   /**
    * Event handler when {@link
    * module:form/form-modal~FormModalWrapper|FormModalWrapper} sends for data
@@ -37,15 +54,7 @@ function* HiddenField(props) {
   const collectAndSendData = (ev) => {
     let { value } = ev.target;
     if (ev.target.id === id) {
-      if (datatype === "integer") {
-        value = parseInt(value, 10);
-      };
-      if (datatype === "array") {
-        value = value.split(",").filter((item) => item !== "");
-      };
-      if (datatype === "boolean") {
-        value = Boolean(value);
-      };
+      value = getValue(value);
       this.dispatchEvent(
         new CustomEvent("form.data.feed", {
           bubbles: true,

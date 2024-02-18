@@ -142,7 +142,6 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
 
       if (dataQuantity === 0) return; // should never really happen but don't want negatives
 
-      console.log(dataId, dataProduct, dataQuantity, dataAction);
       let quantity;
       if (dataAction === "plus") quantity = dataQuantity + 1;
       if (dataAction === "minus") quantity = dataQuantity - 1;
@@ -162,7 +161,6 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
    */
   const handleChange = (ev) => {
     if (ev.target.tagName === "INPUT") {
-      console.log(ev.target.parentNode);
       if (ev.target.name === "quantity") {
         if (ev.target.value === "0") {
           animateFadeForAction(ev.target.parentNode, async () => {

@@ -164,11 +164,11 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
           .map(el => matchNumberedString(el))
           .forEach(el => {
             if (name === "Including" && el.count > 1) {
-              start.push({name: el.str, count: el.count - 1});
+              start.push({name: el.title, count: el.count - 1});
             } else if (name === "Swapped Items" && el.count > 1) {
-              start.push({name: el.str, count: el.count - 1});
+              start.push({name: el.title, count: el.count - 1});
             } else if (name === "Add on Items") {
-              start.push({name: el.str, count: el.count});
+              start.push({name: el.title, count: el.count});
             };
         });
       };
@@ -316,7 +316,9 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
       if (!product) {
         if (isEditable) {
           return null;
-        } else { // box is out in the future but still to find a display
+        } else { // box is out in the future but still to find a display from the current box or order
+          // why don't I have rc_subscriptoin_ids?
+          console.log("ids", rc_subscription_ids);
           const maybe = rc_subscription_ids.find(e => e.title === el.name)
           product = { shopify_price: maybe.price, shopify_product_id: maybe.shopify_product_id };// may be able to get these from rc_subscription_ids?
         };
@@ -360,7 +362,7 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
     boxPrice = totalPrice() * 0.01;
     setTimeout(() => {
       const el= document.querySelector(`#${id}`);
-      transitionElementHeight(el, 30);
+      transitionElementHeight(el, 50); // need to add the extra
     }, 100);
   };
 
@@ -511,9 +513,9 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
       } else {
         let products = str.split(",").map(el => el.trim()).map(el => matchNumberedString(el));
         products = products.map(el => { 
-          let product = box.includedProducts.find(item => item.shopify_title === el.str);
+          let product = box.includedProducts.find(item => item.shopify_title === el.title);
           if (!product) {
-            product = box.addOnProducts.find(item => item.shopify_title === el.str);
+            product = box.addOnProducts.find(item => item.shopify_title === el.title);
             if (product) {
               const idx = possibleAddons.indexOf(product);
               possibleAddons.splice(idx, 1);
@@ -523,10 +525,10 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
             };
           };
           if (!product) {
-            if (isEditable || el.str === "") {
+            if (isEditable || el.title === "") {
               return null;
             } else {
-              return { shopify_title: el.str, quantity: el.count }; // still missing a price
+              return { shopify_title: el.title, quantity: el.count }; // still missing a price
             };
           };
           return { ...product, quantity: el.count };
@@ -537,7 +539,7 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
     // filtered from addOnProducts, renamed here to possibleAddons quantity helps later
     boxLists["possibleAddons"] = possibleAddons.map(el => ({ ...el, quantity: 1 }))
 
-    orphanedItems = orphanedItems.filter(el => el.str !== "");
+    orphanedItems = orphanedItems.filter(el => el.title !== "");
 
     return orphanedItems;
   };
@@ -715,8 +717,8 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
 
   const getListData = () => {
     const list = [
-      ["Price (excl. shipping)", toPrice(totalPrice())],
       ["Delivery Date", properties["Delivery Date"]],
+      ["Price (excl. shipping)", toPrice(totalPrice())],
     ];
     if (nextChargeDate) {
       list.unshift(
@@ -766,7 +768,7 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
   };
 
   const lineHeightStyle = { height: "40px", "line-height": "40px" }
-  const lineImageStyle = { height: "40px", width: "40px" };
+  const lineImageStyle = { "min-width": "40px", height: "40px", width: "40px" };
 
   // this is handled by collapseAnimator
   //window.addEventListener("resize", (event) => this.refresh() );
@@ -814,7 +816,9 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
                 <div class="ml2 mb0 mt1 pt1 flex bt">
                   <div class="w-20 ma0">
                     { loading && (
-                      <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
+                      <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle }>
+                        <span class="image-loader"></span>
+                      </div>
                     )}
                     { !loading && (
                       <Image
@@ -840,7 +844,9 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
                   <div class="ml2 mb1 flex">
                     <div class="w-20 ma0">
                       { loading && (
-                        <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle } />
+                        <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle }>
+                          <span class="image-loader"></span>
+                        </div>
                       )}
                       { !loading && (
                         <Image

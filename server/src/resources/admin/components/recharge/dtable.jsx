@@ -14,6 +14,7 @@ import { Fetch, PostFetch } from "../lib/fetch";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
 import { reloadCustomers } from "./events";
+import { weekdays } from "../helpers";
 
 /**
  * Create interface to present to administrator a list of items found in verify subscriptions nightly script
@@ -66,6 +67,12 @@ const DTable = ({ items, title }) => {
           items.map((thing, idx) => (
             <li style={ li }>
               <dl style={ dl } class="alert-box">
+                { thing.message && (
+                  <Fragment>
+                    <dt style={ dt }>Note</dt>
+                    <dd style={ dd }>{ thing.message }</dd>
+                  </Fragment>
+                )}
                 <dt style={ dt }>Product title</dt>
                 <dd style={ dd }>{ thing.title }</dd>
                 <dt style={ dt }>Subscription ID</dt>
@@ -106,6 +113,12 @@ const DTable = ({ items, title }) => {
                   <Fragment>
                     <dt style={ dt }>Box shopify price</dt>
                     <dd style={ dd }>{ thing.variant_price }</dd>
+                  </Fragment>
+                )}
+                { thing.order_day_of_week && (
+                  <Fragment>
+                    <dt style={ dt }>Charge day</dt>
+                    <dd style={ dd }>{ weekdays[thing.order_day_of_week + 1] }</dd>
                   </Fragment>
                 )}
               </dl>

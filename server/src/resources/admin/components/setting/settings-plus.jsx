@@ -14,6 +14,8 @@ import { animateFadeForAction } from "../helpers";
 import BarLoader from "../lib/bar-loader";
 import Error from "../lib/error";
 import { Fetch } from "../lib/fetch";
+import { toastEvent } from "../lib/events";
+import Toaster from "../lib/toaster";
 
 /**
  * SettingsPlus
@@ -46,6 +48,8 @@ function *SettingsPlus() {
    * @member {object} fetchSettings
    */
   let fetchSettings = [];
+
+  this.addEventListener("toastEvent", Toaster);
 
   /**
    * Fetch settings data on mounting of component
@@ -97,9 +101,9 @@ function *SettingsPlus() {
 
   for (const _ of this) {
     yield (
-      <div class="f6 w-100 pb2 center">
+      <div class="w-100 pb2">
         {loading && <BarLoader />}
-        <h2 class="pt0 f5 f4-ns lh-title-ns ma0 fg-streamside-maroon">
+        <h2 class="pt0 lh-title-ns ma0 fg-streamside-maroon">
           Settings
         </h2>
         <AddSetting />
@@ -112,7 +116,7 @@ function *SettingsPlus() {
                   <h3 class="pt0 lh-title-ns ma0 fg-streamside-maroon">
                     {group._id}
                   </h3>
-                  <table class="f6 mt2 w-100 center table-striped" cellSpacing="0">
+                  <table class="mt2 w-100 tl table-striped" cellSpacing="0">
                     <tbody>
                       {group.settings.map(el => (
                         <tr>

@@ -4,7 +4,7 @@
  */
 
 import { mongoUpdate } from "../../lib/mongo/mongo.js";
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb";
 
 /*
  * @function setting/edit-box-rule.js
@@ -22,7 +22,7 @@ export default async (req, res, next) => {
     { shopify_title: { $in: boxes } },
     { projection: { _id: 0, shopify_product_id: 1 } });
 
-  doc._id = ObjectID(doc._id);
+  doc._id = new ObjectId(doc._id);
   _logger.info(doc);
   try {
     const result = await mongoUpdate(_mongodb.collection("settings"), doc);

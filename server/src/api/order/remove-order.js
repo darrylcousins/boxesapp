@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb";
 import { mongoRemove } from "../../lib/mongo/mongo.js";
 
 /*
@@ -17,10 +17,12 @@ export default async (req, res, next) => {
 
   const data = { ...req.body };
   const collection = _mongodb.collection("orders");
+  console.log(data);
 
   try {
-    const query = {_id: ObjectID(data._id)};
-    const result = await mongoRemove(collection, query);
+    const query = {_id: new ObjectId(data._id)};
+    console.log(query);
+    const result = await _mongodb.collection("orders").deleteOne(query);
     _logger.info(JSON.stringify(result, null, 2));
 
     res.status(200).json(result);

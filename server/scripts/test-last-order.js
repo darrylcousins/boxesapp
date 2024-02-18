@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-import { MongoClient, ObjectID } from "mongodb";
+import mongo from "mongodb";
 import { getMongoConnection, MongoStore } from "../src/lib/mongo/mongo.js";
 import { Shopify } from "../src/lib/shopify/index.js";
 import { getLastOrder } from "../src/lib/recharge/helpers.js";
@@ -19,19 +19,30 @@ _logger.notice = (e) => console.log(e);
 const run = async () => {
 
   global._mongodb = await getMongoConnection();
-  await Shopify.initialize();
+  //await Shopify.initialize();
 
   try {
     console.log('this ran');
 
-    const lastOrder = await getLastOrder({
-      customer_id: 92246175,
-      address_id: 100639975,
-      product_id: 7051680874636,
-      subscription_id: 269571096,
-    });
-
-    console.log(lastOrder);
+    const cursor = await _mongodb.collection("orders").aggregate([
+      { $group: {
+          _id: "$delivered",
+          count: { $sum: 1 }
+      }},
+      { "$project": {
+        delivered: "$_id",
+        count: "$count",
+        iso: { "$dateFromString": {dateString: "$_id", timezone: "Pacific/Auckland"}},
+      }},
+      { "$sort" : { iso: 1 } },
+    ]).toArray();
+    console.log(cursor);
+    const response = {};
+    // sort cursor by dates using date objects
+    for (const { _id, count } of cursor) {
+      response[_id] = {"orders": count};
+    };
+    console.log(response);
 
   } catch(e) {
     console.error(e);

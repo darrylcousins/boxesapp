@@ -5,9 +5,10 @@
 
 import { matchNumberedString } from "../../lib/helpers.js";
 import { getNZDeliveryDay, weekdays } from "../../lib/dates.js";
+import { getProductDetails } from "../../lib/boxes.js";
 import { makeShopQuery } from "../../lib/shopify/helpers.js";
-import { ObjectID } from "mongodb";
-import reconcileLists from "../lib.js";
+import reconcileBoxLists from "../reconcile-box-lists.js";
+import { ObjectId } from "mongodb";
 
 /*
  * @function order/get-reconciled-box.js
@@ -22,8 +23,8 @@ export default async (req, res, next) => {
   const deliveryDay = getNZDeliveryDay(req.params.timestamp);
   // product_id(entifier) can be shopify_title or shopify_product_id
   const product_identifier = parseInt(req.params.product_id);
-  const order_id = req.params.order_id ? ObjectID(req.params.order_id) : null;
-  const update = Boolean(req.query.update); // string or not at all
+  const order_id = req.params.order_id ? new ObjectId(req.params.order_id) : null;
+  const update = Boolean(req.query.update); // any string is true value
   const query = {
     delivered: deliveryDay
   };
@@ -34,6 +35,7 @@ export default async (req, res, next) => {
   };
   try {
     const box = await _mongodb.collection("boxes").findOne(query);
+    if (!box) console.log(box);
 
     let order;
     let boxLists;
@@ -77,10 +79,37 @@ export default async (req, res, next) => {
     box.variant_title = variant.title;
     box.variant_name = `${box.shopify_title} - ${variant.title}`;;
 
-    const { properties, messages } = await reconcileLists(box, boxLists);
+    const { properties, messages } = await reconcileBoxLists(box, boxLists);
+
+    const rc_subscription_ids = [{
+      title: box.shopify_title,
+      price: parseFloat(variant.price) * 100,
+      shopify_product_id: box.shopify_product_id,
+    }];
+    // this little routine in order to get prices and images for all the items
+    // which are details not stored in the order
+    const includes = [ 
+      ... boxLists["Including"]
+        .map(el => matchNumberedString(el))
+        .filter(el => el.quantity > 1)
+        .map(el => el.title),
+      ... boxLists["Swapped Items"]
+        .map(el => matchNumberedString(el))
+        .filter(el => el.quantity > 1)
+        .map(el => el.title),
+      ... boxLists["Add on Items"]
+        .map(el => matchNumberedString(el))
+        .map(el => el.title),
+    ];
+    const productDetails = await getProductDetails(includes); // from titles
+    for (const product of productDetails) {
+      delete product._id;
+      delete product.tag;
+      rc_subscription_ids.push(product);
+    };
 
     // if we're not updating then return the order, else the reconciled box
-    const finalProperties = (!update && order)
+    const finalProperties = (!update && Boolean(order))
       ? {
         "Delivery Date": order.delivered,
         "Including": order.including.join(","), 
@@ -89,7 +118,13 @@ export default async (req, res, next) => {
         "Swapped Items": order.swaps.join(","), 
       } : properties;
 
-    res.status(200).json({ box, properties: finalProperties, messages, reconciled: (update || messages.length === 0) });
+    res.status(200).json({
+      box,
+      properties: finalProperties,
+      messages,
+      rc_subscription_ids,
+      reconciled: (update || messages.length === 0)
+    });
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

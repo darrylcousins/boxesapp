@@ -50,10 +50,10 @@ function* TextAreaField({ label, id, value, valid, size, disabled, hideLabel, ..
       <FieldWrapper label={label} size={size} id={id} hideLabel={hideLabel}>
         <textarea
           class={`mr1 pa2 ba bg-transparent hover-bg-near-white w-100 input-reset br2 ${
-            !valid ? "invalid" : ""
+            !valid ? "invalid" : "valid"
           }`}
           disabled={disabled}
-          rows={disabled ? "2" : (props.rows ? props.rows : 4) }
+          rows={disabled ? "2" : (props.rows ? props.rows : 2) }
           id={id}
           style={{ "min-height": disabled ? "30px" : "50px"}}
           {...props}

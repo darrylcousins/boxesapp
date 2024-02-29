@@ -57,15 +57,22 @@ function* BulkPauseSubscriptions() {
   /**
    * Fetched subscriptions
    *
-   * @member {boolean} fetchSubscriptions
+   * @member {boolean} fetchCharges
    */
-  let fetchSubscriptions = [];
+  let fetchCharges = [];
+  /**
+   * Form result received via socket.closed, remove messages and display list
+   * of customer and subscription updated
+   *
+   * @member {boolean} formResult
+   */
+  let formResult = { updated: [] };
   /**
    * Selected subscriptions
    *
    * @member {boolean} selectedSubscriptions
    */
-  let selectedCustomers = [];
+  let selectedCharges = [];
   /**
    * Name of messaging div
    *
@@ -94,8 +101,10 @@ function* BulkPauseSubscriptions() {
    * @function getSubscriptions
    */
   const getSubscriptions = async () => {
-    let uri = `/api/recharge-get-subscriptions-by-date?date=${selectedDate}`;
+    let uri = `/api/recharge-get-charges-by-date?date=${selectedDate}`;
     loading = true;
+    fetchError = false;
+    formResult.updated = [];
     const socketMessages = document.getElementById(messageDivId);
     if (socketMessages) {
       socketMessages.innerHTML = "";
@@ -109,8 +118,8 @@ function* BulkPauseSubscriptions() {
           loading = false;
           this.refresh();
         } else {
-          fetchSubscriptions = json;
-          console.log(fetchSubscriptions);
+          fetchCharges = json;
+          console.log(fetchCharges);
           loading = false;
           this.refresh();
         }
@@ -133,7 +142,7 @@ function* BulkPauseSubscriptions() {
     if (ev.target.id === "charge_date") {
       if (isValidDateString(ev.target.value)) {
         selectedDate = ev.target.value;
-        fetchSubscriptions = [];
+        fetchCharges = [];
         formError = null;
       } else {
         selectedDate = null;
@@ -204,7 +213,7 @@ function* BulkPauseSubscriptions() {
       this.refresh();
       return;
     };
-    if (selectedCustomers.length === 0) {
+    if (selectedCharges.length === 0) {
       formError = "Please select at least one subscription";
       this.refresh();
       return;
@@ -215,11 +224,12 @@ function* BulkPauseSubscriptions() {
     loading = true;
     this.refresh();
     
+    console.log(selectedCharges);
     const headers = { "Content-Type": "application/json" };
     const data = {
       chargeDate: selectedDate,
       message: formData.message,
-      selectedCustomers,
+      selectedCharges,
     };
 
     const callback = async (data) => {
@@ -243,7 +253,6 @@ function* BulkPauseSubscriptions() {
     };
 
     await getSessionId(callback, data, messageDivId);
-    // need a way to display emits
   };
 
   /**
@@ -252,7 +261,7 @@ function* BulkPauseSubscriptions() {
   const cancelChanges = () => {
     fetchError = null;
     formError = null;
-    fetchSubscriptions = [];
+    fetchCharges = [];
     selectedDate = null;
     formData.charge_date = "";
     formData.message = "";
@@ -268,16 +277,16 @@ function* BulkPauseSubscriptions() {
    */
   const handleSelection = (id) => {
     if (id) {
-      if (selectedCustomers.includes(id)) {
-        selectedCustomers.splice(selectedCustomers.indexOf(id), 1);
+      if (selectedCharges.includes(id)) {
+        selectedCharges.splice(selectedCharges.indexOf(id), 1);
       } else {
-        selectedCustomers.push(id);
+        selectedCharges.push(id);
       };
     } else {
-      if (selectedCustomers.length > 0) {
-        selectedCustomers = [];
+      if (selectedCharges.length > 0) {
+        selectedCharges = [];
       } else {
-        selectedCustomers = fetchSubscriptions.map(el => el.recharge_id);
+        selectedCharges = fetchCharges.map(el => el.charge_id);
       };
     };
     this.refresh();
@@ -288,18 +297,46 @@ function* BulkPauseSubscriptions() {
    */
   this.addEventListener("toastEvent", Toaster);
 
+  /**
+   * When the bulk task is completed and we receive a completion event
+   */
+  const socketClosed = (ev) => {
+    // empty message div
+    // log the ev.detail.updated customer: object, boxes: array of objects
+    // customer: first_name, last_name, email
+    // boxes, each: subscription_id, title, variant?
+    const socketMessages = document.getElementById(messageDivId);
+    if (socketMessages) {
+      socketMessages.classList.add("closed"); // uses css transitions
+      setTimeout(() => {
+        socketMessages.innerHTML = "";
+      }, 500);
+    };
+    formResult = {
+      count,
+      updated: ev.detail.updated,
+    };
+    selectedCharges = [];
+    fetchCharges = [];
+    setTimeout(() => {
+      this.refresh();
+    }, 500);
+  };
+
+  window.addEventListener("socket.closed", socketClosed);
+
   for (const _ of this) { // eslint-disable-line no-unused-vars
 
     yield (
-      <div id="bulk-pause" class="w-80 center pv2">
+      <div id="bulk-pause" class="w-80 center pv2 mh5">
         { loading && <BarLoader /> }
         { fetchError && <Error msg={fetchError} /> }
         { formError && <Error msg={formError} /> }
-        <div class="tl pb3">
+        <div class="tl pb3 w-100 center">
           <h4 class="pt0 lh-title ma0 fg-streamside-maroon">
             Bulk Pause Subscriptions
           </h4>
-          <div class="w-100">
+          <div>
             <Field
               label={ `Select subscriptions by charge date` }
               hideLabel={false}
@@ -311,7 +348,7 @@ function* BulkPauseSubscriptions() {
             <div class="cf" />
           </div>
           { selectedDate && (
-            <div class="mt4 w-80">
+            <div class="mt4">
               <div>Selected charge date:
                 <span class="b mr4">{ new Date(Date.parse(selectedDate)).toDateString() }</span>
               </div>
@@ -322,15 +359,15 @@ function* BulkPauseSubscriptions() {
               </div>
             </div>
           )}
-          { (fetchSubscriptions.length > 0) && (
-            <Fragment>
-              <div class="cf dark-blue pa2 mt2 mb3 br3 ba b--dark-blue bg-washed-blue">
+          { (fetchCharges.length > 0) && (
+            <div class="mt4">
+              <div class="alert-box cf dark-blue pa3 mt2 mb3 br3 ba b--dark-blue bg-washed-blue">
                 The following subscriptions will be paused for 7 days. A
                 standard email will be sent to each customer including the text
                 provided here as a paragraph. The text should explain
                 to the customer why the subscription has been paused.
               </div>
-              <div class="w-100 cf">
+              <div class="cf">
                 <Field
                   label={ `Compose a message to include in email to customer` }
                   hideLabel={false}
@@ -340,7 +377,7 @@ function* BulkPauseSubscriptions() {
                   formElements={getFormElements()}
                 />
               </div>
-              <div class="mt2 w-100">
+              <div class="mt2">
                 <h4 class="pt0 lh-title ma0 fg-streamside-maroon">Selected Subscriptions</h4>
                 <table id="customer-table" class="mt4 w-100 center" cellspacing="0">
                   <thead>
@@ -350,7 +387,7 @@ function* BulkPauseSubscriptions() {
                           <input
                             type="checkbox"
                             name="selectAll"
-                            checked={!(selectedCustomers.length === 0)}
+                            checked={!(selectedCharges.length === 0)}
                             onchange={ () => handleSelection(null) }
                             id="select_all"
                           />
@@ -359,36 +396,41 @@ function* BulkPauseSubscriptions() {
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Customer</th>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Email</th>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Charge Id</th>
+                      <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Box(es)</th>
                       <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Charge Date</th>
                     </tr>
                   </thead>
                   <tbody class="tl">
-                    { fetchSubscriptions.map(el => (
-                      <tr crank-key={ `${ el.recharge_id }` }>
-                        <td class="pr1 pt1 bb b--black-20 v-top">
+                    { fetchCharges.map(el => (
+                      <tr crank-key={ `${ el.charge_id }` }>
+                        <td class="pr1 pv1 bb b--black-20 v-top">
                           <input
                             type="checkbox"
                             name="subscription[]"
-                            checked={ selectedCustomers.includes(el.recharge_id) }
-                            onchange={ () => handleSelection(el.recharge_id) }
-                            id={el.recharge_id}
+                            checked={ selectedCharges.includes(el.charge_id) }
+                            onchange={ () => handleSelection(el.charge_id) }
+                            id={el.charge_id}
                           />
                         </td>
-                        <td class="pr1 pt1 bb b--black-20 v-top">
-                          { el.first_name } { el.last_name }
+                        <td class="pr1 pv2 bb b--black-20 v-top">
+                          { el.customer.first_name } { el.customer.last_name }
                         </td>
-                        <td class="pr1 pt1 bb b--black-20 v-top">
-                          { el.email }
+                        <td class="pr1 pv2 bb b--black-20 v-top">
+                          { el.customer.email }
                         </td>
-                        <td class="pr1 pt1 bb b--black-20 v-top">
-                          { el.charge_list.map(arr => (
-                              (arr[1] === selectedDate) && <div>{ arr[0] }</div>
+                        <td class="pr1 pv2 bb b--black-20 v-top">
+                          { el.charge_id }
+                        </td>
+                        <td class="pr1 pv2 bb b--black-20 v-top">
+                          { el.boxes.map(box => (
+                            <Fragment>
+                              <span>{ box.title }</span>{ " " }
+                              <span>{ box.properties.find(el => el.name === "Delivery Date").value }</span>
+                            </Fragment>
                           ))}
                         </td>
-                        <td class="pr1 pt1 bb b--black-20 v-top">
-                          { el.charge_list.map(arr => (
-                              (arr[1] === selectedDate) && <div>{ arr[1] }</div>
-                          ))}
+                        <td class="pr1 pv2 bb b--black-20 v-top">
+                          { el.scheduled_at }
                         </td>
                       </tr>
                     ))}
@@ -396,7 +438,7 @@ function* BulkPauseSubscriptions() {
                 </table>
               </div>
               <div class="tr pr1 pv2 w-100">
-                { selectedCustomers.length > 0 && (
+                { selectedCharges.length > 0 && (
                   <Button type="primary" onclick={pauseSubscriptions}>
                     Pause Subscriptions
                   </Button>
@@ -405,10 +447,35 @@ function* BulkPauseSubscriptions() {
                   Cancel
                 </Button>
               </div>
-            </Fragment>
+            </div>
           )}
         </div>
         <div id={ messageDivId } class="tl socketMessages"></div>
+        { formResult.updated.length > 0 && (
+          <Fragment>
+            <p>The following {formResult.updated.length} subscriptions have been updated with new charge date: {selectedDate}</p>
+            { formResult.updated.map(item => (
+              <div class="dt dt--fixed w-100">
+                <div class="dtc tl">
+                  { `${item.customer.first_name} ${item.customer.last_name} <${item.customer.email}>` }
+                </div>
+                <div class="dtc tl">
+                  { item.boxes.length === 0 ? (
+                    <span class="b">Error!</span>
+                  ) : (
+                    <ul class="list mv2">
+                    { item.boxes.map(box => (
+                      <li>
+                        { `${box.subscription_id} ${box.title} - ${new Date(box.delivery_at).toLocaleString("en", {weekday: "long"})}` }
+                      </li>
+                    ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            ))}
+          </Fragment>
+        )}
       </div>
     );
   };

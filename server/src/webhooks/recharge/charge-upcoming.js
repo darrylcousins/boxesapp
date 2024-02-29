@@ -5,7 +5,7 @@ import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-ch
 import { updateSubscriptions } from "../../lib/recharge/helpers.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
 import chargeUpcomingMail from "../../mail/charge-upcoming.js";
-import { getMetaForCharge, getMetaForBox, writeFileForCharge } from "./helpers.js";
+import { groupedMetaForCharge, getMetaForBox, writeFileForCharge } from "./helpers.js";
 import { upsertPending } from "../../api/recharge/lib.js";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
@@ -29,8 +29,6 @@ export default async function chargeUpcoming(topic, shop, body) {
 
   writeFileForCharge(charge, mytopic.toLowerCase().split("_")[1]);
 
-  let meta = getMetaForCharge(charge, topicLower);
-
   // First up we may assume that multiple boxes are present to find them we can
   // group the line_items by a common box_subscription_id
   const grouped = await reconcileGetGrouped({ charge });
@@ -38,7 +36,6 @@ export default async function chargeUpcoming(topic, shop, body) {
   let result = [];
   try {
     result = await gatherData({ grouped, result });
-
 
     for (const [idx, subscription] of result.entries()) {
       if (subscription.updates && subscription.updates.length) {
@@ -61,11 +58,12 @@ export default async function chargeUpcoming(topic, shop, body) {
         const pendingData = {
           action: "upcoming",
           subscription_id: boxSubscription.subscription_id,
-          address_id: meta.recharge.address_id,
-          customer_id: meta.recharge.customer_id,
-          charge_id: meta.recharge.charge_id,
-          scheduled_at: meta.recharge.scheduled_at,
-          title: meta.recharge.title,
+          address_id: charge.address_id,
+          customer_id: charge.customer_id,
+          charge_id: charge.id,
+          scheduled_at: charge.scheduled_at,
+          title: subscription.attributes.title,
+          variant: subscription.attributes.variant,
           rc_subscription_ids,
           deliver_at: props["Delivery Date"],
         };
@@ -126,7 +124,6 @@ export default async function chargeUpcoming(topic, shop, body) {
 
     };
 
-    //console.log(result);
     await chargeUpcomingMail({ subscriptions: result, attributes: { ...result[0].attributes, address: charge.shipping_address } });
 
   } catch(err) {

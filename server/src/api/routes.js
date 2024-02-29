@@ -203,6 +203,9 @@ router.get(
 router.get(
   "/recharge-get-subscriptions-by-date", 
   await import("./recharge/recharge-get-subscriptions-by-date.js").then(({ default: fn }) => fn));
+router.get(
+  "/recharge-get-charges-by-date", 
+  await import("./recharge/recharge-get-charges-by-date.js").then(({ default: fn }) => fn));
 router.post(
   "/recharge-bulk-pause-subscriptions", 
   await import("./recharge/recharge-bulk-pause-subscriptions.js").then(({ default: fn }) => fn));

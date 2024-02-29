@@ -31,11 +31,7 @@ const closeToasts = () => {
 const closeButton = () => {
   const outer = document.createElement("div");
   outer.addEventListener("click", closeToasts);
-  outer.classList.add("pl3");
-  outer.classList.add("pointer");
-  outer.classList.add("tr");
-  outer.classList.add("b");
-  outer.classList.add("flex-auto");
+  outer.classList.add("pl3", "pointer", "tr", "b", "flex-auto");
   const inner = document.createElement("span");
   inner.innerHTML = "𐄂";
   inner.classList.add("b");
@@ -51,6 +47,7 @@ export default async (ev) => {
   const notice = document.createElement("div");
   const text = document.createElement("div");
   text.classList.add("flex-auto");
+  text.style.fontSize = "larger";
   text.textContent = ev.detail.notice;
   notice.appendChild(text);
   notice.appendChild(closeButton());
@@ -61,12 +58,21 @@ export default async (ev) => {
   existing.forEach(el => {
     noticeY += el.offsetHeight + 5;
   });
-  for (const c of ["z-max", "w-50", "mv1", "br3", "ba", `b--${borderColour}`, "pa4"]) {
-    notice.classList.add(c);
-  };
-  for (const c of ["toast", "flex", "absolute", "b", "white", "o-90", `bg-${bgColour}`]) {
-    notice.classList.add(c);
-  };
+  notice.classList.add(
+    "z-max",
+    "w-50",
+    "mv1",
+    "br3",
+    "ba",
+    `b--${borderColour}`,
+    "pa3",
+    "toast",
+    "flex",
+    "absolute",
+    "b",
+    "white",
+    "o-90",
+    `bg-${bgColour}`);
   const content = document.querySelector("#app");
   const contentTop = content.getBoundingClientRect().top;
   //const screenBottom = window.innerHeight - contentTop + 100;

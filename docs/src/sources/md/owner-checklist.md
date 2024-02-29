@@ -58,6 +58,10 @@ other subscription products in the shop.
 the old form dependent on the product-type. Some themes use lots of javascript
 to load variants and subscriptions and present the form itself.
 
+Also section blocks are common so I'm finding it easiest to create a new
+`for/case` loop of blocks above the app and move title, price, and
+descriptioninto that loop.
+
 ----
 
 ```django
@@ -80,7 +84,7 @@ to load variants and subscriptions and present the form itself.
         <p id="boxesapp-product-price">{{ current_variant.price | money }}</p>
     </div>
     <div id="boxesapp">
-      <div class="progress-bar mt2">
+      <div class="boxesapp-progress-bar mt2">
         <span class="bar">
           <span class="progress" />
         </span>

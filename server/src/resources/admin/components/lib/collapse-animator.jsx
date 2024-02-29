@@ -58,7 +58,7 @@ function CollapseWrapper(Component) {
       const el = yield (
         <div
           id={id}
-          class={`collapsible ${startCollapsed ? "collapsed" : ""}`}
+          class={`collapsible ${startCollapsed ? "collapsed" : ""} w-100`}
         >
           <Component
             id={ id }
@@ -71,17 +71,17 @@ function CollapseWrapper(Component) {
       // is async generator and I don't know how to fix it
       // XXX NB beware id's that begin with an integer!!
       //await sleepUntil(() => document.querySelector(`#${el.id}`), 1000);
-      await sleepUntil(() => document.querySelector(`#${id}`), 1000);
-
-      const element = document.querySelector(`#${id}`);
-      if (element) {
-        if (newCollapsed) {
-          collapseElement(element);
-        } else {
-          transitionElementHeight(element);
-        }
+      await sleepUntil(() => document.querySelector(`#${id}`), 1000)
+        .then((element) => {
+          if (newCollapsed) {
+            collapseElement(element);
+          } else {
+            transitionElementHeight(element);
+          }
         //element.scrollIntoView({ behavior: "smooth" });
-      }
+        }).catch((e) => {
+          // no need for action?
+        });
 
       collapsed = newCollapsed;
 

@@ -130,6 +130,14 @@ async function* ReactivateSubscription(props) {
         detail: { subscription_id: subscription.box.id },
       })
     );
+    const title = `${subscription.box.product_title} - ${subscription.box.variant_title}`;
+    const messages = [`Reactivating your subscription ${title}`];
+    this.dispatchEvent(
+      new CustomEvent("subscription.messages", {
+        bubbles: true,
+        detail: { messages },
+      })
+    );
     doSave();
   };
 

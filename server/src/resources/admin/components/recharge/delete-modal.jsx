@@ -67,7 +67,6 @@ const options = {
 async function* DeleteSubscription(props) {
   const { doSave, closeModal, title, subscription, customer, formId } = props;
 
-  console.log(subscription);
   /**
    * The form fields - required by {@link module:app/form/form~Form|Form}.
    *
@@ -111,6 +110,14 @@ async function* DeleteSubscription(props) {
       new CustomEvent("customer.disableevents", {
         bubbles: true,
         detail: { subscription_id: subscription.box.id },
+      })
+    );
+    const title = `${subscription.box.product_title} - ${subscription.box.variant_title}`;
+    const messages = [`Deleting your subscription ${title}`];
+    this.dispatchEvent(
+      new CustomEvent("subscription.messages", {
+        bubbles: true,
+        detail: { messages },
       })
     );
     doSave();

@@ -5,6 +5,7 @@ import { MongoClient, ObjectId } from "mongodb";
 import { Shopify } from "../src/lib/shopify/index.js";
 import { getMongo } from "../src/lib/mongo/mongo.js";
 import { winstonLogger } from "../config/winston.js";
+import { doRechargeQuery } from "../src/lib/recharge/helpers.js";
 
 const getLogger = () => {
   if (typeof _logger === "undefined") {
@@ -34,16 +35,12 @@ const run = async () => {
 
   //await Shopify.initialize(); // if shopify query required
 
-  // can log messages if required
-  //await winstonLogger.notice(`Test logger`);
-
-  const now = new Date("2024-02-12");
-  console.log(now.toLocaleString());
-
-  console.log(now.getTimezoneOffset());
-
-  now.setMinutes(now.getMinutes() + now.getTimezoneOffset());
-  console.log(now.toLocaleString());
+  const charge_id = 91048167;
+  const result = await doRechargeQuery({
+    path: `customers/${charge_id}`,
+    title: "Testing retries",
+  });
+  console.log(result);
 
   try {
     console.log('this ran');
@@ -62,6 +59,7 @@ const main = async () => {
 };
 
 main().catch(console.error);
+
 
 
 

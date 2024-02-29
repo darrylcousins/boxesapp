@@ -5,7 +5,7 @@
 
 import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
-import { reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
+import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import { formatDate, delay } from "../../lib/helpers.js";
 
 const isValidDateString = (str) => {
@@ -33,7 +33,7 @@ export default async (req, res, next) => {
     };
   };
 
-  const { chargeDate, message, selectedCustomers } = req.body;
+  const { chargeDate, message, selectedCharges } = req.body;
 
   if (!isValidDateString(chargeDate)) {
     return res.status(200).json({ error: "Invalid Date" });
@@ -48,115 +48,97 @@ export default async (req, res, next) => {
   if (io) io.emit("message", `Updating to new charge date: ${nextChargeDate.toDateString()}`);
   if (io) io.emit("message", `Updating to new delivery date: ${nextDeliveryDate.toDateString()}`);
 
-  const collection = _mongodb.collection("customers");
+  const updatedSubscriptions = [];
   try {
-    const customers = await collection.find({
-      "recharge_id": { "$in": selectedCustomers },
-      "charge_list": {
-        $elemMatch: {
-          $elemMatch:{
-            $in:[chargeDate]
-        }}}}).toArray();
-    for (const customer of customers) {
-      // now collect the charges for customer at this charge date, doing this
-      // just in case localdb has fallen out of sync since nightly cronjob
-      // updated the charge lists
-      if (io) io.emit("message", `Customer: ${customer.first_name} ${customer.last_name}`);
-
+    for (const charge_id of selectedCharges) {
       try {
         const res = await makeRechargeQuery({
-          path: `charges`,
-          query: [
-            ["customer_id", customer.recharge_id ],
-            ["scheduled_at", chargeDate ],
-          ],
+          path: `charges/${charge_id}`,
           io,
           session_id,
-          title: "Fetch charges",
+          title: `Fetch charge (${charge_id})`,
         });
 
-        if (res.charges.length === 0) {
-            if (io) io.emit("message", "No charges found");
-        } else {
-          for (const charge of res.charges) {
-            // if customer has multiple addresses then more than one charge may be found
-            // collect the included subscriptions
-            const grouped = await reconcileGetGrouped({ charge });
-            customer.id = customer.recharge_id;
-            customer.external_customer_id = { ecommerce: customer.shopify_id };
-            for (const group of Object.values(grouped)) {
-              // need make up properties for updates
-              const boxProperties = group.box.properties;
-              const delivery = boxProperties.find(el => el.name === "Delivery Date");
-              delivery.value = nextDeliveryDate.toDateString();
-              const includeProperties = [
-                { name: "Delivery Date", value: nextDeliveryDate.toDateString() },
-                { name: "Add on product to", value: group.box.title },
-                { name: "box_subscription_id", value: group.box.purchase_item_id.toString() },
-              ];
-              let properties;
-              let title;
-              let opts;
-              for (const subscription of group.rc_subscription_ids) {
-                if (io) io.emit("message", `Updating ${subscription.title} (${subscription.subscription_id})`);
-              
-                properties = (parseInt(subscription.subscription_id) === parseInt(group.box.purchase_item_id))
-                  ? boxProperties : includeProperties;
+        if (res.charge) {
+          const charge = res.charge;
+          let result, title, opts, mailOpts;
 
-                title = `Updating delivery date ${subscription.title}`;
-                opts = {
-                  id: subscription.subscription_id,
-                  title,
-                  body: { properties },
-                  io,
-                  session_id,
-                };
-                await updateSubscription(opts);
+          const grouped = await reconcileGetGrouped({ charge });
 
-                await delay(1000); // delay a second before making next call
+          result = [];
+          result = await gatherData({ grouped, result });
+          const update = {};
+          for (const [idx, subscription] of result.entries()) {
+            subscription.attributes.previousDeliveryDate = subscription.attributes.nextDeliveryDate;
+            subscription.attributes.previousChargeDate = subscription.attributes.nextChargeDate;
 
-                title = `Updating charge date ${subscription.title}`;
-                opts = {
-                  id: subscription.subscription_id,
-                  title,
-                  //date: nextChargeDate.toISOString().split('T')[0],
-                  date: formatDate(nextChargeDate),
-                  io,
-                  session_id,
-                };
-                await updateChargeDate(opts);
+            subscription.attributes.nextDeliveryDate = nextDeliveryDate.toDateString();
+            subscription.attributes.nextChargeDate = nextChargeDate.toDateString();
+
+            let boxProperties = { ...subscription.properties };
+            boxProperties["Delivery Date"] = nextDeliveryDate.toDateString();
+            const updatedProperties = { ...boxProperties };
+            boxProperties = Object.entries(boxProperties).map(([name, value]) => ({name, value}));
+            const includeProperties = [
+              { name: "Delivery Date", value: nextDeliveryDate.toDateString() },
+              { name: "Add on product to", value: subscription.box.shopify_title },
+              { name: "box_subscription_id", value: subscription.attributes.subscription_id.toString() },
+            ];
+
+            for (const product of subscription.attributes.rc_subscription_ids) {
+              if (io) io.emit("message", `Updating ${product.title} (${product.subscription_id})`);
+            
+              // fix Delivery Date
+              const properties = (parseInt(product.subscription_id) === parseInt(subscription.attributes.subscription_id))
+                ? boxProperties : includeProperties;
+
+              if (parseInt(product.subscription_id) === parseInt(subscription.attributes.subscription_id)) {
+                if (!Object.hasOwnProperty.call(update, "boxes")) update.boxes = [];
+                update.boxes.push(product);
               };
-              // compile data for email to customer
-              const includes = group.included.map(el => {
-                return {
-                  title: el.title,
-                  quantity: el.quantity,
-                  shopify_product_id: el.external_product_id.ecommerce,
-                };
-              });
-              includes.unshift({
-                  title: `${group.box.title} - ${group.box.variant_title}`,
-                  quantity: group.box.quantity,
-                  shopify_product_id: group.box.external_product_id.ecommerce,
-              });
-              const attributes = {
-                customer,
-                content: message,
-                nextChargeDate: nextChargeDate.toDateString(),
-                nextDeliveryDate: nextDeliveryDate.toDateString(),
-                title: group.box.title,
-                variant: group.box.variant_title,
-                subscription_id: group.box.purchase_item_id,
+              title = `Updating delivery date ${product.title}`;
+              opts = {
+                id: product.subscription_id,
+                title,
+                body: { properties },
+                io,
+                session_id,
               };
-              const mailOpts = {
-                type: "paused",
-                attributes,
-                includes,
+              await updateSubscription(opts);
+
+              await delay(1000); // delay a second before making next call
+
+              title = `Updating charge date ${product.title}`;
+              opts = {
+                id: product.subscription_id,
+                title,
+                date: formatDate(nextChargeDate),
+                io,
+                session_id,
               };
-              await subscriptionActionMail(mailOpts);
-              if (io) io.emit("message", `Customer email sent (${customer.email})`);
+              await updateChargeDate(opts);
+
+              await delay(1000); // delay a second before making next call
+
             };
+            // sending an email per subscription
+            // add in the extra content text from admin when bulk pausing
+            subscription.attributes.content = message;
+            mailOpts = {
+              type: "paused",
+              attributes: subscription.attributes,
+              includes: subscription.includes,
+              properties: updatedProperties,
+              address: subscription.address,
+              admin: true,
+            };
+            update.customer = subscription.attributes.customer;
+
+            await subscriptionActionMail(mailOpts);
+            if (io) io.emit("message", `Customer email sent (${subscription.attributes.customer.email})`);
           };
+          console.log(update);
+          updatedSubscriptions.push(update);
         };
       } catch(err) {
         _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
@@ -164,7 +146,7 @@ export default async (req, res, next) => {
 
     };
 
-    if (io) io.emit("finished", session_id);
+    if (io) io.emit("finished", { session_id, updated: updatedSubscriptions }); // maybe add list of updated subscriptions here?
     return res.status(200).json([]);
   } catch(err) {
     res.status(200).json({ error: err.message });

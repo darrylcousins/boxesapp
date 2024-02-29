@@ -12,6 +12,7 @@ import EditProducts from "../products/edit-products";
 import Cancelled from "./cancelled";
 import ModalTemplate from "../lib/modal-template";
 import Error from "../lib/error";
+import Help from "../lib/help";
 import Toaster from "../lib/toaster";
 import { toastEvent } from "../lib/events";
 import { PostFetch, Fetch } from "../lib/fetch";
@@ -37,6 +38,8 @@ import {
   floatToString,
   findTimeTaken,
   matchNumberedString,
+  sleepUntil,
+  displayMessages,
 } from "../helpers";
 
 /**
@@ -52,7 +55,6 @@ import {
  */
 async function *Subscription({ subscription, customer, idx, admin }) {
 
-  //console.log(subscription);
   /*
   console.log("TITLE", subscription.attributes.title);
   console.log("Box", subscription.box);
@@ -175,6 +177,32 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     });
     return title;
   };
+
+  /**
+   * Helper method to pick up messages from other components
+   *
+   * @function makeTitle
+   */
+  const collectMessages = async (ev) => {
+    // default sleep is for 10 seconds - pass a value if needed
+    let display;
+    /*
+    try {
+      // can fail inside the promise
+      await sleepUntil(() => document.getElementById(`displayMessages-${subscription.attributes.subscription_id}`));
+    } catch(e) {
+      console.log(e); // actually just says undefined - fix me?
+    };
+    */
+    await sleepUntil(() => document.getElementById(`displayMessages-${subscription.attributes.nullsubscription_id}`))
+      .then((res) => {
+        displayMessages(res, ev.detail.messages);
+      }).catch((e) => {
+        // no need for action
+      });
+  };
+
+  this.addEventListener("subscription.messages", collectMessages);
 
   /**
    * Helper method to build properties on box
@@ -300,7 +328,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
           messages.push(`${item.title} ${orig && orig.quantity > 0 && `(${orig.quantity}) ` }has been removed from your box.`);
         } else {
           if (orig) {
-            console.log(orig.quantity, item.quantity);
             if (orig.quantity !== item.quantity) {
               messages.push(`${item.title} quantity has changed from ${orig.quantity} to ${item.quantity}.`);
             };
@@ -311,7 +338,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
         };
       };
     };
-    for (const el of messages) console.log(el);
     return messages;
   };
 
@@ -319,31 +345,21 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    * @function testChanges
    * 
    * Gather data as if to make changes and log to console
+   * Helper method, all links to this method have now been removed
    */
   const testChanges = async (type) => {
-
     let updates;
     if (type === "updates") {
       updates = subscription.updates;
     } else {
       updates = getUpdatesFromIncludes();
     };
-
     const change_messages = getChangeMessages(updates);
     console.log(change_messages);
-
     console.log("updates", JSON.stringify(updates, null, 2));
-    /*
-    console.log(JSON.stringify("subscription_ids", subscription_ids, null, 2));
-    console.log(JSON.stringify("rc_subscription_ids", subscription.attributes.rc_subscription_ids, null, 2));
-    console.log(JSON.stringify("includes", subscription.includes, null, 2));
-    console.log(JSON.stringify("attributes", subscription.attributes, null, 2));
-    */
-
     const title = hasDuplicates();
     if (title) console.error(`${title} is duplicated in rc_subscription_ids`);
     console.log(dateStringNow(), userNavigator());
-
   };
 
   /*
@@ -422,6 +438,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                 borderColour: "black"
               }));
             };
+            collectMessages({ detail: { messages: change_messages }});
           };
         })
         .catch((err) => {
@@ -719,7 +736,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     uri = `${uri}&address_id=${subscription.attributes.address_id}`;
     uri = `${uri}&subscription_id=${subscription.attributes.subscription_id}`;
     uri = `${uri}&scheduled_at=${subscription.attributes.scheduled_at}`;
-    console.log(`Fetching ${uri}`);
     return Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
@@ -736,9 +752,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
             }));
             return null;
           } else {
-            console.log("fetched charge ===============");
-            console.log(json.subscription);
-            console.log("==============");
             loading = false;
             return json.subscription;
           };
@@ -775,10 +788,11 @@ async function *Subscription({ subscription, customer, idx, admin }) {
   const reloadCharge = async (ev) => {
 
     const { detail } = ev;
-
-    if (detail.action === "reactivated") return; // could do better here
+    //console.log(detail);
 
     const { charge_id, session_id, subscription_id, action } = detail;
+
+    if (action === "reactivated") return; // could do better here? Seems adequate.
 
     // session_id consumed by socket.js
     // do something with action ? toaster perhaps
@@ -802,7 +816,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
       console.log("Charge id matches");
     };
 
-    console.log(detail);
     ev.stopPropagation(); // otherwise other listening components catch this on the window
 
     // do I need a delay here?
@@ -822,10 +835,9 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     if (timer) {
       const timeTaken = findTimeTaken(timer);
       timer = null;
-      console.log(timeTaken);
 
       this.dispatchEvent(toastEvent({
-        notice: `Updates completed after ${timeTaken} minutes` ,
+        notice: `Updates (${action}) completed after ${timeTaken} minutes` ,
         bgColour: "black",
         borderColour: "black"
       }));
@@ -869,7 +881,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
 
       // otherwise reloading the updated charge
       // refetch the charge and adapt to subscription object
-      if (editsPending) {
+      if (editsPending && action !== "deleted" ) {
         const charge = await getCharge(subscription.attributes.charge_id);
 
         //console.log(charge);
@@ -898,8 +910,14 @@ async function *Subscription({ subscription, customer, idx, admin }) {
       };
     };
 
-    console.log("REFRESHING THIS");
-    await this.refresh();
+    await sleepUntil(() => document.getElementById(`subscription-${subscription.attributes.subscription_id}`))
+      .then((res) => {
+        animateFadeForAction(res, () => {
+          this.refresh();
+        });
+      }).catch((e) => {
+        // no need for action
+      });
 
   };
 
@@ -949,7 +967,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     // start the timer
     timer = new Date();
 
-    console.log(result); // get details from change box also?
     // not using any of this result!!
     // could use subscription_id to verify the component?
     // could use action to add to the messaging, 'reschedule pause' etc?
@@ -1053,9 +1070,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     const getDiffDays = (subscription) => {
       const now = new Date();
       const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
-      // adjust to get delivery day so I'm not comparing charge and delivery
-      nextCharge.setDate(nextCharge.getDate() + 3); // adjust to get delivery day
-      // days between next charge date and now
+      // this a charge date but that is correct because we cannot charge an order today!
       let diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
 
       // XXX need to also account for the lastOrder.delivered date
@@ -1181,8 +1196,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     this.refresh();
   };
 
-  this.addEventListener("explainer", toggleExplainer);
-  
   const hideExplainer = async (ev) => {
     if (ev.key && ev.key === "Escape" && isExplainerOpen) {
       isExplainerOpen = false;
@@ -1229,14 +1242,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                   <LogsModal logs={ subscriptionLogs }
                       admin={ admin }
                       box_title={ `${subscription.attributes.title} - ${subscription.attributes.variant}` } />
-                  <Button type="primary-reverse"
-                    onclick={() => testChanges()}
-                    title="Test"
-                  >
-                    <span class="b">
-                      Test Changes
-                    </span>
-                  </Button>
                 </div>
               )}
               <div class={ `${ !admin ? "w-100" : "fl w-70" } tr` }>
@@ -1278,7 +1283,14 @@ async function *Subscription({ subscription, customer, idx, admin }) {
           { (editsPending || subscription.attributes.pending) && (
             <Fragment>
               <div id={ `save-${messageDivId }` } class="tl saveMessages">
-                <div class="alert-box dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+                <div class="alert-box relative dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+                  { ( !subscription.attributes.pending) && (
+                    <div class="i fr cf mr3 pt2 pb1 ph1 pointer bb"
+                      onclick={ toggleExplainer }
+                    >
+                      Why can it take so long to update my subscription?
+                    </div>
+                  )}
                   <p class="pa3 ma0">
                     { ( subscription.attributes.pending) ? (
                       <div>Your subscription has updates pending.</div>
@@ -1294,6 +1306,8 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                     )}
                     <div>Check your emails for confirmation of the updates you have requested.</div>
                   </p>
+                  <div id={ `displayMessages-${subscription.attributes.subscription_id }` } class="fg-streamside-blue">
+                  </div>
                   { (!subscription.attributes.pending) && (
                     <ProgressLoader />
                   )}
@@ -1313,13 +1327,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                       <p class="pl5">New available this week: { subscription.attributes.nowAvailableAsAddOns.join(", ") }</p>
                     )}
                     <div class="tr mv2 mr3">
-                      { admin && (
-                        <Button
-                          onclick={ () => testChanges("updates") }
-                          type="primary-reverse">
-                          Test changes
-                        </Button>
-                      )}
                       <Button type="primary-reverse"
                         title="Continue"
                         onclick={(ev) => saveChanges("updates", ev)}>
@@ -1341,15 +1348,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                 </span>
               </div>
               <div class="w-100 tr">
-                { admin && (
-                  <div class="dib pr2 nowrap">
-                    <Button
-                      onclick={ () => testChanges("includes") }
-                      type="transparent/dark">
-                      Test changes
-                    </Button>
-                  </div>
-                )}
                 <div class="dib pr2 nowrap">
                   <Button
                     onclick={ cancelEdits }
@@ -1370,7 +1368,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
             </div>
           </div>
           <div class="mb2 bb b--black-80">
-            <div id={ `products-${idx}` }>
+            <div id={ `products-${subscription.attributes.subscription_id}-${idx}` }>
               { subscription.attributes.title !== "" && (
                 <CollapsibleProducts
                   collapsed={ collapsed }
@@ -1380,7 +1378,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                   nextChargeDate={ subscription.attributes.nextChargeDate }
                   isEditable={ subscription.messages.length === 0 && subscription.attributes.hasNextBox && !editsPending }
                   key={ idx }
-                  id={ `subscription-${idx}` }
+                  id={ `subscription-${subscription.attributes.subscription_id}-${idx}` }
                 />
               )}
             </div>
@@ -1388,20 +1386,20 @@ async function *Subscription({ subscription, customer, idx, admin }) {
           { isExplainerOpen && (
             <Portal root={modalWindow}>
               <ModalTemplate closeModal={ toggleExplainer } loading={ false } error={ false }>
-                <h4 class="fw4 tl fg-streamside-maroon">Why does it take so long to update my subscription?</h4>
+                <h4 class="ml4 fw4 tl fg-streamside-maroon">Why can it take so long to update my subscription?</h4>
                 <p class="pa4">
                   <img src={ `${ host }/logos/boxes.png` } width="50" />
-                  Because in order to ensure the integrity of your box
+                  In order to ensure the integrity of your box
                   subscripton we must be sure that all updates have completed
                   before you are able to continue editing your box. The boxes
                   are a linking between two web services: 1. the store and 2.
                   the subscription service. When an update is requested a
                   number of calls are made between the services to complete the
-                  update. We have recorded delays of up to 5 minutes for the
+                  update. We have recorded delays of up to 3 minutes for the
                   order to be finalised and updated on our subscriptions
                   service.
                 </p>
-                <p class="pa4">
+                <p class="pb4 ph4 pt0">
                   You are welcome to close this window at any time, your
                   updates will continue to be processed. Please check your
                   emails for notification of the completion of the requested

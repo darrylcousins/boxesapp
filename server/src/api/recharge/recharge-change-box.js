@@ -350,6 +350,7 @@ export default async (req, res, next) => {
       const mailOpts = {
         type,
         attributes,
+        address: subscription.address,
         includes,
         now,
         navigator,

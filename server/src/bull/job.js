@@ -21,7 +21,7 @@ export const makeMailJob = async (opts) => {
         type: 'exponential',
         delay: 1000,
       },
-      removeOnComplete: 10, removeOnFail: 50
+      removeOnComplete: 50, removeOnFail: 50
     },
   )
 };
@@ -55,7 +55,7 @@ export const makeApiJob = async (opts) => {
         type: 'exponential',
         delay: 1000,
       },
-      removeOnComplete: 10, removeOnFail: 50
+      removeOnComplete: 100, removeOnFail: 50
     },
   )
   //console.log("Queued")

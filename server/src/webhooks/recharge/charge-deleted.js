@@ -6,10 +6,6 @@ import { ObjectId } from "mongodb";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
- * The first time a charge is created (i.e. order through shopify) the
- * subscriptions do not have box_subscription_id set, the delivery date needs
- * to be updated. As does also the next charge date to sync with 3 days before
- * delivery
  *
  */
 export default async function chargeDeleted(topic, shop, body, { io, sockets }) {

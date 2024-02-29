@@ -1,10 +1,11 @@
 <mj-section padding="0px 0px">
   <mj-column>
-    <mj-text align="center">
-      {% if siteLogo %}
-        <img src="{{ env.HOST }}/logos/logo.jpg" border="1" />
-      {% endif %}
-    </mj-text>
+    {% if siteLogo %}
+      <mj-image src="{{ env.HOST }}/logos/{{ env.SHOP_NAME }}.jpg" border="1" width="200px" align="center" border-radius="5px" />
+      <img src="{{ env.HOST }}/logos/{{ env.SHOP_NAME }}.jpg" border="1" width="200px" align="center" border-radius="5px" />
+    {% else %}
+      <p>No site logo?</p>
+    {% endif %}
   </mj-column>
 </mj-section>
 <mj-section padding-bottom="0px">

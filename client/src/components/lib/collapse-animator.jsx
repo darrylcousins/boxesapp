@@ -71,18 +71,26 @@ function CollapseWrapper(Component) {
         return;
       };
 
+      // getting too much space, perhaps because of wrapping
+      // dropped the floats and changed this routine Feb 2024
+      let start = 0;
       tempEl.childNodes.forEach(el => {
         if (!el) return; // Node.TEXT_NODE === 3
+        start += el.scrollHeight;
+        calculatedHeight += el.scrollHeight;
+      /*
         if (el.getAttribute("name") === "hasChildren") { // Node.TEXT_NODE (3)
           el.childNodes.forEach(child => {
             if (!child) return;
             calculatedHeight += child.offsetHeight;
+            start += child.offsetHeight;
           });
         } else {
           calculatedHeight += el.offsetHeight;
         };
+      */
       });
-      calculatedHeight += 10;
+      calculatedHeight += calculatedHeight > 300 ? 20 : 10;
       element.style.height = `${calculatedHeight}px`;
     };
     return;
@@ -95,12 +103,13 @@ function CollapseWrapper(Component) {
    *
    */
   async function sleepUntil(f, timeoutMs) {
+    if (!timeoutMs) timeoutMs = 1000; //default 1 second
     return new Promise((resolve, reject) => {
       let timeWas = new Date();
       let wait = setInterval(function() {
         if (f()) {
           clearInterval(wait);
-          resolve();
+          resolve(f());
         } else if (new Date() - timeWas > timeoutMs) { // Timeout
           clearInterval(wait);
           reject();
@@ -142,22 +151,24 @@ function CollapseWrapper(Component) {
       // wait until the element has rendered
       // if not yet rendered, ignore
       if (el !== 'undefined') {
-        await sleepUntil(() => document.querySelector(`#${el.id}`), 1000);
+        await sleepUntil(() => document.querySelector(`#${el.id}`))
+          .then((element) => {
+            //const element = document.querySelector(`#${el.id}`);
+            //console.log(`${el.id} ${element.style.height}`);
+            if (element) {
+              //console.log(id, "old", collapsed, "new", newCollapsed, "start", startCollapsed);
+              if (newCollapsed) {
+                collapseElement(element);
+              } else {
+                transitionElementHeight(element);
+              }
+              //element.scrollIntoView({ behavior: "smooth" });
+            }
+            collapsed = newCollapsed;
+          }).catch((e) => {;
+            console.log(e);
+          });
       };
-
-      const element = document.querySelector(`#${el.id}`);
-      //console.log(`${el.id} ${element.style.height}`);
-      if (element) {
-        //console.log(id, "old", collapsed, "new", newCollapsed, "start", startCollapsed);
-        if (newCollapsed) {
-          collapseElement(element);
-        } else {
-          transitionElementHeight(element);
-        }
-        //element.scrollIntoView({ behavior: "smooth" });
-      }
-
-      collapsed = newCollapsed;
 
     }
   };

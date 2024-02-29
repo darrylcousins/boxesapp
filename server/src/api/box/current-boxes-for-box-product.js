@@ -14,119 +14,48 @@ import { getOrderCount } from "../../lib/orders.js";
 export default async (req, res, next) => {
   const response = Object();
   const now = new Date();
+  now.setDate(now.getDate() + 2); // account for cutoff times of around 3 days
   const box_product_id = parseInt(req.params.box_product_id, 10);
 
-  /**
-   * Get upcoming delivery dates to filter boxes by
-  const distinctDeliveryDates = (colln, filters, counts) => {
-    return new Promise((resolve, reject) => {
-      colln.distinct('delivered', (err, data) => {
-        if (err) return reject(err);
-        const final = Array();
-        data.forEach(el => {
-          const d = new Date(Date.parse(el));
-          if (d >= now) {
-            const filter = filters[d.getDay()];
-            const count = el in counts ? counts[el] : 0;
-            // a limit of zero means no limit at all
-            if (filter) {
-              if (filter.hasOwnProperty("limit") && filter.limit > 0) {
-                if (count >= filter.limit) return;
-              };
-              if (filter.hasOwnProperty("cutoff") && filter.cutoff > Math.abs(d - now) / 36e5) {
-                return;
-              };
-            };
-            final.push(d);
-          };
-        });
-        final.sort((d1, d2) => {
-          if (d1 < d2) return -1;
-          if (d1 > d2) return 1;
-          return 0;
-        });
-        resolve(final.map(el => el.toDateString()));
-      });
-    });
-  };
-  */
-  const distinctDeliveryDates = async (colln, filters, counts) => {
-    const data = await colln.distinct('delivered');
-
-    const final = Array();
-    data.forEach(el => {
-      const d = new Date(Date.parse(el));
-      if (d >= now) {
-        const filter = filters[d.getDay()];
-        const count = el in counts ? counts[el] : 0;
-        // a limit of zero means no limit at all
-        if (filter) {
-          if (filter.hasOwnProperty("limit") && filter.limit > 0) {
-            if (count >= filter.limit) return;
-          };
-          if (filter.hasOwnProperty("cutoff") && filter.cutoff > Math.abs(d - now) / 36e5) {
-            return;
-          };
-        };
-        final.push(d);
-      };
-    });
-    final.sort((d1, d2) => {
-      if (d1 < d2) return -1;
-      if (d1 > d2) return 1;
-      return 0;
-    });
-    return final.map(el => el.toDateString());
-  };
-  
-  const filters = await getFilterSettings();
-  const counts = await getOrderCount();
-
-  const collection = _mongodb.collection("boxes");
-
-  let dates;
+  //const filters = await getFilterSettings();
+  //const counts = await getOrderCount();
   try {
-    // the dates are filtered using filter settings including order limits and cutoff hours
-    dates = await distinctDeliveryDates(collection, filters, counts);
-  } catch(err) {
-    res.status(200).json({ error: err.toString() });
-    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-  };
-
-
-  // consider defining fields to avoid the inner product documents
-  // https://docs.mongodb.com/drivers/node/fundamentals/crud/read-operations/project
-  // TODO absolutely essential the data is unique by delivered and shopify_product_id
-  // filter by dates later than now
-  try {
-    const result = await collection
-      .find({
-        delivered: {$in: dates},
+    const pipeline = [
+      { "$match": {
         active: true,
-        $or: [
-          { includedProducts: { $elemMatch: { shopify_product_id: box_product_id } } },
-          { addOnProducts: { $elemMatch: { shopify_product_id: box_product_id } } }
-        ]
-      })
-      /*
-      .project({
-        delivered: 1, shopify_title: 1, shopify_product_id: 1, shopify_variant_id: 1
-      })
-      */
-      .toArray();
+        shopify_title: { "$ne": null },
+        "$or": [
+          { includedProducts: { "$elemMatch": { shopify_product_id: box_product_id } } },
+          { addOnProducts: { "$elemMatch": { shopify_product_id: box_product_id } } }
+        ],
+      }},
+      { "$project": {
+        shopify_title: "$shopify_title",
+        delivered: "$delivered",
+        shopify_handle: "$shopify_handle",
+        shopify_product_id: "$shopify_product_id",
+        active: "$active",
+        includedProduct: { "$in": [box_product_id, { "$map": { input: "$includedProducts", in: "$$this.shopify_product_id" }}]},
+        addOnProduct: { "$in": [box_product_id, { "$map": { input: "$addOnProducts", in: "$$this.shopify_product_id" }}]},
+        includedProducts: "$includedProducts",
+        addOnProducts: "$addOnProducts",
+        iso: { "$dateFromString": {dateString: "$delivered", timezone: "Pacific/Auckland"}},
+      }},
+      { "$match": { iso: { "$gte": now } } },
+      { "$sort" : { iso: 1 } },
+      {
+        "$group": {
+          _id: "$shopify_handle",
+          boxes: { $push: "$$ROOT" }
+        },
+      },
+    ];
+    let result = await _mongodb.collection("boxes").aggregate(pipeline).toArray();
+    for (const box of result) {
+      response[box._id] = box.boxes;
+    };
+    for (const [key, value] of Object.entries(response)) console.log(key, value);
 
-    result.forEach(el => {
-      if (!response.hasOwnProperty(el.shopify_handle)) {
-        response[el.shopify_handle] = Array();
-      };
-      const item = { ...el };
-      item.includedProduct = el.includedProducts.some(prod => prod.shopify_product_id === box_product_id);
-      if (!item.includedProduct) {
-        item.addOnProduct = el.addOnProducts.some(prod => prod.shopify_product_id === box_product_id) ? true : false;
-      }
-
-      response[el.shopify_handle].push(item);
-    });
     res.status(200).json(response);
   } catch(err) {
     res.status(200).json({ error: err.message });

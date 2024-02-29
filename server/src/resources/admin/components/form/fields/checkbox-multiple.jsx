@@ -160,7 +160,7 @@ function* CheckboxMultiple({ label, id, value, valid, size, datalist, datatype, 
           {value && Array.isArray(value) && (
             <ul class="pl1 list">
               {value.map(el => (
-                <li>{el}</li>
+                <li>• {el}</li>
               ))}
             </ul>
           )}

@@ -57,11 +57,17 @@ input[required]:valid {
 input.invalid, input[required] {
   border-color: #b55103;
 }
-textarea:valid {
+input.invalid:disabled, input[required]:disabled {
+  border-color: #333;
+}
+textarea.valid, textarea[required].valid { // textarea doesn't have pseudo valid
   border-color: green;
 }
 textarea.invalid, textarea[required] {
   border-color: #b55103;
+}
+textarea.invalid:disabled, textarea[required]:disabled {
+  border-color: #333;
 }
 .hidden {
   visibility: hidden;

@@ -284,10 +284,11 @@ ${ `${ fence }` }
         <div class="cf mb2"></div>
         { true && (
           <Alert>
-          This documentation was written mostly in spring 2022. In the winter
-          of 2023 I spent several hundred hours of work making changes,
-          adding features, and generally re-working the application. Therefore,
-          this documentation is mostly out of date. Sorry.
+            This documentation was written mostly in spring 2022. In the winter
+            of 2023 I spent several hundred hours of work making changes,
+            adding features, and generally re-working the application. And then
+            again Jan/Feb 2024 another 6 weeks of work. Therefore, this
+            documentation is mostly out of date. Sorry.
           </Alert>
         )}
         <div id="page-wrapper" role="document">

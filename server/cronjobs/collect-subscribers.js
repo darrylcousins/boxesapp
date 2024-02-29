@@ -62,11 +62,13 @@ const main = async () => {
       if (!result.next_cursor) nextCursor = false;
     };
 
-    console.log(customers.length);
     for (const el of customers) {
 
       const charge_list = [];
 
+      if (el.last_name === "Halloumis") {
+      console.log(el);
+      };
       if (el.subscriptions_active_count > 0) {
         try {
           const res = await makeRechargeQuery({

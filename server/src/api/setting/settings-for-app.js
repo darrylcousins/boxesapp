@@ -28,7 +28,6 @@ export default async (req, res, next) => {
         response[el._id][setting.handle] = setting.value;
       });
     });
-    console.log(response);
     res.status(200).json(response);
 
   } catch(err) {

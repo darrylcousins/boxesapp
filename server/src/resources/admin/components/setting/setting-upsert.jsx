@@ -47,7 +47,7 @@ function* UpsertSettingModal(props) {
       required: true,
     },
     Value: {
-      type: "text",
+      type: "textarea",
       datatype: "string",
       size: "third",
       required: true,
@@ -63,7 +63,7 @@ function* UpsertSettingModal(props) {
       size: "third",
       required: true,
       datatype: "string",
-      datalist: ["Colour", "Translation", "General"],
+      datalist: ["Translation", "General"],
     },
   };
   /**

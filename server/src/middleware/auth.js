@@ -56,7 +56,9 @@ export default function applyAuthMiddleware({ app }) {
       const args = {
         apiKey: process.env.SHOPIFY_API_KEY,
         host,
-        portal_url
+        portal_url,
+        shop_title: process.env.SHOP_TITLE,
+        logo: `https://${process.env.SERVER_NAME}/logos/boxes.svg`,
       };
       res.set("Content-Type", "text/html");
       return res.send(

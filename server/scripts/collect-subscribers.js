@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-import { MongoClient, ObjectID } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import { Shopify } from "../src/lib/shopify/index.js";
 import { getMongoConnection, MongoStore } from "../src/lib/mongo/mongo.js";
 import { makeRechargeQuery } from "../src/lib/recharge/helpers.js";
@@ -26,20 +26,38 @@ const run = async () => {
 
   try {
     console.log('this ran');
-    const collection = _mongodb.collection("customers");
-    const result = await makeRechargeQuery({
-      path: `customers`,
-      query: [
+    const getQuery = (result) => {
+      let query = [
         ["limit", 250 ],
-      ]
-    });
-    const { customers, next_cursor, previous_cursor } = result;
-
-    console.log(customers.length);
-    if (next_cursor) {
-      console.log("Got more than 250");
+        ["scheduled_at", "2024-03-02" ],
+      ];
+      if (result.next_cursor) {
+        console.log(result.next_cursor);
+        query.push(
+          ["page_info", result.next_cursor ],
+        );
+      };
+      return query;
     };
 
+    let nextCursor = true;
+    let charges = [];
+    let result = { next_cursor: false };
+
+    let count = 1;
+    while (nextCursor === true && count < 3) {
+      result = await makeRechargeQuery({
+        path: `charges`,
+        query: getQuery(result),
+      });
+      console.log(result.charges.length);
+      charges = [ ...charges, ...result.charges ];
+      if (!result.next_cursor) nextCursor = false;
+      count++;
+    };
+    console.log(charges.length);
+
+    return;
     const insert = customers.map(el => {
       return {
         first_name: el.first_name,

@@ -8,7 +8,8 @@ import buildMail from "./build-mail.js";
  * @function mail/charge-upcoming.js
  * @param (object) data
  */
-export default async ({ subscriptions, attributes }) => {
+export default async ({ subscription, address }) => {
+  const attributes = subscription.attributes;
   const email = attributes.customer.email;
   const title = "Box Subscription Created";
   const subject = `${title} ${attributes.title} - ${attributes.variant}`;
@@ -27,8 +28,9 @@ export default async ({ subscriptions, attributes }) => {
     title,
     subject,
     templateFile,
-    subscriptions,
+    subscriptions: [ subscription ],
     attributes,
+    address,
     type: "created",
     meta,
   };

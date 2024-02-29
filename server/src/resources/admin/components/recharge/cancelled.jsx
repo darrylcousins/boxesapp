@@ -6,7 +6,6 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
-import { toPrice, animateFadeForAction, animateFade } from "../helpers";
 import { Fetch } from "../lib/fetch";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
@@ -20,6 +19,11 @@ import Subscription from "./subscription";
 import {
   formatCount,
   findTimeTaken,
+  displayMessages,
+  sleepUntil,
+  toPrice,
+  animateFadeForAction,
+  animateFade
 } from "../helpers";
 
 /**
@@ -28,7 +32,6 @@ import {
  */
 async function* Cancelled({ subscription, customer, idx, admin }) {
 
-  console.log("cancelled.jsx subscription", subscription);
   /**
    * True while loading data from api
    * Starts false until search term submitted
@@ -61,6 +64,20 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
    */
   let messageDivId = `socketMessagesCancelled-${subscription.subscription_id}`;
 
+  /**
+   * Helper method to pick up messages from other components
+   *
+   * @function makeTitle
+   */
+  const collectMessages = async (ev) => {
+    await sleepUntil(() => document.getElementById(`displayMessages-${subscription.subscription_id}`));
+    const display = document.getElementById(`displayMessages-${subscription.subscription_id}`);
+    displayMessages(display, ev.detail.messages);
+
+  };
+
+  this.addEventListener("subscription.messages", collectMessages);
+
   const pricedItems = () => {
     const result = [];
     result.push({
@@ -92,7 +109,6 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
     uri = `${uri}&address_id=${data.address_id}`;
     uri = `${uri}&subscription_id=${data.subscription_id}`;
     uri = `${uri}&scheduled_at=${data.scheduled_at}`;
-    console.log(`Fetching ${uri}`);
 
     return await Fetch(encodeURI(uri))
       .then((result) => {
@@ -120,7 +136,6 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
 
     const { detail } = ev;
 
-    console.log(detail);
     if (!["cancelled", "deleted", "reactivated"].includes(detail.action)) return;
 
     const { charge_id, session_id, subscription_id, action } = detail;
@@ -140,7 +155,6 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
     if (timer) {
       const timeTaken = findTimeTaken(timer);
       timer = null;
-      console.log(timeTaken);
 
       this.dispatchEvent(toastEvent({
         notice: `Updates completed after ${timeTaken} minutes` ,
@@ -230,21 +244,12 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
    */
   const listingReload = async (ev) => {
     const result = ev.detail.json; // success, action, subscription_id
-
-    console.log(result);
-
     // start the timer
     timer = new Date();
-
     ev.stopPropagation();
-
-    if (`${result.action}` === "deleted") {
-      // if this is a cancel or delete then we need to ask customer to reload all
-      //return;
-    };
-
     editsPending = true; // on deletes no need to start timer for reload
     await this.refresh();
+
     return;
   };
 
@@ -339,6 +344,8 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
                     </div>
                     <div>Check your emails for confirmation of the updates you have requested.</div>
                   </p>
+                  <div id={ `displayMessages-${subscription.box.id }` } class="fg-streamside-blue">
+                  </div>
                   <ProgressLoader />
                 </div>
               </div>

@@ -36,9 +36,9 @@ export const reconcileGetGrouped = async ({ charge }) => {
    */
 
   const line_items = [ ...charge.line_items ];
+  // ensure the box is at the start to pick up the box subscription
   for(var x in line_items) line_items[x].properties.some(el => el.name === "Including") ? line_items.unshift(line_items.splice(x,1)[0]) : 0;
   try {
-    // ensure the box is at the start to pick up the box subscription
     for (const line_item of line_items) {
       const box_subscription_property = line_item.properties.find(el => el.name === "box_subscription_id");
       if (!box_subscription_property) {
@@ -206,7 +206,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   try {
     const orderQuery = {
       customer_id: subscription.customer_id,
-      address_id: subscription.address_id,
+      //address_id: subscription.address_id, // dropped this because if addresses are merged
       product_id: parseInt(subscription.external_product_id.ecommerce),
       subscription_id: subscription.id,
     };
@@ -215,12 +215,18 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     lastOrder = {};
   };
 
-  const reconciled = await reconcileBoxLists(fetchBox, boxProperties);
-
-  reconciled.properties.box_subscription_id = `${subscription.id}`;
+  // do we really need to run this if no nextBox??? And if I don't what happens with everything else that uses gatherData?
+  // change box for example
+  let reconciled;
+  if (hasNextBox) {
+    reconciled = await reconcileBoxLists(fetchBox, boxProperties);
+    reconciled.properties.box_subscription_id = `${subscription.id}`;
+  } else {
+    reconciled = { properties: boxProperties, messages: [], updates: [] };
+  };
 
   const subscriptionUpdates = [];
-  if (reconciled.messages.length > 0) {
+  if (reconciled.messages.length > 0 && hasNextBox) { // don't collect updates unless the nextBox is present
     // push the subscription with new properties
     subscriptionUpdates.push({
       subscription_id: subscription.id,
@@ -245,7 +251,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
       });
     };
   };
-
   return {
     fetchBox,
     previousBox,
@@ -255,7 +260,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     finalProperties: reconciled.properties,
     subscriptionUpdates,
     templateSubscription,
-    messages: reconciled.messages,
+    messages: reconciled.messages, // don't issue messages if no next box to reconcile against
     includes,
     notIncludedInThisBox, // items no longer in this next delivery
     newIncludedInThisBox, // items new to this next delivery
@@ -412,6 +417,11 @@ export const gatherData = async ({ grouped, result }) => {
       };
     };
 
+    /*
+    console.log("------------------------");
+    for (const el of updates) console.log(el);
+    console.log("------------------------");
+    */
     result.push({
       box: fetchBox,
       properties: finalProperties,

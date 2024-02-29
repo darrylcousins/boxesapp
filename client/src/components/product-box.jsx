@@ -124,6 +124,7 @@ async function* ProductBoxApp({productJson, cartJson}) {
         fetchError = error;
       } else {
         let inCartWithDate = null;
+        console.log(cartJson.items);
         if (cartJson.items && cartJson.items.length) {
           // figure the date and set initialDate and initialProducts
           for (const item of cartJson.items) {
@@ -184,7 +185,10 @@ async function* ProductBoxApp({productJson, cartJson}) {
         { fetchError && <Error msg={fetchError} /> }
         { !loading ? (
           <Fragment>
-            <div class="listing-title" style={ title }>Included in the boxes:</div>
+            <div class="listing-title"
+              style={ title }
+              data-setting="product-included-title"
+            >{getSetting("Translation", "product-included-title")}</div>
             { Object.keys(includes).length > 0 ? (
               <Boxes
                 type="includes"
@@ -194,9 +198,14 @@ async function* ProductBoxApp({productJson, cartJson}) {
                 cartAddons={cartAddons}
                 boxInCart={Boolean(cartBoxId)} />
             ) : (
-              <p style="margin-top: 20px">Not a regular item in any box this week.</p>
+              <p style="margin-top: 20px"
+              data-setting="product-not-included"
+            >{getSetting("Translation", "product-not-included")}</p>
             )}
-            <div class="listing-title" style={ title }>Add on product to:</div>
+              <div class="listing-title"
+                style={ title }
+              data-setting="product-addon-title"
+            >{getSetting("Translation", "product-addon-title")}</div>
             { Object.keys(addOns).length > 0 ? (
               <Boxes
                 type="addons"
@@ -206,7 +215,9 @@ async function* ProductBoxApp({productJson, cartJson}) {
                 cartAddons={cartAddons}
                 boxInCart={Boolean(cartBoxId)} />
             ) : (
-              <p style="margin-top: 20px">Not available as an add on product this week</p>
+              <p style="margin-top: 20px"
+              data-setting="product-not-addon"
+            >{getSetting("Translation", "product-not-addon")}</p>
             )}
           </Fragment>
         ) : (

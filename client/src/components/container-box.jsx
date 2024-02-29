@@ -11,9 +11,7 @@
 import { createElement, Fragment } from "@b9g/crank";
 import { renderer } from "@b9g/crank/dom";
 
-import Error from "./lib/error";
 import BarLoader from "./lib/bar-loader";
-import SelectMenu from "./lib/select-menu";
 import { Fetch, PostFetch } from "./lib/fetch";
 import { selectVariantEvent,
   selectSellingPlanEvent,
@@ -71,7 +69,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    * @member scrollIntoView
    * @type {boolean}
    */
-  let scrollIntoView = false;
+  let scrollIntoView = true; // was false here but seems best to keep it in place
   /**
    * Display loading indicator while fetching data
    *
@@ -186,13 +184,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
    * @type {boolean}
    */
   let editBoxActive = false;
-  /**
-   * Show box customize options - used to animate in the options
-   *
-   * @member customizingBox
-   * @type {boolean}
-   */
-  let customizingBox = true;
   /**
    * Register that a change has occurred
    * This is done on updatePriceElement
@@ -341,22 +332,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
   };
 
   /**
-   * Commmitted now to submitting data, show loading
-   *
-   * @function confirmSubmitCart
-   */
-  const confirmSubmitCart = async () => {
-    document.getElementById("add-button-wrapper").innerHTML = `
-  <div class="progress-bar">
-    <span class="bar">
-      <span class="progress" />
-    </span>
-  </div>
-    `;
-    submitCart()
-  };
-
-  /**
    * Show popup and get user confirmation to replace box in cart
    *
    * @function initSubmitCart
@@ -366,13 +341,13 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
       showWarningPopup = !showWarningPopup;
       await this.refresh()
     } else {
-      confirmSubmitCart()
+      submitCart()
     }
   };
 
   const popupCallback = async (result) => {
     if (result) {
-      confirmSubmitCart()
+      submitCart()
       return;
     }
     showWarningPopup = !showWarningPopup;
@@ -1167,7 +1142,6 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     if (productJson.variants.length === 1 &&
       productJson.variants[0].title.toLowerCase() === "default title") return [];
     return productJson.variants.map(el => {
-      // map directly as required for SelectMenu
       return {item: `${el.id}`, text: el.title};
     });
   };
@@ -1194,6 +1168,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
           <Fragment>
             <VariantSelector boxVariants={getVariants()} selectedVariant={selectedVariant} />
             <DateSelector fetchDates={fetchDates} selectedDate={selectedDate} variantTitle={selectedVariant.title} />
+            { boxHasChanged && (<p>Changing dates may alter the selections you have made.</p>) }
             { selectedDate && boxRules.length > 0 && (
               <div class="boxesapp-notice">
                 {boxRules.map(rule => (
@@ -1249,7 +1224,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 <div id="add-button-wrapper">
                   { cartBoxId && (selectedBox.shopify_product_id !== cartBoxId) && (
                     <div class="boxesapp-notice">
-                      <p>{getSetting("Translation", "existing-box-warn")}</p>
+                      <p data-setting="existing-box-warn">{getSetting("Translation", "existing-box-warn")}</p>
                     </div>
                   )}
                   <button

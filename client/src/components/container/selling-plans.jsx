@@ -7,7 +7,7 @@
  */
 import { createElement, Fragment } from "@b9g/crank";
 import { selectSellingPlanEvent } from "../lib/events";
-import { toPrice } from "../../helpers";
+import { toPrice, getSetting } from "../../helpers";
 
 /**
  * SellingPlan
@@ -21,10 +21,6 @@ function* SellingPlans({ productJson, selectedVariant, selectedSellingPlanId }) 
   //const variant_price = selectedVariant.selling_plan_allocations[0].compare_at_price;
   const variant_price = selectedVariant.price;
 
-  const wrapperStyle = {
-    border: "1px solid #ccc",
-    "margin-bottom": "3px"
-  };
   const lineStyle = {
     display: "flex",
     padding: "10px 5px",
@@ -106,7 +102,7 @@ function* SellingPlans({ productJson, selectedVariant, selectedSellingPlanId }) 
     const price_adjustment = selling_plan ? selling_plan.price_adjustments[0].value : null;
     const discount_price = selectedVariant.selling_plan_allocations[0].per_delivery_price;
     yield (
-      <div style={ wrapperStyle }>
+      <div class="boxesapp-wrapper">
         { !selectedVariant.requires_selling_plan && (
           <div>
             <div style={ lineStyle }>
@@ -160,7 +156,7 @@ function* SellingPlans({ productJson, selectedVariant, selectedSellingPlanId }) 
           <div style="position: relative; padding: 0 10px 10px 25px; display: flex; justify-content: space-between;">
             <div>
               { selling_plans.map(plan => (
-                <div class="mv1">
+                <div class="selling-plan">
                   <label style={ labelStyle }>
                     <input 
                       type="radio"
@@ -181,10 +177,10 @@ function* SellingPlans({ productJson, selectedVariant, selectedSellingPlanId }) 
             <Help />
             <div id="subHelp" 
               class="info">
-              <strong>How subscriptions work</strong>
+              <strong>{getSetting("Translation", "subscription-info-title")}</strong>
               <br />
               <br />
-              Products are delivered on your schedule. Modify or cancel your subscription at anytime.
+              {getSetting("Translation", "subscription-info-text")}
             </div>
           </div>
         </div>

@@ -6,8 +6,7 @@
  */
 import { createElement, Fragment } from "@b9g/crank";
 import { selectDateEvent } from "./events";
-import SelectMenu from "./select-menu";
-import { getSetting, wrapperStyle } from "../../helpers";
+import { getSetting } from "../../helpers";
 
 /**
  * Date selector component
@@ -89,7 +88,7 @@ function* DateSelector({fetchDates, selectedDate, variantTitle}) {
           <Fragment>
             { !selectedDate &&  (
               <div class="boxesapp-notice">
-                <p>{getSetting("Translation", "notice-choose-date")}</p>
+                <p data-setting="notice-choose-date">{getSetting("Translation", "notice-choose-date")}</p>
               </div>
             )}
             <div class="relative">
@@ -107,10 +106,10 @@ function* DateSelector({fetchDates, selectedDate, variantTitle}) {
                   </div>
                 </Fragment>
               ) : (
-                <div style={ wrapperStyle }>
-                  <div class="ma1 pa2" id="delivery-date">
-                    <span class="b">Next delivery: </span>
-                    <span class="b fr">{ selectedDate }</span>
+                <div class="boxesapp-wrapper">
+                  <div id="delivery-date">
+                    <span>Next delivery: </span>
+                    <span style="float: right">{ selectedDate }</span>
                   </div>
                 </div>
               )}
@@ -118,7 +117,7 @@ function* DateSelector({fetchDates, selectedDate, variantTitle}) {
           </Fragment>
         ) : (
           <div class="boxesapp-notice">
-            <p>{getSetting("Translation", "notice-no-boxes")}</p>
+            <p data-setting="notice-no-boxes">{getSetting("Translation", "notice-no-boxes")}</p>
           </div>
         )}
       </div>

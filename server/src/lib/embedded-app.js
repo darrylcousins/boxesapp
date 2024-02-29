@@ -10,6 +10,8 @@ export default function embeddedAppRedirect({
   apiKey,
   host,
   portal_url,
+  logo,
+  shop_title,
 }) {
   return `<!DOCTYPE html>
 <html>
@@ -38,21 +40,79 @@ export default function embeddedAppRedirect({
       font-size: 1em;
     }
     .container {
-      display: flex;
-      flex-wrap: wrap;
+      background-image: url('${logo}');
+      background-attachment: fixed;
+      background-position-x: center;
+      background-position-y: 15%;
+      background-repeat: no-repeat;
+      background-blend-mode: overlay;
+      background-color: #efefef;
+      border: 1px solid #666;
       height: 400px;
       align-content: space-between;
       margin: 2em;
-    }
-    .box {
-      width: 50%;
+      color: #333;
+      .header {
+        margin: 2em;
+        border-bottom: 1px solid;
+        h3 {
+          margin: 0 auto 1em auto;
+        }
+      }
+      .body {
+        margin: 0 5em;
+        border-sizing: border-box;
+        /*
+        display: flex;
+        flex-wrap: wrap;
+        */
+        a {
+          color: #000;
+          text-decoration: none;
+        }
+        a:hover {
+          color: #666;
+          text-decoration: underline;
+        }
+        button {
+          cursor: pointer;
+          border-radius: 3px;
+          padding: 1em;
+          margin: 1em;
+          border-sizing: border-box;
+          border: 1px solid black;
+          outline: 0;
+          font-size: inherit;
+          font-weight: bold;
+          margin: 2em auto;
+          background-color: navy;
+          color: white;
+        }
+      }
     }
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="box">Boxes App</div>
-      <div class="box"><a href='${ portal_url }' target="_blank" title="Admin Portal">Admin Portal</a></div>
+      <div class="header">
+        <h3>Boxes App</h3>
+      </div>
+      <div class="body">
+        <p>&bull;&nbsp;For more information, documentation, changelogs, and musings on the development of <b>boxesapp</b> please visit
+          <a target="_blank" href="https://boxesapp.nz">boxesapp.nz</a>
+        </p>
+        <p>&bull;&nbsp;For problems, bugs, and  suggestions please contact
+          <a target="_blank" href="mailto:darryljcousins@gmail.com">darryljcousins@gmail.com</a> or on 027 524 7293.
+        </p>
+        <p>&bull;&nbsp;To access the <b>boxesapp</b> administraton portal please go to the 
+        <a href='${ portal_url }' target="_blank" title="Admin Portal">Portal</a>
+        </p>
+        <button
+          title="Admin Portal"
+          type="button"
+          onclick="window.open('${portal_url}', '_blank')"
+          >${shop_title} BoxesApp Portal</button>
+      </div>
     </div>
   </body>
 </html>`;

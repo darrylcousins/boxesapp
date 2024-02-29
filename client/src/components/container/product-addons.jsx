@@ -43,17 +43,12 @@ function* ProductAddons({possibleAddons}) {
       <Fragment>
         { Object.entries(groupAddons(possibleAddons)).map(([tag, products]) => (
           <Fragment>
-            <div class="listing-title" style="font-size: smaller">{ tag }</div>
+            <div class="listing-title">{ tag }</div>
 
             <div class="pill-wrapper">
               {products.map(el =>
                 <div
-                  class="pill pointer"
-                  style={{
-                    "color": getSetting("Colour", "available-product-fg"),
-                    "background-color": getSetting("Colour", "available-product-bg"),
-                    "border-color": getSetting("Colour", "available-product-bg")
-                  }}
+                  class="pill pointer available-product"
                   data-item={el.shopify_product_id}
                   data-title={el.shopify_title}
                   name="addItem"

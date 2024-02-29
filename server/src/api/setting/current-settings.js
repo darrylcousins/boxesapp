@@ -23,7 +23,6 @@ export default async (req, res, next) => {
       },
       ]).toArray();
 
-    console.log(result[1]);
     if (Object.hasOwnProperty.call(req.params, "tag")) {
       const tags = result.find(el => el._id === req.params.tag);
       if (tags) {

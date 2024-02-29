@@ -236,8 +236,3 @@ export const matchNumberedString = (str) => {
   return { str, count };
 };
 
-export const wrapperStyle = {
-  border: "1px solid #ccc",
-  "margin-bottom": "3px"
-};
-

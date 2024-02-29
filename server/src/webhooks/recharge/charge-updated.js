@@ -94,8 +94,12 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
             // make log entry before removing so that it is available to get
             // charge_id from log when reactivating a subscription
             meta.recharge = sortObjectByKeys(meta.recharge);
-            // this is the only place I've used await for logger notice
-            await _logger.notice(`Charge ${updates_pending.action} for subscription.`, { meta });
+
+            // thinking now this is only useful when applying a change and not
+            // necessary on completion so removing
+            delete meta.recharge.rc_subscription_ids;
+
+            await _logger.notice(`Charge updated (${updates_pending.action}) for subscription.`, { meta });
 
             // safely and surely remove the entry, only other place is on charge/deleted
             console.log("=======================");

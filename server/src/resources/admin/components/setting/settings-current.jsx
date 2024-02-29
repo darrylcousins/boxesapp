@@ -154,6 +154,10 @@ function *Settings() {
    */
   const cancelEdit = (ev) => {
     selectedSettings = {};
+    cancelEdits();
+    window.removeEventListener("keyup", escapeEdit);
+    return;
+    /* done different
     for (const key of ["General", "Translation"]) {
       for (const handle of Object.keys(allSettings)) {
         if (hasOwnProp.call(fetchSettings[key], handle)) {
@@ -164,6 +168,7 @@ function *Settings() {
       };
     };
     this.refresh();
+    */
   };
 
   /**
@@ -196,17 +201,30 @@ function *Settings() {
         error: e,
         json: null,
       }));
+    window.removeEventListener("keyup", escapeEdit);
     if (!error) {
       getSettings();
     };
   };
 
-  getSettings();
+  /**
+   * Event handler escape key is pressed
+   *
+   * @function escapeEdit
+   * @param {object} ev The event
+   */
+  const escapeEdit = (ev) => {
+    if (ev.key && ev.key === "Escape") {
+      cancelEdits();
+    };
+  };
 
-  const inputChange = (ev) => {
-    const id = ev.target.id;
-
-    // revert any other fields back to fetched data
+  /**
+   * Cancel all current edits
+   *
+   * @function cancelEdits
+   */
+  const cancelEdits = (id) => {
     const saveBoxes = document.querySelectorAll("div.saveBox:not(.closed)");
     saveBoxes.forEach(el => {
       const handle = el.id.slice(8);
@@ -218,9 +236,19 @@ function *Settings() {
         };
       };
     });
+  };
+
+  getSettings();
+
+  const inputChange = (ev) => {
+    const id = ev.target.id;
+
+    // revert any other fields back to fetched data
+    cancelEdits(id);
 
     const el = document.getElementById(`saveBox-${id}`);
     if (el) el.classList.remove("closed");
+    window.addEventListener("keyup", escapeEdit);
     return;
   };
 
@@ -243,16 +271,15 @@ function *Settings() {
                   <label
                     for={el[2]}
                     class="db mb2 mt4">
-                      {el[0]} {el[2]}
+                      {el[0]} [{el[2]}]
                     </label>
-                  <input 
+                  <textarea 
                     id={el[2]}
                     name="setting"
                     class="input-reset ba b--black-20 pa2 mv2 db w-100"
                     style="outline: 0"
-                    type="text" value={el[1]}
                     onkeyup={ inputChange }
-                  />
+                  >{ el[1] }</textarea>
                   <div class="tr mv3 w-100 saveBox closed" id={ `saveBox-${el[2]}` }>
                     <Button type="primary" onclick={(ev) => saveEdit(ev, el[2])}>
                       Save

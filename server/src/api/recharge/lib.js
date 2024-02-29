@@ -55,7 +55,10 @@ export const makeIntervalForFinish = ({req, io, session_id, entry_id, counter, a
         };
 
         timer = setInterval(async () => {
+          /* stopped the auto explainer and just provided a link for the curious
           count === 5 && !admin ? io.emit("explainer") : io.emit("message", "Working ...");
+          */
+          io.emit("message", "Working ...");
           if (count % 10 === 0) {
             io.emit("message", `Update times of over 3 minutes are possible. ${counter && findTime(counter)}`);
             io.emit("message", "You may close this window and come back later.");

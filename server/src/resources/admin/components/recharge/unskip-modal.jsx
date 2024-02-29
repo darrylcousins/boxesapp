@@ -71,10 +71,13 @@ async function* UnSkipCharge(props) {
 
   /*
    * Determine if pausable
+   * This method is identical to withing isUnSkippable (subscrition.js) but
+   * does not need to take into account the last order date
    */
   const getDiffDays = (subscription) => {
     const now = new Date();
     const nextCharge = new Date(Date.parse(subscription.attributes.nextChargeDate));
+    // this uses charge date but that is correct because we cannot charge an order today!
     const diffDays = Math.ceil(Math.abs(nextCharge - now) / (1000 * 60 * 60 * 24));
     // so this modal only shows if diffDays in greater than 8 days
     return diffDays;
@@ -221,14 +224,22 @@ async function* UnSkipCharge(props) {
    * @function thisSave
    * @returns {null}
    */
-  const thisSave = () => {
+  const thisSave = async () => {
     this.dispatchEvent(
       new CustomEvent("customer.disableevents", {
         bubbles: true,
         detail: { subscription_id: subscription.attributes.subscription_id },
       })
     );
-    doSave();
+    const nextDeliveryDate = document.getElementById("nextdeliverydate").value;
+    const messages = [`Updating delivery date from ${subscription.attributes.nextDeliveryDate} to ${nextDeliveryDate}`];
+    await doSave();
+    this.dispatchEvent(
+      new CustomEvent("subscription.messages", {
+        bubbles: true,
+        detail: { messages },
+      })
+    );
   };
 
   for await (const _ of this) { // eslint-disable-line no-unused-vars

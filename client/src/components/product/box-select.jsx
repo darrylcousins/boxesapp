@@ -11,15 +11,12 @@ import { createElement, Fragment } from "@b9g/crank";
 import { renderer } from "@b9g/crank/dom";
 
 import { Fetch, PostFetch } from "../lib/fetch";
-import Error from "../lib/error";
-import SelectMenu from "../lib/select-menu";
 import CollapseWrapper from "../lib/collapse-animator";
 import { containerDateSelectEvent } from "../lib/events";
 import {
   animationOptions,
   animateFadeForAction,
   getSetting,
-  wrapperStyle,
 } from "../../helpers";
 
 /**
@@ -241,6 +238,8 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
   };
 
   if (cartBox) {
+    console.log("isAddOn", isAddOn());
+    console.log("cartBox", cartBox);
     this.schedule(() => {
       setTimeout(() => { // helps to keep things smooth on load
         includedProducts = boxes[selectedDate].includedProducts;
@@ -264,7 +263,7 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
          { dates.map((el) => (
             <button 
               onclick={ () => window.location = `/products/${box.handle}?ts=${Date.parse(el)}` }
-              class="boxesapp-choice">
+              class={ `boxesapp-choice${ Boolean(cartBox) && cartBox.delivered === el ? " boxesapp-choice-selected" : "" }`}>
               { el }
             </button>
           ))}
@@ -278,10 +277,10 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
     yield (
       <Fragment>
         { showButtons && selectedProduct && (
-          <div style={ { ...wrapperStyle, "margin-top": cartBox ? "2em" : "0.5em" } }>
-            <div class="ma1">
-              <span class="b">{ box.title } </span>
-              <span class="b fr">{ selectedDate }</span>
+          <div class="boxesapp-wrapper" style={ { "margin-top": cartBox ? "2em" : "0.5em" } }>
+            <div>
+              <span>{ box.title } </span>
+              <span>{ selectedDate }</span>
             </div>
           </div>
         )}
@@ -296,9 +295,9 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
 
         <div>
           { cartBox ? (
-            <div class="w-100">
+            <div>
               <p
-                class="w-100 pointer"
+                class="pointer"
                 title="View cart"
                 onclick={() => window.location = "/cart"}>
                 <strong style="color: #666;">This { 
@@ -310,7 +309,7 @@ function* BoxSelect ({box, boxes, dates, title, cartBox, boxInCart, cartAddons, 
             </div>
           ) : (
             <div class="relative">
-              <SelectMenu
+              <SelectMenu // dead - using pill buttons
                 id={`selectDate${box.id}`}
                 menu={dates.map(el => ({text: el, item: el}))}
                 title="Select delivery date"

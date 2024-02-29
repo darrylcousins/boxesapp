@@ -140,14 +140,16 @@ function* CoreBox() {
    */
   const getCoreBox = () => {
     let uri = `/api/get-core-box`;
+    console.log('fetching core box');
     Fetch(uri)
       .then((result) => {
         const { error, json } = result;
+        console.log(result);
         if (error !== null) {
           //fetchError = error;
           this.refresh();
         } else {
-          box = json;
+          box = json.box;
           console.log(json);
           loading = false;
           deleted = false;

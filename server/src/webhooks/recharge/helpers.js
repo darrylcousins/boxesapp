@@ -103,6 +103,52 @@ export const updatePendingEntry = async (meta, topic) => {
 };
 
 /*
+ * @function groupedMetaForCharge
+ *
+ * Only used with charge upcoming
+ */
+export const groupedMetaForCharge = (charge, topic) => {
+  const meta = {
+    recharge: {
+      topic,
+      charge_id: charge.id,
+      customer_id: charge.customer.id,
+      email: charge.customer.email,
+      address_id: charge.address_id,
+      charge_status: charge.status,
+      charge_processed_at: charge.processed_at,
+      scheduled_at: charge.scheduled_at,
+    },
+  };
+  const grouped = {};
+
+  const line_items = [ ...charge.line_items ];
+  // puts one or more box to the front
+  for(var x in line_items) line_items[x].properties.some(el => el.name === "Including") ? line_items.unshift(line_items.splice(x,1)[0]) : 0;
+  for (const line_item of line_items) {
+    const box_subscription_property = line_item.properties.find(el => el.name === "box_subscription_id");
+    const box_subscription_id = parseInt(box_subscription_property.value);
+    if (!Object.hasOwnProperty.call(grouped, box_subscription_id)) {
+      grouped[box_subscription_id] = { recharge: { ...meta.recharge } }; // initilize
+    };
+    if (line_item.purchase_item_id === box_subscription_id) {
+      grouped[box_subscription_id].recharge.title = `${line_item.title} - ${line_item.variant_title}`;
+      grouped[box_subscription_id].recharge.box_subscription_id = box_subscription_id;
+      grouped[box_subscription_id].recharge.rc_subscription_ids = [];
+    };
+    const rc_subscription_id = {
+      shopify_product_id: parseInt(line_item.external_product_id.ecommerce),
+      subscription_id: parseInt(line_item.purchase_item_id),
+      quantity: parseInt(line_item.quantity),
+      title: line_item.title,
+      box_subscription_id,
+    };
+    grouped[box_subscription_id].recharge.rc_subscription_ids.push(rc_subscription_id);
+  };
+  return grouped;
+};
+
+/*
  * @function getMetaForCharge
  */
 export const getMetaForCharge = (charge, topic) => {
@@ -258,15 +304,20 @@ export const getMetaForBox = (id, charge, topic) => {
  * @ function itemStringToList
  */
 export const itemStringToList = (props, name) => {
-  if (Boolean(props.find(el => el.name === name).value)) {
-    return props
-      .find(el => el.name === name).value
-      .split(",")
-      .filter(el => el.trim() !== "")
-      .map(el => matchNumberedString(el));
-  } else {
-    return [];
+  try {
+    if (props.find(el => el.name === name)) { // sanity check
+      if (Boolean(props.find(el => el.name === name).value)) {
+        return props
+          .find(el => el.name === name).value
+          .split(",")
+          .filter(el => el.trim() !== "")
+          .map(el => matchNumberedString(el));
+      };
+    };
+  } catch(err) {
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
+  return [];
 };
 
 /*

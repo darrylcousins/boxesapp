@@ -54,7 +54,7 @@ export const doShopQuery = async (opts) => {
         shopify: {
           uri: url,
           method: "GET",
-          errors: json.errors,
+          error: json.errors,
         },
       };
       winstonLogger.notice(`Shopify fetch error.`, { meta });

@@ -24,7 +24,7 @@ const Fetch = async (src) => {
   const proxy = localStorage.getItem("proxy-path");
   //console.log("Fetching", `${proxy}${src}`);
   let error = null;
-  console.log(src);
+  //console.log(src);
   return fetch(`${proxy}${src}`)
     .then(async (response) => {
       let json;
@@ -99,7 +99,7 @@ const PostFetch = async ({ src, data, headers }) => {
     method: "POST",
     body: formdata,
   };
-  console.log(src);
+  //console.log(src);
 
   // add headers if set in arguments - i.e. using none if sending files
   if (headers) opts.headers = headers;

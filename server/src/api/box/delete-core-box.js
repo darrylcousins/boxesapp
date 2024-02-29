@@ -15,9 +15,8 @@ export default async (req, res, next) => {
   const delivered = "Core Box";
   const collection = _mongodb.collection("boxes");
   try {
-    await collection.deleteOne({delivered}, (e, result) => {
-      res.status(200).json(result);
-    });
+     const result = await collection.deleteOne({delivered});
+    res.status(200).json(result);
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

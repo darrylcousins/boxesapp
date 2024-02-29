@@ -380,6 +380,39 @@ async function* ChangeBox(props) {
         detail: { subscription_id: boxAttributes.subscription_id },
       })
     );
+    let messages = document.getElementById("change_messages").value;
+
+    messages = JSON.parse(messages);
+
+    if (currentPlan.name !== subscription.attributes.frequency) {
+      messages.unshift(`Delivery schedule changed from ${
+        subscription.attributes.frequency.toLowerCase()} to ${currentPlan.name.toLowerCase()}.`);
+    };
+    const from = [];
+    const to = [];
+    let final;
+    if (currentBox.title !== subscription.attributes.title
+      || currentVariant.title !== subscription.attributes.variant) {
+      if (currentBox.title !== subscription.attributes.title) {
+        from.push(subscription.attributes.title);
+        to.push(currentBox.title);
+      };
+      if (currentVariant.title !== subscription.attributes.variant) {
+        from.push(subscription.attributes.variant);
+        to.push(currentVariant.title);
+      };
+      if (from.length === 2) from.splice(1, 0, "-");
+      if (to.length === 2) from.splice(1, 0, "-");
+      final = ["Box subscription changed from", ...from, "to", ...to].join(" ");
+    };
+    if (final) messages.unshift(final);
+    document.getElementById("change_messages").value = JSON.stringify(messages);
+    this.dispatchEvent(
+      new CustomEvent("subscription.messages", {
+        bubbles: true,
+        detail: { messages },
+      })
+    );
     doSave();
   };
 

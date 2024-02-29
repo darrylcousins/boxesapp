@@ -159,8 +159,8 @@ async function* CancelSubscription(props) {
     if (selectedOptionId < cancelOptions.length - 1) {
       form.elements["cancellation_reason"].value = cancelOptions[selectedOptionId];
     };
-    if (form.elements["cancellation_reason"].value === "") {
-      formError = "Please provide a reason for cancellation.";
+    if (form.elements["cancellation_reason"].value.trim() === "undefined") {
+      formError = "Please provide or select a reason for cancellation.";
       this.refresh();
       return;
     };
@@ -168,6 +168,14 @@ async function* CancelSubscription(props) {
       new CustomEvent("customer.disableevents", {
         bubbles: true,
         detail: { subscription_id: subscription.attributes.subscription_id },
+      })
+    );
+    const title = `${subscription.box.shopify_title} - ${subscription.attributes.variant}`;
+    const messages = [`Cancelling your subscription ${title}`];
+    this.dispatchEvent(
+      new CustomEvent("subscription.messages", {
+        bubbles: true,
+        detail: { messages },
       })
     );
     doSave();

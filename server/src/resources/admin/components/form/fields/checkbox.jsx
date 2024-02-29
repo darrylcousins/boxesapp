@@ -84,6 +84,7 @@ function* CheckboxField(props) {
           id={id}
           name={id}
           datatype={datatype}
+          {...props}
         />
       </FieldWrapper>
     );

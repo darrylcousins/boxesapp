@@ -232,15 +232,16 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
     let result = [];
     result = await gatherData({ grouped, result });
 
-    const attributes = { ...result[0].attributes };
-    attributes.charge_id = null; // can I get this from the updates_pending entry?
+    //result[0].attributes.charge_id = null; // can I get this from the updates_pending entry?
     // correct the upcoming dates
-    attributes.nextChargeDate = nextChargeDate.toDateString();
-    attributes.nextDeliveryDate = deliveryDate;
-    attributes.lastOrder.current = true;
+    result[0].attributes.nextChargeDate = nextChargeDate.toDateString();
+    result[0].attributes.nextDeliveryDate = deliveryDate;
+    result[0].attributes.lastOrder.current = true;
 
     // email template used an array of subscriptions - here it is an array of one
-    const mailOpts = { subscriptions: result, attributes };
+    const mailOpts = {
+      subscription: result[0],
+      address: updatedCharge.shipping_address };
 
     let entry;
     let timer;
@@ -253,7 +254,7 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
         await subscriptionCreatedMail(mailOpts);
         _logger.notice(`Charge created, subscriptions updated, and email sent.`, { meta });
       };
-    }, 5000);
+    }, 10000);
 
     /*
      * do all the work and now run the updates

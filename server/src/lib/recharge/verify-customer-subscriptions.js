@@ -190,6 +190,7 @@ export const verifyCustomerSubscriptions = async ({ customer, box_price_table })
               tempDate = new Date(extra.updated_at);
               orphans.push({
                 subscription_id: extra.subscription_id,
+                box_subscription_id: properties.box_subscription_id,
                 title: extra.title,
                 next_charge_scheduled_at: new Date(extra.next_charge_scheduled_at).toDateString(),
                 delivery_at: extra.delivery_at,
@@ -294,6 +295,7 @@ export const verifyCustomerSubscriptions = async ({ customer, box_price_table })
         tempDate = new Date(updated_at);
         orphans.push({
           subscription_id: parseInt(subscription.id),
+          box_subscription_id: boxId,
           title,
           next_charge_scheduled_at: new Date(next_charge_scheduled_at).toDateString(),
           delivery_at: deliveryDate,

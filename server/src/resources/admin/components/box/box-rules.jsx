@@ -122,11 +122,11 @@ function* BoxRules({ }) {
   while (true) {
     yield (
       <Fragment>
-        <div class="w-100 pb2">
+        <div class="w-100 pb2 mw9 center">
           {loading && <BarLoader />}
-          <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
+          <h3 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
             Box Rules
-          </h4>
+          </h3>
           {collapsed && (
             <div id="add-rule-button" class="pb2 tr">
               <Button type="primary" title="Add Box Rule" onclick={toggleCollapse}>

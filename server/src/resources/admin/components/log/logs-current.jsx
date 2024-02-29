@@ -18,6 +18,7 @@ import { titleCase, animateFadeForAction, formatDate } from "../helpers";
 import IconButton from "../lib/icon-button";
 import { SearchIcon, ClearSearchIcon, SyncIcon } from "../lib/icon";
 import { formatMeta, possibleObjects, dateString } from "./helpers";
+import Checkbox from "../form/fields/checkbox";
 
 /**
  * Uses fetch to collect current boxes from api and then passes data to
@@ -58,6 +59,13 @@ function* CurrentLogs() {
    * @type {boolean}
    */
   let loading = true;
+  /**
+   * Include the properties on meta data?
+   *
+   * @member loading
+   * @type {boolean}
+   */
+  let includeProperties = false;
   /**
    * The search term entered
    *
@@ -134,6 +142,16 @@ function* CurrentLogs() {
   let pageCount = null;
 
   /*
+   * Show box properties
+   * Include all box lists (includes, swaps etc) in the displayed log data?
+   * @function closeMenu
+   */
+  const showBoxProperties = (value) => {
+    includeProperties = value;
+    this.refresh();
+  };
+
+  /*
    * Close menu
    * @function closeMenu
    */
@@ -200,14 +218,11 @@ function* CurrentLogs() {
   const getLogs = () => {
     let uri = `/api/current-logs/${pageNumber}`;
     uri = logLevel ? `${uri}/${logLevel}` : `${uri}/all`;
-    if (selectedObject) {
-      uri = `${uri}/${selectedObject}`;
-    };
+    uri = selectedObject ? `${uri}/${selectedObject}` : `${uri}/all`;
     if (searchTerm) {
       uri = `${uri}/${encodeURIComponent(searchTerm)}`;
     };
     uri = `${uri}?from=${ Date.parse(fromDate) }&to=${ Date.parse(toDate) }`;
-    console.log(encodeURI(uri));
     Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
@@ -272,7 +287,6 @@ function* CurrentLogs() {
     let fromTemp;
     let toTemp;
     if (dateTo.getTime() <= from) {
-      console.log("to cannot be later than from");
       // need propert alert box
       this.dispatchEvent(toastEvent({
         notice: `To date ${formatDate(new Date(to))} cannot be earlier than from date ${formatDate(new Date(from))}.`,
@@ -328,13 +342,8 @@ function* CurrentLogs() {
     const button = document.querySelector("button[name='Search'");
     if (button) button.blur();
     if (searchTerm.length > 0 && ev.key === "Enter") {
-      if (selectedObject) {
-        logLevel = "notice";
-        return getLogs();
-      } else {
-        logLevel = "notice";
-        menuSelectObject = true;
-      }
+      logLevel = "notice";
+      menuSelectObject = true;
     };
     return this.refresh();
   };
@@ -348,6 +357,21 @@ function* CurrentLogs() {
    */
   const refreshLogs = async () => {
     loading = true;
+    await this.refresh();
+    getLogs();
+  };
+
+  /**
+   * Clear filters
+   *
+   * @function clearFilter
+   */
+  const clearFilters = async () => {
+    loading = true;
+    selectedObject = null;
+    searchTerm = null;
+    fromDate = formatDate(new Date(0));
+    toDate = formatDate(new Date());
     await this.refresh();
     getLogs();
   };
@@ -401,7 +425,7 @@ function* CurrentLogs() {
 
     yield (
       <div class="w-100 pb2">
-        <h4 class="pt0 lh-title ma0 mb2 fg-streamside-maroon" id="boxes-title">
+        <h3 class="pt0 lh-title ma0 mb2 fg-streamside-maroon" id="boxes-title">
           { logLevel && formatLevel(logLevel) } Logs {" "}
           <span style="font-size: smaller;" class="ml4">
             { pageSize && fetchCount > pageSize && <span>{ pageSize } of</span> } {" "}
@@ -411,13 +435,13 @@ function* CurrentLogs() {
             { fromDate && <span class="ml5">From: { fromDate }</span> } {" "}
             { toDate && <span> - To: { toDate }</span> } {" "}
           </span>
-        </h4>
+        </h3>
         {fetchLogs.length > 0 && (
           <Pagination callback={ movePage } pageCount={ parseInt(pageCount) } pageNumber={ parseInt(pageNumber) } />
         )}
         <div class="relative w-100 tr pr2">
           <Help id="logsInfo" />
-          <p id="logsInfo" class="alert-box info info-right tr" role="alert">
+          <p id="logsInfo" class="alert-box info info-right tr b" role="alert">
             Only logs more recent than two days ago are available here.
           </p>
         </div>
@@ -432,7 +456,7 @@ function* CurrentLogs() {
               <div class="w-70 flex">
                 <div class="relative pt2">
                   <Help id="searchInfo" />
-                  <p id="searchInfo" class="alert-box info info-left tl lh-copy" role="alert">
+                  <p id="searchInfo" class="alert-box info info-left tl lh-copy b" role="alert">
                       &#x2022; Recharge logs can be searched on customer_id, charge_id,
                       or subscription_id
                       <br />
@@ -502,7 +526,7 @@ function* CurrentLogs() {
               class={
                 `${
                     logLevel === "notice" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
-                  } dib w-third pv2 outline-0 b--grey ba br2 br--left mv1 pointer`
+                  } dib w-25 pv2 outline-0 b--grey ba br2 br--left mv1 pointer`
                 }
               title="Notices"
               type="button"
@@ -514,7 +538,7 @@ function* CurrentLogs() {
               class={
                 `${
                     logLevel === "error" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
-                  } dib w-third pv2 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
+                  } dib w-25 pv2 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
                 }
               title="Errors"
               type="button"
@@ -526,7 +550,7 @@ function* CurrentLogs() {
               class={
                 `${
                     logLevel === "all" ? "white bg-black-80" : "grey bg-white bg-animate hover-bg-light-gray"
-                  } dib w-third pv2 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
+                  } dib w-25 pv2 outline-0 b--grey bt bb br bl-0 br2 br--right br--left mv1 pointer`
                 }
               title="Fatal"
               type="button"
@@ -537,13 +561,32 @@ function* CurrentLogs() {
           </div>
           <div class="w-100 w-20-ns v-bottom tr mh1">
             <button
-              class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-50 pv2 outline-0 b--grey ba br2 br--right mv1 pointer` }
+              class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-25 pv2 outline-0 mv1 pointer b--grey ba br2 br--left` }
               title="Refresh"
               type="button"
               onclick={refreshLogs}
               >
                 <span class="v-mid di">Refresh</span>
             </button>
+            <button
+              class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-25 pv2 outline-0 bt bb br bl-0 br2 br--right br--left mv1 pointer` }
+              title="Refresh"
+              type="button"
+              onclick={clearFilters}
+              >
+                <span class="v-mid di">Reset</span>
+            </button>
+            <Checkbox
+              value={includeProperties}
+              name="includeProperties"
+              label="Include Properties?"
+              id="includeProperties"
+              size="50"
+              required={ false }
+              valid={ true }
+              datatype={ Boolean }
+              onchange={ (ev) => showBoxProperties(ev.target.checked) }
+            />
           </div>
         </div>
         {loading && <BarLoader />}
@@ -573,7 +616,7 @@ function* CurrentLogs() {
                       { el.message }
                     </td>
                     <td class="w-50 v-top" style="max-width: 600px">
-                      { formatMeta(el) }
+                      { formatMeta(el, logLevel, includeProperties) }
                     </td>
                   </tr>
                 ))}

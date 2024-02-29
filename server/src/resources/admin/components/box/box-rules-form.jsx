@@ -252,7 +252,14 @@ function *RulesForm({ rule, disabled, toggleCollapse }) {
 
     yield (
       <Fragment>
-        <div class={`w-100 center pa1 ${ loading && "pb3" } ${!newRule && "ba b--black-40 br2"}`}>
+        <div class={`w-100 center pa3 ${ 
+            loading ? "pb3" : "" 
+          } ${
+            !newRule ? "ba b--black-60 br2" : ""
+          } ${
+            !disabled ? "bg-near-white" : ""
+          }
+          `}>
           {!Boolean(newRule) && (
             <h3 class="tc mb0">Add Box Rule</h3>
           )}

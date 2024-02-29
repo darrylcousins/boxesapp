@@ -3,6 +3,7 @@
  */
 import "dotenv/config";
 import fs from "fs/promises";
+import { sortObjectByKeys, delay } from "../helpers.js";
 import { makeShopQuery } from "../shopify/helpers.js";
 import { getNZDeliveryDay } from "../dates.js";
 import { makeApiJob } from "../../bull/job.js";
@@ -101,7 +102,9 @@ export const makeRechargeQuery = async (opts) => {
  *
  * @function makeRechargeQuery
  */
-export const doRechargeQuery = async ({method, path, limit, query, body, title, finish}) => {
+export const doRechargeQuery = async (opts) => {
+  console.log(opts);
+  const { method, path, limit, query, body, title, finish, failedOnce } = opts;
   const http_method = method ? method : "GET";
 
   const start = "?";
@@ -141,18 +144,35 @@ export const doRechargeQuery = async ({method, path, limit, query, body, title, 
     } else {
       json = await response.json();
 
-      // log the error as log level error
+      // log the error as a notice at log level error
+      let meta;
       if (Object.hasOwnProperty.call(json, "error")) {
-        const meta = {
+        meta = {
           recharge: {
             uri: url,
             method: http_method,
-            status: json.status,
-            text: json.statusText,
+            status: response.status,
+            text: response.statusText,
             error: json.error,
           },
         };
-        winstonLogger.notice(`Recharge fetch error`, { meta });
+        if (!failedOnce && parseInt(response.status) === 409) { // Conflict, a call to this resource is in progress
+          // I've tested this and it does work, if the problem persists I could
+          // make failedOnce into an integer and make multiple attempts
+          // Note that bull retries only on failure, in this case we have a
+          // valid response so I need to handle it here
+          // NB Keep an eye on the logs
+          meta.recharge.boxesapp = "Retrying";
+          opts.failedOnce = true;
+          meta.recharge = sortObjectByKeys(meta.recharge);
+          winstonLogger.notice(`Recharge fetch error`, { meta });
+          await delay(3000); // this only happens (it seems) during a webhook
+          return await doRechargeQuery(opts);
+        } else if (failedOnce) {
+          meta.recharge.boxesapp = "Tried again, exiting";
+          meta.recharge = sortObjectByKeys(meta.recharge);
+          winstonLogger.notice(`Recharge fetch error`, { meta });
+        };
       };
     };
     json.status = response.status;
@@ -161,6 +181,15 @@ export const doRechargeQuery = async ({method, path, limit, query, body, title, 
     json.method = http_method;
 
     if (parseInt(response.status) > 299) {
+      const err = {
+        message: "Recharge request failed",
+        name: "Recharge fetch error",
+        status: response.status,
+        statusText: response.statusText,
+        title: title,
+        uri: `${path}${searchString}`,
+      };
+      winstonLogger.error({message: err.message, meta: err});
       throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}", fetching ${path}${searchString}`);
     };
 

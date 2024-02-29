@@ -19,7 +19,6 @@
   border-bottom-style: solid;
   border-bottom-width: 1px;
   border-color: #999;
-  float: left;
   width: 100%;
   padding-top: .5rem;
   padding-bottom: .5rem;
@@ -40,29 +39,36 @@
   border-width: 1px;
   /* border-radius: 9999px; */
   border-radius: 5px;
-  float: left;
+  //float: left;
   padding-left: 0.5rem;
   padding-right: 0.5rem;
   margin: .25rem;
+  display: inline-block;
 }
 .pill.included-product {
   color: #fff;
   background-color: #03070c;
+  border-color: #03070c;
 }
 .pill.included-product-hi {
   color: #fad14d;
+  border-color: #03070c;
 }
 .pill.available-product {
   color: #fff;
   background-color: #4e1018;
+  border-color: #4e1018;
 }
 .pill.available-product-hi {
   color: #fad14d;
+  border-color: #4e1018;
 }
 .pill.excluded-product {
   color: #fff;
   background-color: #b55103;
+  border-color: #b55103;
 }
 .pill.excluded-product-hi {
   color: #fad14d;
+  border-color: #b55103;
 }

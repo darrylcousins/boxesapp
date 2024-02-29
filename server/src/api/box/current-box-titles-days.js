@@ -23,7 +23,7 @@ export default async (req, res, next) => {
     'Sunday': 7
   };
   try {
-    const result = collection.aggregate([
+    const result = await collection.aggregate([
       {
         $group: {
           _id: {

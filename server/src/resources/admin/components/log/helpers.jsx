@@ -20,7 +20,14 @@ const dateString = (el) => {
  * @member possibleObjects
  * @type {array}
  */
-const possibleObjects = ["order", "recharge", "shopify", "mail", "all"];
+const possibleObjects = ["order", "recharge", "shopify", "mail", "product", "all"];
+/**
+ * Property titles - can be excluded in log listing to keep thing tidier - can also be included!
+ *
+ * @member possibleObjects
+ * @type {array}
+ */
+const propertyAttributes = ["Including", "Add on Items", "Removed Items", "Swapped Items"];
 
 /*
  * Helper method to render comma separated list
@@ -94,9 +101,22 @@ const formatObj = (obj, title) => {
 const formatOther = (obj, title) => {
 
   // Special case, not sure how else to figure this one out
-  const attributes = ["Including", "Add on Items", "Removed Items", "Swapped Items"];
-  if (attributes.includes(title)) {
+  if (propertyAttributes.includes(title)) {
     return formatList(obj);
+  };
+  if (title === "stack") { // special case for error
+    const fixLine = (line) => {
+      // take off the error name
+      line = line.split(":").slice(1).join("");
+      return line.replace("///home/cousinsd/Projects/boxesapp/", "~"); // fix me
+    };
+    return (
+      <div>
+        { obj.split("\n").slice(0,2).map(line => (
+          <p class="ma0">{ fixLine(line) }</p>
+        ))}
+      </div>
+    );
   };
 
   // attempt parse any json strings
@@ -128,7 +148,7 @@ const formatOther = (obj, title) => {
 /*
  * Helper method to render log.meta
  */
-const formatMeta = (el) => {
+const formatMeta = (el, logLevel, includeProperties) => {
   if (!Object.hasOwnProperty.call(el, 'meta')) {
     return <div>&nbsp;</div>;
   };
@@ -137,32 +157,38 @@ const formatMeta = (el) => {
   };
   // expecting just one object on meta 'order', 'product', 'customer', 'subscription'?
   const obj = Object.keys(el.meta)[0];
-  if (possibleObjects.includes(obj) && el.meta[obj]) {
+
+  let metaData;
+  if (possibleObjects.includes(obj)) {
+    metaData = Object.entries(el.meta[obj]);
+    if (!includeProperties) {
+      metaData = metaData.filter(([title, str]) => !propertyAttributes.includes(title));
+    };
     return (
       <div class="dt w-100 mv1">
-        { Object.entries(el.meta[obj]).map(([title, str]) => (
+        { metaData.map(([title, str]) => (
             <div class="dt-row w-100">
               <div class="dtc w-20 gray tr pr2">
                 { title }:
               </div>
-              <div class="dtc w-80" style="width: 400px; word-wrap: break-word;">
-                { formatOther(str, title) }
+              <div class="dtc w-80" style="min-width: 500px; width: 500px; word-wrap: break-word;">
+                { formatOther(str, title, includeProperties) }
               </div>
             </div>
         ))}
       </div>
     );
-  } else {
-    // Only used for error messages?
+  } else { //logLevel === "error"
+    metaData = Object.entries(el.meta);
     return (
       <div class="dt w-100 mv1">
         { Object.entries(el.meta).map(([title, str]) => (
             <div class="dt-row w-100">
-              <div class="dtc w-30 gray tr pr2">
+              <div class="dtc w-20 gray tr pr2">
                 { title }:
               </div>
-              <div class="dtc w-70">
-                { str }
+              <div class="dtc w-80" style="min-width: 500px; width: 500px; word-wrap: break-word;">
+                { formatOther(str, title) }
               </div>
             </div>
         ))}

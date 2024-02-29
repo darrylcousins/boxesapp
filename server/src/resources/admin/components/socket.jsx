@@ -81,6 +81,7 @@ export const getSessionId = async (callback, data, divId, component) => {
     // display data or update timer
     appendMessage(data, "dark-green", divId);
   });
+  /* cancelled this and just provided a link if they are curious
   socket.on('explainer', async () => { // time has passed so display explainer
     component.dispatchEvent(
       new CustomEvent("explainer", {
@@ -88,6 +89,7 @@ export const getSessionId = async (callback, data, divId, component) => {
       })
     );
   });
+  */
   socket.on('error', async (data) => { // usually progress from bull job
     //console.log('progress', data);
     // display data or update timer
@@ -104,9 +106,8 @@ export const getSessionId = async (callback, data, divId, component) => {
   });
   socket.on('finished', async (data) => {
     // some care needed here to make sure we send to the correct component
-    console.log(data); // also receiving subscription_id
     if (data.session_id === session_id) {
-      //console.log('closing connection for id', id);
+      console.log('closing connection for id', session_id);
       appendMessage("Finished, closing connection", "dark-green", divId);
       socket.disconnect();
       window.dispatchEvent(

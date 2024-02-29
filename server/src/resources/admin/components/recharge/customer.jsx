@@ -263,11 +263,8 @@ async function *Customer({ customer, admin }) {
    */
   const reactivateSubscription = async (ev) => {
     const { subscription, subscription_id } = ev.detail
-    console.log("reactivate listener");
-    console.log(subscription, subscription_id);
     const cancelled = cancelledGroups.find(el => el.box.id === subscription_id);
     const idx = cancelledGroups.indexOf(cancelled);
-    console.log("The index", idx);
     if (idx !== -1) { // oddly getting here twice???
       cancelledGroups.splice(idx, 1);
       chargeGroups.push(subscription);
@@ -291,11 +288,8 @@ async function *Customer({ customer, admin }) {
    */
   const cancelSubscription = async (ev) => {
     const { subscription, subscription_id } = ev.detail
-    console.log("cancel listener");
-    console.log(subscription, subscription_id);
     const charge = chargeGroups.find(el => el.attributes.subscription_id === subscription_id);
     const idx = chargeGroups.indexOf(charge);
-    console.log("The index", idx);
     chargeGroups.splice(idx, 1);
     originalChargeGroups = cloneDeep(chargeGroups); // save for cancel event
     cancelledGroups.push(subscription);
@@ -321,6 +315,12 @@ async function *Customer({ customer, admin }) {
     if (mydiv) {
       mydiv.classList.remove("disableevents");
     };
+    let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
+    subscription_ids = subscription_ids.filter(el => el !== subscription_id);
+    for (const id of subscription_ids) {
+      const div = document.querySelector(`#subscription-${id}`);
+      div.classList.add("disableevents");
+    };
   };
 
   this.addEventListener("customer.disableevents", disableEvents);
@@ -332,9 +332,11 @@ async function *Customer({ customer, admin }) {
    */
   const enableEvents = async (ev) => {
     const { subscription_id } = ev.detail;
-    const mydiv = document.querySelector(`#subscription-${subscription_id}`);
-    if (mydiv) {
-      mydiv.classList.remove("disableevents");
+    let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
+    subscription_ids = subscription_ids.filter(el => el !== subscription_id);
+    for (const id of subscription_ids) {
+      const div = document.querySelector(`#subscription-${id}`);
+      div.classList.remove("disableevents");
     };
   };
 
@@ -482,30 +484,42 @@ async function *Customer({ customer, admin }) {
           <Fragment>
             { admin && (
               <Fragment>
-                <div
-                  class="w-100 tr ml2 mr2 link bold pointer fg-streamside-blue"
-                  title="Load another customer"
-                  onclick={ getNewCustomer }>
-                  Load another customer
+                <div class="w-100 flex-container mt0 pa0">
+                  <button
+                    class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-25 pv2 outline-0 mv1 pointer b--grey ba br2 br--left` }
+                    title="Verify"
+                    type="button"
+                    onclick={ async () => await verifyCustomerSubscriptions({ customer }) }
+                    >
+                      <span class="v-mid di">Verify customer subscriptions</span>
+                  </button>
+                  <a
+                    class={ `link tc dark-gray dib bg-white bg-animate hover-bg-light-gray w-25 pv2 outline-0 mv1 pointer b--grey bt bb br bl-0` }
+                    title="Shopify"
+                    type="button"
+                    target="_blank"
+                    href={ `${shopAdminUrl}/${customer.external_customer_id.ecommerce}` }
+                    >
+                      <span class="v-mid di">View customer in Shopify</span>
+                  </a>
+                  <a
+                    class={ `link tc dark-gray dib bg-white bg-animate hover-bg-light-gray w-25 pv2 outline-0 mv1 pointer b--grey bt bb br bl-0` }
+                    title="Recharge"
+                    type="button"
+                    target="_blank"
+                    href={ `${rechargeAdminUrl}/${customer.id}` }
+                    >
+                      <span class="v-mid di">View customer in Recharge</span>
+                  </a>
+                  <button
+                    class={ `navy dib bg-transparent bg-animate hover-bg-navy hover-white w-25 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0 br2 br--right` }
+                    title="New Customer"
+                    type="button"
+                    onclick={ getNewCustomer }
+                    >
+                      <span class="v-mid di">Load another customer</span>
+                  </button>
                 </div>
-                <div
-                  class="w-100 tr ml2 mr2 link bold pointer fg-streamside-blue"
-                  title="Load another customer"
-                  onclick={ async () => await verifyCustomerSubscriptions({ customer }) }>
-                  Verify customer subscriptions
-                </div>
-                <a
-                  class="db w-100 tr ml2 mr2 link bold pointer fg-streamside-blue"
-                  target="_blank"
-                  href={ `${shopAdminUrl}/${customer.external_customer_id.ecommerce}` }>
-                  View customer in Shopify
-                </a>
-                <a
-                  class="db w-100 tr ml2 mr2 link bold pointer fg-streamside-blue"
-                  target="_blank"
-                  href={ `${rechargeAdminUrl}/${customer.id}` }>
-                  View customer in Recharge
-                </a>
                 <div class="cf" />
                 { date_mismatch && date_mismatch.length > 0 && (
                   <DTable items={ date_mismatch } title="Date mismatches" />
@@ -546,7 +560,7 @@ async function *Customer({ customer, admin }) {
                   Active Subscriptions
                 </h4>
                 { chargeGroups.map((group, idx) => (
-                  <div id={`subscription-${group.attributes.subscription_id}`}>
+                  <div id={`subscription-${group.attributes.subscription_id}`} class="subscription">
                     <Subscription
                       subscription={ group } idx={ idx }
                       customer={ customer }
@@ -570,7 +584,7 @@ async function *Customer({ customer, admin }) {
                     Cancelled Subscriptions
                   </h4>
                   { cancelledGroups.map((group, idx) => (
-                    <div id={`subscription-${group.subscription_id}`}>
+                    <div id={`subscription-${group.subscription_id}`} class="subscription">
                       <Cancelled subscription={ group } customer={ customer } idx={ idx } />
                     </div>
                   ))}

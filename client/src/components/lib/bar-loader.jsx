@@ -15,7 +15,7 @@ import { createElement } from "@b9g/crank";
  * { loading && <BarLoader /> }
  */
 const BarLoader = () => (
-  <div class="progress-bar">
+  <div class="boxesapp-progress-bar">
     <span class="bar">
       <span class="progress" />
     </span>

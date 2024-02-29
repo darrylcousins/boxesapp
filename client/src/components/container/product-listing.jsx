@@ -51,7 +51,7 @@ function* ProductListing({possibleProducts, name, title, type}) {
       <Fragment>
         { Object.entries(groupAddons(possibleProducts)).map(([tag, products]) => (
           <div name="hasChildren">
-            <div class="listing-title" style="font-size: smaller; clear: both;">{ tag }</div>
+            <div class="listing-title">{ tag }</div>
 
             <div class="pill-wrapper">
               {products.map(el =>

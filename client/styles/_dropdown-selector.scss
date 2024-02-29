@@ -1,0 +1,100 @@
+.select-dropdown-button {
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: inherit;
+  line-height: 1.15;
+  margin: 0;
+  overflow: visible;
+  //-webkit-appearance: button;
+  outline: 0;
+  border: 0;
+  padding: 10px 0;
+  //border: solid 1px #777;
+  //border-radius: .25rem;
+  display: inline-block;
+  letter-spacing: .05em;
+  width: 100%;
+  background-color: transparent;
+  //padding: .5rem;
+  //margin-bottom: .25rem;
+  //text-transform: uppercase;
+  cursor: pointer;
+}
+.select-dropdown-button:hover {
+  opacity: 0.5;
+}
+.select-dropdown-wrapper {
+  font-family: inherit;
+  font-style: normal;
+  font-weight: 400;
+  font-size: initial;
+  line-height: 1.225;
+  list-style: none;
+  box-sizing: border-box;
+  overflow: visible;
+}
+.select-dropdown-wrapper > button {
+  font-family: inherit;
+  line-height: 1.15;
+  margin: 0;
+  overflow: visible;
+  -webkit-appearance: button;
+  outline: 0;
+  border: 0;
+  //border-right: solid 1px #777;
+  //border-left: solid 1px #777;
+  //border-radius: .25rem;
+  width: 100%;
+  background-color: transparent;
+  padding: 0;
+  //text-transform: uppercase;
+}
+.select-dropdown-wrapper > button.mybutton {
+  background-color: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 3px 0;
+}
+.select-dropdown-wrapper > button.single {
+  border-top: solid 1px #777;
+  border-bottom: solid 1px #777;
+}
+.select-dropdown-wrapper > button.top {
+  border-top: solid 1px #777;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-width: 0;
+}
+.select-dropdown-wrapper > button.bottom {
+  border-bottom: solid 1px #777;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top-width: 0;
+}
+.select-dropdown-wrapper > button.center {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top-width: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-width: 0;
+}
+.select-dropdown-wrapper > button > div {
+  font-family: inherit;
+  line-height: 1.15;
+  text-transform: uppercase;
+  box-sizing: border-box;
+  //padding: .25rem;
+  opacity: 1;
+  border: 0;
+  transition: background-color .15s ease-in-out, opacity .15s ease-in-out;
+  -webkit-transition: background-color .15s ease-in-out, opacity .15s ease-in-out;
+  -moz-transition: background-color .15s ease-in-out, opacity .15s ease-in-out;
+  -ms-transition: background-color .15s ease-in-out, opacity .15s ease-in-out;
+  -o-transition: background-color .15s ease-in-out, opacity .15s ease-in-out;
+}
+.select-dropdown-wrapper > button > div:hover {
+  opacity: 0.5;
+}
+

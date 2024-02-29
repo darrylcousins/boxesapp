@@ -69,7 +69,6 @@ const options = {
 async function* SkipCharge(props) {
   const { doSave, closeModal, title, subscription, formId } = props;
 
-  console.log("skip charge component, admin?", props.admin);
   const deliveryDays = [];
   const chargeDays = [];
   const intervalDays = [];
@@ -206,6 +205,14 @@ async function* SkipCharge(props) {
       new CustomEvent("customer.disableevents", {
         bubbles: true,
         detail: { subscription_id: subscription.attributes.subscription_id },
+      })
+    );
+    const nextDeliveryDate = document.getElementById("nextdeliverydate").value;
+    const messages = [`Updating delivery date from ${subscription.attributes.nextDeliveryDate} to ${nextDeliveryDate}`];
+    this.dispatchEvent(
+      new CustomEvent("subscription.messages", {
+        bubbles: true,
+        detail: { messages },
       })
     );
     doSave();

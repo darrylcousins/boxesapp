@@ -85,11 +85,13 @@ export default async function reconcileBoxLists(box, boxLists) {
               item.quantity = 0;
               messages.push(`Included extra item ${item.title} unavailable in this box.`);
               lists["includes"].splice(idx, 1);
+              updates["deletes"].push(item);
               break;
             case "addons":
               item.quantity = 0;
               messages.push(`Add on item ${item.title} unavailable in this box.`);
               lists["addons"].splice(idx, 1);
+              updates["deletes"].push(item);
               break;
             case "swaps":
               if (item.quantity > 1) {
@@ -124,6 +126,7 @@ export default async function reconcileBoxLists(box, boxLists) {
                     updates["includes"].push(item);
                   } else {
                     messages.push(`Add on item ${item.title} already included so removed as an add on.`);
+                    updates["deletes"].push(item);
                   };
                   lists["addons"].splice(idx, 1); // remove from addons
                   updates["addons"].splice(updates["addons"].indexOf(item), 1); // remove from swaps
@@ -132,12 +135,12 @@ export default async function reconcileBoxLists(box, boxLists) {
                   item.quantity -= 1;
                   if (item.quantity > 0) {
                     messages.push(`Extra swapped item ${item.title} included as an extra include for this box.`);
-                    lists["swaps"].splice(idx, 1); // remove from swaps
                     updates["includes"].push(item);
-                    updates["swaps"].splice(updates["swaps"].indexOf(item), 1); // remove from swaps
                   } else {
                     messages.push(`Swapped item ${item.title} already included in this box.`);
                   };
+                  lists["swaps"].splice(idx, 1); // remove from swaps
+                  updates["swaps"].splice(updates["swaps"].indexOf(item), 1); // remove from swaps
                   break;
               };
               break;
@@ -196,7 +199,7 @@ export default async function reconcileBoxLists(box, boxLists) {
             && el.shopify_price <= boxItem.shopify_price + 50)
         ).filter(el => ![ ...updates["addons"], ...updates["swaps"] ].map(e => e.title).includes(el.shopify_title));
         if (possibleSwaps.length > 0) {
-          updates["removed"].push(item);
+          updates["removed"].unshift(item); // to front
           let swap = possibleSwaps.pop();
           updates["swaps"].push({ title: swap.shopify_title, quantity: 1});
           messages.push(`Swapped ${swap.shopify_title} for your removed item ${item.title} in this box.`);
@@ -212,7 +215,6 @@ export default async function reconcileBoxLists(box, boxLists) {
     ...updates["includes"],
     ...updates["swaps"].filter(el => el.quantity > 1).map(el => ({ title: el.title, quantity: el.quantity - 1 })),
     ...updates["addons"] ], "title");
-  const updatedSubscriptions = includedSubscriptions.filter(el => el.quantity === 0);
 
   const boxIncludes = availableIncludes.map(el => {
     let item;
@@ -237,6 +239,6 @@ export default async function reconcileBoxLists(box, boxLists) {
     properties: finalProperties,
     messages, 
     subscriptions: includedSubscriptions.filter(el => el.quantity > 0), // excludes the zerod items
-    updates: updatedSubscriptions, // zerod items only
+    updates: updates["deletes"], // zerod items only
   };
 };

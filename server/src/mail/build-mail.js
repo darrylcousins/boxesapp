@@ -27,9 +27,9 @@ export default async (opts) => {
 
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-  // test for logo files
-  const siteLogoFile = "logo.jpg"; // put in .env
-  const boxesLogoFile = "boxes.png"; // put in .env
+  // test for logo files - served by nginx
+  const siteLogoFile = `${ process.env.SHOP_NAME }.jpg`; // put in server/assets/logos/
+  const boxesLogoFile = "boxes.png";
 
   const siteLogo = fs.existsSync(path.resolve(process.env.SERVER_ROOT, "assets/logos", siteLogoFile));
   const boxesLogo = fs.existsSync(path.resolve(process.env.SERVER_ROOT, "assets/logos", boxesLogoFile));

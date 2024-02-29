@@ -14,8 +14,8 @@ const workerOptions = {
   connection: redisOptions,
   autorun: true,
   limiter: {
-    max: 1, // limit the queue to a maximum of 1 jobs per 330 milliseconds
-    duration: 330, // this avoids a burst of 3 calls then idle 1 second
+    max: 1, // limit the queue to a maximum of 1 jobs per 500 milliseconds
+    duration: 500, // this avoids a burst of 2 calls then idle 1 second
   },
 };
 

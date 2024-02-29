@@ -37,7 +37,7 @@ function* BoxRule({ rule }) {
 
   for ({rule} of this) {
     yield (
-      <div class="flex w-100 mb2 center ph1 ba b--black-40 br2">
+      <div class="flex w-100 mb3 center ba b--black-40 br2">
         <RulesForm rule={rule} disabled={disabled} toggleCollapse={toggleForm} />
       </div>
     );

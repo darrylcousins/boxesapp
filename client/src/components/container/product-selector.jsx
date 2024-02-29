@@ -9,7 +9,6 @@ import { createElement, Fragment } from "@b9g/crank";
 
 import CollapseWrapper from "../lib/collapse-animator";
 import { moveProductEvent, selectorOpenEvent } from "../lib/events";
-import SelectMenu from "../lib/select-menu";
 import { 
   getPrice,
   animationOptions,
@@ -220,7 +219,7 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
 
     yield (
       <div id="productSelector" class="">
-        <div id="productSelectorOverlay" class="boxOverlay"></div>
+        <div id="productSelectorOverlay"></div>
         <div>
 
           { selectedIncludes.length > 0 && (
@@ -230,7 +229,7 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
                   { !removeItemOpen ? (
                     <button
                       class="select-dropdown-button"
-                      title="Remove items to your box"
+                      title="Remove items from your box"
                       id="removeItem"
                       type="button"
                       >

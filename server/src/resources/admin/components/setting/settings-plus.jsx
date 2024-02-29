@@ -67,7 +67,7 @@ function *SettingsPlus() {
           this.refresh();
         } else {
           loading = false;
-          fetchSettings = json;
+          fetchSettings = json.filter(el => ["General", "Translation"].includes(el._id));
           console.log(fetchSettings);
           if (document.getElementById("settings-table")) {
             animateFadeForAction("settings-table", async () => await this.refresh());

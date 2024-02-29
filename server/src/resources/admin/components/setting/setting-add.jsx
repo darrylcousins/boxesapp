@@ -17,7 +17,7 @@ import { createElement } from "@b9g/crank";
 
 import FormModalWrapper from "../form/form-modal";
 import UpsertSettingModal from "./setting-upsert";
-import TextButton from "../lib/text-button";
+import Button from "../lib/button";
 
 /**
  * Text button for link to expand modal
@@ -33,9 +33,13 @@ import TextButton from "../lib/text-button";
 const ShowLink = (opts) => {
   const { name, title, color, showModal } = opts;
   return (
-    <nav class="ph3 pv2 pv3-ns tr">
-      <TextButton color={color} title={title} action={showModal} name={name} />
-    </nav>
+    <div class="w-100 tr mr4">
+      <Button type="primary" title="Add Setting" name={name}>
+        <span class="b">
+          Add Setting
+        </span>
+      </Button>
+    </div>
   );
 };
 

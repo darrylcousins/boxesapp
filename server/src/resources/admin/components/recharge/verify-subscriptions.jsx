@@ -55,7 +55,6 @@ async function* VerifySubscriptions({ customers }) {
    * @function verifyCustomerSubscriptions
    */
   const verifyCustomerSubscriptions = async ( { customer } ) => {
-    console.log(customer);
     let src = `/api/recharge-verify-customer-subscriptions`;
     loading = true;
     await this.refresh();

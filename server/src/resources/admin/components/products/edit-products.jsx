@@ -8,6 +8,7 @@
 import { createElement, Fragment } from "@b9g/crank";
 import Error from "../lib/error";
 import Image from "../lib/image";
+import Help from "../lib/help";
 import SelectModal from "./select-modal";
 import { CloseIcon } from "../lib/icon";
 import { groupProducts, weekdays } from "../helpers";
@@ -317,8 +318,6 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
         if (isEditable) {
           return null;
         } else { // box is out in the future but still to find a display from the current box or order
-          // why don't I have rc_subscriptoin_ids?
-          console.log("ids", rc_subscription_ids);
           const maybe = rc_subscription_ids.find(e => e.title === el.name)
           product = { shopify_price: maybe.price, shopify_product_id: maybe.shopify_product_id };// may be able to get these from rc_subscription_ids?
         };
@@ -663,7 +662,14 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
                               </span>
                             </div>
                           ) : (
-                            <div class="dtc w-10">&nbsp;</div>
+                            <div class="dtc w-10">
+                              <div class="relative w-100 tr">
+                                <Help id={ `info-${product.shopify_product_id}` } size="small" />
+                                <p id={ `info-${product.shopify_product_id}` } class="alert-box info info-left tr" role="alert">
+                                  No similarly priced products are available in this box.
+                                </p>
+                              </div>
+                            </div>
                           )
                         )}
                       </div>
@@ -809,7 +815,11 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
                       </div>
                     ))}
                     </Fragment>
-                  ) : " "
+                  ) : (
+                    showDetails ? (
+                      <div class="w-100">{ " " }</div>
+                    )  : ""
+                  )
                 }
               </div>
               <div id="pricedItems" class="mr2 w-100">

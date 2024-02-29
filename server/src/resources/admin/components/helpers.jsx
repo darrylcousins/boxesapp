@@ -15,6 +15,26 @@ export const LABELKEYS = [
   'Swapped Items', 
 ];
 
+/**
+ * Helper method to animate display of messages
+ *
+ * @function makeTitle
+ */
+export const displayMessages = (display, messages) => {
+
+  if (display) {
+    const ul = display.appendChild(document.createElement("ul"));
+    const intervalId = setInterval(() => {
+      if (messages.length === 0) clearInterval(intervalId);
+      const item = messages.shift();
+      if (item) { // sanity check
+        const li = ul.appendChild(document.createElement("li"));
+        li.textContent = item;
+      };
+    }, 800);
+  };
+};
+
 /*
  * Helper method to get time taken as a mins:secs string
  */
@@ -428,11 +448,12 @@ export const delay = (t) => {
 
 /*
  * @function sleepUntil
- * Wait for element to be rendered
+ * Wait for element to be rendered is how I used this for the most part
  * From https://levelup.gitconnected.com/javascript-wait-until-something-happens-or-timeout-82636839ea93
  *
  */
 export const sleepUntil = async (f, timeoutMs) => {
+  if (typeof timeoutMs === "undefined") timeoutMs = 10000;
   return new Promise((resolve, reject) => {
     let timeWas = new Date();
     let wait = setInterval(function() {
@@ -441,13 +462,14 @@ export const sleepUntil = async (f, timeoutMs) => {
           clearInterval(wait);
         } catch(e) {
         };
-        resolve();
+        const res = f();
+        resolve(res);
       } else if (new Date() - timeWas > timeoutMs) { // Timeout
         try {
           clearInterval(wait);
         } catch(e) {
         };
-        reject();
+        reject(null);
       }
       }, 20);
     });

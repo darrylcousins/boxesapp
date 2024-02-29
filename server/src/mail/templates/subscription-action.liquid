@@ -24,7 +24,11 @@
         If you have any queries about this email please contact <a href="mailto:{{ admin_email }}">{{ admin_email }}</a>.
       </p>
       <p style="padding:5px 0;margin:0">
-        Your subscriptions can be viewed and edited from your 
+        {% if type == "cancelled" %}
+          The subscription can be reactivated or deleted permanently at any time from your
+        {% else %}
+        {% if type == "deleted" %}If you have other subscriptions they{% else %}Your subscriptions{% endif %} can be viewed and edited from your 
+        {% endif %}
         <a
             href="https://{{env.SHOP}}/account">account page</a>.
       </p>

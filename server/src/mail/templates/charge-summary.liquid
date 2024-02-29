@@ -35,7 +35,7 @@
       <td valign="top"><span>$</span>{{ attributes.totalPrice | money }}</td>
     </tr>
   {% endif %}
-  {% if attributes.lastOrder %}
+  {% if attributes.lastOrder and attributes.lastOrder.order_number %}
     <tr>
       <td valign="top" style="color:#777;text-align:right;padding-right:20px;">
       {% if attributes.lastOrder.current %}Current{% else %}Last{% endif %}
@@ -50,23 +50,5 @@
       </td>
       <td valign="top">#{{ attributes.lastOrder.order_number }} {{ attributes.lastOrder.box.name }}</td>
     </tr>
-    {% comment %}
-      {% assign today_date = 'now' | date: '%s' %}
-      {% assign delivered = attributes.lastOrder.delivered | date: '%s' %}
-      <tr>
-        <td valign="top" style="color:#777;text-align:right;padding-right:20px;">
-        {% if today_date < delivered %}Current{% else %}Last{% endif %}
-        Order
-        {% if today_date < delivered %}Delivery Date{% else %}Delivered{% endif %}
-        </td>
-        <td valign="top">{{ attributes.lastOrder.delivered }}</td>
-      </tr>
-      <tr>
-        <td valign="top" style="color:#777;text-align:right;padding-right:20px;">
-          {% if today_date < delivered %}Current{% else %}Last{% endif %} Order
-        </td>
-        <td valign="top">#{{ attributes.lastOrder.order_number }} {{ attributes.lastOrder.box.name }}</td>
-      </tr>
-    {% endcomment %}
   {% endif %}
 </mj-table>

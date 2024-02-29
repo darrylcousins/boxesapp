@@ -31,29 +31,64 @@ export default async (req, res) => {
   const collection = _mongodb.collection("logs");
 
   let searchTerm;
-  if (object_id) {
-    searchTerm = parseInt(object_id);
-    if (Number.isNaN(searchTerm)) {
-      searchTerm = decodeURIComponent(object_id);
+  let searchDates;
+  if (object_id) { // added time as an option
+
+    const decoded = decodeURIComponent(object_id);
+    if (decoded !== object_id) { // if given an interger id then they will be the same
+      const searchFrom = new Date(Date.parse(decoded));
+      if (validDate(searchFrom)) {
+        searchDates = [];
+        //searchFrom.setMinutes(searchFrom.getMinutes() + searchFrom.getTimezoneOffset());
+        searchFrom.setMinutes(searchFrom.getMinutes() - 15);
+        searchDates.push(new Date(searchFrom));
+        searchFrom.setMinutes(searchFrom.getMinutes() + 30);
+        searchDates.push(new Date(searchFrom));
+      };
+    } else {
+      searchTerm = parseInt(object_id);
     };
   };
 
   const query = {};
+  const orQuery = [];
 
   // first set up filters
   if (level && level !== "all") query.level = level;
-  if (object) {
+  if (object && object !== "all") {
     query[`meta.${object}`] = { "$exists": true };
     // add in a search term
-    if (searchTerm) query["$or"] = object === "recharge" ? [
-      { [`meta.${object}.customer_id`]: searchTerm },
-      { [`meta.${object}.subscription_id`]: searchTerm },
-      { [`meta.${object}.charge_id`]: searchTerm },
-    ] : [
-      { [`meta.${object}.shopify_order_id`]: searchTerm },
-      { [`meta.${object}.order_number`]: searchTerm },
-    ];
+    if (searchTerm) {
+      if (object === "recharge") {
+        orQuery.push(
+          { [`meta.${object}.customer_id`]: searchTerm },
+          { [`meta.${object}.subscription_id`]: searchTerm },
+          { [`meta.${object}.charge_id`]: searchTerm },
+        );
+      } else if (object === "shopify") {
+        orQuery.push(
+          { [`meta.${object}.shopify_order_id`]: searchTerm },
+          { [`meta.${object}.order_number`]: searchTerm },
+        );
+      };
+    };
   };
+  if (level === "error") { // include the fetch errors stored as notices
+    // a wildcard operator would be handy:
+    //query[`meta.*.error`] = { "$exists": true };
+    // but is unsupported, it could be donw with aggregation:
+    // 1. add a new field "newNode: { $objectToArray: "meta" }
+    // 2. then newNode.v.error: { $exists: true } // with v being the default value of the array
+    // However I've only got shopify and recharge to worry about
+    /*
+    orQuery.push(
+      { "meta.recharge.error": { "$exists": true } },
+      { "meta.shopify.error": { "$exists": true } },
+    );
+    query.level = { "$in": ["notice", "error"] };
+    */
+  };
+  if (orQuery.length > 0) query["$or"] = orQuery;
 
   try {
 
@@ -70,6 +105,9 @@ export default async (req, res) => {
       to.setMinutes(to.getMinutes() + to.getTimezoneOffset());
       from.setMinutes(from.getMinutes() + from.getTimezoneOffset());
       query.timestamp = {"$gte": from, "$lt": to };
+    };
+    if (searchDates) {
+      query.timestamp = {"$gte": searchDates[0], "$lt": searchDates[1] };
     };
 
     const count = await collection.count(query);

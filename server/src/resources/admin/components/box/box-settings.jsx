@@ -206,35 +206,43 @@ async function* BoxSettings({ delivered, settings }) {
 
               <div id="settings">
                 <div class="w-100">
-                  <div class="tl ph2 mt1 ml0">
-                    <label class="lh-copy w-30" htmlFor="limit" for="limit" style="font-size: 1em">
-                      Order limit
-                    </label>
-                    <input 
-                      id="limit"
-                      type="number" 
-                      step="1"
-                      min="0"
-                      oninput={watchSettingsInput}
-                      value={ currentSettings.limit}
-                      class="input-reset ba b--black-10 br3"
-                      style="width: 4.5em; border-color: silver; padding: 0 3px; margin: 0"
-                      />
+                  <div class="dt dt--fixed w-50">
+                    <div class="dtc gray tr pr3 pv1 b">
+                      <label class="lh-copy" htmlFor="limit" for="limit">
+                        Order limit
+                      </label>
+                    </div>
+                    <div class="dtc pv1 b">
+                      <input 
+                        id="limit"
+                        type="number" 
+                        step="1"
+                        min="0"
+                        oninput={watchSettingsInput}
+                        value={ currentSettings.limit}
+                        class="input-reset ph3 pv2 ma3 ba b--black-10 br3"
+                        style="width: 6em;;"
+                        />
+                    </div>
                   </div>
-                  <div class="tl ph2 mt1 ml0">
-                    <label class="lh-copy w-30" htmlFor="limit" for="limit" style="font-size: 1em">
-                      Cut off hours
-                    </label>
-                    <input 
-                      id="cutoff"
-                      type="number" 
-                      step="0.5"
-                      min="0"
-                      oninput={watchSettingsInput}
-                      value={ currentSettings.cutoff }
-                      class="input-reset ba b--black-10 br3"
-                      style="width: 4.5em; border-color: silver; padding: 0 3px; margin: 0"
-                      />
+                  <div class="dt dt--fixed w-50">
+                    <div class="dtc gray tr pr3 pv1 b">
+                      <label class="lh-copy" htmlFor="limit" for="limit">
+                        Cut off hours
+                      </label>
+                    </div>
+                    <div class="dtc pv1 b">
+                      <input 
+                        id="cutoff"
+                        type="number" 
+                        step="0.5"
+                        min="0"
+                        oninput={watchSettingsInput}
+                        value={ currentSettings.cutoff }
+                        class="input-reset ph3 pv2 ma3 ba b--black-10 br3"
+                        style="width: 6em;"
+                        />
+                    </div>
                   </div>
                 </div>
                 <div class="mh2 mt1 w-100 tr">

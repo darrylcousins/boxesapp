@@ -42,7 +42,7 @@ function *SwapSelector({ possibleSwaps, removedItem, confirmSwap, cancelSwap }) 
                 </div>
               </Fragment>
             ) : (
-              <div><span>Unable to swap { removedItem.shopify_title }.</span></div>
+              <div><span>Unable to swap { removedItem.shopify_title } for a similarly priced item.</span></div>
             )}
           </Fragment>
         )}

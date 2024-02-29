@@ -123,6 +123,7 @@ export default async function orderProcessed(topic, shop, body) {
 
         // put together the attributes used in the email
         const boxName = `${line_item.title} - ${line_item.variant_title}`;
+        subscriptions[box_subscription_id].attributes.subscription_id = box_subscription_id;
         subscriptions[box_subscription_id].attributes.name = boxName;
         subscriptions[box_subscription_id].attributes.box = { name: boxName };
         subscriptions[box_subscription_id].box = { shopify_title: line_item.title };

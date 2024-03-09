@@ -4,6 +4,46 @@
 import { getFilterSettings } from "./settings.js";
 import { getOrderCount } from "./orders.js";
 import { weekdays } from "./dates.js";
+
+/*
+ * Helper method to set up default settings for a day
+ * Used by add-box, duplicate-box, and duplicate-boxes
+ */
+/**
+ * Get list of delivery days for a box container filtered using cutoff and limit filters
+ * @function getDeliveryDays
+ */
+export const getDefaultBoxSettings = async (delivered) => {
+  const date = new Date(delivered);
+  const weekday = weekdays[date.getDay()];
+
+  const defaultSetting = await _mongodb.collection("settings").findOne({ handle: "default-cutoff" });
+  let cutoff = 5;
+  if (defaultSetting) cutoff = parseFloat(defaultSetting.value);
+
+  // try to find existing settings
+  let cutOffSetting = await _mongodb.collection("settings").findOne( { handle: "box-cutoff", weekday });
+  let limitSetting = await _mongodb.collection("settings").findOne( { handle: "box-limit", weekday });
+
+  if (cutOffSetting && limitSetting) return { cutoff: cutOffSetting, limit: limitSetting };
+
+  cutOffSetting = {
+    handle: "box-cutoff",
+    tag: "Box Cutoff",
+    weekday,
+    value: cutoff
+  };
+  limitSetting = {
+    handle: "box-limit",
+    tag: "Box Limit",
+    weekday,
+    value: 0 // default to no order limit
+  };
+  const result = await _mongodb.collection("settings").insertMany([ cutOffSetting, limitSetting ]);
+
+  return { cutoff: cutOffSetting, limit: limitSetting };
+};
+
 /*
  * Helper method for filtering boxes
  */
@@ -41,7 +81,7 @@ export const getDeliveryDays = async (db, product_id, weekday) => {
     { "$project": {
       delivered: "$delivered",
       deliverDate: "$deliverDate",
-      deliverDay: { "$dayOfWeek": "$deliverDate" },
+      deliverDay: { "$dayOfWeek": "$deliverDate" }, // returns monday 1, sunday 7
     }}
   );
 
@@ -55,7 +95,10 @@ export const getDeliveryDays = async (db, product_id, weekday) => {
       filters = await getFilterSettings();
       counts = await getOrderCount();
     } else {
-      const dayIdx = weekdays.map(el => el.toLowerCase()).indexOf(weekday);
+      let dayIdx = weekdays.map(el => el.toLowerCase()).indexOf(weekday);
+      // sunday 0 saturday 6
+      dayIdx = dayIdx === 0 ? 7 : dayIdx;
+      // but dayOfWeek (deliveryDay) returns monday 1 sunday 7
       if (dayIdx >= 0) {
         dates = dates.filter(el => el.deliverDay === dayIdx);
       };

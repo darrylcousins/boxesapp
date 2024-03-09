@@ -20,6 +20,11 @@ export default async (req, res, next) => {
   const counter = new Date(); // time the update to finished
   const { change_messages, updates, attributes, properties, includes, now, navigator, admin } = req.body;
 
+  res.status(200).json({
+    message: "Updates scheduled",
+    messages: change_messages,
+  });
+
   const { title, charge_id, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
   // can be 'updated' or 'reconciled' (reconcile when required updates for new box)
   const label = req.query.label;
@@ -110,15 +115,13 @@ export default async (req, res, next) => {
       throw err;
     };
 
-    res.status(200).json({ message: "Updates scheduled" });
-
     meta.recharge = sortObjectByKeys(meta.recharge);
     _logger.notice(`Boxesapp api request subscription ${label}.`, { meta });
 
     await updateSubscriptions({ updates, io, session_id });
 
   } catch(err) {
-    res.status(200).json({ error: err.message });
+    if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 };

@@ -17,7 +17,7 @@ import { TableHeader, TableBody } from "./order-table";
 import BarLoader from "../lib/bar-loader";
 import Error from "../lib/error";
 import SelectMenu from "../lib/select-menu";
-import { Fetch } from "../lib/fetch";
+import { Fetch, PostFetch } from "../lib/fetch";
 import Button from "../lib/button";
 import Help from "../lib/help";
 import { toastEvent } from "../lib/events";
@@ -118,6 +118,19 @@ function* CurrentOrders() {
    * @member {boolean} checkedOrders
    */
   let checkedOrders = [];
+  /**
+   * Orders with an error field - currently only incorrect created time
+   * 1. after cutoff, 2. after delivery date
+   *
+   * @member {boolean} erroredOrders
+   */
+  let erroredOrders = [];
+  /**
+   * Maintain array of checked errored orders for removal of error flag
+   *
+   * @member {boolean} checkedErrored
+   */
+  let checkedErrored = [];
 
   this.addEventListener("toastEvent", Toaster);
 
@@ -137,6 +150,8 @@ function* CurrentOrders() {
           loading = false;
           this.refresh();
         } else {
+          erroredOrders = json.errored;
+          delete json.errored;
           fetchDates = Object.keys(json);
           orderCounts = {};
           for (const d of fetchDates) {
@@ -237,6 +252,46 @@ function* CurrentOrders() {
 
   getDates();
 
+  /**
+   * Remove the selected errored orders
+   *
+   * @function removeErrored
+   */
+  const removeErrored = async () => {
+    let src = `/api/remove-errored-orders`;
+    loading = true;
+    await this.refresh();
+    
+    const headers = { "Content-Type": "application/json" };
+    const data = {
+      selectedOrders: checkedErrored
+    };
+    await PostFetch({ src, data, headers })
+      .then(async (result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          this.refresh();
+        } else {
+          this.dispatchEvent(toastEvent({
+            notice: `Updated ${json.modifiedCount} ${pluralize(json.modifiedCount, "order")}`,
+            bgColour: "black",
+            borderColour: "black"
+          }));
+          erroredOrders = json.erroredOrders;
+          checkedErrored = [];
+          loading = false;
+          this.refresh();
+        }
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+      });
+  };
+
   /*
    * Close menu
    * @function closeMenu
@@ -284,7 +339,7 @@ function* CurrentOrders() {
       };
 
     } else if (name === "INPUT") {
-      if (ev.target.name.startsWith("selectAll")) {
+      if (ev.target.name.startsWith("selectAllOrders")) {
         // select all
         if (ev.target.checked) {
           checkedOrders = fetchOrders.map(el => el._id.toString());
@@ -301,6 +356,24 @@ function* CurrentOrders() {
         } else {
           const idx = checkedOrders.indexOf(ev.target.id);
           if (idx > -1) checkedOrders.splice(idx, 1);
+        };
+        return this.refresh();
+      };
+      if (ev.target.name.startsWith("selectAllErrored")) {
+        // select all
+        if (ev.target.checked) {
+          checkedErrored = erroredOrders.map(el => el._id.toString());
+        } else {
+          checkedErrored =[];
+        };
+        return this.refresh();
+      };
+      if (ev.target.name.startsWith("errored")) {
+        if (ev.target.checked) {
+          checkedErrored.push(ev.target.id);
+        } else {
+          const idx = checkedErrored.indexOf(ev.target.id);
+          if (idx > -1) checkedErrored.splice(idx, 1);
         };
         return this.refresh();
       };
@@ -463,8 +536,65 @@ function* CurrentOrders() {
             </div>
           )}
         </p>
+        { erroredOrders.length > 0 && (
+          <Fragment>
+            <div class="alert-box tl w-95 ba br2 pa3 mh2 mb3 navy bg-washed-blue" role="alert">
+              <p class="lh-copy">
+              <strong>Note!</strong> The following orders have been created
+              either after the cutoff time or after the delivery date of the box.
+              This can happen when a customer leaves an item in the cart for
+              hours or days before moving to the checkout. You can edit the
+              order to correct the delivery date if required. Orders can be
+              selected and removed from this listing either once the problem has been
+              addressed or you choose to leave the order as it is, removing the
+              order from this listing cannot be undone, but makes no other changes to the order.
+              </p>
+              <table class="collapse w-90 tl center">
+                <thead>
+                  <tr>
+                    <td class="pb3">
+                  
+                      <input type="checkbox" id="selectAllErrored" name="selectAllErrored"
+                        title="Select all" checked={!(checkedErrored.length === 0)} />
+                      <label class="pl2" for="allErrored" class="dn">Select all</label>
+                    </td>
+                    { ["Created", "Order", "Delivery Date", "Contact Email", "Error"].map(el => (
+                      <th class="pb3">{ el }</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {erroredOrders.map(el => (
+                    <tr>
+                      <td><input type="checkbox" name="errored[]"
+                        id={ el._id } checked={checkedErrored.includes(el._id.toString())} /></td>
+                      <td>{ new Date(el.created).toISOString().replace(/T/, ' ').replace(/\..+/, '') }</td>
+                      <td>#{ el.order_number }</td>
+                      <td>{ el.delivered }</td>
+                      <td>{ el.contact_email }</td>
+                      <td>{ el.error }</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {checkedErrored.length ? (
+                <p class="tl ml4">
+                  <strong>{checkedErrored.length}</strong> {pluralize(checkedErrored.length, "order")} selected.
+                  <div class="tr mr3">
+                    <Button type="primary" 
+                      onclick={ removeErrored }
+                      title="Remove selected orders from this listing"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </p>
+              ) : ""}
+            </div>
+          </Fragment>
+        )}
         { hasOwnProp.call(orderCounts, "No delivery date") && (
-          <p class="alert-box w-95 ba br2 pa3 mh2 mv1 red bg-washed-red" role="alert">
+          <p class="alert-box w-95 ba br2 pa3 mh2 mv1 navy bg-washed-blue" role="alert">
             <strong>Note!</strong> We have <b>{ orderCounts["No delivery date"] }</b> {pluralize(orderCounts["No delivery date"], "order")} recorded with no delivery date, this will need attention.
           </p>
         )}
@@ -479,16 +609,17 @@ function* CurrentOrders() {
           {fetchError && <Error msg={fetchError} />}
           {checkedOrders.length ? (
             <div class="alert-box dark-blue pa2 ph3 ma2 br3 ba b--dark-blue bg-washed-blue">
-              <p class="tl">
+              <p class="tl ml4">
                 <strong>{checkedOrders.length}</strong> {pluralize(checkedOrders.length, "order")} selected.
+                <div class="tr mr3">
+                  <EditOrders selectedOrders={checkedOrders} />
+                  <Button
+                    type="secondary"
+                    onclick={clearSelected}
+                    title="Clear selected orders"
+                  >Clear Selection</Button>
+                </div>
               </p>
-              <div class="tr">
-                <EditOrders selectedOrders={checkedOrders} />
-                <Button
-                  type="secondary"
-                  onclick={clearSelected}
-                >Clear Selected</Button>
-              </div>
             </div>
           ) : ""}
           <div class="w-100 flex fg-streamside-maroon">
@@ -513,20 +644,20 @@ function* CurrentOrders() {
                     <PickingModal delivered={selectedDate} getUriFilters={getUriFilters}/>
                     <PackingModal delivered={selectedDate} getUriFilters={getUriFilters}/>
                     <button
-                      class={`dib w-20 outline-0 green b--dark-green bt bb br bl-0 bg-transparent mv1 pointer`}
+                      class={`dib w-20 outline-0 green b--dark-green bg-white hover-white hover-bg-dark-green bg-animate mv1 bt bb br bl-0 pointer`}
                       title="Download packing list"
                       type="button"
                       onclick={() => window.location=getUriFilters(`/api/list-download/${new Date(
                         selectedDate
                       ).getTime()}`, true)}
                       >
-                        <span class="v-mid di">Lists</span>
+                        <span class="v-mid di pr2">Lists</span>
                         <span class="v-mid">
                           <SaveAltIcon />
                         </span>
                     </button>
                     <button
-                      class={`dib w-20 outline-0 orange b--dark-green bt bb br bl-0 br2 br--right bg-transparent mv1 pointer`}
+                      class={`dib w-20 outline-0 dark-green b--dark-green bg-white hover-white hover-bg-green mv1 bt bb br bl-0 br2 br--right pointer`}
                       title="Download orders"
                       type="button"
                       onclick={() => window.location=getUriFilters(`/api/orders-download/${new Date(

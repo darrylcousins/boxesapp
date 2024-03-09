@@ -20,6 +20,8 @@ theme*/
 # testing files and broken tests
 recharge.*.json
 shopify.*.json
+charge.*.json
+order.*.json
 streamside.*.json
 *.bak.js
 *.bak.jsx

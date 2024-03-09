@@ -1,5 +1,7 @@
 # Thoughts
 
+### This should new be archived given the updates made in [early 2024](changelog-early-2024).
+
 ## Preamble
 
 This could have been titled **TODOS** or **WishList** but instead it's more a

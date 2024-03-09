@@ -14,6 +14,7 @@ import { weekdays } from "./dates.js";
  * @function getFilterSettings
  */
 export const getFilterSettings = async () => {
+  // should be able to match weekday
   const collection = _mongodb.collection("settings");
   const pipeline = [
     { "$match": { "$or": [ { handle: "box-limit" }, { handle: "box-cutoff" } ] }},
@@ -25,6 +26,7 @@ export const getFilterSettings = async () => {
 
   try {
     const limit = await collection.aggregate(pipeline).toArray();
+    //for (const setting of limit) console.log(setting._id, setting.values);
 
     const limitFinal = limit.reduce((res, curr) => {
       const key = curr._id.split("-")[1];

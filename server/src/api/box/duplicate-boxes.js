@@ -5,6 +5,7 @@
 
 import { ObjectId } from "mongodb"; // only after mongodb@ -> mongodb@6
 import { getNZDeliveryDay } from "../../lib/dates.js";
+import { getDefaultBoxSettings } from "../../lib/boxes.js";
 
 /*
  * @function box/duplicate-boxes.js
@@ -32,6 +33,7 @@ export default async (req, res, next) => {
     boxes.forEach(async (boxDoc) => {
       const box = await collection.findOne({ delivered, shopify_product_id: boxDoc.shopify_product_id });
       if (!box) {
+        delete boxDoc.frozen;
         boxDoc.delivered = delivered;
         boxDoc._id = new ObjectId();
         boxDoc.addOnProducts = boxDoc.addOnProducts.map(prod => {
@@ -46,7 +48,11 @@ export default async (req, res, next) => {
         await collection.insertOne(boxDoc);
       };
     });
-    res.status(200).json(req.body);
+
+    // also need to set up default settings for the day
+    await getDefaultBoxSettings(delivered); // will create them if not present
+
+    res.status(200).json({ delivered });
   } catch(err) {
     res.status(200).json({ error: err.message });
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

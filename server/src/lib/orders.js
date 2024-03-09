@@ -296,12 +296,14 @@ export const processOrderJson = async (json) => {
   // obvious option will be to make up an array of matching line items and then
   // figure out what items belong to which using line_item.properties
   const boxIds = await _mongodb.collection("boxes").distinct("shopify_product_id");
-  let boxProduct = null;
+  const boxProducts = [];
+  const orders = [];
+  // need to account for multiple boxes here
+  // could just filter here!
   for (const line_item of line_items) {
     if (boxIds.includes(line_item.product_id)) {
       // a container box
-      boxProduct = line_item;
-      break;
+      boxProducts.push(line_item)
     };
   };
   // if not boxProduct we need to give up and return
@@ -341,86 +343,95 @@ export const processOrderJson = async (json) => {
     shopify_customer_id
   } = cust_details;
 
-  // could put from here in a loop over the matching boxProduct array
+  // loop here for multiple boxes in a single order which can happed with subscriptions
 
-  const properties = boxProduct.properties;
-  const [deliveryKey, includingKey, addonKey, removedKey, swappedKey, productAddOnTo, subscriptionKey] = LABELKEYS;
-  var attributes = properties.reduce(
-    (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value }),
-    {});
+  for (const boxProduct of boxProducts) {
+    const properties = boxProduct.properties;
+    const [deliveryKey, includingKey, addonKey, removedKey, swappedKey, productAddOnTo, subscriptionKey] = LABELKEYS;
+    var attributes = properties.reduce(
+      (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value }),
+      {});
 
-  let delivered = NODELIVER_STRING;
-  let addons = [];
-  let including = [];
-  let removed = [];
-  let swaps = [];
+    let delivered = NODELIVER_STRING;
+    let addons = [];
+    let including = [];
+    let removed = [];
+    let swaps = [];
 
-  if (deliveryKey in attributes) delivered = attributes[deliveryKey];
-  if (includingKey in attributes) including = attributes[includingKey]
-    .split(',').map(el => el.trim()).filter(el => el !== '');
-  if (addonKey in attributes) addons = attributes[addonKey]
-    .split(',').map(el => el.trim()).filter(el => el !== '');
-  if (removedKey in attributes) removed = attributes[removedKey]
-    .split(',').map(el => el.trim()).filter(el => el !== '');
-  if (swappedKey in attributes) swaps = attributes[swappedKey]
-    .split(',').map(el => el.trim()).filter(el => el !== '');
+    if (deliveryKey in attributes) delivered = attributes[deliveryKey];
 
-  const pickup = delivered;
-  const inserted = new Date().toDateString(); // replaced by 'created' Feb 2024
-  const created = new Date(); // changed Feb 2024
+    // at this point we need to check that the delivery date is in the future,
+    // this is being done within the webhook
 
-  const order = {
-    _id: new ObjectId(),
-    shopify_order_id: parseInt(id),
-    shopify_customer_id,
-    order_number: order_number.toString(),
-    created,
-    delivered,
-    pickup,
-    inserted,
-    total_price: subtotal_price,
-    contact_email,
-    name,
-    first_name,
-    last_name,
-    phone,
-    note,
-    including,
-    addons,
-    removed,
-    swaps,
+    if (includingKey in attributes) including = attributes[includingKey]
+      .split(',').map(el => el.trim()).filter(el => el !== '');
+    if (addonKey in attributes) addons = attributes[addonKey]
+      .split(',').map(el => el.trim()).filter(el => el !== '');
+    if (removedKey in attributes) removed = attributes[removedKey]
+      .split(',').map(el => el.trim()).filter(el => el !== '');
+    if (swappedKey in attributes) swaps = attributes[swappedKey]
+      .split(',').map(el => el.trim()).filter(el => el !== '');
+
+    const pickup = delivered;
+    const inserted = new Date().toDateString(); // replaced by 'created' Feb 2024
+    const created = new Date(); // changed Feb 2024
+
+    const order = {
+      _id: new ObjectId(),
+      shopify_order_id: parseInt(id),
+      shopify_customer_id,
+      order_number: order_number.toString(),
+      created,
+      delivered,
+      pickup,
+      inserted,
+      total_price: subtotal_price,
+      contact_email,
+      name,
+      first_name,
+      last_name,
+      phone,
+      note,
+      including,
+      addons,
+      removed,
+      swaps,
+      box_name: `${boxProduct.title} - ${boxProduct.variant_title}`,
+    };
+
+    // collect shipping and source
+    const shipping_line = json.shipping_lines[0];
+    const {carrier_identifier, code, source, title, price} = shipping_line;
+    order.source = {
+      name: "Shopify",
+      source,
+      identifier: json.source_identifier,
+      type: json.source_name,
+    };
+    order.shipping = {carrier_identifier, code, source, title, price};
+
+    if (parseFloat(price) === 0) {
+      order.address1 = "Farm Pickup";
+      order.address2 = "";
+      order.city = "";
+      order.zip = "";
+    } else {
+      order.address1 = address1;
+      order.address2 = address2;
+      order.city = city;
+      order.zip = zip;
+    };
+
+    // first order has source of 'web' and therefore correct delivered will be recordedi
+    order.variant_title = boxProduct.variant_title;
+    order.variant_name = boxProduct.name;
+    order.variant_id = boxProduct.variant_id;
+    order.product_title = boxProduct.title;
+    order.product_id = boxProduct.product_id;
+
+    orders.push(order);
   };
 
-  // collect shipping and source
-  const shipping_line = json.shipping_lines[0];
-  const {carrier_identifier, code, source, title, price} = shipping_line;
-  order.source = {
-    name: "Shopify",
-    source,
-    identifier: json.source_identifier,
-    type: json.source_name,
-  };
-  order.shipping = {carrier_identifier, code, source, title, price};
-
-  if (parseFloat(price) === 0) {
-    order.address1 = "Farm Pickup";
-    order.address2 = "";
-    order.city = "";
-    order.zip = "";
-  } else {
-    order.address1 = address1;
-    order.address2 = address2;
-    order.city = city;
-    order.zip = zip;
-  };
-
-  // first order has source of 'web' and therefore correct delivered will be recordedi
-  order.variant_title = boxProduct.variant_title;
-  order.variant_name = boxProduct.name;
-  order.variant_id = boxProduct.variant_id;
-  order.product_title = boxProduct.title;
-  order.product_id = boxProduct.product_id;
-
-  return order;
+  return orders;
 };
 

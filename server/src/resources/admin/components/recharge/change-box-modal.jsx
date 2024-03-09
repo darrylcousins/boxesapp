@@ -38,7 +38,9 @@ import {
  */
 const calculateDates = (newVariant, currentDate, lastOrderDate) => {
 
-  const currentDeliveryDate = new Date(Date.parse(currentDate));
+  // need to figure what to do if no dates passed on add box
+
+  const currentDeliveryDate = currentDate ? new Date(Date.parse(currentDate)) : new Date();
   const dayIdx = weekdays.map(el => el.toLowerCase()).indexOf(newVariant.toLowerCase());
 
   const deliveryDate = findNextWeekday(dayIdx, currentDeliveryDate);
@@ -97,6 +99,7 @@ const sortVariants = (o) => {
   });
   return o;
 };
+
 /**
  * Icon component for link to expand modal
  *
@@ -163,15 +166,20 @@ const getBoxes = async () => {
  * @param {string} props.formId - The unique form indentifier
  */
 async function* ChangeBox(props) {
-  const { doSave, closeModal, title, subscription, formId } = props;
+  const { doSave, closeModal, title, type, customer, subscription, formId } = props;
 
   /**
    * Holds all the data
    *
    * @member {object} boxAttributes and others
    */
-  const boxAttributes = { ...subscription.attributes };
-  boxAttributes.boxPlan = ""; // initialize
+  console.log(customer);
+  let boxAttributes = {};
+  boxAttributes.customer = customer;
+  if (subscription) { // may be a new box subscription
+    boxAttributes = { ...subscription.attributes };
+    boxAttributes.boxPlan = ""; // initialize
+  };
   let currentBoxes;
   let currentBox;
   let currentVariants;
@@ -217,11 +225,29 @@ async function* ChangeBox(props) {
    */
   let loading = true;
   /**
+   * True when customer agrees to subscription policy
+   *
+   * @member {boolean} checkedPolicy
+   */
+  let checkedPolicy = false;
+  /**
    * The fetch error if any
    *
    * @member {object|string} fetchError
    */
   let fetchError = null;
+
+  /**
+   * Local save to perform actions before calling form-modal doSave
+   *
+   * @function thisSave
+   * @returns {null}
+   */
+  const togglePolicy = async (ev) => {
+
+    checkedPolicy = ev.target.checked;
+    this.refresh();
+  };
 
   /**
    * The initial data of the form
@@ -260,7 +286,7 @@ async function* ChangeBox(props) {
     data.order_day_of_week = boxAttributes.orderDayOfWeek;
     data.do_update = false;
     data.now = dateStringNow();
-    data.type = "paused";
+    data.type = type;
     data.navigator = userNavigator();
     data.admin = props.admin;
     data.customer = JSON.stringify(boxAttributes.customer);
@@ -344,6 +370,22 @@ async function* ChangeBox(props) {
         type: "hidden",
         datatype: "boolean",
       },
+      schedule_only: { // indicates that only the delivery schedule has changed
+        type: "hidden",
+        datatype: "boolean",
+      },
+      schedule_changed: { // pass a flag of what has changed
+        type: "hidden",
+        datatype: "boolean",
+      },
+      product_changed: { // pass a flag of what has changed
+        type: "hidden",
+        datatype: "boolean",
+      },
+      variant_changed: { // pass a flag of what has changed
+        type: "hidden",
+        datatype: "boolean",
+      },
       customer: {
         type: "hidden",
         datatype: "string",
@@ -373,40 +415,63 @@ async function* ChangeBox(props) {
    * @function thisSave
    * @returns {null}
    */
-  const thisSave = () => {
-    this.dispatchEvent(
-      new CustomEvent("customer.disableevents", {
-        bubbles: true,
-        detail: { subscription_id: boxAttributes.subscription_id },
-      })
-    );
-    let messages = document.getElementById("change_messages").value;
-
-    messages = JSON.parse(messages);
-
-    if (currentPlan.name !== subscription.attributes.frequency) {
-      messages.unshift(`Delivery schedule changed from ${
-        subscription.attributes.frequency.toLowerCase()} to ${currentPlan.name.toLowerCase()}.`);
+  const thisSave = async () => {
+    if (subscription) {
+      this.dispatchEvent(
+        new CustomEvent("customer.disableevents", {
+          bubbles: true,
+          detail: { subscription_id: boxAttributes.subscription_id },
+        })
+      );
+    } else {
+      await thisPreview(); // sets up box properties
     };
-    const from = [];
-    const to = [];
-    let final;
-    if (currentBox.title !== subscription.attributes.title
-      || currentVariant.title !== subscription.attributes.variant) {
-      if (currentBox.title !== subscription.attributes.title) {
-        from.push(subscription.attributes.title);
-        to.push(currentBox.title);
+
+    let schedule_only = false;
+    let schedule_changed = false;
+    let product_changed = false;
+    let variant_changed = false;
+
+    let messages;
+    if (subscription) {
+      let final;
+      messages = document.getElementById("change_messages").value;
+      messages = JSON.parse(messages);
+      if (currentPlan.name !== subscription.attributes.frequency) {
+        schedule_changed = true;
+        schedule_only = true;
+        messages.unshift(`Delivery schedule changed from ${
+          subscription.attributes.frequency.toLowerCase()} to ${currentPlan.name.toLowerCase()}.`);
       };
-      if (currentVariant.title !== subscription.attributes.variant) {
-        from.push(subscription.attributes.variant);
-        to.push(currentVariant.title);
+      const from = [];
+      const to = [];
+      if (currentBox.title !== subscription.attributes.title
+        || currentVariant.title !== subscription.attributes.variant) {
+        schedule_only = false;
+        if (currentBox.title !== subscription.attributes.title) {
+          product_changed = true;
+          from.push(subscription.attributes.title);
+          to.push(currentBox.title);
+        };
+        if (currentVariant.title !== subscription.attributes.variant) {
+          variant_changed = true;
+          from.push(subscription.attributes.variant);
+          to.push(currentVariant.title);
+        };
+        if (from.length === 2) from.splice(1, 0, "-");
+        if (to.length === 2) from.splice(1, 0, "-");
+        final = ["Box subscription changed from", ...from, "to", ...to].join(" ");
       };
-      if (from.length === 2) from.splice(1, 0, "-");
-      if (to.length === 2) from.splice(1, 0, "-");
-      final = ["Box subscription changed from", ...from, "to", ...to].join(" ");
+      if (final) messages.unshift(final);
+    } else {
+      messages = ["New subscription created"];
+      document.getElementById("properties").value = JSON.stringify(boxProperties);
     };
-    if (final) messages.unshift(final);
     document.getElementById("change_messages").value = JSON.stringify(messages);
+    document.getElementById("schedule_only").value = schedule_only;
+    document.getElementById("schedule_changed").value = schedule_changed;
+    document.getElementById("product_changed").value = product_changed;
+    document.getElementById("variant_changed").value = variant_changed;
     this.dispatchEvent(
       new CustomEvent("subscription.messages", {
         bubbles: true,
@@ -423,14 +488,6 @@ async function* ChangeBox(props) {
    * @returns {null}
    */
   const thisPreview = async () => {
-    /*
-    console.log(JSON.stringify(currentBox, null, 2));
-    console.log(JSON.stringify(currentVariant, null, 2));
-    console.log(JSON.stringify(currentPlan, null, 2));
-    console.log(boxAttributes.orderDayOfWeek);
-    console.log(boxAttributes.nextChargeDate);
-    console.log(boxAttributes.nextDeliveryDate);
-    */
     loading = true;
     this.refresh();
 
@@ -466,11 +523,24 @@ async function* ChangeBox(props) {
     if (!foundDate) {
       foundDate = Object.keys(json).sort(dateStringSort).pop();
     };
+    console.log("boxes by product", json);
+    console.log("currentBox", currentBox);
+    console.log("currentVariant", currentVariant);
+    console.log("foundDate", foundDate);
     selectedBox = json[foundDate];
 
+    console.log("selected box", selectedBox);
     const boxLists = {};
-    for (const [key, value] of Object.entries(subscription.properties)) {
-      boxLists[key] = value.split(",").filter(el => el !== "");
+    if (subscription) {
+      for (const [key, value] of Object.entries(subscription.properties)) {
+        boxLists[key] = value.split(",").filter(el => el !== "");
+      };
+    } else {
+      // for new subscription set other properties
+      boxLists["Including"] = "";
+      boxLists["Add on Items"] = "";
+      boxLists["Swapped Items"] = "";
+      boxLists["Removed Items"] = "";
     };
     boxLists["Delivery Date"] = boxAttributes.nextDeliveryDate;
 
@@ -537,12 +607,14 @@ async function* ChangeBox(props) {
           // now we have changed the variant all the dates need to be updated
           // and let the user know
           if (currentVariant.title !== boxAttributes.variant) {
-            alertMessage = `${value} does not have a ${boxAttributes.variant} option so ${currentVariant.title} has been selected instead`;
+            alertMessage = subscription ? 
+              `${value} does not have a ${boxAttributes.variant} option so ${currentVariant.title} has been selected instead`
+              : null;
             // now must set the boxAttributes for this option
             const { deliveryDate, chargeDate, orderDayOfWeek } = calculateDates(
               currentVariant.title, // our new variant
-              subscription.attributes.nextDeliveryDate, // the original date
-              subscription.attributes.lastOrder.delivered,
+              boxAttributes.nextDeliveryDate,
+              subscription ? subscription.attributes.lastOrder.delivered : null,
             );
             // assign to collected data
             boxAttributes.nextDeliveryDate = deliveryDate.toDateString();
@@ -555,8 +627,13 @@ async function* ChangeBox(props) {
         };
         currentPlans = currentBox.plans;
         // what if it doesn't have the currently selected plan?
-        const searchPlan = currentBox.plans.find(el => el.name === currentPlan.name);
-        if (searchPlan) currentPlan = searchPlan;
+        const searchPlan = currentPlan ? currentBox.plans.find(el => el.name === currentPlan.name) : null;
+        if (searchPlan) {
+          currentPlan = searchPlan;
+        } else {
+          currentPlan = currentPlans[0];
+          boxAttributes.frequency = currentPlan.name;
+        };
         // assign to collected data
         boxAttributes.title = value;
         boxAttributes.product_id = currentBox.id;
@@ -567,7 +644,7 @@ async function* ChangeBox(props) {
         // need to filter through the boxes to find those that have a matched variant title
         currentVariant = currentVariants.find(el => parseInt(el.id) === parseInt(itemId));
         // if back to original variant just reset values
-        if (value === subscription.attributes.variant) {
+        if (subscription && value === subscription.attributes.variant) {
           boxAttributes.nextDeliveryDate = subscription.attributes.nextDeliveryDate;
           boxAttributes.nextChargeDate = subscription.attributes.nextChargeDate;
           boxAttributes.orderDayOfWeek = subscription.attributes.orderDayOfWeek;
@@ -576,11 +653,11 @@ async function* ChangeBox(props) {
           boxAttributes.boxPrice = subscription.attributes.boxPrice;
         } else {
           // calculate dates
-        const { deliveryDate, chargeDate, orderDayOfWeek } = calculateDates(
-          value, // our new variant
-          subscription.attributes.nextDeliveryDate, // the original date
-          subscription.attributes.lastOrder.delivered,
-        );
+          const { deliveryDate, chargeDate, orderDayOfWeek } = calculateDates(
+            value, // our new variant
+            boxAttributes.nextDeliveryDate,
+            subscription ? subscription.attributes.lastOrder.delivered : null,
+          );
           // assign to collected data
           boxAttributes.nextDeliveryDate = deliveryDate.toDateString();
           boxAttributes.nextChargeDate = chargeDate.toDateString();
@@ -625,195 +702,252 @@ async function* ChangeBox(props) {
       variant: boxAttributes.variant,
     };
 
-    yield (
-      <div id="change-box-modal" class="w-100 center">
-        { fetchError && <Error msg={fetchError} /> }
-        { loading && <BarLoader /> }
-        <div id="box-header">
-          <h5 class="fw4 tl">
-            { boxAttributes.title }
-            { " - " }
-            { boxAttributes.variant }
-            { " - " }
-            { boxAttributes.frequency }
-            { " - " }
-            ${ boxAttributes.boxPrice }
-          </h5>
-          <p class="fw4 tc">
-            <div>
-              <div class="dt w-100">
-                <div class="dt-row w-100">
-                  <div class="dt-cell w-50 fl tr pr2">
-                    <span class="black-80">Charge date:</span>
-                  </div>
-                  <div class="tl dt-cell w-50 fl pl2">
-                    { boxAttributes.nextChargeDate }
-                  </div>
-                </div>
-                <div class="dt-row w-100">
-                  <div class="dt-cell w-50 fl tr pr2">
-                    <span class="black-80">Delivery date:</span>
-                  </div>
-                  <div class="tl dt-cell w-50 fl pl2">
-                    { boxAttributes.nextDeliveryDate }
-                  </div>
-                </div>
-              </div>
-            </div>
-          </p>
-          { currentBoxes && (
-            <div class="alert-box dark-blue pa3 mt0 mb3 br3 ba b--dark-blue bg-washed-blue">
-              Delivery dates can be paused or rescheduled after changes are saved.
-            </div>
-          )}
-          { alertMessage && (
-            <div class="orange pa2 mv2 br3 ba b--orange bg-light-yellow">
-              { alertMessage }
-            </div>
-          )}
-        </div>
-        { currentBoxes && currentVariants && currentPlans &&  (
-          <p class="lh-copy tc">
-            <div class="cf mt3">
-              <div class="fl w-100 mb2 pv1 b ba br3 b--silver">
-                { currentBoxes && currentBoxes.map(box => (
-                  <Button
-                    type="alt-secondary"
-                    title={box.title}
-                    data-id={box.id}
-                    name="title"
-                    onclick={ onClick }
-                    classes={ box.title === boxAttributes.title ? "disable b" : "b" }
-                    selected={ box.title === boxAttributes.title }>
-                      { box.title }{ `${ box.title === boxAttributes.title ? " ✓" : "" }` }
-                  </Button>
-                ))}
-              </div>
-              <div class="fl w-100 mb2 pv1 b ba br3 b--silver">
-                { currentVariants && currentVariants.map(variant => (
-                  <Button
-                    type="alt-secondary"
-                    title={variant.title}
-                    name="variant"
-                    data-id={variant.id}
-                    onclick={ onClick }
-                    classes={ variant.title === boxAttributes.variant ? "disable b" : "b" }
-                    selected={ variant.title === boxAttributes.variant }>
-                      { variant.title }{ `${ variant.title === boxAttributes.variant ? " ✓" : "" }` }
-                  </Button>
-                ))}
-              </div>
-              <div class="fl w-100 pv1 b ba br3 b--silver">
-                { currentPlans && currentPlans.map(plan => (
-                  <Button
-                    type="alt-secondary"
-                    title={plan.name}
-                    name="frequency"
-                    data-id={plan.id}
-                    onclick={ onClick }
-                    classes={ plan.name === boxAttributes.frequency ? "disable b" : "b" }
-                    selected={ plan.name === boxAttributes.frequency }>
-                      { plan.name }{ `${ plan.name === boxAttributes.frequency ? " ✓" : "" }` }
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </p>
-        )}
-        <div class="w-100 pl7 mb3">
-          <Form
-            data={getInitialData()}
-            fields={getFields()}
-            title={title}
-            id={formId}
-            meta={toastTemplate}
-          />
-        </div>
-        { currentBoxes && (
+    if (customer.has_payment_method_in_dunning || !customer.has_valid_payment_method) {
+      yield (
+        <Fragment>
+          <div class="alert-box dark-red mv2 pa4 br3 ba b--dark-red bg-washed-red">
+            Ooops! It appears that we do not have a valid payment method to {" "}
+            bill a new box subscription to or perhaps another charge has {" "}
+            recently failed.<br />
+            Please contact {" "}
+            <a class="link b red"
+              href={ `mailto://${localStorage.getItem("admin_email")}?subject=${localStorage.getItem("email_subject")}` }
+            >{ localStorage.getItem("shop_title") }</a> {" "}
+            to address this problem.
+          </div>
           <div class="cf tr mr2 mb2">
-            { selectedBox && (
-              <Button type="primary" onclick={thisSave}>
-                Save
-              </Button>
-            )}
-            <Button type={ selectedBox ? "secondary" : "primary" } 
-              classes={ selectedBox ? "dn" : "" }
-              onclick={thisPreview}>
-              Preview
-            </Button>
             <Button type="secondary" onclick={closeModal}>
               Cancel
             </Button>
           </div>
-        )}
-        { selectedBox && (
-          <div class="tl">
-            { boxMessages.length > 0 ? (
-              <div class="alert-box w-95 tl ba br3 pa3 mh2 mb3 dark-blue bg-washed-blue" role="alert">
-                <div class="i b tl dark-blue mt1 mb3">
-                    <span>You will be able to edit your products once the changes have been saved.</span>
-                </div>
-                <p class="tl dark-blue mt1 mb3">
-                  { boxMustReconcile ? (
-                    <span>The following changes will be made to match your subscription with the upcoming box.</span>
-                  ) : (
-                    <span>Changes to your box are indicative only and dependent on upcoming boxes.</span>
-                  )}
-                </p>
-                { boxMessages.length > 0 && (
-                  <div class="tl dark-blue mt1 mb3">
-                      <span>Unmatched items listed here can be edited once the box is updated.</span>
+        </Fragment>
+      );
+    } else {
+      yield (
+        <div id="change-box-modal" class="w-100 center">
+          { fetchError && <Error msg={fetchError} /> }
+          { loading && <BarLoader /> }
+          <div id="box-header">
+            { Object.keys(boxAttributes).length > 1 && (
+              <Fragment>
+                <h5 class="fw4 tl">
+                  { boxAttributes.title }
+                  { " - " }
+                  { boxAttributes.variant }
+                  { " - " }
+                  { boxAttributes.frequency }
+                  { " - " }
+                  ${ boxAttributes.boxPrice }
+                </h5>
+                <p class="fw4 tc">
+                  <div>
+                    <div class="dt w-100">
+                      <div class="dt-row w-100">
+                        <div class="dt-cell w-50 fl tr pr2">
+                          <span class="black-80">Charge date:</span>
+                        </div>
+                        <div class="tl dt-cell w-50 fl pl2">
+                          { boxAttributes.nextChargeDate }
+                        </div>
+                      </div>
+                      <div class="dt-row w-100">
+                        <div class="dt-cell w-50 fl tr pr2">
+                          <span class="black-80">Delivery date:</span>
+                        </div>
+                        <div class="tl dt-cell w-50 fl pl2">
+                          { boxAttributes.nextDeliveryDate }
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                )}
-                <ul class="">
-                  { boxMessages.map(message => (
-                    <li class="mv1">{message}</li> 
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div class="alert-box w-95 tl ba br2 pa3 mh2 mb3 dark-blue bg-washed-blue" role="alert">
-                <p class="mv1">
-                  The included products are indicative only and may change for upcoming boxes.
-                </p> 
+                </p>
+              </Fragment>
+            )}
+            { currentBoxes && (
+              <div class="alert-box dark-blue pa3 mt0 mb3 br3 ba b--dark-blue bg-washed-blue">
+                Delivery dates can be paused or rescheduled after changes are saved.
               </div>
             )}
-            <EditProducts
-              properties={ boxProperties }
-              box={ selectedBox }
-              nextChargeDate={ boxAttributes.nextChargeDate }
-              hideDetails={ true }
-              rc_subscription_ids={ boxAttributes.rc_subscription_ids }
-              id="edit-products"
-              key="order"
-              isEditable={ false }
+            { alertMessage && (
+              <div class="orange pa2 mv2 br3 ba b--orange bg-light-yellow">
+                { alertMessage }
+              </div>
+            )}
+          </div>
+          { currentBoxes && currentVariants && currentPlans &&  (
+            <p class="lh-copy tc">
+              <div class="cf mt3">
+                <div class="fl w-100 mb2 pv1 b ba br3 b--silver">
+                  { currentBoxes && currentBoxes.map(box => (
+                    <Button
+                      type="alt-secondary"
+                      title={box.title}
+                      data-id={box.id}
+                      name="title"
+                      onclick={ onClick }
+                      classes={ box.title === boxAttributes.title ? "disable b" : "b" }
+                      selected={ box.title === boxAttributes.title }>
+                        { box.title }{ `${ box.title === boxAttributes.title ? " ✓" : "" }` }
+                    </Button>
+                  ))}
+                </div>
+                <div class="fl w-100 mb2 pv1 b ba br3 b--silver">
+                  { currentVariants && currentVariants.map(variant => (
+                    <Button
+                      type="alt-secondary"
+                      title={variant.title}
+                      name="variant"
+                      data-id={variant.id}
+                      onclick={ onClick }
+                      classes={ variant.title === boxAttributes.variant ? "disable b" : "b" }
+                      selected={ variant.title === boxAttributes.variant }>
+                        { variant.title }{ `${ variant.title === boxAttributes.variant ? " ✓" : "" }` }
+                    </Button>
+                  ))}
+                </div>
+                <div class="fl w-100 pv1 b ba br3 b--silver">
+                  { currentPlans && currentPlans.map(plan => (
+                    <Button
+                      type="alt-secondary"
+                      title={plan.name}
+                      name="frequency"
+                      data-id={plan.id}
+                      onclick={ onClick }
+                      classes={ plan.name === boxAttributes.frequency ? "disable b" : "b" }
+                      selected={ plan.name === boxAttributes.frequency }>
+                        { plan.name }{ `${ plan.name === boxAttributes.frequency ? " ✓" : "" }` }
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </p>
+          )}
+          <div class="w-100 pl7 mb3">
+            <Form
+              data={getInitialData()}
+              fields={getFields()}
+              title={title}
+              id={formId}
+              meta={toastTemplate}
             />
           </div>
-        )}
-      </div>
-    );
+          { currentBoxes && currentVariant && currentPlan && (
+            <Fragment>
+              <div class="alert-box w-95 tl ba br3 pa3 mh2 mb2 dark-blue bg-washed-blue" role="alert">
+                <p class="lh-copy mb1">
+                  This is a subscription. By continuing, you agree that the
+                  subscription will automatically renew at the price and frequency
+                  listed on this page until it ends or you cancel. All
+                  cancellations are subject to the cancellation policy that you will 
+                  find at {" "}
+                  <a class="link b navy" target="_blank" 
+                    href={ `https://${localStorage.getItem("shop")}` }
+                  >{ localStorage.getItem("shop_title") }</a>
+                  .
+                </p>
+                <p class="tr mr5 mb1">
+                  <label class="lh-copy pr3 b v-mid navy" htmlFor="checkedPolicy" for="checkedPolicy">
+                    Please confirm
+                  </label>
+                  <input
+                    type="checkbox"
+                    name="checkedPolicy"
+                    id="checkedPolicy"
+                    class="v-mid"
+                    checked={ checkedPolicy }
+                    onchange={ togglePolicy }
+                  />
+                </p>
+              </div>
+              <div class="cf tr mr2 mb2">
+                { selectedBox || !subscription && (
+                  <Button type={ checkedPolicy ? "primary" : "secondary" } 
+                    onclick={thisSave} classes={ checkedPolicy ? null : "disable o-60" }>
+                    Save
+                  </Button>
+                )}
+                { subscription && (
+                  <Button type={ selectedBox ? "secondary" : "primary" } 
+                    classes={ selectedBox ? "dn" : "" }
+                    onclick={thisPreview}>
+                    Preview
+                  </Button>
+                )}
+                <Button type="secondary" onclick={closeModal}>
+                  Cancel
+                </Button>
+              </div>
+            </Fragment>
+          )}
+          { selectedBox && subscription && (
+            <div class="tl">
+              { boxMessages.length > 0 && subscription ? (
+                <div class="alert-box w-95 tl ba br3 pa3 mh2 mb3 dark-blue bg-washed-blue" role="alert">
+                  <div class="i b tl dark-blue mt1 mb3">
+                      <span>You will be able to edit your products once the changes have been saved.</span>
+                  </div>
+                  <p class="tl dark-blue mt1 mb3">
+                    { boxMustReconcile ? (
+                      <span>The following changes will be made to match your subscription with the upcoming box.</span>
+                    ) : (
+                      <span>Changes to your box are indicative only and dependent on upcoming boxes.</span>
+                    )}
+                  </p>
+                  { boxMessages.length > 0 && (
+                    <div class="tl dark-blue mt1 mb3">
+                        <span>Unmatched items listed here can be edited once the box is updated.</span>
+                    </div>
+                  )}
+                  <ul class="">
+                    { boxMessages.map(message => (
+                      <li class="mv1">{message}</li> 
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div class="alert-box w-95 tl ba br2 pa3 mh2 mb3 dark-blue bg-washed-blue" role="alert">
+                  <p class="mv1">
+                    The included products are indicative only and may change for upcoming boxes.
+                  </p> 
+                </div>
+              )}
+              <EditProducts
+                properties={ boxProperties }
+                box={ selectedBox }
+                nextChargeDate={ boxAttributes.nextChargeDate }
+                hideDetails={ true }
+                rc_subscription_ids={ boxAttributes.rc_subscription_ids }
+                id="edit-products"
+                key="order"
+                isEditable={ false }
+              />
+            </div>
+          )}
+        </div>
+      );
 
-    if (!currentBoxes) {
-      const { error, boxes } = await getBoxes();
-      if (error) fetchError = error;
+      // what problem am I solving by putting this here?
+      if (!currentBoxes) {
+        const { error, boxes } = await getBoxes();
+        if (error) fetchError = error;
 
-      currentBoxes = [ ...boxes ];
-      currentBox = currentBoxes.find(el => el.id === boxAttributes.product_id);
-      currentVariants = sortVariants(currentBox.variants);
-      currentVariant = currentVariants.find(el => el.id === boxAttributes.variant_id);
-      currentPlans = currentBox.plans;
-      currentPlan = currentBox.plans.find(el => el.name === boxAttributes.frequency);
-      loading = false;
-      const wrapper = document.getElementById(`change-box-modal`);
-      if (wrapper) {
-        animateFadeForAction(wrapper, () => {
+        currentBoxes = [ ...boxes ];
+        currentBox = Object.hasOwn(boxAttributes, "product_id") ? currentBoxes.find(el => el.id === boxAttributes.product_id) : null;
+        currentVariants = currentBox ? sortVariants(currentBox.variants) : [];
+        currentVariant = Object.hasOwn(boxAttributes, "variant_id") ? currentVariants.find(el => el.id === boxAttributes.variant_id) : null;
+        currentPlans = currentBox ? currentBox.plans : [];
+        currentPlan = Object.hasOwn(boxAttributes, "frequency") ? currentBox.plans.find(el => el.name === boxAttributes.frequency) : null;
+        loading = false;
+        const wrapper = document.getElementById(`change-box-modal`);
+        if (wrapper) {
+          animateFadeForAction(wrapper, () => {
+            this.refresh();
+          });
+        } else {
           this.refresh();
-        });
-      } else {
-        this.refresh();
+        };
       };
     };
-
   };
 };
 
@@ -822,4 +956,5 @@ async function* ChangeBox(props) {
  *
  * @member {object} ChangeBoxModal
  */
-export default FormModalWrapper(ChangeBox, options);
+export default ChangeBox;
+//export default FormModalWrapper(ChangeBox, options);

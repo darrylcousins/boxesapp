@@ -62,10 +62,24 @@ function* CurrentLogs() {
   /**
    * Include the properties on meta data?
    *
-   * @member loading
+   * @member includeProperties
    * @type {boolean}
    */
   let includeProperties = false;
+  /**
+   * Include the change messages on meta data?
+   *
+   * @member includeMessages
+   * @type {boolean}
+   */
+  let includeMessages = false;
+  /**
+   * Include the rc_subscriptions on meta data?
+   *
+   * @member includeRcs
+   * @type {boolean}
+   */
+  let includeRcIDs = false;
   /**
    * The search term entered
    *
@@ -144,10 +158,28 @@ function* CurrentLogs() {
   /*
    * Show box properties
    * Include all box lists (includes, swaps etc) in the displayed log data?
-   * @function closeMenu
+   * @function showBoxProperties
    */
   const showBoxProperties = (value) => {
     includeProperties = value;
+    this.refresh();
+  };
+
+  /*
+   * Show change messages
+   * @function showMessages
+   */
+  const showMessages = (value) => {
+    includeMessages = value;
+    this.refresh();
+  };
+
+  /*
+   * Show rc subscription ids
+   * @function closeMenu
+   */
+  const showRcIDs = (value) => {
+    includeRcIDs = value;
     this.refresh();
   };
 
@@ -471,7 +503,7 @@ function* CurrentLogs() {
                   id="searchTerm"
                   onkeydown={ (ev) => handleSearchTerm(ev) }
                   value={ searchTerm && searchTerm }
-                  placeholder={`customer or subscription id`}
+                  placeholder={`customer, subscription id, or timestamp`}
                   name="searchTerm" />
               </div>
               <div class="w-30 flex" style="height: 1.8em">
@@ -520,8 +552,8 @@ function* CurrentLogs() {
             </div>
           </div>
         </div>
-        <div class="w-100 flex-container mt3">
-          <div class="w-100 w-50-ns v-bottom tl">
+        <div class="w-100 flex-container mt3 mb2 bb b--black-30 v-mid">
+          <div class="w-100 w-50-ns tl">
             <button
               class={
                 `${
@@ -559,7 +591,7 @@ function* CurrentLogs() {
                 <span class="v-mid di">All</span>
             </button>
           </div>
-          <div class="w-100 w-20-ns v-bottom tr mh1">
+          <div class="w-100 w-20-ns v-top tr mh1">
             <button
               class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-25 pv2 outline-0 mv1 pointer b--grey ba br2 br--left` }
               title="Refresh"
@@ -576,17 +608,44 @@ function* CurrentLogs() {
               >
                 <span class="v-mid di">Reset</span>
             </button>
-            <Checkbox
-              value={includeProperties}
-              name="includeProperties"
-              label="Include Properties?"
-              id="includeProperties"
-              size="50"
-              required={ false }
-              valid={ true }
-              datatype={ Boolean }
-              onchange={ (ev) => showBoxProperties(ev.target.checked) }
-            />
+            <div class="dib v-mid ml4 mr2 mb2">
+              <div class="db tl">
+                <div class="w5 dib">
+                  <label for="includeProperties" class="mr3">Include properties?</label>
+                </div>
+                <input
+                  checked={includeProperties}
+                  type="checkbox"
+                  name="includeProperties"
+                  id="includeProperties"
+                  onchange={ (ev) => showBoxProperties(ev.target.checked) }
+                />
+              </div>
+              <div class="db tl">
+                <div class="w5 dib">
+                  <label for="includeRcIDs" class="mr3">Include rc ids?</label>
+                </div>
+                <input
+                  checked={includeRcIDs}
+                  type="checkbox"
+                  name="includeRcIDs"
+                  id="includeRcIDs"
+                  onchange={ (ev) => showRcIDs(ev.target.checked) }
+                />
+              </div>
+              <div class="db tl">
+                <div class="w5 dib">
+                  <label for="includeMessages" class="mr3">Include messages?</label>
+                </div>
+                <input
+                  checked={includeMessages}
+                  type="checkbox"
+                  name="includeMessages"
+                  id="includeMessages"
+                  onchange={ (ev) => showMessages(ev.target.checked) }
+                />
+              </div>
+            </div>
           </div>
         </div>
         {loading && <BarLoader />}
@@ -616,7 +675,7 @@ function* CurrentLogs() {
                       { el.message }
                     </td>
                     <td class="w-50 v-top" style="max-width: 600px">
-                      { formatMeta(el, logLevel, includeProperties) }
+                      { formatMeta(el, logLevel, includeProperties, includeRcIDs, includeMessages) }
                     </td>
                   </tr>
                 ))}

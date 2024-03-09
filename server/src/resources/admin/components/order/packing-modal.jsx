@@ -137,12 +137,12 @@ function* PackingModal({ delivered, getUriFilters }) {
     yield (
       <Fragment>
         <button
-          class={`dib w-20 outline-0 purple b--dark-green bt bb br bl-0 bg-transparent mv1 pointer`}
+          class={`dib w-20 outline-0 purple bg-white b--dark-green hover-white hover-bg-purple bg-animate bt bb br bl-0 mv1 pointer`}
           title="Preview packing list"
           type="button"
           onclick={openModal}
           >
-            <span class="v-mid di">Packing List</span>
+            <span class="v-mid di pr2">Packing List</span>
             <span class="v-mid">
               <PreviewIcon />
             </span>

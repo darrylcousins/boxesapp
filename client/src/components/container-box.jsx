@@ -1168,7 +1168,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
           <Fragment>
             <VariantSelector boxVariants={getVariants()} selectedVariant={selectedVariant} />
             <DateSelector fetchDates={fetchDates} selectedDate={selectedDate} variantTitle={selectedVariant.title} />
-            { boxHasChanged && (<p>Changing dates may alter the selections you have made.</p>) }
+            { boxHasChanged && fetchDates.length>1 && (<p>Changing dates may alter the selections you have made.</p>) }
             { selectedDate && boxRules.length > 0 && (
               <div class="boxesapp-notice">
                 {boxRules.map(rule => (

@@ -1,6 +1,7 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
+import { ObjectId } from "mongodb";
 import { sortObjectByKeys } from "../../lib/helpers.js";
 import {
   getMetaForSubscription,
@@ -35,6 +36,32 @@ export default async function subscriptionUpdated(topic, shop, body, { io, socke
         io = io.to(socket_id);
         const variant_title = meta.recharge.variant_title ? ` (${meta.recharge.variant_title})` : "";
         io.emit("completed", `Subscription ${topic}: ${meta.recharge.title}${variant_title}`);
+      };
+
+      if (entry.action === "changed" && entry.schedule_only === true) {
+        // check that all have been updated
+        const allUpdated = entry.rc_subscription_ids.every(el => {
+          // check that all subscriptions have updated or have been created
+          return el.updated === true && Number.isInteger(el.subscription_id);
+        });
+        if (allUpdated) {
+          console.log("=======================");
+          console.log("Deleting updates pending entry subscription/updated");
+          console.log("=======================");
+          await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
+          if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
+            io.emit("completed", `Updates completed, removing updates entry.`);
+            io.emit("finished", {
+              action: entry.action,
+              session_id: entry.session_id,
+              subscription_id: entry.subscription_id,
+              address_id: entry.address_id,
+              customer_id: entry.customer_id,
+              scheduled_at: entry.scheduled_at,
+              charge_id: entry.charge_id,
+            });
+          };
+        };
       };
     };
 

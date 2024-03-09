@@ -35,7 +35,7 @@ const main = async () => {
     report.push(`Connected to database ${db}`);
     report.push("\n");
 
-    for (const collection of ["orders", "boxes", "settings"]) {
+    for (const collection of ["orders", "boxes", "settings", "customers"]) {
       const records = await mongodb.collection(collection).find({}).toArray();
       report.push(`Exporting ${collection}`);
       report.push(`Exported ${records.length} ${collection}`);

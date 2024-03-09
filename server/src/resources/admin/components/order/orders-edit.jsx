@@ -199,6 +199,7 @@ function* EditOrders({selectedOrders}) {
       <Fragment>
         <Button
           type="primary"
+          title="Edit selected orders"
           onclick={showModal}
         >Edit Selected</Button>
         {visible && (

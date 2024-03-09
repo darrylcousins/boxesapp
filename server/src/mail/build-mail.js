@@ -59,7 +59,7 @@ export default async (opts) => {
     <mj-title>${opts.subject}</mj-title>
     <mj-attributes>
       <mj-text padding="0" />
-      <mj-all font-family="Arial" />
+      <mj-all font-family="sans-serif" />
     </mj-attributes>
   </mj-head>
   <mj-body>

@@ -241,7 +241,7 @@ async function* FilterOrders({ delivered, updateFilter }) {
     yield (
       <Fragment>
         <button
-          class={`dib w-20 outline-0 dark-gray b--dark-green ba bg-transparent mv1 pointer`}
+          class={`dib w-20 outline-0 dark-gray b--dark-green bg-white hover-white hover-bg-dark-gray mv1 ba pointer`}
           title="Filter the listing"
           type="button"
           onclick={showModal}

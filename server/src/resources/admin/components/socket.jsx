@@ -1,3 +1,8 @@
+/**
+ * Socket code
+ *
+ * @author Darryl Cousins <darryljcousins@gmail.com>
+ */
 
 import { io } from "socket.io-client";
 
@@ -64,37 +69,47 @@ export const getSessionId = async (callback, data, divId, component) => {
   socket.on('fail', async (data) => { // unused for now
     //console.log('fail', data);
     // display data or update timer
-    appendMessage(data, "red", divId);
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
+    const start = `[warn]`.padEnd(9);
+    appendMessage(`${start} [${d}] ${data}`, "red", divId);
   });
   socket.on('message', async (data) => { // start and othe info
     //console.log('message', data);
     // display data or update timer
-    appendMessage(data, "dark-blue", divId);
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
+    const start = `[info]`.padEnd(9);
+    appendMessage(`${start} [${d}] ${data}`, "dark-blue", divId);
   });
   socket.on('progress', async (data) => { // usually progress from bull job
     //console.log('progress', data);
     // display data or update timer
-    appendMessage(data, "orange", divId);
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
+    const start = `[step]`.padEnd(9);
+    appendMessage(`${start} [${d}] ${data}`, "black", divId);
   });
   socket.on('completed', async (data) => { // usually from webhook confiming update from Recharge
     //console.log('completed', data);
     // display data or update timer
-    appendMessage(data, "dark-green", divId);
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
+    const start = `[success]`.padEnd(9);
+    appendMessage(`${start} [${d}] ${data}`, "dark-green", divId);
   });
-  /* cancelled this and just provided a link if they are curious
-  socket.on('explainer', async () => { // time has passed so display explainer
-    component.dispatchEvent(
-      new CustomEvent("explainer", {
-        bubbles: true,
-      })
-    );
-  });
-  */
   socket.on('error', async (data) => { // usually progress from bull job
     //console.log('progress', data);
     // display data or update timer
-    console.log('error', data);
-    appendMessage(data, "red", divId);
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
+    const start = `[error]`.padEnd(9);
+    appendMessage(`${start} [${d}] ${data}`, "red", divId);
   });
   socket.on('charge', async (charge_id) => { // when the subscription updates are complete (remove updates_pending entry)
     component.dispatchEvent(
@@ -108,10 +123,18 @@ export const getSessionId = async (callback, data, divId, component) => {
     // some care needed here to make sure we send to the correct component
     if (data.session_id === session_id) {
       console.log('closing connection for id', session_id);
-      appendMessage("Finished, closing connection", "dark-green", divId);
+      console.log(data);
+      const date = new Date();
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+      const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
+      const start = `[success]`.padEnd(9);
+      const message = "Finished, closing connection";
+      appendMessage(`${start} [${d}] ${message}`, "dark-green", divId);
       socket.disconnect();
+      let event = data.action !== "created" ? "socket.closed" : "subscription.created";
+      console.log(event);
       window.dispatchEvent(
-        new CustomEvent("socket.closed", {
+        new CustomEvent(event, {
           bubbles: true,
           detail: { ...data },
         })

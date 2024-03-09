@@ -11,7 +11,12 @@ import buildMail from "./build-mail.js";
 export default async ({ subscriptions, attributes }) => {
   const email = attributes.customer.email;
   const title = "Charge Upcoming";
-  const subject = `${title} ${attributes.title} - ${attributes.variant}`;
+  let subject;
+  if (subscriptions.length === 1) {
+    subject = `${title} ${attributes.title} - ${attributes.variant}`;
+  } else {
+    subject = `${title} Delivery ${attributes.variant}`;
+  };
   const templateFile = "charge-upcoming";
 
   // logging meta data - becomes meta.recharge for notices

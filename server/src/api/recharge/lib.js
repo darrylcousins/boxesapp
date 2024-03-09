@@ -58,11 +58,11 @@ export const makeIntervalForFinish = ({req, io, session_id, entry_id, counter, a
           /* stopped the auto explainer and just provided a link for the curious
           count === 5 && !admin ? io.emit("explainer") : io.emit("message", "Working ...");
           */
-          io.emit("message", "Working ...");
+          io.emit("progress", "Working ...");
           if (count % 10 === 0) {
             io.emit("message", `Update times of over 3 minutes are possible. ${counter && findTime(counter)}`);
             io.emit("message", "You may close this window and come back later.");
-            io.emit("message", "A confirmation email will be sent on completion.");
+            io.emit("message", "A confirmation email will be sent on completion of the updates.");
           };
           entry = await _mongodb.collection("updates_pending").findOne({ "_id": entry_id });
           // ensure also that interval is cleared if the socket is closed even if updates are still completing
@@ -86,7 +86,7 @@ export const makeIntervalForFinish = ({req, io, session_id, entry_id, counter, a
                 query[`meta.recharge.subscription_id`] = parseInt(subscription_id);
                 query[`meta.recharge.address_id`] = parseInt(address_id);
                 query[`meta.recharge.scheduled_at`] = scheduled_at;
-                query[`meta.recharge.update_label`] = mailOpts.type;
+                query[`meta.recharge.label`] = mailOpts.type;
                 // get the most recent and one only
                 const result = await _mongodb.collection("logs").find(query).sort({ timestamp: -1 }).limit(1).toArray();
                 if (result.length > 0) {
@@ -158,8 +158,7 @@ export const upsertPending = async (data) => {
     timestamp: new Date(),
   };
 
-  // always now use this
-  //if (Object.hasOwnProperty.call(data, "session_id")) update_pending.session_id = data.session_id;
+  if (Object.hasOwnProperty.call(data, "schedule_only")) update_pending.schedule_only = data.schedule_only;
 
   //const upsert =  await _mongodb.collection("updates_pending").findOneAndUpdate(
   const upsert =  await _mongodb.collection("updates_pending").findOneAndUpdate(

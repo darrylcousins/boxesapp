@@ -5,6 +5,7 @@ import { makeRechargeQuery, getSubscription, updateSubscription } from "../../li
 import chargeProcessedMail from "../../mail/charge-processed.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
 import { writeFileForOrder } from "./helpers.js";
+import fs from "fs";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
@@ -24,16 +25,37 @@ export default async function orderProcessed(topic, shop, body) {
   const order = JSON.parse(body).order;
 
   writeFileForOrder(order, mytopic.toLowerCase().split("_")[1]);
+  /* development logging stuff */
+  const d = new Date();
+  const s = `${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}`;
+  try {
+    fs.writeFileSync(`recharge.order-${order.id}.json`, JSON.stringify(order, null, 2));
+  } catch(err) {
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
+  /* end development logging stuff */
 
   // initiate attributes
   const attributes = {
     charge_id: order.charge.id,
   };
 
+  for(var x in order.line_items) order.line_items[x].variant_title !== null ? order.line_items.unshift(order.line_items.splice(x,1)[0]) : 0;
   // Figure out how many box subscriptions are included in this order
   let box_subscription_ids = [];
+  console.log("??????????????????????????????????????????????????????????????????????????????");
   try {
     for (const line_item of order.line_items) {
+      // so already wrong here! why? ???
+      const notice = {
+        recharge: {
+          subscription_id: line_item.purchase_item_id,
+          lineproperties: line_item.properties,
+          title: line_item.title,
+        }
+      };
+      console.log(line_item.title, line_item.purchase_item_id, line_item.properties);
+      _logger.notice(`test test test first run.`, { meta: notice });
       if (line_item.properties.some(el => el.name === "box_subscription_id")) {
         box_subscription_ids.push(parseInt(line_item.properties.find(el => el.name === "box_subscription_id").value));
       };
@@ -70,12 +92,13 @@ export default async function orderProcessed(topic, shop, body) {
     subscriptions[el] = {
       id: el,
       includes: [],
-      attributes: { ...attributes, totalPrice: 0, lastOrder: {} }, // avoid accidentally mutating the original
+      attributes: { ...attributes, totalPrice: 0, lastOrder: {}, subscription_id: el }, // avoid accidentally mutating the original
     };
   };
 
   try {
     let deliveryDate; // updated delivery date as string
+    let nextChargeDate; // updated charge date as string
     let currentDeliveryDate; // the current date for logging
     let days;
     let box_subscription_id;
@@ -94,6 +117,7 @@ export default async function orderProcessed(topic, shop, body) {
 
       if (line_item.properties.some(el => el.name === "Including")) {
         // get the subscription so as to access order_interval_frequency
+        // all this is really only for the email??
         const boxSubscription = await getSubscription(line_item.purchase_item_id);
         subscriptions[box_subscription_id].attributes.title = line_item.title;
         subscriptions[box_subscription_id].attributes.variant = line_item.variant_title;
@@ -112,6 +136,8 @@ export default async function orderProcessed(topic, shop, body) {
         const dateObj = new Date(Date.parse(currentDeliveryDate));
         dateObj.setDate(dateObj.getDate() + days);
         deliveryDate = dateObj.toDateString();
+        dateObj.setDate(dateObj.getDate() - 3);
+        nextChargeDate = dateObj.toDateString();
         
         // set the properties as an object instead of name/value pairs
         subscriptions[box_subscription_id].properties = line_item.properties.reduce( // old delivery date and properties
@@ -128,9 +154,9 @@ export default async function orderProcessed(topic, shop, body) {
         subscriptions[box_subscription_id].attributes.box = { name: boxName };
         subscriptions[box_subscription_id].box = { shopify_title: line_item.title };
 
-        const orderCreated = new Date(order.created_at);
-        orderCreated.setDate(orderCreated.getDate() + days); // calculate next charge date
-        subscriptions[box_subscription_id].attributes.nextChargeDate = orderCreated.toDateString();
+        //const orderCreated = new Date(order.created_at);
+        //orderCreated.setDate(orderCreated.getDate() + days); // calculate next charge date
+        subscriptions[box_subscription_id].attributes.nextChargeDate = nextChargeDate;
         subscriptions[box_subscription_id].attributes.nextDeliveryDate = deliveryDate;
         subscriptions[box_subscription_id].attributes.lastOrder.delivered = currentDeliveryDate;
         subscriptions[box_subscription_id].attributes.lastOrder.box = { name: boxName };
@@ -156,9 +182,20 @@ export default async function orderProcessed(topic, shop, body) {
           total_price: line_item.total_price,
         });
       };
+      const notice = {
+        recharge: {
+          subscription_id: line_item.purchase_item_id,
+          lineproperties: line_item.properties,
+          title: line_item.title,
+        }
+      };
+      console.log(line_item.title, line_item.purchase_item_id, line_item.properties);
+      _logger.notice(`test test test second run.`, { meta: notice });
     };
 
     // loop again to make updates to delivery date on each subscription
+    // make sure we're not changing box_subscription_id // but it seems we are - why???
+    console.log("====================================================");
     for (const line_item of order.line_items) {
 
       const properties = [ ...line_item.properties ];
@@ -166,7 +203,15 @@ export default async function orderProcessed(topic, shop, body) {
       if (dateItem) {
         const dateIdx = properties.indexOf(dateItem);
         dateItem.value = deliveryDate; // always the same for every item on the order
-        properties[dateIdx] = dateItem;
+        const notice = {
+          recharge: {
+            subscription_id: line_item.purchase_item_id,
+            lineproperties: properties,
+            title: line_item.title,
+          }
+        };
+        console.log(line_item.title, line_item.purchase_item_id, properties);
+        _logger.notice(`test test test third run and updating.`, { meta: notice });
         await updateSubscription({ id: line_item.purchase_item_id, body: { properties }});
       };
 

@@ -21,6 +21,7 @@ const Button = (props) => {
   let classList;
   let hint = "";
   let elProps = { ...props };
+  delete elProps.classes;
   // doh, why?
   delete elProps["hover"];
   delete elProps["border"];
@@ -36,12 +37,10 @@ const Button = (props) => {
     classList = "b--navy bg-near-white black-70 hover-bg-moon-gray relative";
     classList += border ? ` b--${border}` : " b--navy";
     classList += hover ? ` ${hover}` : " hover-bg-moon-gray";
-    if (classes) classList += ` ${classes}`;
   } else if (type === "alt-secondary") { // lighter
     classList = "b--black-70 bg-white black-70 hover-bg-near-white relative";
     classList += border ? ` b--${border}` : " b--black-70";
     classList += hover ? ` ${hover}` : " hover-bg-near-white";
-    if (classes) classList += ` ${classes}`;
   } else if (type === "primary") {
     classList = "bg-dark-blue white relative";
     classList += border ? ` b--${border}` : " b--navy";
@@ -97,6 +96,7 @@ const Button = (props) => {
     }
     classList += hover ? ` ${hover}` : " dim";
   };
+  if (classes) classList += ` ${classes}`;
   if (typeof title === "undefined" && typeof children === "string") {
     hint = children.toString();
   } else {

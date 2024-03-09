@@ -1,6 +1,0 @@
-messages.push("The included items do not match the box included items");
-
-messages.push(`Extra swapped item ${item.title} included as an add on for this box.`);
-* messages.push(`Swapped item ${item.title} already included in this box.`);
-messages.push(`Extra swapped item ${item.title} included as an add on for this box.`);
-messages.push(`Unable to find a swap item for ${removed.title} so it is not swapped.`);

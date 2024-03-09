@@ -39,9 +39,12 @@ export function verifyProxy({ app }) {
           res.locals.qs = `?sig=${params.sig}&ts=${params.ts}`;
           res.locals.host = process.env.HOST;
           res.locals.shop = process.env.SHOP;
+          res.locals.shop_title = process.env.SHOP_TITLE;
           res.locals.recharge = process.env.RECHARGE_SHOP_NAME;
           res.locals.proxy_path = process.env.PROXY_PATH;
           res.locals.admin_email = process.env.ADMIN_EMAIL;
+          res.locals.admin_title = process.env.ADMIN_TITLE;
+          res.locals.email_subject = process.env.EMAIL_SUBJECT;
 
           return next();
         };

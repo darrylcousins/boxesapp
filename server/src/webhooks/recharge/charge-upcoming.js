@@ -38,6 +38,7 @@ export default async function chargeUpcoming(topic, shop, body) {
     result = await gatherData({ grouped, result });
 
     for (const [idx, subscription] of result.entries()) {
+
       if (subscription.updates && subscription.updates.length) {
 
         // need to set data in updates_pending to prevent user from editing
@@ -48,16 +49,9 @@ export default async function chargeUpcoming(topic, shop, body) {
           updated = update_shopify_ids.indexOf(el.shopify_product_id) === -1;
           return { ...el, updated };
         });
-        const boxSubscription = subscription.updates.find(el => el.properties.some(e => e.name === "Including"));
-        // save this for later because it is lost on updates
-        const box_shopify_id = parseInt(boxSubscription.shopify_product_id);
-        const props = boxSubscription.properties.reduce(
-          (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
-          {});
-
         const pendingData = {
           action: "upcoming",
-          subscription_id: boxSubscription.subscription_id,
+          subscription_id: subscription.attributes.subscription_id,
           address_id: charge.address_id,
           customer_id: charge.customer_id,
           charge_id: charge.id,
@@ -65,13 +59,13 @@ export default async function chargeUpcoming(topic, shop, body) {
           title: subscription.attributes.title,
           variant: subscription.attributes.variant,
           rc_subscription_ids,
-          deliver_at: props["Delivery Date"],
+          deliver_at: subscription.attributes.nextDeliveryDate,
         };
         const entry_id = await upsertPending(
           pendingData
         );
         // just to add to the logging
-        for (const [key, value] of Object.entries(props)) {
+        for (const [key, value] of Object.entries(subscription.properties)) {
           pendingData[key] = value;
         };
         pendingData.change_messages = subscription.messages;
@@ -100,7 +94,8 @@ export default async function chargeUpcoming(topic, shop, body) {
           ? subscription.includes.unshift(subscription.includes.splice(x,1)[0])
           : 0;
         // now the first update the shopify id
-        subscription.includes[0].shopify_product_id = box_shopify_id;
+        //console.log(subscription.includes);
+        subscription.includes[0].shopify_product_id = subscription.attributes.product_id;
 
         // add in the total price for each
         for (const included of subscription.includes) {
@@ -116,12 +111,19 @@ export default async function chargeUpcoming(topic, shop, body) {
 
       } else {
 
-        meta = getMetaForBox(subscription.attributes.subscription_id, charge, topicLower);
+        const meta = getMetaForBox(subscription.attributes.subscription_id, charge, topicLower);
         meta.recharge = sortObjectByKeys(meta.recharge); 
         _logger.notice(`Charge upcoming without updates.`, { meta });
 
       };
 
+      // update the box and freeze it from further editing
+      const up = await _mongodb.collection("boxes").updateOne({
+        delivered: subscription.attributes.nextDeliveryDate,
+        shopify_product_id: subscription.attributes.product_id,
+      },{
+        "$set": { frozen: true }
+      });
     };
 
     await chargeUpcomingMail({ subscriptions: result, attributes: { ...result[0].attributes, address: charge.shipping_address } });

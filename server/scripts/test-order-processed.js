@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-import { MongoClient, ObjectID } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import { getMongoConnection, MongoStore } from "../src/lib/mongo/mongo.js";
 import { winstonLogger } from "../config/winston.js";
 

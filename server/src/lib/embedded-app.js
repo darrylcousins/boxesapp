@@ -104,8 +104,7 @@ export default function embeddedAppRedirect({
         <p>&bull;&nbsp;For problems, bugs, and  suggestions please contact
           <a target="_blank" href="mailto:darryljcousins@gmail.com">darryljcousins@gmail.com</a> or on 027 524 7293.
         </p>
-        <p>&bull;&nbsp;To access the <b>boxesapp</b> administraton portal please go to the 
-        <a href='${ portal_url }' target="_blank" title="Admin Portal">Portal</a>
+        <p>&bull;&nbsp;To access the <b>boxesapp</b> administraton portal please follow the button below: 
         </p>
         <button
           title="Admin Portal"

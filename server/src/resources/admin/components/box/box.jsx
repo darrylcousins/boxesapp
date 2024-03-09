@@ -194,7 +194,8 @@ function* Box({ box, index }) {
           data-title="Actions"
           class="w-10-l pt3 bb b--black-20 rh-copy black-70 v-top"
         >
-          { ( new Date(box.delivered) >= new Date() ) && (
+          <DuplicateBoxModal box={box} />
+          { new Date(box.delivered) >= new Date() && !Object.hasOwnProperty.call(box, "frozen") ? (
             <Fragment>
               {box.active === true ? (
                 <IconButton color="dark-green" title="Toggle box off" name="toggle-off">
@@ -207,8 +208,15 @@ function* Box({ box, index }) {
               )}
               <RemoveBoxModal box={box} />
             </Fragment>
+          ) : (
+            <Fragment>
+              {box.active === true ? (
+                <ToggleOnIcon color="dark-green" />
+              ) : (
+                <ToggleOffIcon />
+              )}
+            </Fragment>
           )}
-          <DuplicateBoxModal box={box} />
         </td>
       </tr>
     );

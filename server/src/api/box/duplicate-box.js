@@ -6,6 +6,7 @@
 import { ObjectId } from "mongodb"; // only after mongodb@ -> mongodb@6
 import { makeShopQuery } from "../../lib/shopify/helpers.js";
 import { getNZDeliveryDay } from "../../lib/dates.js";
+import { getDefaultBoxSettings } from "../../lib/boxes.js";
 
 /*
  * @function box/duplicate-box.js
@@ -21,8 +22,8 @@ export default async (req, res, next) => {
   try {
     const boxId = new ObjectId(req.body.boxId);
     const box = await collection.findOne({_id: boxId});
-    const doc = { ...box };
     box._id = new ObjectId();
+    delete box.frozen;
 
     const check = await collection.findOne({delivered: box.delivered, shopify_product_id});
     if (check) {
@@ -35,7 +36,7 @@ export default async (req, res, next) => {
     const query = [
       ["ids", shopify_product_id.toString()]
     ];
-    const { products } = await makeShopQuery({path, limit, query, fields, title: "Find products"});
+    const { products } = await makeShopQuery({path, limit, query, fields, title: "Find container box"});
     if (products.length === 1) {
       const { id, title, handle } = products[0];
       box.shopify_product_id = id;
@@ -46,6 +47,9 @@ export default async (req, res, next) => {
     };
     const result = await collection.insertOne(box);
     const message = `A document was inserted with the _id: ${result.insertedId}`;
+
+     // also need to set up default settings for the day
+     await getDefaultBoxSettings(box.delivered); // will create them if not present
 
     res.status(200).json({ message });
   } catch(err) {

@@ -10,6 +10,11 @@ import { getDeliveryDays } from "../../lib/boxes.js";
  * @param (Http request object) req
  * @param (Http response object) res
  * @param (function) next
+ *
+ * NOTE the client does not send weekday
+ * NOTE this is used to collect boxes from the client Container Box
+ * NOTE Also used by recharge/change-box modal to get boxes, includes weekday
+ * in that case therefore the filters are not included
  */
 export default async (req, res, next) => {
   const db = {
@@ -22,6 +27,7 @@ export default async (req, res, next) => {
   const weekday = req.params.weekday; // as lowercase named day of week
 
   // the dates are filtered using filter settings including order limits and cutoff hours
+  // NOTE the client app does not send weekday, i.e. is undefined so filters are used
   const dates = await getDeliveryDays(db, product_id, weekday)
   
   try {

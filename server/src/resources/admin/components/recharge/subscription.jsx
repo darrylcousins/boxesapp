@@ -20,7 +20,7 @@ import BarLoader from "../lib/bar-loader";
 import ProgressLoader from "../lib/progress-loader";
 import Button from "../lib/button";
 import TextButton from "../lib/text-button";
-import ChangeBoxModal from "./change-box-modal";
+import EditBoxModal from "./edit-box-modal";
 import SkipChargeModal from "./skip-modal";
 import UnSkipChargeModal from "./unskip-modal";
 import LogsModal from "../log/logs-modal";
@@ -53,7 +53,7 @@ import {
  * import {renderer} from '@b9g/crank/dom';
  * renderer.render(<Subscription subscription={subscription} />, document.querySelector('#app'))
  */
-async function *Subscription({ subscription, customer, idx, admin }) {
+async function *Subscription({ subscription, customer, idx, admin, newSubscription }) {
 
   /*
   console.log("TITLE", subscription.attributes.title);
@@ -185,16 +185,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    */
   const collectMessages = async (ev) => {
     // default sleep is for 10 seconds - pass a value if needed
-    let display;
-    /*
-    try {
-      // can fail inside the promise
-      await sleepUntil(() => document.getElementById(`displayMessages-${subscription.attributes.subscription_id}`));
-    } catch(e) {
-      console.log(e); // actually just says undefined - fix me?
-    };
-    */
-    await sleepUntil(() => document.getElementById(`displayMessages-${subscription.attributes.nullsubscription_id}`))
+    await sleepUntil(() => document.getElementById(`displayMessages-${subscription.attributes.subscription_id}`))
       .then((res) => {
         displayMessages(res, ev.detail.messages);
       }).catch((e) => {
@@ -438,7 +429,9 @@ async function *Subscription({ subscription, customer, idx, admin }) {
                 borderColour: "black"
               }));
             };
-            collectMessages({ detail: { messages: change_messages }});
+            if (Object.hasOwnProperty.call(json, "messages")) {
+              collectMessages({ detail: { messages: json.messages }});
+            };
           };
         })
         .catch((err) => {
@@ -731,6 +724,8 @@ async function *Subscription({ subscription, customer, idx, admin }) {
    * Fetch the charge as a "subscription" object
    */
   const getCharge = async (charge_id) => {
+
+    // looking a the api, only charge_id and subscription_id are used!
     let uri = `/api/recharge-customer-charge/${charge_id}`;
     uri = `${uri}?customer_id=${subscription.attributes.customer.id}`;
     uri = `${uri}&address_id=${subscription.attributes.address_id}`;
@@ -792,6 +787,8 @@ async function *Subscription({ subscription, customer, idx, admin }) {
 
     const { charge_id, session_id, subscription_id, action } = detail;
 
+    ev.stopPropagation(); // otherwise other listening components catch this on the window
+
     if (action === "reactivated") return; // could do better here? Seems adequate.
 
     // session_id consumed by socket.js
@@ -815,10 +812,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
     } else {
       console.log("Charge id matches");
     };
-
-    ev.stopPropagation(); // otherwise other listening components catch this on the window
-
-    // do I need a delay here?
 
     // get the message blocks to remove them
     const socketMessages = document.getElementById(messageDivId);
@@ -875,7 +868,6 @@ async function *Subscription({ subscription, customer, idx, admin }) {
       return; // and return out of here
 
     } else {
-
       // forces reload of component to make it again editable
       CollapsibleProducts = CollapseWrapper(EditProducts);
 
@@ -883,6 +875,7 @@ async function *Subscription({ subscription, customer, idx, admin }) {
       // refetch the charge and adapt to subscription object
       if (editsPending && action !== "deleted" ) {
         const charge = await getCharge(subscription.attributes.charge_id);
+        if (admin) await getLogs();
 
         //console.log(charge);
         editsPending = false;
@@ -1213,6 +1206,9 @@ async function *Subscription({ subscription, customer, idx, admin }) {
       ) : (
         <Fragment>
           <h4 class="tl mb0 w-100 fg-streamside-maroon">
+            { newSubscription && (
+              <span class="b pv2 ph3 white bg-dark-blue ba b--navy br2 mr3" style="font-size: smaller">New</span>
+            )}
             {subscription.attributes.title} - {subscription.attributes.variant}
           </h4>
           { (!subscription.attributes.hasNextBox && !editsPending) && (
@@ -1247,9 +1243,11 @@ async function *Subscription({ subscription, customer, idx, admin }) {
               <div class={ `${ !admin ? "w-100" : "fl w-70" } tr` }>
                 { ( !editsPending ) && collapsed && (
                   <Fragment>
-                    <ChangeBoxModal
+                    <EditBoxModal
                       subscription={ subscription }
+                      customer={ customer }
                       admin={ admin }
+                      type="changed"
                       socketMessageId={ `${messageDivId}` } />
                     <SkipChargeModal subscription={ subscription }
                       admin={ admin }

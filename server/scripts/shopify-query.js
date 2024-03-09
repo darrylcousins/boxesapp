@@ -39,6 +39,18 @@ const paths = [
   'orders',
 ];
 
+const pathMap = {
+  'addresses': 'address',
+  'customers': 'customer',
+  'subscriptions': 'subscription',
+  'plans': 'plan',
+  'products': 'product',
+  'store': 'store',
+  'webhooks': 'webhook',
+  'metafields': 'metafield',
+  'charges': 'charge',
+  'orders': 'order',
+};
 const methods = [
   'GET',
 ];
@@ -66,6 +78,12 @@ const run = async () => {
       name: 'id',
       message: 'id?',
       default: 'null',
+    },
+    {
+      type: 'confirm',
+      name: 'save',
+      message: 'save the result?',
+      default: false,
     }
     ]).then(async result => {
       console.log(result);
@@ -82,11 +100,26 @@ const run = async () => {
       console.log(path);
 
       const fields = [];
-      const queryResult = await makeShopQuery({path, fields})
-      console.log(queryResult);
-      //console.log(JSON.stringify(queryResults, null, 2));
-      //writeFileSync("shopify.order.json", JSON.stringify(queryResult, null, 2));
-    })
+      const data = await makeShopQuery({path, fields});
+      if (result.save) {
+        inquirer
+          .prompt([
+          {
+            type: 'text',
+            name: 'fileName',
+            message: 'File name to save as',
+            default: `${pathMap[result.path]}-${result.id}.json`,
+          },
+        ]).then(async res => {
+          writeFileSync(res.fileName, JSON.stringify(data, null, 2));
+          console.log(`Data saved as ${res.fileName}`);
+          process.exit(1);
+        });
+      } else {
+        console.log(JSON.stringify(data, null, 2));
+        process.exit(1);
+      };
+    });
 };
 
 

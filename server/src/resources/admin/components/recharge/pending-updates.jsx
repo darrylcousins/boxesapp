@@ -203,7 +203,7 @@ async function* PendingUpdates({ pendingUpdates }) {
                     </td>
                     <td class="pr3 pt1 bb b--black-20 v-top">
                       <div class="w-100">
-                        { entry.label }
+                        { entry.action }
                       </div>
                     </td>
                     <td class="pr3 pt1 bb b--black-20 v-top">

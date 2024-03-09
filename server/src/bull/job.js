@@ -86,6 +86,11 @@ export const makeApiJob = async (opts) => {
   if (finish) { // only used by updateSubscriptions?
     // final subscription of list, didn't prove useful at all
   };
+  emit({
+    io,
+    eventName: "completed",
+    message: `Completed "${opts.title}" (${finished.returnvalue.status})`
+  });
 
   // return the value received from the api call
   return finished.returnvalue;

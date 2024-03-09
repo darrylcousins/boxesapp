@@ -8,11 +8,33 @@ import fs from "fs";
 import { matchNumberedString } from "../../lib/helpers.js";
 
 /*
+ * @function findChangeMessages
+ * Find the change messages from the most recent logs
+ * These can then be included in the customer email
+ */
+export const findChangeMessages = async (query) => {
+
+  const logQuery = {};
+  logQuery[`meta.recharge.customer_id`] = query.customer_id;
+  logQuery[`meta.recharge.subscription_id`] = query.subscription_id;
+  logQuery[`meta.recharge.address_id`] = query.address_id;
+  logQuery[`meta.recharge.scheduled_at`] = query.scheduled_at;
+  logQuery[`meta.recharge.label`] = query.action;
+
+  // get the most recent and one only
+  const result = await _mongodb.collection("logs").find(logQuery).sort({ timestamp: -1 }).limit(1).toArray();
+
+  if (result.length > 0) {
+    return result[0].meta.recharge.change_messages;
+  } else {
+    return [];
+  };
+};
+
+/*
  * @function updatePendingEntry
  * @prop topic - one of "created, updated, deleted"
  * some variations to algorithm depending on the topic
- * 
- * XXX darn not working for charge upcoming
  */
 export const updatePendingEntry = async (meta, topic) => {
   /* the values stored in the pending table are how the subscription should
@@ -98,7 +120,6 @@ export const updatePendingEntry = async (meta, topic) => {
     }];
     result = { entry: query, updated: false };
   };
-  //console.log("updated?", result.updated);
   return result;
 };
 
@@ -157,12 +178,14 @@ export const getMetaForCharge = (charge, topic) => {
   const rc_subscription_ids = [];
   let properties;
   let title;
+  let deliver_at;
   for (const line_item of charge.line_items) {
     if (line_item.properties.some(el => el.name === "Including")) {
       title = line_item.title;
       properties = line_item.properties.reduce(
         (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
         {});
+      deliver_at = properties["Delivery Date"];
     };
     rc_subscription_ids.push({
       shopify_product_id: parseInt(line_item.external_product_id.ecommerce),
@@ -170,6 +193,14 @@ export const getMetaForCharge = (charge, topic) => {
       quantity: parseInt(line_item.quantity),
       title: line_item.title,
     });
+  };
+  if (typeof deliver_at === "undefined") {
+    for (const line_item of charge.line_items) {
+      if (typeof deliver_at !== "undefined") continue;
+      if (line_item.properties.some(el => el.name === "Delivery Date")) {
+        deliver_at = line_item.properties.find(el => el.name === "Delivery Date").value;
+      };
+    };
   };
   const meta = {
     recharge: {
@@ -200,6 +231,9 @@ export const getMetaForCharge = (charge, topic) => {
     };
     if (Object.hasOwnProperty.call(properties, "box_subscription_id")) {
       meta.recharge.subscription_id = parseInt(properties.box_subscription_id);
+    };
+    if (!Object.hasOwnProperty.call(meta.recharge, "Delivery Date") && typeof deliver_at !== "undefined") {
+      meta.recharge["Delivery Date"] = deliver_at;
     };
   };
   /* End logging all details */

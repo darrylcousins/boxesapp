@@ -51,7 +51,7 @@ export default async function chargeDeleted(topic, shop, body, { io, sockets }) 
 
       // we can remove this entry
       console.log("=======================");
-      console.log("Deleting updates pending entry on cancelled");
+      console.log("Deleting updates pending entry charge/deleted");
       console.log("=======================");
       await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
     };

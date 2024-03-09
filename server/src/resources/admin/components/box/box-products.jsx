@@ -199,36 +199,36 @@ function *Products ({box, products, type, allproducts, id}) {
 
   };
 
+
   for ({ box, products, allproducts } of this) {
+    
     yield (
       <div
         id={`${type}-${box._id}`}
         class="mt1"
       >
-        { ( box.delivered === "Core Box" || new Date(box.delivered) >= new Date() ) && (
-          <AddProductToBoxModal
-            type={type}
-            box={box}
-            boxproducts={allproducts.map((el) => el.shopify_product_id)} />
-        )}
-        <div
-          name="product-list"
-          data-type={type}
-          ondrop={drop}
-          ondragover={dragOver}
-          ondragenter={dragEnter}
-          ondragleave={dragLeave}
-          style={{height: products.length ? "auto" : "100px"}}
-        >
-        {products.map((el, idx) => (
+        { ( box.delivered === "Core Box" || new Date(box.delivered) >= new Date() ) && !Object.hasOwnProperty.call(box, "frozen") ? (
+          <Fragment>
+            <AddProductToBoxModal
+              type={type}
+              box={box}
+              boxproducts={allproducts.map((el) => el.shopify_product_id)} />
             <div
-              class="w-100 dt hover-dark-blue"
-              name="product-item"
-              id={`${id}-${el.shopify_product_id}`}
+              name="product-list"
               data-type={type}
+              ondrop={drop}
+              ondragover={dragOver}
+              ondragenter={dragEnter}
+              ondragleave={dragLeave}
+              style={{height: products.length ? "auto" : "100px"}}
             >
-              { ( box.delivered === "Core Box" || new Date(box.delivered) >= new Date() ) && (
-                <Fragment>
+            {products.map((el, idx) => (
+                <div
+                  class="w-100 dt hover-dark-blue"
+                  name="product-item"
+                  id={`${id}-${el.shopify_product_id}`}
+                  data-type={type}
+                >
                   <div class="dtc tl hover-dark-red pointer"
                     style="width: 30px"
                     onclick={(e) => removeProduct({
@@ -242,34 +242,70 @@ function *Products ({box, products, type, allproducts, id}) {
                       <CloseIcon />
                     </span>
                   </div>
-                </Fragment>
-              )}
-              <div
-                class="dtc"
-              >
+                  <div
+                    class="dtc"
+                  >
+                    <div
+                      class="dib w-100"
+                      style={{cursor: "crosshair"}}
+                      draggable="true"
+                      ondragstart={dragStart}
+                      ondragend={dragEnd}
+                      data-id={el.shopify_product_id}
+                      data-title={el.shopify_title}
+                      data-type={type}
+                    >
+                        <Image
+                          src={ getImageUrl(el.shopify_product_id) }
+                          title={ el.shopify_title }
+                          id={`image-${idx}-${el.shopify_product_id}`}
+                          size="2em"
+                          crank-key={`image-${idx}-${el.shopify_product_id}`}
+                        />
+                        <div class="dib ml2">{el.shopify_title}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Fragment>
+        ) : (
+          <Fragment>
+            <div
+              name="product-list"
+              style={{height: products.length ? "auto" : "100px"}}
+            >
+            {products.map((el, idx) => (
                 <div
-                  class="dib w-100"
-                  style={{cursor: "crosshair"}}
-                  draggable="true"
-                  ondragstart={dragStart}
-                  ondragend={dragEnd}
-                  data-id={el.shopify_product_id}
-                  data-title={el.shopify_title}
+                  class="w-100 dt"
+                  name="product-item"
+                  id={`${id}-${el.shopify_product_id}`}
                   data-type={type}
                 >
-                    <Image
-                      src={ getImageUrl(el.shopify_product_id) }
-                      title={ el.shopify_title }
-                      id={`image-${idx}-${el.shopify_product_id}`}
-                      size="2em"
-                      crank-key={`image-${idx}-${el.shopify_product_id}`}
-                    />
-                    <div class="dib ml2">{el.shopify_title}</div>
+                  <div
+                    class="dtc"
+                  >
+                    <div
+                      class="dib w-100"
+                      data-id={el.shopify_product_id}
+                      data-title={el.shopify_title}
+                      data-type={type}
+                    >
+                        <Image
+                          src={ getImageUrl(el.shopify_product_id) }
+                          title={ el.shopify_title }
+                          id={`image-${idx}-${el.shopify_product_id}`}
+                          size="2em"
+                          crank-key={`image-${idx}-${el.shopify_product_id}`}
+                        />
+                        <div class="dib ml2">{el.shopify_title}</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </Fragment>
+        )}
       </div>
     );
   };

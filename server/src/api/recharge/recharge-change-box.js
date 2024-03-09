@@ -5,7 +5,7 @@
 
 import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeShopQuery } from "../../lib/shopify/helpers.js";
-import { makeRechargeQuery, updateSubscriptions,  updateChargeDate, findBoxes } from "../../lib/recharge/helpers.js";
+import { makeRechargeQuery, updateSubscription, updateSubscriptions,  updateChargeDate, findBoxes } from "../../lib/recharge/helpers.js";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import { sortObjectByKeys, matchNumberedString, makeItemString, delay } from "../../lib/helpers.js";
 import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
@@ -65,11 +65,14 @@ export default async (req, res, next) => {
   data.plan = JSON.parse(data.plan);
   const { now, navigator, admin, type } = data;
 
+  // return early
+  res.status(200).json({});
+
   try {
 
     const { charge } = await makeRechargeQuery({
       path: `charges/${data.charge_id}`,
-      title: "Get Charge",
+      title: `Get Charge (${data.charge_id})`,
       // debugging
       subscription_id: parseInt(data.subscription_id),
       io,
@@ -275,9 +278,9 @@ export default async (req, res, next) => {
       recharge: {
         label: type,
         title: `${data.product_title} - ${data.variant_title}`,
-        customer_id: charge.customer.id,
-        shopify_customer_id: charge.customer.external_customer_id.ecommerce,
-        subscription_id: data.subscription_id,
+        customer_id: parseInt(charge.customer.id),
+        shopify_customer_id: parseInt(charge.customer.external_customer_id.ecommerce),
+        subscription_id: parseInt(data.subscription_id),
         email: charge.customer.email,
         rc_subscription_ids,
       }
@@ -287,10 +290,23 @@ export default async (req, res, next) => {
     };
     for (const [key, value] of Object.entries(data)) {
       // box and last_order are too much information - could truncate them though
-      if (!["box", "last_order"].includes(key)) meta.recharge[key] = value;
+      if (!["box", "last_order"].includes(key)) {
+        meta.recharge[key] = key.endsWith("_id") ? parseInt(value) : value;
+      };
     };
 
     meta.recharge = sortObjectByKeys(meta.recharge);
+    // remove some uncecessary fields from the log entry
+    delete meta.recharge.admin;
+    delete meta.recharge.session_id;
+    delete meta.recharge.navigator;
+    delete meta.recharge.now;
+    delete meta.recharge.variant_id;
+    delete meta.recharge.product_id;
+    delete meta.recharge.customer;
+    meta.recharge.type = type;
+    meta.recharge.price = parseFloat(meta.recharge.price).toFixed(2);
+    meta.recharge.plan = { name: meta.recharge.plan.name };
     _logger.notice(`Recharge customer api reqest subscription ${type}.`, { meta });
 
     // compile data for email to customer
@@ -341,9 +357,8 @@ export default async (req, res, next) => {
       deliver_at: data.delivery_date, // formatted "Tue Sep 21 2023"
       title: `${data.product_title} - ${data.variant_title}`,
       session_id,
+      schedule_only: data.schedule_only,
     });
-
-    res.status(200).json({});
 
     try {
 
@@ -367,13 +382,65 @@ export default async (req, res, next) => {
       if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
       throw err;
     };
+    
+    for(var x in updates) updates[x].variant_title !== null ? updates.unshift(updates.splice(x,1)[0]) : 0;
 
-    await updateSubscriptions({ updates, io, session_id });
+    // don't update items for deletion
+    // don't update frequency if not changed
+    for (const update of updates.filter(el => el.quantity > 0)) {
+      const body = {};
+      let subtitle = "Updating";
+      if (update.subscription_id === parseInt(data.subscription_id)) {
+        subtitle = "Changing";
+        // IF VARIANT CHANGED!
+        if (data.variant_changed) {
+          for (const key of [
+            "variant_title",
+            "external_variant_id"]) { 
+            body[key] = update[key];
+          };
+        };
+        // IF PRODUCT CHANGED!
+        if (data.product_changed) {
+          for (const key of [
+            "product_title",
+            "external_product_id"]) { 
+            body[key] = update[key];
+          };
+        };
+      };
+
+      // IF SCHEDULE CHANGED!
+      if (data.schedule_changed) {
+        for (const key of [
+          "order_interval_frequency",
+          "order_day_of_week",
+          "charge_interval_frequency",
+          "order_interval_unit"]) { 
+          body[key] = update[key];
+          delete update[key];
+        };
+      };
+
+      if (Object.keys(body).length) {
+        const opts = {
+          id: update.subscription_id,
+          title: `${subtitle} subscription ${update.product_title}`,
+          body,
+          io,
+          session_id,
+        };
+        await updateSubscription(opts);
+        await delay(3000);
+      };
+
+      // this will update an existing charge with the matching scheduled_at or create a new charge
+    };
 
     await delay(10000); // avoid possibly making second call to same resource
 
+    // IF CHARGE DATE CHANGED!
     if (charge.scheduled_at !== data.scheduled_at) {
-      console.log("Changing charge date", data.scheduled_at, charge.scheduled_at);
       for (const update of updates.filter(el => el.quantity > 0)) {
         const opts = {
           id: update.subscription_id,
@@ -384,8 +451,19 @@ export default async (req, res, next) => {
         };
         // this will update an existing charge with the matching scheduled_at or create a new charge
         await updateChargeDate(opts);
+        await delay(3000);
       };
     };
+
+    for (const update of updates) {
+      delete update.external_product_id;
+      delete update.external_variant_id;
+      delete update.variant_title;
+      delete update.product_title;
+    };
+
+    // don't update properties if not changed - i.e. only if delivery date changed
+    await updateSubscriptions({ updates, io, session_id });
 
     /*
     if (io) io.emit("message", `Customer update email sent (${attributes.customer.email})`);

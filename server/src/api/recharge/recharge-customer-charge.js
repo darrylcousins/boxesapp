@@ -13,24 +13,22 @@ import fs from "fs";
  * @param (Http response object) res
  * @param (function) next
  *
- * This used primarily to reload the charge after editing
+ * This used primarily to reload the charge after editing i.e. in
+ * components/subscription.js and cancelled.js where the subscription_id is
+ * provided. It is also used in recharge admin to load a single charge cf all
+ * customer charges (components/customers.js)
  */
 export default async (req, res, next) => {
 
   let charge_id = req.params.charge_id;
-
-  // is this the updated scheduled_at?
-  const { customer_id, address_id, subscription_id, scheduled_at } = req.query;
+  const { customer_id, subscription_id, address_id, scheduled_at } = req.query;
 
   try {
     let result = {};
     try {
       result = await makeRechargeQuery({
         path: `charges/${charge_id}`,
-        title: "Get Charge",
-        // debugging
-        customer_id: parseInt(customer_id),
-        subscription_id: parseInt(subscription_id),
+        title: `Get Charge (${charge_id})`,
       });
 
     } catch(err) {
@@ -40,6 +38,7 @@ export default async (req, res, next) => {
     };
 
 
+    // NOTE take a look at the routine in recharge-customer-charges - should I have the here
     if (result.charge) {
       const groups = [];
       const grouped = await reconcileGetGrouped({ charge: result.charge });
@@ -53,10 +52,12 @@ export default async (req, res, next) => {
         data = await gatherData({ grouped, result: data });
       };
 
-      const subscription = data.find(el => el.attributes.subscription_id === parseInt(subscription_id));
-      //console.log(subscription);
-      //console.log(subscription.attributes.rc_subscription_ids);
-      return res.status(200).json({ subscription });
+      if (subscription_id) {
+        const subscription = data.find(el => el.attributes.subscription_id === parseInt(subscription_id));
+        return res.status(200).json({ subscription });
+      } else {
+        return res.status(200).json({ charge: result.charge, subscriptions: data });
+      };
     } else {
       return res.status(200).json({ error: "Not found" });
     };

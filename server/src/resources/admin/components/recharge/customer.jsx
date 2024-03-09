@@ -17,20 +17,25 @@ import { loadAnotherCustomer } from "./events";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
 import DTable from "./dtable";
-import { animateFadeForAction, delay } from "../helpers";
+import AddBoxModal from "./add-box-modal";
+import { animateFadeForAction, delay, displayMessages } from "../helpers";
 
 /**
  * Customer
  *
  * @function
  * @param {object} props Props
- * @param {object} props.customer Recharge customer id
+ * @param {object} props.customer Recharge customer object
+ * @param {object} props.charge Recharge charge object
+ * @param {bool} props.admin Is this the admin or the customer?
  * @yields Element
  * @example
  * import {renderer} from '@b9g/crank/dom';
  * renderer.render(<Customer customer={customer} />, document.querySelector('#app'))
+ *
+ * If charge is provided then do not load all customer charges
  */
-async function *Customer({ customer, admin }) {
+async function *Customer({ customer, charge, admin }) {
 
   /**
    * True while loading data from api
@@ -104,6 +109,12 @@ async function *Customer({ customer, admin }) {
    * @member {object} Price mismatched subscriptions for the customer
    */
   let price_mismatch = [];
+  /**
+   * Created a new subscription - lets flag it as new
+   *
+   * @member {object} newSubscriptionID
+   */
+  let newSubscriptionID = null;
 
   /**
    * Return to customer search
@@ -149,13 +160,16 @@ async function *Customer({ customer, admin }) {
         };
         if (Object.hasOwnProperty.call(json, "message")) {
           messages = json.message;
+        } else {
+          messages = []
         };
         if (Object.hasOwnProperty.call(json, "errors")) {
           errors = json.errors;
+        } else {
+          errors = []
         };
         if (Object.hasOwnProperty.call(json, "result")) {
           chargeGroups = json.result;
-          //console.log("Charge Groups", chargeGroups);
           originalChargeGroups = cloneDeep(json.result);
         };
         loading = false;
@@ -204,10 +218,19 @@ async function *Customer({ customer, admin }) {
    * @function getRechargeCustomer
    * Get the recharge customer using shopify customer id
    *
+   * Used is customer shopify portal where we only have shopify customer
+   * Or from admin/customers.jsx if loading a single charge and using local db customer
+   * Otherwise admin already has the customer from recharge
    */
   const getRechargeCustomer = async () => {
     // recharge customer id
-    const uri = `/api/recharge-customer?shopify_customer_id=${customer.id}`;
+    let customer_id;
+    if (Object.hasOwn(customer, "shopify_id")) {
+      customer_id = customer.shopify_id; // coming from simple customer object in admin/customers.jsx
+    } else {
+      customer_id = customer.id; // customer portal in shopify
+    };
+    const uri = `/api/recharge-customer?shopify_customer_id=${customer_id}`;
     return Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
@@ -217,14 +240,7 @@ async function *Customer({ customer, admin }) {
           this.refresh();
           return null;
         };
-        rechargeCustomer = json;
-        if (!Object.hasOwnProperty.call(customer, "email")) {
-          // in customer portal we only have the shopify customer id
-          customer.email = rechargeCustomer.email;
-          customer.first_name = rechargeCustomer.first_name;
-          customer.last_name = rechargeCustomer.last_name;
-        };
-        return rechargeCustomer
+        return json;
       })
       .catch((err) => {
         fetchError = err;
@@ -234,6 +250,30 @@ async function *Customer({ customer, admin }) {
       });
   };
 
+  /**
+   * disableevents on all subscriptions, they will be restored on subscription.created event
+   * @function addingSubscription
+   * @listen listing.reload event from addSubscription modal
+   */
+  const addingSubscription = (ev) => {
+    if (ev.detail.src === "/api/recharge-add-box") {
+      let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
+      // get the messages from ev?
+      for (const id of subscription_ids) {
+        const div = document.querySelector(`#subscription-${id}`);
+        div.classList.add("disableevents");
+      };
+      const messages = document.getElementById(`saveMessages-${customer.id}`);
+      if (messages) messages.classList.remove("closed");
+      const display = document.getElementById(`displayMessages-${customer.id}`);
+      if (display && Object.hasOwn(ev.detail.json, "messages")) {
+        displayMessages(display, ev.detail.json.messages);
+      };
+    };
+  };
+
+  // listing.reload dispatched by form-modal
+  this.addEventListener("listing.reload", addingSubscription);
 
   /**
    * Update charge groups and remove the deleted subscription
@@ -305,6 +345,36 @@ async function *Customer({ customer, admin }) {
   this.addEventListener("subscription.cancelled", cancelSubscription);
 
   /**
+   * Load the new subscription after it was created
+   * @function createSubscription
+   * @listen subscription.created event
+   */
+  const createSubscription = async (ev) => {
+    const { subscription_id } = ev.detail
+    newSubscriptionID = subscription_id;
+
+    setTimeout(async () => {
+      const socketMessages = document.getElementById(`addBoxMessages-${customer.id}`);
+      const saveMessages = document.getElementById(`saveMessages-${customer.id}`);
+      if (socketMessages) {
+        socketMessages.classList.add("closed"); // uses css transitions
+      };
+      if (saveMessages) {
+        saveMessages.classList.add("closed"); // uses css transitions
+      };
+      loading = true;
+      chargeGroups = [];
+      this.refresh();
+      await getChargeGroups(customer.id).then(async (result) => {
+        this.refresh();
+      });
+    }, 1000);
+
+  };
+
+  window.addEventListener("subscription.created", createSubscription);
+
+  /**
    * Disable all events on subscription objects not including the current
    * @function disableEvents
    * @listen subscription.editing event
@@ -362,29 +432,43 @@ async function *Customer({ customer, admin }) {
   };
 
   /**
+   *
    * Initiate and retrieve data
+   * If this through the customer portal then we don't yet have a recharge customer object
    *
    */
   const init = async () => {
-    //console.log("CUSTOMER", customer);
     if (!Object.hasOwnProperty.call(customer, "external_customer_id")) {
       await getRechargeCustomer().then(res => {
         if (res) {
-          getChargeGroups(res.id).then(result => {
-            loading = true;
-            loadingLabel = "cancelled";
+          rechargeCustomer = res;
+          console.log(rechargeCustomer);
+          if (!Object.hasOwnProperty.call(customer, "email")) {
+            // in customer portal we only have the shopify customer id
+            customer.email = rechargeCustomer.email;
+            customer.first_name = rechargeCustomer.first_name;
+            customer.last_name = rechargeCustomer.last_name;
+          };
+          if (charge) { // passed in as props from customers.jsx
+            chargeGroups = charge.groups;
+            originalChargeGroups = cloneDeep(charge.groups);
+            loading = false;
             this.refresh();
-            getCancelledGroups(res.id);
-          });
+          } else {
+            getChargeGroups(res.id).then(async (result) => {
+              loadingLabel = "cancelled";
+              this.refresh();
+              await getCancelledGroups(res.id);
+            });
+          };
         };
       });
     } else {
       rechargeCustomer = customer;
-      getChargeGroups(customer.id).then(result => {
-        loading = true;
+      await getChargeGroups(customer.id).then(async (result) => {
         loadingLabel = "cancelled";
         this.refresh();
-        getCancelledGroups(customer.id);
+        await getCancelledGroups(customer.id);
       });
     };
   };
@@ -442,6 +526,7 @@ async function *Customer({ customer, admin }) {
               bgColour: "black",
               borderColour: "black"
             }));
+            errors = [];
             orphans = [];
             date_mismatch = [];
             price_mismatch = [];
@@ -474,7 +559,7 @@ async function *Customer({ customer, admin }) {
 
   await init();
 
-  for await ({ customer } of this) { // eslint-disable-line no-unused-vars
+  for await ({ customer, charge } of this) { // eslint-disable-line no-unused-vars
     yield (
       <div id="customer-wrapper" class="pr3 pl3 w-100">
         { loading && <BarLoader /> }
@@ -482,37 +567,60 @@ async function *Customer({ customer, admin }) {
         { fetchError && <Error msg={fetchError} /> }
         <div id={ `customer-${rechargeCustomer.id}` }>
           <Fragment>
-            { admin && (
+            { loading && (
+              <div class="alert-box dark-blue pv2 ph4 ma2 br3 ba b--dark-blue bg-washed-blue">
+                <p>
+                  <i class="b">Hold tight.</i> Collecting { !admin ? "your" : "" } subscriptions.{" "}
+                </p>
+              </div>
+            )}
+            { !admin && !loading && (
+              <div class="w-100 tr">
+                <AddBoxModal
+                  subscription={ null }
+                  customer={ rechargeCustomer }
+                  admin={ admin }
+                  type="created"
+                  socketMessageId={ `addBoxMessages-${rechargeCustomer.id}` }/>
+              </div>
+            )}
+            { admin && !loading && (
               <Fragment>
                 <div class="w-100 flex-container mt0 pa0">
+                  <AddBoxModal
+                    subscription={ null }
+                    customer={ rechargeCustomer }
+                    admin={ admin }
+                    type="created"
+                    socketMessageId={ `addBoxMessages-${rechargeCustomer.id}` }/>
                   <button
-                    class={ `dark-gray dib bg-white bg-animate hover-bg-light-gray w-25 pv2 outline-0 mv1 pointer b--grey ba br2 br--left` }
+                    class="b purple dib bg-white bg-animate hover-white hover-bg-purple w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0"
                     title="Verify"
                     type="button"
-                    onclick={ async () => await verifyCustomerSubscriptions({ customer }) }
+                    onclick={ async () => await verifyCustomerSubscriptions({ customer: rechargeCustomer }) }
                     >
                       <span class="v-mid di">Verify customer subscriptions</span>
                   </button>
                   <a
-                    class={ `link tc dark-gray dib bg-white bg-animate hover-bg-light-gray w-25 pv2 outline-0 mv1 pointer b--grey bt bb br bl-0` }
+                    class="b link tc dark-green dib bg-white bg-animate hover-white hover-bg-dark-green w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0"
                     title="Shopify"
                     type="button"
                     target="_blank"
-                    href={ `${shopAdminUrl}/${customer.external_customer_id.ecommerce}` }
+                    href={ `${shopAdminUrl}/${rechargeCustomer.external_customer_id.ecommerce}` }
                     >
                       <span class="v-mid di">View customer in Shopify</span>
                   </a>
                   <a
-                    class={ `link tc dark-gray dib bg-white bg-animate hover-bg-light-gray w-25 pv2 outline-0 mv1 pointer b--grey bt bb br bl-0` }
+                    class="b link tc green dib bg-white bg-animate hover-white hover-bg-green w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0"
                     title="Recharge"
                     type="button"
                     target="_blank"
-                    href={ `${rechargeAdminUrl}/${customer.id}` }
+                    href={ `${rechargeAdminUrl}/${rechargeCustomer.id}` }
                     >
                       <span class="v-mid di">View customer in Recharge</span>
                   </a>
                   <button
-                    class={ `navy dib bg-transparent bg-animate hover-bg-navy hover-white w-25 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0 br2 br--right` }
+                    class="b dark-gray dib bg-white bg-animate hover-white hover-bg-gray w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0 br2 br--right"
                     title="New Customer"
                     type="button"
                     onclick={ getNewCustomer }
@@ -520,6 +628,12 @@ async function *Customer({ customer, admin }) {
                       <span class="v-mid di">Load another customer</span>
                   </button>
                 </div>
+                <div id={ `saveMessages-${rechargeCustomer.id}` } class="tl saveMessages closed">
+                  <div class="alert-box relative dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+                    <p id={ `displayMessages-${rechargeCustomer.id}` }  class="fg-streamside-blue"></p>
+                  </div>
+                </div>
+                <div id={ `addBoxMessages-${rechargeCustomer.id}` } class="tl socketMessages"></div>
                 <div class="cf" />
                 { date_mismatch && date_mismatch.length > 0 && (
                   <DTable items={ date_mismatch } title="Date mismatches" />
@@ -557,13 +671,14 @@ async function *Customer({ customer, admin }) {
             { chargeGroups && chargeGroups.length > 0 ? (
               <Fragment>
                 <h4 class="tc mv4 w-100 navy">
-                  Active Subscriptions
+                  { charge ? `Subscriptions for charge #${charge.id}. Scheduled at ${charge.scheduled_at}` : "Active Subscriptions" }
                 </h4>
                 { chargeGroups.map((group, idx) => (
                   <div id={`subscription-${group.attributes.subscription_id}`} class="subscription">
                     <Subscription
                       subscription={ group } idx={ idx }
-                      customer={ customer }
+                      newSubscription={ group.attributes.subscription_id === newSubscriptionID }
+                      customer={ rechargeCustomer }
                       admin={ admin }
                       crank-key={ `${group.attributes.nextChargeDate.replace(/ /g, "_")}-${idx}` }
                     />
@@ -585,7 +700,7 @@ async function *Customer({ customer, admin }) {
                   </h4>
                   { cancelledGroups.map((group, idx) => (
                     <div id={`subscription-${group.subscription_id}`} class="subscription">
-                      <Cancelled subscription={ group } customer={ customer } idx={ idx } />
+                      <Cancelled subscription={ group } customer={ rechargeCustomer } idx={ idx } />
                     </div>
                   ))}
                 </Fragment>

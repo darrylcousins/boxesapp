@@ -31,6 +31,11 @@ export default async (req, res, next) => {
       response[_id] = {"orders": count};
     };
     
+    // collect orders with an error
+    response.errored = await _mongodb.collection("orders").find(
+      { error: { "$exists": true} },
+    ).sort({ created: -1 }).toArray();
+
     res.status(200).json(response);
   } catch(err) {
     res.status(200).json({ error: err.message });

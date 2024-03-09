@@ -76,7 +76,7 @@ function *Settings() {
    *
    * @member {object} collapsedSettings
    */
-  let collapsedTranslation = false;
+  let collapsedTranslation = true;
 
   this.addEventListener("toastEvent", Toaster);
 
@@ -271,7 +271,8 @@ function *Settings() {
                   <label
                     for={el[2]}
                     class="db mb2 mt4">
-                      {el[0]} [{el[2]}]
+                    <div class="db mb2">{el[2]}</div>
+                    <div class="db b">{el[0]}</div>
                     </label>
                   <textarea 
                     id={el[2]}

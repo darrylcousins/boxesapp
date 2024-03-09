@@ -103,7 +103,6 @@ export const makeRechargeQuery = async (opts) => {
  * @function makeRechargeQuery
  */
 export const doRechargeQuery = async (opts) => {
-  console.log(opts);
   const { method, path, limit, query, body, title, finish, failedOnce } = opts;
   const http_method = method ? method : "GET";
 
@@ -211,22 +210,6 @@ export const getSubscription = async (id, title) => {
 };
 
 /*
- * @function updateSubscription
- * @return { subscription } 
- */
-export const updateSubscription = async ({ id, title, body, io, session_id }) => {
-  const options = {};
-  options.path = `subscriptions/${id}`;
-  options.method = "PUT";
-  options.body = JSON.stringify(body);
-  options.io = io;
-  options.session_id = session_id;
-  options.title = title;
-  const result = await makeRechargeQuery(options);
-  return result;
-};
-
-/*
  * @function updateChargeDate
  * @return { subscription }
  */
@@ -235,6 +218,22 @@ export const updateChargeDate = async ({ id, date, title, io, session_id }) => {
   options.path = `subscriptions/${id}/set_next_charge_date`;
   options.method = "POST";
   options.body = JSON.stringify({ date });
+  options.io = io;
+  options.session_id = session_id;
+  options.title = title;
+  const result = await makeRechargeQuery(options);
+  return result;
+};
+
+/*
+ * @function updateSubscription
+ * @return { subscription } 
+ */
+export const updateSubscription = async ({ id, title, body, io, session_id }) => {
+  const options = {};
+  options.path = `subscriptions/${id}`;
+  options.method = "PUT";
+  options.body = JSON.stringify(body);
   options.io = io;
   options.session_id = session_id;
   options.title = title;
@@ -297,6 +296,7 @@ export const updateSubscriptions = async ({ updates, io, session_id }) => {
 
     await makeRechargeQuery(options);
 
+    await delay(3000);
   };
   return;
 };
@@ -373,7 +373,8 @@ export const findBoxes = async ({ days, nextDeliveryDate, shopify_product_id }) 
   let previousBox = null;
   let hasNextBox = false;
   let delivered = new Date(nextDeliveryDate);
-  const dayOfWeek = delivered.getDay();
+  let dayOfWeek = delivered.getDay();
+  if (dayOfWeek === 0) dayOfWeek = 7; // Sunday fix to match with dayOfWeek returned from mongo
 
   const pipeline = [
     { "$match": { 
@@ -396,6 +397,10 @@ export const findBoxes = async ({ days, nextDeliveryDate, shopify_product_id }) 
   ];
 
   let dates = await _mongodb.collection("boxes").aggregate(pipeline).toArray();
+  if (nextDeliveryDate === "Sun Mar 10 2024") {
+    console.log(delivered, dayOfWeek)
+    console.log(dates);
+  };
   dates = dates.map(el => el.delivered).reverse();
 
   // if our date is in the array then we have the next box

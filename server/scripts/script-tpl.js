@@ -37,14 +37,6 @@ const run = async () => {
   // can log messages if required
   //await winstonLogger.notice(`Test logger`);
 
-  const now = new Date("2024-02-12");
-  console.log(now.toLocaleString());
-
-  console.log(now.getTimezoneOffset());
-
-  now.setMinutes(now.getMinutes() + now.getTimezoneOffset());
-  console.log(now.toLocaleString());
-
   try {
     console.log('this ran');
 

@@ -38,33 +38,33 @@ function *Page() {
    * @member {boolean} loading
    */
   let loading = true;
-
+  /**
+   * Show alert box
+   * @member {boolean} showAlert
+   */
+  let showAlert = true;
   /**
    * Mode indicator - light or dark, initialize with user preference?
    * @member {boolean} mode
    */
   //let mode = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   let mode = "dark";
-
   /**
    * Text indicator - parsed html or plain markdown text?
    * @member {boolean} parsed
    */
   let parsed = true;
-
   /**
    * Markdown content
    * @member {string} md
    */
   let md = "";
-
   /**
    * Markdown content presented as <pre><code> block
    * Initialize as empty, populate on showSource, then retained
    * @member {string} md_html
    */
   let md_html = "";
-
   /**
    * Parsed markdown content
    * @member {string} html
@@ -146,6 +146,9 @@ function *Page() {
         `;
       }).finally(async () => {
         // animate this
+        if (pathname.includes("changelog") || pathname.includes("thoughts")) {
+          showAlert = false;
+        };
         loading = false;
         await this.refresh();
         imageEvents();
@@ -282,7 +285,7 @@ ${ `${ fence }` }
         </div>
 
         <div class="cf mb2"></div>
-        { true && (
+        { showAlert && (
           <Alert>
             This documentation was written mostly in spring 2022. In the winter
             of 2023 I spent several hundred hours of work making changes,

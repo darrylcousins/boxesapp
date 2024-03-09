@@ -5,7 +5,7 @@
 
 import { sortObjectArrayByKey } from "../../lib/helpers.js";
 import { getQueryFilters } from "../../lib/orders.js";
-import { getNZDeliveryDay } from "../../lib/dates.js";
+import { getNZDeliveryDay, weekdays } from "../../lib/dates.js";
 import { NODELIVER_STRING, headersPartial } from "../../lib/constants.js";
 
 /*
@@ -36,6 +36,7 @@ export default async (req, res, next) => {
 
   try {
     const result = await collection.find(query).sort({ "product_title": 1, "last_name": 1 }).toArray();
+
     response.orders = result
     response.headers = headersPartial;
     res.status(200).json(response);

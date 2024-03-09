@@ -104,6 +104,7 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
   const getActivatedSubscription = async (data) => {
     // this call needs to check updates_pending and return message, otherwise we get the subscription
 
+    // looking at api only charge_id and subscription_id are used
     let uri = `/api/recharge-customer-charge/${data.charge_id}`;
     uri = `${uri}?customer_id=${data.customer_id}`;
     uri = `${uri}&address_id=${data.address_id}`;

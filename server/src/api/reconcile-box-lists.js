@@ -149,10 +149,12 @@ export default async function reconcileBoxLists(box, boxLists) {
                 case "includes":
                   messages.push(`Included extra item ${item.title}${item.quantity > 1
                       ? ` (${item.quantity})` : ""} included as an addon for this box.`);
-                  lists["addons"].push(item);
+                  lists["addons"].push(item); // keep quantity on list
                   lists["includes"].splice(idx, 1); // remove from addons
-                  updates["addons"].push(item);
-                  updates["includes"].splice(updates["includes"].indexOf(item), 1); // remove from swaps
+                  updates["includes"].splice(updates["includes"].indexOf(item), 1); // remove from includes
+                  // need to decrease as for with extra swaps
+                  updates["addons"].push({ title: item.title, quantity: item.quantity - 1 });
+                  //updates["addons"].push(item); // replace by the above line to fix problem?
                   break;
                 case "addons":
                   // do nothing

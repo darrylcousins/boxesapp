@@ -50,6 +50,12 @@ async function* Customers() {
    */
   let loading = true;
   /**
+   * True while loading a customer
+   *
+   * @member {boolean} loadingCustomer
+   */
+  let loadingCustomer = false;
+  /**
    * The search term entered
    *
    * @member {object|string} searchTerm
@@ -73,6 +79,13 @@ async function* Customers() {
    * @member {object|string} fetchCustomer
    */
   let fetchCustomer = null;
+  /**
+   * The loaded charge from api - when a single charge is loaded cf all charges
+   * for a customer
+   *
+   * @member {object|string} fetchCharge
+   */
+  let fetchCharge = null;
   /**
    * The loaded customers from api
    *
@@ -132,6 +145,7 @@ async function* Customers() {
     fetchError = null;
     loading = false;
     fetchCustomer = null;
+    fetchCharge = null;
     // also reload pending and verify?
     await this.refresh();
     if (document.getElementById("searchTerm")) {
@@ -209,13 +223,15 @@ async function* Customers() {
   this.addEventListener("reloadCustomers", fetchCustomers);
 
   /**
-   * Fetch recharge customer
+   * Fetch customer charge, i.e. collect a single charge to load for customer
+   * instead of all charges, useful if customer has many charges
    *
-   * @param {string} id The recharge customer id
-   * @function fetchRechargeCustomer
+   * @param {string} id The recharge charge id
+   * @function fetchCustomerCharge
    */
-  const fetchRechargeCustomer = async (customer_id) => {
-    const uri = `/api/recharge-customer?recharge_customer_id=${customer_id}`;
+  const fetchCustomerCharge = async (customer, charge_id) => {
+    const uri = `/api/recharge-customer-charge/${charge_id}`;
+    console.log(uri);
     fetchError = null;
     loading = true;
     this.refresh();
@@ -228,13 +244,52 @@ async function* Customers() {
           this.refresh();
           return null;
         };
-        fetchCustomer = json;
+        fetchCharge = json.charge;
+        fetchCharge.groups = json.subscriptions,
+        console.log(fetchCharge);
+        fetchCustomer = customer;
         loading = false;
         this.refresh();
       })
       .catch((err) => {
         fetchError = err;
         loading = false;
+        this.refresh();
+        return null;
+      });
+  };
+
+  /**
+   * Fetch recharge customer
+   *
+   * @param {string} id The recharge customer id
+   * @function fetchRechargeCustomer
+   */
+  const fetchRechargeCustomer = async (customer_id) => {
+    const uri = `/api/recharge-customer?recharge_customer_id=${customer_id}`;
+    fetchError = null;
+    loading = true;
+    loadingCustomer = true;
+    this.refresh();
+    await Fetch(encodeURI(uri))
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          loadingCustomer = false;
+          this.refresh();
+          return null;
+        };
+        fetchCustomer = json;
+        loadingCustomer = false;
+        loading = false;
+        this.refresh();
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        loadingCustomer = false;
         this.refresh();
         return null;
       });
@@ -366,7 +421,7 @@ async function* Customers() {
         { fetchError && <Error msg={fetchError} /> }
         { !fetchCustomer && (
           <Fragment>
-            <div class="alert-box cf dark-blue pa2 mt2 mb4 br3 ba b--dark-blue bg-washed-blue">
+            <div class="alert-box cf dark-blue pa4 mt2 mb4 br3 ba b--dark-blue bg-washed-blue">
               Customers here may not be synchronised to Recharge customers. They are updated nightly, but may also be re-sychronised here.
               For example if they have cancelled or reactivated charges since last night's update.
             </div>
@@ -447,9 +502,20 @@ async function* Customers() {
         )}
           <div class="ma1"><br /></div>
         { loading && <BarLoader /> }
-        { fetchCustomer ? (
+        { loading && loadingCustomer && (
+          <div class="alert-box dark-blue pv2 ph4 ma2 br3 ba b--dark-blue bg-washed-blue">
+            <p>
+              <i class="b">Hold tight.</i> Collecting customer charges, sorting, and verifying subscriptions.{" "}
+            </p>
+          </div>
+        )}
+        { fetchCharge && (
+            <Customer customer={ fetchCustomer } charge={ fetchCharge } admin={ true } /> 
+        )}
+        { fetchCustomer && !fetchCharge && (
             <Customer customer={ fetchCustomer } admin={ true } /> 
-        ) : (
+        )}
+        { !fetchCustomer && !fetchCharge && (
           <Fragment>
             { updatesPending && updatesPending.length > 0 && <PendingUpdates pendingUpdates={ updatesPending } /> }
             { faultySubscriptions && faultySubscriptions.length > 0 && <VerifySubscriptions customers={ faultySubscriptions } /> }
@@ -524,7 +590,9 @@ async function* Customers() {
                             <td class="pr3 pt1 bb b--black-20 v-top">
                               <div class="dt w-100">
                                 { customer.charge_list.map((charge, idx) => (
-                                  <div class="dt-row pb1">
+                                  <div class="dt-row pb1 pointer hover-black hover-bg-near-white fg-streamside-blue b"
+                                      title={ `Load charge #${charge[0]}` }
+                                      onclick={ () => fetchCustomerCharge(customer, charge[0]) }>
                                     <div class="dtc mv1 pl2">
                                       { charge[0] }
                                     </div>

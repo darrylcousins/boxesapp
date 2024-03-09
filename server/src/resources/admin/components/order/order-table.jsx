@@ -107,9 +107,10 @@ const TableHeader = ({ headers, index, selected }) => {
               <div class="flex items-center mb1 dark-gray">
                 <input
                   type="checkbox"
-                  name="selectAll"
+                  name="selectAllOrders"
                   checked={!(selected.length === 0)}
-                  id="select_all"
+                  id="select_all_orders"
+                  title="Select all"
                 />
               </div>
             ) : (

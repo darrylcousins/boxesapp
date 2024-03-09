@@ -156,11 +156,15 @@ function* CurrentBoxes({ timestamp }) {
           this.refresh();
         } else {
           const dates = json.dates.filter(el => el.toUpperCase() !== "INVALID DATE");
-          if (timestamp) selectedDate = new Date(parseInt(timestamp)).toDateString();
+          // setting selectedDate after duplicating boxes
+          console.log(selectedDate);
           if (!selectedDate) {
-            if (dates.length) selectedDate = getMostCurrentDate(dates);
-          } else {
-            if (!dates.includes(selectedDate)) selectedDate = getMostCurrentDate(dates);
+            if (timestamp) selectedDate = new Date(parseInt(timestamp)).toDateString();
+            if (!selectedDate) {
+              if (dates.length) selectedDate = getMostCurrentDate(dates);
+            } else {
+              if (!dates.includes(selectedDate)) selectedDate = getMostCurrentDate(dates);
+            };
           };
           fetchDates = json.fetchDates;
           getBoxes();
@@ -182,6 +186,25 @@ function* CurrentBoxes({ timestamp }) {
    * @listens listing.reload
    */
   const reloadBoxes = (ev) => {
+    if (ev) {
+      try {
+        console.log(ev.detail);
+        console.log("selectedDate", selectedDate)
+        if (Object.hasOwn(ev.detail, "src")) {
+          console.log("src", ev.detail.src);
+          if (ev.detail.src === "/api/duplicate-boxes") {
+            selectedDate = ev.detail.json.delivered;
+            console.log(ev.detail.json.delivered);
+          } else if (ev.detail.src === "/api/remove-boxes") {
+            console.log(fetchDates);
+            selectedDate = fetchDates.at(-2).delivered;
+          };
+        };
+        console.log("selectedDate", selectedDate)
+      } catch(err) {
+        console.log(err);
+      };
+    };
     getDates();
   };
 

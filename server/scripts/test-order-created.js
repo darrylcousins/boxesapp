@@ -1,20 +1,23 @@
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-import { MongoClient, ObjectID } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import { getMongoConnection, MongoStore } from "../src/lib/mongo/mongo.js";
+import { winstonLogger } from "../config/winston.js";
+import { Shopify } from "../src/lib/shopify/index.js";
 
 global._filename = (_meta) => _meta.url.split("/").pop();
 dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
-global._logger = console;
+global._logger = winstonLogger;
 global._mongodb;
-_logger.notice = (e) => console.log(e);
 
 import ordersCreate from "../src/webhooks/shopify/orders-create.js";
 import order from "../shopify.order.json" assert { type: "json" };
 
 const run = async () => {
   global._mongodb = await getMongoConnection();
+  await Shopify.initialize(); // if shopify query required
+
   try {
     console.log('this ran');
     const mytopic = "ORDERS_CREATE";

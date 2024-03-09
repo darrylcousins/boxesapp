@@ -825,10 +825,13 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
               <div id="pricedItems" class="mr2 w-100">
                 <div class="ml2 mb0 mt1 pt1 flex bt">
                   <div class="w-20 ma0">
-                    { loading && (
+                    { false && (
                       <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle }>
                         <span class="image-loader"></span>
                       </div>
+                    )}
+                    { loading && (
+                      <div class="ba skeleton ma0 w-100 h-100" style={ lineImageStyle }>{ " " }</div>
                     )}
                     { !loading && (
                       <Image

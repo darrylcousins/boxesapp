@@ -117,6 +117,9 @@ router.get(
   "/order-sources/:timestamp", 
   await import("./order/order-sources.js").then(({ default: fn }) => fn));
 router.post(
+  "/remove-errored-orders", 
+  await import("./order/remove-errored-orders.js").then(({ default: fn }) => fn));
+router.post(
   "/edit-order", 
   await import("./order/edit-order.js").then(({ default: fn }) => fn));
 router.post(
@@ -188,6 +191,9 @@ router.post(
 router.post(
   "/recharge-change-box",
   await import("./recharge/recharge-change-box.js").then(({ default: fn }) => fn));
+router.post(
+  "/recharge-add-box",
+  await import("./recharge/recharge-add-box.js").then(({ default: fn }) => fn));
 router.get(
   "/recharge-subscription/:subscription_id", 
   await import("./recharge/recharge-subscription.js").then(({ default: fn }) => fn));

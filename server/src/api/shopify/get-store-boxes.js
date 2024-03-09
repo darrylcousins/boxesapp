@@ -33,7 +33,7 @@ export default async (req, res, next) => {
                 }
               }
             }
-            variants (first: 5) {
+            variants (first: 10) {
               nodes {
                 id
                 title

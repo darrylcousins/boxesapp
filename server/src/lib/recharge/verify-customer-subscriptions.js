@@ -91,6 +91,8 @@ export const verifyCustomerSubscriptions = async ({ customer, box_price_table })
       let diff;
       let dayDiff;
       for (const [id, group] of Object.entries(grouped)) {
+        console.log(id, Object.keys(group));
+        //console.log(group.box);
         // rc_subscription_ids, all grouped to the box
         // need to compare the count to actual extras
         // from properties figure out which extra subscriptions we need, or not.
@@ -101,6 +103,7 @@ export const verifyCustomerSubscriptions = async ({ customer, box_price_table })
 
           const shopify_product_id = group.box.external_product_id.ecommerce;
           const shopify_variant_id = group.box.external_variant_id.ecommerce;
+          console.log(properties);
 
           let variant_price;
           const price_item = box_price_table.find(el => el.variant_id === shopify_variant_id);
@@ -144,13 +147,15 @@ export const verifyCustomerSubscriptions = async ({ customer, box_price_table })
           if (dayDiff !== 3 || dayOfWeek !== group.box.order_day_of_week) {
             // we can push the whole group because we have already grouped by scheduled_at
             tempDate = new Date(group.box.updated_at);
+            tempDate.setMinutes(tempDate.getMinutes() - tempDate.getTimezoneOffset());
+            const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
             date_mismatch.push({
               message: dayDiff !== 3 ? "Incorrect delivery day" : "Incorrect order day",
               subscription_id: group.box.id,
               title: group.box.product_title,
               next_charge_scheduled_at: new Date(group.charge.scheduled_at).toDateString(),
               delivery_at: properties["Delivery Date"],
-              updated_at: `${tempDate.toDateString()} ${tempDate.toLocaleTimeString()}`,
+              updated_at: tempDate.toISOString().replace(/T/, ' ').replace(/\..+/, ''),
               cancelled_at: group.box.cancelled_at,
               order_day_of_week: group.box.order_day_of_week,
             });
@@ -188,13 +193,14 @@ export const verifyCustomerSubscriptions = async ({ customer, box_price_table })
               return extra_titles.includes(el.title) ? false : true;
             })) {
               tempDate = new Date(extra.updated_at);
+              tempDate.setMinutes(tempDate.getMinutes() - tempDate.getTimezoneOffset());
               orphans.push({
                 subscription_id: extra.subscription_id,
                 box_subscription_id: properties.box_subscription_id,
                 title: extra.title,
                 next_charge_scheduled_at: new Date(extra.next_charge_scheduled_at).toDateString(),
                 delivery_at: extra.delivery_at,
-                updated_at: extra.updated_at ? `${tempDate.toDateString()} ${tempDate.toLocaleTimeString()}` : null,
+                updated_at: tempDate.toISOString().replace(/T/, ' ').replace(/\..+/, ''),
                 cancelled_at: null, // data unavailable??? see rc_subscription_ids
               });
             };
@@ -264,12 +270,13 @@ export const verifyCustomerSubscriptions = async ({ customer, box_price_table })
           // push them onto orphans
           from_rc.forEach(el => {
             tempDate = new Date(el.updated_at);
+            tempDate.setMinutes(tempDate.getMinutes() - tempDate.getTimezoneOffset());
             orphans.push({
               subscription_id: el.subscription_id,
               title: el.title,
               next_charge_scheduled_at: new Date(el.next_charge_scheduled_at).toDateString(),
               delivery_at: el.delivery_at,
-              updated_at: el.updated_at ? `${tempDate.toDateString()} ${tempDate.toLocaleTimeString()}` : null,
+              updated_at: tempDate.toISOString().replace(/T/, ' ').replace(/\..+/, ''),
               cancelled_at: null, // data unavailable??? see rc_subscription_ids
             });
           })
@@ -293,13 +300,14 @@ export const verifyCustomerSubscriptions = async ({ customer, box_price_table })
         const deliveryDate = deliveryProp ? deliveryProp.value : "Missing";
         const boxId = boxProp ? boxProp.value : "Missing";
         tempDate = new Date(updated_at);
+        tempDate.setMinutes(tempDate.getMinutes() - tempDate.getTimezoneOffset());
         orphans.push({
           subscription_id: parseInt(subscription.id),
           box_subscription_id: boxId,
           title,
           next_charge_scheduled_at: new Date(next_charge_scheduled_at).toDateString(),
           delivery_at: deliveryDate,
-          updated_at: `${tempDate.toDateString()} ${tempDate.toLocaleTimeString()}`,
+          updated_at: tempDate.toISOString().replace(/T/, ' ').replace(/\..+/, ''),
           box_subscription_id: boxId,
           cancelled_at,
         });

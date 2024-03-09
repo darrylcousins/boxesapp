@@ -163,7 +163,7 @@ function* PickingModal({ delivered, getUriFilters }) {
     yield (
       <Fragment>
         <button
-          class={`dib w-20 outline-0 blue b--dark-green bt bb br bl-0 bg-transparent mv1 pointer`}
+          class={`dib w-20 outline-0 blue b--dark-green bg-white hover-white hover-bg-dark-blue bg-animate bt bb br bl-0 mv1 pointer`}
           title="Preview picking list"
           type="button"
           onclick={openModal}

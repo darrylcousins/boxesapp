@@ -11,7 +11,7 @@ import { createElement, Fragment } from "@b9g/crank";
  */
 const dateString = (el) => {
   const date = new Date(el.timestamp);
-  return `${date.toDateString()} ${date.toLocaleTimeString()}`;
+  return `${date.toDateString()} ${date.toLocaleTimeString({ hour: "2-digit", minute: "2-digit" })}`;
 };
 
 /**
@@ -105,15 +105,15 @@ const formatOther = (obj, title) => {
     return formatList(obj);
   };
   if (title === "stack") { // special case for error
-    const fixLine = (line) => {
-      // take off the error name
-      line = line.split(":").slice(1).join("");
-      return line.replace("///home/cousinsd/Projects/boxesapp/", "~"); // fix me
+    const fixLine = (line, idx) => {
+      if (idx === 0) line = line.split(":").slice(1).join(""); // remove repeated message and only show error type
+      if (idx > 0) line = line.split("src").slice(1); // shorten path
+      return line;
     };
     return (
       <div>
-        { obj.split("\n").slice(0,2).map(line => (
-          <p class="ma0">{ fixLine(line) }</p>
+        { obj.split("\n").slice(0,2).map((line, idx) => (
+          <p class="ma0">{ fixLine(line, idx) }</p>
         ))}
       </div>
     );
@@ -148,7 +148,7 @@ const formatOther = (obj, title) => {
 /*
  * Helper method to render log.meta
  */
-const formatMeta = (el, logLevel, includeProperties) => {
+const formatMeta = (el, logLevel, includeProperties, includeRcIDs, includeMessages) => {
   if (!Object.hasOwnProperty.call(el, 'meta')) {
     return <div>&nbsp;</div>;
   };
@@ -163,6 +163,13 @@ const formatMeta = (el, logLevel, includeProperties) => {
     metaData = Object.entries(el.meta[obj]);
     if (!includeProperties) {
       metaData = metaData.filter(([title, str]) => !propertyAttributes.includes(title));
+      metaData = metaData.filter(([title, str]) => title !== "properties");
+    };
+    if (!includeRcIDs) {
+      metaData = metaData.filter(([title, str]) => title !== "rc_subscription_ids");
+    };
+    if (!includeMessages) {
+      metaData = metaData.filter(([title, str]) => title !== "change_messages");
     };
     return (
       <div class="dt w-100 mv1">
@@ -172,7 +179,7 @@ const formatMeta = (el, logLevel, includeProperties) => {
                 { title }:
               </div>
               <div class="dtc w-80" style="min-width: 500px; width: 500px; word-wrap: break-word;">
-                { formatOther(str, title, includeProperties) }
+                { formatOther(str, title) }
               </div>
             </div>
         ))}

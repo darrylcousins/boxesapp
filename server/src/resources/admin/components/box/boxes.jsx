@@ -23,6 +23,12 @@ function* Boxes({ boxes }) {
     yield (
       <div class="mt2">
         <div class="cf">&nbsp;</div>
+        { boxes.some(el => Object.hasOwnProperty.call(el, "frozen")) && (
+          <div class="alert-box mv2 pt2 pl2 navy br3 ba b--navy bg-washed-blue">
+            <p class="tl ml2">Boxes cannot be edited after sbscribers have received charge upcoming email.{ " " }
+            (3 days before charge date, 6 days before delivery.</p>
+          </div>
+        )}
         <table class="mt2 w-100 center" cellSpacing="0" style="border-collapse: separate;">
           <thead>
             <tr>

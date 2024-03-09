@@ -2,7 +2,8 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { updateStoreObject } from "../../lib/shopify/helpers.js";
-import { sortObjectByKeys } from "../../lib/helpers.js";
+import { weekdays } from "../../lib/dates.js";
+import { sortObjectByKeys, delay } from "../../lib/helpers.js";
 import { mongoInsert } from "../../lib/mongo/mongo.js";
 import { processOrderJson } from "../../lib/orders.js";
 import updateProductInventory from "./update-product-inventory.js";
@@ -21,72 +22,81 @@ export default async function ordersCreate(topic, shop, body) {
   // use to determine if this is a box order
   
   const orderJson = JSON.parse(body);
-  //console.log(JSON.stringify(orderJson, null, 2));
-  // assumes box to be first, this is fine for now but somewhat dodgy
-  const order_number = orderJson.order_number.toString();
+
   const meta = {
     order: {
       shopify_order_id: orderJson.id,
-      order_number: `#${order_number}`,
     }
   };
-  // check firstly if order already stored
-  // XXX this will fail when we have multiple boxes in a single order
-  // We may then to add a counter to the order e.g. #1020A, #1020B???
-  const orders = await collection.countDocuments({ order_number });
-  if (orders > 0) {
-    return;
-  };
-  // to determine if this is a box item?? Best would be to compare against list of boxes?
-  // we don't get product_type in the order line item
-  // do this differently to allow multiple boxes ???
-  // test for properties is the only way me thinks
-  let product_id = null;
-  let box;
-  for (const line_item of orderJson.line_items) {
-    if (boxIds.includes(line_item.product_id)) {
-      // a container box
-      product_id = line_item.product_id;
-      box = line_item;
-      break;
-    };
-  };
 
-  //const product_id = orderJson.line_items[0].product_id;
-  if (!product_id) {
+  const orders = await processOrderJson(orderJson);
+
+  let multiple = false;
+  if (orders.length === 0) {
     meta.order = sortObjectByKeys(meta.order);
     _logger.notice(`${_filename(import.meta)} Create order webhook received but not a boxes order`, { meta });
     return;
   };
-  meta.order.box = box.name;
 
-
-  // check for open and fulfillment and paid??
-  // check if tag already stored
-  // for webhooks the body is a raw string
-  const order = await processOrderJson(orderJson);
+  if (orders.length > 1)  multiple = true;
+  const order = orders[0];
   meta.order.delivered = order.delivered;
   meta.order.email = order.contact_email;
   // try to get the recharge customer id in here by looking up customer collection by email?
   const customer = await _mongodb.collection("customers").findOne({email: order.contact_email});
   if (customer) meta.order.customer_id = customer.recharge_id;
-  const result = await mongoInsert(collection, order);
-  if (result.upsertedCount === 1) {
-    meta.order = sortObjectByKeys(meta.order);
-    _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });
-  };
-  const id = order.shopify_order_id.toString();
-  updateStoreObject(id, 'order', {
-    id, tags: order.delivered
+  await updateStoreObject(orderJson.id, 'order', {
+    id: orderJson.id.toString(), tags: `${orderJson.tags},${order.delivered}`
   });
-  updateProductInventory(order);
+  const alpha = Array.from(Array(26)).map((e, i) => i + 65);
+  const alphabet = alpha.map((x) => String.fromCharCode(x));
 
-  /*
-  try {
-    fs.writeFileSync(`shopify.order.json`, JSON.stringify(orderJson, null, 2));
-  } catch(err) {
-    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  for (const idx in orders) {
+    const order = orders[idx];
+    meta.order.box = order.box_name; // name the box with variant
+    if (multiple) {
+      meta.order.order_number = `${orderJson.order_number.toString()}${alphabet[idx]}`;
+    } else {
+      meta.order.order_number = orderJson.order_number.toString();
+    };
+    order.order_number = meta.order.order_number;
+
+    // check delivery against cutoff moment and delivery day this may be an
+    // abandoned cart that was picked up. I think the best solution is simply
+    // to flag it as wrong and alert shop administrator with an alert box on orders page
+    const delivered = new Date(order.delivered);
+    const cutoff = await _mongodb.collection("settings").findOne({
+      handle: "box-cutoff", weekday: new Intl.DateTimeFormat('en-NZ', {weekday: 'long'}).format(delivered)
+    });
+    let cutoffValue = 36.5; // set a reasonable default - get from settings!!!
+    if (cutoff) cutoffValue = cutoff.value; // sanity check
+
+    // the cutoff value is in hours
+    // every order should be created before this moment
+    // put into our timezone and add 24 hours so putting orders created on day of delivery
+    delivered.setMinutes(delivered.getMinutes() - delivered.getTimezoneOffset());
+    const deliveryMoment = Math.abs(delivered.getTime())/36e5;
+    const cutoffMoment = deliveryMoment - cutoff.value;
+    const created = new Date(order.created);
+    const createdMoment = Math.abs(Date.parse(created))/36e5;
+    if (createdMoment > cutoffMoment) {
+      if (createdMoment > deliveryMoment) {
+        order.error = "Created after delivery day";
+        console.log("Created after delivery day");
+      } else {
+        order.error = "Created after cutoff moment";
+        console.log("Created after cutoff moment");
+      };
+    };
+
+    const result = await mongoInsert(collection, order);
+    if (result.upsertedCount === 1) {
+      meta.order = sortObjectByKeys(meta.order);
+      _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} inserted.`, { meta });
+      await delay(2000); // seems to be required when logging in succession 1sec worked but hey what's 2 secs?
+    };
+    updateProductInventory(order);
   };
-  */
+
   return true;
 };

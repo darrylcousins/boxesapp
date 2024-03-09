@@ -50,10 +50,13 @@
     <script type="text/javascript">
       localStorage.setItem("proxy-path", "{{ proxy_path }}"); // proxy path used in shop
       localStorage.setItem("shop", "{{ shop }}"); // name of shop e.g. myshop-dev.myshopify.com
+      localStorage.setItem("shop_title", "{{ shop_title }}"); // name of shop Southbridge Boxes
       localStorage.setItem("host", "{{ host }}"); // server host e.g. https://myshop.boxexapp.nz
       localStorage.setItem("recharge", "{{ recharge }}"); // name for recharge link e.g. myshop-dev-sh
       localStorage.setItem("qs", "{{ qs }}"); // query string for admin session
       localStorage.setItem("admin_email", "{{ admin_email }}"); // admin email address
+      localStorage.setItem("admin_title", "{{ admin_title }}"); // admin email title
+      localStorage.setItem("email_subject", "{{ email_subject }}"); // email subject byline e.g. [soutthbridge boxes]
 
       const makeFullScreen = () => {
         document.querySelectorAll(".shopify-section").forEach(el => {

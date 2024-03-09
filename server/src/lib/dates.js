@@ -15,7 +15,7 @@ export const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', '
  */
 export const findNextWeekday = (day, current) => {
   // return the date of next Thursday as 14/01/2021 for example
-  // Thursday day is 4, Saturday is 6
+  // Sunday is 0, Saturday is 6
   // If not a current date object passed then use today
   const now = current ? new Date(current.getTime()) : new Date();
   now.setDate(now.getDate() + (day + 7 - now.getDay()) % 7);

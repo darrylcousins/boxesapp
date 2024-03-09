@@ -3,7 +3,7 @@
  */
 import { ObjectId } from "mongodb";
 import { sortObjectByKeys } from "../../lib/helpers.js";
-import { getBoxesForCharge, getMetaForCharge, writeFileForCharge, getMetaForBox } from "./helpers.js";
+import { findChangeMessages, getBoxesForCharge, getMetaForCharge, writeFileForCharge, getMetaForBox } from "./helpers.js";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
@@ -32,7 +32,7 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
 
   writeFileForCharge(charge, mytopic.toLowerCase().split("_")[1]);
 
-  let meta = getMetaForCharge(charge, topicLower);
+  //let meta = getMetaForCharge(charge, topicLower);
 
   // get the line_items not updated with a box_subscription_id property and sort into boxes
   // and a simple list of box subscription ids already updated with box_subscription_id
@@ -45,18 +45,28 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
    */
   try {
     for (const box_subscription_id of box_subscription_ids) {
-      meta = getMetaForBox(box_subscription_id, charge, topicLower);
+      const meta = getMetaForBox(box_subscription_id, charge, topicLower);
       const query = {
         subscription_id: parseInt(box_subscription_id),
         customer_id: parseInt(charge.customer.id),
         address_id: parseInt(charge.address_id),
-        scheduled_at: charge.scheduled_at, // must match the target date
-        deliver_at: meta.recharge["Delivery Date"],
+        //scheduled_at: charge.scheduled_at, // must match the target date
+        //deliver_at: meta.recharge["Delivery Date"],
       };
+      //console.log("charge updated query:", query);
+
+      /*
+       * NOTE: When only the delivery schedule (e.g. 1 week to 2 weeks) is
+       * changed then the charge is never updated and so does not come through
+       * here, therefore a similar routine is performed on subscription
+       * updated provided the updates_pending label indicates that only the
+       * delivery schedule has changed.
+       */
 
       // all rc_subscription_ids are true for this query
       const updates_pending = await _mongodb.collection("updates_pending").findOne(query);
       // failing my query do the query match here
+      //console.log("found updates pending?", updates_pending);
       if (updates_pending) {
 
         // items with quantity set to zero will be removed on subscription/deleted
@@ -64,6 +74,9 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
           // check that all subscriptions have updated or have been created
           return el.updated === true && Number.isInteger(el.subscription_id);
         });
+        //console.log("all updated?", allUpdated);
+        //console.log("meta rcs", meta.recharge.rc_subscription_ids);
+        //console.log("pending rcs", updates_pending.rc_subscription_ids);
 
         let countMatch = null;
         if (allUpdated) {
@@ -72,24 +85,9 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
           countMatch = rc_ids_removed.length === meta.recharge.rc_subscription_ids.length;
           if (countMatch) {
             meta.recharge.update_label = updates_pending.action;
-
-            if (updates_pending.action === "update" || updates_pending.action === "reconcile") {
-              // try to get the change_messags to add to the log
-              const logQuery = {};
-              logQuery[`meta.recharge.customer_id`] = query.customer_id;
-              logQuery[`meta.recharge.subscription_id`] = query.subscription_id;
-              logQuery[`meta.recharge.address_id`] = query.address_id;
-              logQuery[`meta.recharge.scheduled_at`] = query.scheduled_at;
-              logQuery[`meta.recharge.label`] = updates_pending.action;
-              // get the most recent and one only
-              const result = await _mongodb.collection("logs").find(logQuery).sort({ timestamp: -1 }).limit(1).toArray();
-              if (result.length > 0) {
-                console.log("found a log entry", result[0].meta.change_messages);
-                meta.recharge.change_messages = result[0].meta.change_messages;
-              } else {
-                console.log("Didn't find log entry", logQuery);
-              };
-            };
+            query.action = updates_pending.action;
+            const messages = findChangeMessages(query);
+            if (messages.length > 0) meta.recharge.change_messages = messages;
 
             // make log entry before removing so that it is available to get
             // charge_id from log when reactivating a subscription
@@ -102,9 +100,10 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
             await _logger.notice(`Charge updated (${updates_pending.action}) for subscription.`, { meta });
 
             // safely and surely remove the entry, only other place is on charge/deleted
-            console.log("=======================");
-            console.log("Deleting updates pending enty");
-            console.log("=======================");
+            // and in subscription/updated if only delivery schedule changed
+            console.log("=============================================");
+            console.log("Deleting updates pending entry charge/updated");
+            console.log("=============================================");
             await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(updates_pending._id) });
 
           };

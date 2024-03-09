@@ -104,8 +104,9 @@ export const updateStoreObject = async (id, objName, data) => {
   const url = `https://${process.env.SHOP_NAME}.myshopify.com/admin/api/${process.env.SHOPIFY_API_VERSION}/${objName}s/${id}.json`;
   const body = {};
   body[objName] = data;
+  console.log(id, objName, data);
   
-  return await fetch(url, {
+  const res = await fetch(url, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -115,8 +116,11 @@ export const updateStoreObject = async (id, objName, data) => {
   })
     .then(response => {
       //winstonLogger.info(`${_filename(import.meta)} Updated store ${objName} with id ${id} with data ${JSON.stringify(data, null, 2)}`);
+      console.log(`${_filename(import.meta)} Updated store ${objName} with id ${id} with data ${JSON.stringify(data, null, 2)}`);
       return response.status;
     });
+  console.log(res);
+  return res;
 };
 
 /*

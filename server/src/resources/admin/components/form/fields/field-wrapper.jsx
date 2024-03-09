@@ -23,7 +23,7 @@ function FieldWrapper(props) {
   return (
     <div class={`ttn fl w-${size} ${margin ? margin : ""}`}>
       <div class="tl ph2 mt1 ml0">
-        <label class={`fw6 lh-copy${hideLabel ? " dn": ""}`} htmlFor={id} for={id}>
+        <label class={`lh-copy${hideLabel ? " dn": ""}`} htmlFor={id} for={id}>
           {label}
         </label>
         {children}

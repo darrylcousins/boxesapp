@@ -23,6 +23,8 @@ function *Navigation({ pathname, mode }) {
    */
   let loading = true;
 
+  let staticUrl = ""; // see vite.config.js for running dev on port
+
   /**
    * Navigation json definition
    * @member {string} json
@@ -33,7 +35,7 @@ function *Navigation({ pathname, mode }) {
    * Promise fetching navigation json definition
    * @member {Promise} pull
    */
-  const pull = fetch(`./navigation.json`, {headers: {'Accept': 'application/json'}})
+  const pull = fetch(`${staticUrl}/navigation.json`, {headers: {'Accept': 'application/json'}})
     .then((res) => {
       if (!res.ok) {
         throw new Error(`${res.status} (${res.statusText})`);

@@ -50,12 +50,6 @@ async function* Customers() {
    */
   let loading = true;
   /**
-   * True while loading a customer
-   *
-   * @member {boolean} loadingCustomer
-   */
-  let loadingCustomer = false;
-  /**
    * The search term entered
    *
    * @member {object|string} searchTerm
@@ -120,6 +114,13 @@ async function* Customers() {
    * @type {object|null}
    */
   let pageSize = null;
+  /**
+   * A loading label inserted to  'Hold tight' text
+   *
+   * @member loadingLabel
+   * @type {string|null}
+   */
+  let loadingLabel = null;
   /**
    * Capture any customers on updates_pending table
    *
@@ -230,24 +231,35 @@ async function* Customers() {
    * @function fetchCustomerCharge
    */
   const fetchCustomerCharge = async (customer, charge_id) => {
-    const uri = `/api/recharge-customer-charge/${charge_id}`;
-    console.log(uri);
+    // slow things down a bit
     fetchError = null;
+    loadingLabel = `charge (${charge_id}) for ${customer.first_name} ${customer.last_name}`;
     loading = true;
-    this.refresh();
+    setTimeout(() => {
+      this.refresh();
+      doFetchCustomerCharge(customer, charge_id);
+    }, 300);
+  };
+
+  const doFetchCustomerCharge = async (customer, charge_id) => {
+    let uri = `/api/recharge-customer-charge/${charge_id}`;
+    uri = `${uri}?customer_id=${customer.recharge_id}`; // recharge id
+    window.scrollTo({top: 0, left: 0, behavior: "smooth" });
     await Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
         if (error !== null) {
           fetchError = error;
           loading = false;
+          loadingLabel = null;
           this.refresh();
           return null;
         };
         fetchCharge = json.charge;
         fetchCharge.groups = json.subscriptions,
-        console.log(fetchCharge);
-        fetchCustomer = customer;
+        fetchCharge.errors = json.errors,
+        fetchCustomer = json.customer;
+        // XXX animate her
         loading = false;
         this.refresh();
       })
@@ -266,30 +278,48 @@ async function* Customers() {
    * @function fetchRechargeCustomer
    */
   const fetchRechargeCustomer = async (customer_id) => {
-    const uri = `/api/recharge-customer?recharge_customer_id=${customer_id}`;
+    // slow things down a bit
     fetchError = null;
+    const customer = rechargeCustomers.find(el => el.recharge_id === customer_id);
+    loadingLabel = `charges for ${customer.first_name} ${customer.last_name}`;
     loading = true;
-    loadingCustomer = true;
-    this.refresh();
+    setTimeout(() => {
+      this.refresh();
+      doFetchRechargeCustomer(customer_id);
+    }, 300);
+  };
+
+  /**
+   * Fetch recharge customer
+   *
+   * @param {string} id The recharge customer id
+   * @function fetchRechargeCustomer
+   */
+  const doFetchRechargeCustomer = async (customer_id) => {
+    const uri = `/api/recharge-customer?recharge_customer_id=${customer_id}`;
+    window.scrollTo({top: 0, left: 0, behavior: "smooth" });
     await Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
         if (error !== null) {
           fetchError = error;
           loading = false;
-          loadingCustomer = false;
+          loadingLabel = null;
           this.refresh();
           return null;
         };
         fetchCustomer = json;
-        loadingCustomer = false;
         loading = false;
+        /* animate here
+        const content = document.querySelector("#page-content");
+        const options = { ...animationOptions };
+        let animate = content.animate({ opacity: 0.05 }, options);
+        */
         this.refresh();
       })
       .catch((err) => {
         fetchError = err;
         loading = false;
-        loadingCustomer = false;
         this.refresh();
         return null;
       });
@@ -407,7 +437,7 @@ async function* Customers() {
           <h4 class="pt0 lh-title ma0 mb4 fg-streamside-maroon" id="boxes-title">
             Recharge Customers {""}
             { fetchCustomer ? (
-              <span style="font-size: smaller;" class="ml4">
+              <span class="ml4">
                 {fetchCustomer.first_name} {fetchCustomer.last_name} &lt;{fetchCustomer.email}&gt;
               </span>
             ) : (
@@ -422,8 +452,9 @@ async function* Customers() {
         { !fetchCustomer && (
           <Fragment>
             <div class="alert-box cf dark-blue pa4 mt2 mb4 br3 ba b--dark-blue bg-washed-blue">
-              Customers here may not be synchronised to Recharge customers. They are updated nightly, but may also be re-sychronised here.
-              For example if they have cancelled or reactivated charges since last night's update.
+              Customers here may not be synchronised to Recharge customers. They are updated nightly.{" "}
+              But things may have changed since then, you can resynchronize the customer with the icon link beside the name.{" "}
+              This is recommended if you choose to open and individual charge.
             </div>
             <div class="w-100 flex-container">
               <div class="w-30 v-bottom tl flex">
@@ -500,12 +531,12 @@ async function* Customers() {
             </div>
           </Fragment>
         )}
-          <div class="ma1"><br /></div>
+        <div class="ma1"><br /></div>
         { loading && <BarLoader /> }
-        { loading && loadingCustomer && (
-          <div class="alert-box dark-blue pv2 ph4 ma2 br3 ba b--dark-blue bg-washed-blue">
+        { loading && (
+          <div class="alert-box dark-blue pv2 ph4 mv2 br3 ba b--dark-blue bg-washed-blue">
             <p>
-              <i class="b">Hold tight.</i> Collecting customer charges, sorting, and verifying subscriptions.{" "}
+              <i class="b">Hold tight.</i> Collecting { loadingLabel }, sorting, and verifying subscriptions.{" "}
             </p>
           </div>
         )}
@@ -529,7 +560,7 @@ async function* Customers() {
                     None found for your search term <b>{ searchTerm }</b>.
                   </div>
                 )}
-                <table id="customer-table" class="mt4 w-100 center" cellspacing="0">
+                <table id="customer-table" class={ `mt4 w-100 center${ loading ? " disableevents" : "" }` } cellspacing="0">
                   { rechargeCustomers.length > 0 && (
                     <Fragment>
                       <thead>
@@ -539,7 +570,7 @@ async function* Customers() {
                           <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Email</th>
                           <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Recharge</th>
                           <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Shopify</th>
-                          <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Upcoming</th>
+                          <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Upcoming (charge date)</th>
                         </tr>
                       </thead>
                       <tbody class="tl">

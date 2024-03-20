@@ -118,6 +118,7 @@ export default async (req, res, next) => {
     meta.recharge = sortObjectByKeys(meta.recharge);
     _logger.notice(`Boxesapp api request subscription ${label}.`, { meta });
 
+    //for (const update of updates) console.log(update);
     await updateSubscriptions({ updates, io, session_id });
 
   } catch(err) {

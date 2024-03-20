@@ -71,7 +71,7 @@ export default async (ev) => {
     "absolute",
     "b",
     "white",
-    "o-90",
+    "o-70",
     `bg-${bgColour}`);
   const content = document.querySelector("#app");
   const contentTop = content.getBoundingClientRect().top;

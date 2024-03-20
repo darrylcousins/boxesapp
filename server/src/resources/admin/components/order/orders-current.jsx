@@ -169,7 +169,7 @@ function* CurrentOrders() {
       })
       .catch((err) => {
         fetchError = err;
-        console.error("wtf fetch error:", fetchError);
+        console.error("fetch error:", fetchError);
         loading = false;
         this.refresh();
       });
@@ -220,20 +220,17 @@ function* CurrentOrders() {
     loading = true;
     this.refresh();
     let uri = getUriFilters(`/api/current-orders-by-date/${new Date(selectedDate).getTime()}`, false);
-    console.log(uri);
     Fetch(uri)
       .then((result) => {
         const { error, json } = result;
         if (error !== null) {
           fetchError = error;
-          console.error("1 fetch error:", fetchError);
           loading = false;
           this.refresh();
         } else {
           const { headers, orders } = json;
           fetchHeaders = headers;
           fetchOrders = orders;
-          console.log(fetchOrders);
           loading = false;
           if (document.getElementById("orders-table")) {
             animateFadeForAction("orders-table", async () => await this.refresh());
@@ -244,7 +241,6 @@ function* CurrentOrders() {
       })
       .catch((err) => {
         fetchError = err;
-        console.error("2 fetch error:", fetchError);
         loading = false;
         this.refresh();
       });
@@ -466,9 +462,6 @@ function* CurrentOrders() {
     filterField = args.filter_field;
     filterValue = args.filter_value;
     filterType = args.filter_type;
-    console.log(filterField);
-    console.log(filterValue);
-    console.log(filterType);
     getOrders();
   };
 

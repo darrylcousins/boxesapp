@@ -9,6 +9,7 @@ import { redisOptions, apiQueueName, mailQueueName } from "./config.js";
 import { doRechargeQuery } from "../lib/recharge/helpers.js";
 import { doShopQuery } from "../lib/shopify/helpers.js";
 import { winstonLogger } from "../../config/winston.js";
+import { getMongo } from "../lib/mongo/mongo.js";
 
 const workerOptions = {
   connection: redisOptions,
@@ -36,14 +37,48 @@ const apiProcessor = async (job) => {
     returnvalue = await doShopQuery(job.data);
   };
   const { method, status, statusText, title } = returnvalue;
-  winstonLogger.info(`\
+  let log = `\
 ${color(process.env.SHOP_NAME.padEnd(17, " "), "magenta")} \
 ${color(job.name.padEnd(17, " "), "brightWhite")} \
 ${color(method, "green")} \
 ${color(status, "yellow")} \
 ${color(statusText, "blue")} \
-${title ? color(title, "white") : ""}\
-  `);
+${title ? color(title, "white") : ""}
+${JSON.stringify(job.data, null, 2)}
+  `;
+  if (parseInt(process.env.DEBUG) === 1) {
+    const { mongo, client } = await getMongo(); // must close connection myself client.close()
+    const mapper = (acc, curr, idx) => {
+      const [key, value] = curr;
+      return { ...acc, [key]: value };
+    };
+    if (Object.hasOwn(job.data, "query")) job.data.query = job.data.query.reduce(mapper, {});
+    if (Object.hasOwn(job.data, "body")) job.data.body = JSON.parse(job.data.body);
+    const data = { ...job.data };
+    data.method = method;
+    data.status = `${status} ${statusText}`;
+    delete data.processorName;
+    let name = "Recharge";
+    if (job.data.processorName !== "makeRechargeQuery") { // makeShopifyQuery
+      name = "Shopify"; // one or the other
+    };
+    let message = `API call to ${name}`;
+    name = name.toLowerCase();
+    try {
+      const doc = {
+        timestamp: new Date(),
+        level: "notice",
+        message,
+        meta: {
+          [name]: data
+        }
+      };
+      const result = await mongo.collection("logs").insertOne(doc);
+    } finally {
+      await client.close();
+    };
+  };
+  winstonLogger.info(log);
   return returnvalue;
 };
 

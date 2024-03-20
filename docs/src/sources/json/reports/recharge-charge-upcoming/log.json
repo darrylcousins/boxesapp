@@ -1,0 +1,449 @@
+[
+  {
+    "_id": "65f8838f97a3ab2367053caa",
+    "timestamp": "2024-03-18T18:10:23.111Z",
+    "level": "notice",
+    "message": "Webhook received charge/upcoming.",
+    "meta": {
+      "recharge": {
+        "charge_id": 1034178180,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-21",
+        "status": "queued",
+        "deliver_at": "Sun Mar 24 2024",
+        "box_titles": [
+          "The Small Vege Box",
+          "The Small Vege Box"
+        ],
+        "box_subscription_ids": [
+          461615843,
+          461618275
+        ],
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 461615843,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 461615843
+          },
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 461618275,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 461618275
+          },
+          {
+            "shopify_product_id": "6621185769622",
+            "subscription_id": 464306100,
+            "quantity": 1,
+            "title": "Beetroot 1kg",
+            "box_subscription_id": 461618275
+          },
+          {
+            "shopify_product_id": "6166842245270",
+            "subscription_id": 464306749,
+            "quantity": 1,
+            "title": "Cabbage Green",
+            "box_subscription_id": 461615843
+          },
+          {
+            "shopify_product_id": "6621185769622",
+            "subscription_id": 464325417,
+            "quantity": 1,
+            "title": "Beetroot 1kg",
+            "box_subscription_id": 461615843
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": "65f88390cb9c9b1d031ecda3",
+    "timestamp": "2024-03-18T18:10:24.049Z",
+    "level": "notice",
+    "message": "API call",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions/461615843",
+        "title": "Fetching subscription The Small Vege Box Sunday",
+        "method": "GET",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "65f88390cb9c9b1d031ecda4",
+    "timestamp": "2024-03-18T18:10:24.411Z",
+    "level": "notice",
+    "message": "API call",
+    "meta": {
+      "recharge": {
+        "path": "charges",
+        "query": {
+          "customer_id": 84185810,
+          "address_id": null,
+          "purchase_item_id": 461615843,
+          "status": "success",
+          "limit": 1
+        },
+        "title": "Get last order",
+        "method": "GET",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "65f88391cb9c9b1d031ecda5",
+    "timestamp": "2024-03-18T18:10:25.373Z",
+    "level": "notice",
+    "message": "API call",
+    "meta": {
+      "shopify": {
+        "path": "orders/5586021351574.json",
+        "fields": [
+          "current_total_price",
+          "order_number",
+          "tags",
+          "line_items"
+        ],
+        "title": "Get order",
+        "method": "GET",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "65f88391cb9c9b1d031ecda6",
+    "timestamp": "2024-03-18T18:10:25.700Z",
+    "level": "notice",
+    "message": "API call",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions/461618275",
+        "title": "Fetching subscription The Small Vege Box Sunday",
+        "method": "GET",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "65f88392cb9c9b1d031ecda7",
+    "timestamp": "2024-03-18T18:10:26.218Z",
+    "level": "notice",
+    "message": "API call",
+    "meta": {
+      "recharge": {
+        "path": "charges",
+        "query": {
+          "customer_id": 84185810,
+          "address_id": null,
+          "purchase_item_id": 461618275,
+          "status": "success",
+          "limit": 1
+        },
+        "title": "Get last order",
+        "method": "GET",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "65f88392cb9c9b1d031ecda8",
+    "timestamp": "2024-03-18T18:10:26.686Z",
+    "level": "notice",
+    "message": "API call",
+    "meta": {
+      "shopify": {
+        "path": "orders/5586021351574.json",
+        "fields": [
+          "current_total_price",
+          "order_number",
+          "tags",
+          "line_items"
+        ],
+        "title": "Get order",
+        "method": "GET",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "65f8839297a3ab2367053cab",
+    "timestamp": "2024-03-18T18:10:26.697Z",
+    "level": "notice",
+    "message": "Charge upcoming updates required.",
+    "meta": {
+      "recharge": {
+        "Add on Items": "",
+        "Delivery Date": "Sun Mar 24 2024",
+        "Including": "Beetroot 1kg (2),Chard Red,Curly Kale,Mesclun Mix,Potato Agria 1kg",
+        "Removed Items": "Coriander Bunch,Onions Brown 4x",
+        "Swapped Items": "Carrots 1kg,Daikon Radish ea",
+        "action": "upcoming",
+        "address_id": 151085761,
+        "box_subscription_id": "461615843",
+        "change_messages": [
+          "The included items have been changed this week",
+          "Extra swapped item Beetroot 1kg included as an extra include for this box.",
+          "Add on item Cabbage Green unavailable in this box.",
+          "Swapped Carrots 1kg for your removed item Onions Brown 4x in this box."
+        ],
+        "charge_id": 1034178180,
+        "customer_id": null,
+        "deliver_at": "Sun Mar 24 2024",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 6163982876822,
+            "subscription_id": 461615843,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "price": 2500,
+            "delivery_at": "Sun Mar 24 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6166842245270,
+            "subscription_id": 464306749,
+            "quantity": 0,
+            "title": "Cabbage Green",
+            "price": 450,
+            "delivery_at": "Sun Mar 24 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6621185769622,
+            "subscription_id": 464325417,
+            "quantity": 1,
+            "title": "Beetroot 1kg",
+            "price": 500,
+            "delivery_at": "Sun Mar 24 2024",
+            "updated": true
+          }
+        ],
+        "scheduled_at": "2024-03-21",
+        "subscription_id": 461615843,
+        "title": "The Small Vege Box",
+        "variant": "Sunday"
+      }
+    }
+  },
+  {
+    "_id": "65f88393cb9c9b1d031ecda9",
+    "timestamp": "2024-03-18T18:10:27.491Z",
+    "level": "notice",
+    "message": "API call",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions/461615843",
+        "method": "PUT",
+        "title": "Updating The Small Vege Box",
+        "body": {
+          "properties": [
+            {
+              "name": "Delivery Date",
+              "value": "Sun Mar 24 2024"
+            },
+            {
+              "name": "Including",
+              "value": "Beetroot 1kg (2),Chard Red,Curly Kale,Mesclun Mix,Potato Agria 1kg"
+            },
+            {
+              "name": "Add on Items",
+              "value": ""
+            },
+            {
+              "name": "Swapped Items",
+              "value": "Carrots 1kg,Daikon Radish ea"
+            },
+            {
+              "name": "Removed Items",
+              "value": "Coriander Bunch,Onions Brown 4x"
+            },
+            {
+              "name": "box_subscription_id",
+              "value": "461615843"
+            }
+          ],
+          "quantity": 1,
+          "price": "25.00"
+        },
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "65f8839497a3ab2367053cac",
+    "timestamp": "2024-03-18T18:10:28.342Z",
+    "level": "notice",
+    "message": "Webhook received subscription/updated.",
+    "meta": {
+      "recharge": {
+        "subscription_id": 461615843,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-21",
+        "deliver_at": "Sun Mar 24 2024",
+        "quantity": 1,
+        "title": "The Small Vege Box",
+        "box_subscription_id": 461615843
+      }
+    }
+  },
+  {
+    "_id": "65f88397cb9c9b1d031ecdaa",
+    "timestamp": "2024-03-18T18:10:31.296Z",
+    "level": "notice",
+    "message": "API call",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions/464306749",
+        "method": "DELETE",
+        "title": "Deleting Cabbage Green",
+        "finish": true,
+        "status": "204 NO CONTENT"
+      }
+    }
+  },
+  {
+    "_id": "65f8839797a3ab2367053cad",
+    "timestamp": "2024-03-18T18:10:31.862Z",
+    "level": "notice",
+    "message": "Webhook received subscription/deleted.",
+    "meta": {
+      "recharge": {
+        "subscription_id": 464306749,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-21",
+        "deliver_at": "Sun Mar 24 2024",
+        "quantity": 1,
+        "title": "Cabbage Green",
+        "box_subscription_id": 461615843
+      }
+    }
+  },
+  {
+    "_id": "65f8839a97a3ab2367053cae",
+    "timestamp": "2024-03-18T18:10:34.307Z",
+    "level": "notice",
+    "message": "charge upcoming without updates.",
+    "meta": {
+      "recharge": {
+        "Add on Items": "",
+        "Box Subscription": "461618275",
+        "Delivery Date": "Sun Mar 24 2024",
+        "Including": "Beetroot 1kg (2),Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Potato Agria 1kg",
+        "Removed Items": "Onions Brown 4x",
+        "Swapped Items": "Carrots 1kg",
+        "address_id": 151085761,
+        "box_subscription_ids": [
+          461618275
+        ],
+        "boxes": [
+          "The Small Vege Box"
+        ],
+        "charge_id": 1034178180,
+        "charge_processed_at": null,
+        "charge_status": "queued",
+        "customer_id": 84185810,
+        "email": "jon.doe@mail.me",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 6163982876822,
+            "subscription_id": 461618275,
+            "quantity": 1,
+            "title": "The Small Vege Box"
+          },
+          {
+            "shopify_product_id": 6621185769622,
+            "subscription_id": 464306100,
+            "quantity": 1,
+            "title": "Beetroot 1kg"
+          }
+        ],
+        "scheduled_at": "2024-03-21",
+        "subscription_id": 461618275,
+        "topic": "charge/upcoming"
+      }
+    }
+  },
+  {
+    "_id": "65f8839a97a3ab2367053caf",
+    "timestamp": "2024-03-18T18:10:34.481Z",
+    "level": "notice",
+    "message": "Charge upcoming email sent.",
+    "meta": {
+      "recharge": {
+        "customer_id": 84185810,
+        "charge_id": 1034178180,
+        "titles": [
+          "The Small Vege Box",
+          "The Small Vege Box"
+        ],
+        "subscription_ids": [
+          461615843,
+          461618275
+        ],
+        "subject": "Charge Upcoming Delivery Sunday",
+        "email": "cousinsd@proton.me"
+      }
+    }
+  },
+  {
+    "_id": "65f883a497a3ab2367053cb0",
+    "timestamp": "2024-03-18T18:10:44.125Z",
+    "level": "notice",
+    "message": "Webhook received charge/updated.",
+    "meta": {
+      "recharge": {
+        "charge_id": 1034178180,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-21",
+        "status": "queued",
+        "deliver_at": "Sun Mar 24 2024",
+        "box_titles": [
+          "The Small Vege Box",
+          "The Small Vege Box"
+        ],
+        "box_subscription_ids": [
+          461615843,
+          461618275
+        ],
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 461615843,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 461615843
+          },
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 461618275,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 461618275
+          },
+          {
+            "shopify_product_id": "6621185769622",
+            "subscription_id": 464306100,
+            "quantity": 1,
+            "title": "Beetroot 1kg",
+            "box_subscription_id": 461618275
+          },
+          {
+            "shopify_product_id": "6621185769622",
+            "subscription_id": 464325417,
+            "quantity": 1,
+            "title": "Beetroot 1kg",
+            "box_subscription_id": 461615843
+          }
+        ]
+      }
+    }
+  }
+]

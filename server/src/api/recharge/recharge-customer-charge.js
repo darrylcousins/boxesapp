@@ -1,11 +1,10 @@
 /*
- * @module api/recharge/recharge-customer-charges.js
+ * @module api/recharge/recharge-customer-charge.js
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
-import { gatherData, reconcileChargeGroup, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
-import fs from "fs";
+import { gatherVerifiedData } from "../../lib/recharge/verify-customer-subscriptions.js";
 
 /*
  * @function recharge/recharge-customer-charge.js
@@ -17,6 +16,8 @@ import fs from "fs";
  * components/subscription.js and cancelled.js where the subscription_id is
  * provided. It is also used in recharge admin to load a single charge cf all
  * customer charges (components/customers.js)
+ *
+ * To run verifyCustomerSubscriptions we need a customer object as stored in local db
  */
 export default async (req, res, next) => {
 
@@ -32,31 +33,31 @@ export default async (req, res, next) => {
       });
 
     } catch(err) {
-      _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-      // err.message.contains("404") ??
-      return res.status(200).json({ error: err.message });
+      if (err.message.includes("404") && !customer_id) { // from admin
+        // no need to log it
+        const message = `Failed to find charge with id ${charge_id}, perhaps you need to synchronize the customer?`;
+        return res.status(200).json({ error: message });
+      } else {
+        _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+      };
     };
 
-
-    // NOTE take a look at the routine in recharge-customer-charges - should I have the here
     if (result.charge) {
-      const groups = [];
-      const grouped = await reconcileGetGrouped({ charge: result.charge });
-      //console.log(result.charge);
-      //console.log(JSON.stringify(result.charge.line_items, null, 2));
+      // need to fetch recharge customer
+      //const customer = await _mongodb.collection("customers").findOne({recharge_id: parseInt(customer_id)});
+      const { customer } = await makeRechargeQuery({
+        path: `customers/${customer_id}`,
+        title: `Get Customer (${customer_id})`,
+        //io,
+      });
 
-      groups.push(grouped);
-      let data = [];
-
-      for (const grouped of groups) {
-        data = await gatherData({ grouped, result: data });
-      };
+      const { data, errors } = await gatherVerifiedData({ charges: [ result.charge ], customer });
 
       if (subscription_id) {
         const subscription = data.find(el => el.attributes.subscription_id === parseInt(subscription_id));
-        return res.status(200).json({ subscription });
+        return res.status(200).json({ subscription, errors, customer });
       } else {
-        return res.status(200).json({ charge: result.charge, subscriptions: data });
+        return res.status(200).json({ charge: result.charge, subscriptions: data, errors, customer });
       };
     } else {
       return res.status(200).json({ error: "Not found" });

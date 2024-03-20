@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { MongoClient, ObjectId } from "mongodb";
 import { Shopify } from "../src/lib/shopify/index.js";
-import { getMongo } from "../src/lib/mongo/mongo.js";
+import { getMongo, getMongoConnection } from "../src/lib/mongo/mongo.js";
 import { winstonLogger } from "../config/winston.js";
 
 const getLogger = () => {
@@ -26,11 +26,12 @@ _logger.notice = (e) => console.log(e);
 
 const run = async () => {
 
-  //global._mongodb = await getMongoConnection(); // if mongo connection required
-  // for winstonLogger to store to mongo we need a client in the process
-  // regardless whether it is actually used in the script
-  const { mongo: mongodb, client: dbClient } = await getMongo();
-  global._mongodb = mongodb;
+  // this one closes the connection on SIGINT
+  global._mongodb = await getMongoConnection(); // if mongo connection required
+
+  // this one you need to close the connection yourself client.close()
+  //const { mongo: mongodb, client: dbClient } = await getMongo();
+  //global._mongodb = mongodb;
 
   //await Shopify.initialize(); // if shopify query required
 
@@ -39,11 +40,15 @@ const run = async () => {
 
   try {
     console.log('this ran');
+    //const entries = [ new ObjectId("65f883926eab03f1aa51cc0a"), new ObjectId("65f9d4f46eab03f1aa546034")];
+    const entries = ["dsds"];
+    const res = await _mongodb.collection("updates_pending").find({ "_id": { "$in": entries } }).toArray();
+    console.log(res);
 
   } catch(e) {
     console.error(e);
   } finally {
-    dbClient.close();
+    //dbClient.close();
     process.emit('SIGINT'); // will close mongo connection
   };
 };

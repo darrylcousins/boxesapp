@@ -23,7 +23,8 @@ export default async ({ subscriptions, attributes }) => {
   const meta = {
     customer_id: attributes.customer.id,
     charge_id: attributes.charge_id,
-    subscription_id: attributes.subscription_id,
+    [`title${subscriptions.length > 0 ? "s" : ""}`]: subscriptions.map(el => el.attributes.title),
+    [`subscription_id${subscriptions.length > 0 ? "s" : ""}`]: subscriptions.map(el => el.attributes.subscription_id),
     subject,
     email,
   };

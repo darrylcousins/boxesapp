@@ -8,12 +8,16 @@ import {
   updatePendingEntry,
 } from "./helpers.js";
 
+/*
+ * NOTE Returns false if no action is taken and true if some update occured
+ *
+ */
 export default async function subscriptionDeleted(topic, shop, body, { io, sockets }) {
 
   const mytopic = "SUBSCRIPTION_DELETED";
   if (topic !== mytopic) {
     _logger.notice(`Recharge webhook ${topic} received but expected ${mytopic}`, { meta: { recharge: {} } });
-    return;
+    return false;
   };
   const topicLower = topic.toLowerCase().replace(/_/g, "/");
 
@@ -45,8 +49,9 @@ export default async function subscriptionDeleted(topic, shop, body, { io, socke
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    return false;
   };
 
-  return;
+  return true;
 };
 

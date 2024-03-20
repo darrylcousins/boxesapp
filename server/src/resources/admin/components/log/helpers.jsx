@@ -11,7 +11,12 @@ import { createElement, Fragment } from "@b9g/crank";
  */
 const dateString = (el) => {
   const date = new Date(el.timestamp);
-  return `${date.toDateString()} ${date.toLocaleTimeString({ hour: "2-digit", minute: "2-digit" })}`;
+  return (
+    <Fragment>
+      <span>{ `${date.toDateString()} ${date.toLocaleTimeString({ hour: "2-digit", minute: "2-digit" })}` }</span><br></br>
+      <span style="font-size: 0.9em">{ el.timestamp.replace("T", " ").replace("Z", "") }</span>
+    </Fragment>
+  );
 };
 
 /**
@@ -112,7 +117,7 @@ const formatOther = (obj, title) => {
     };
     return (
       <div>
-        { obj.split("\n").slice(0,2).map((line, idx) => (
+        { obj.split("\n").slice(0,4).map((line, idx) => (
           <p class="ma0">{ fixLine(line, idx) }</p>
         ))}
       </div>

@@ -26,11 +26,12 @@ import { weekdays } from "../helpers";
  * @yields {Element} - a html list
  * @params items 
  */
-const DTable = ({ items, title }) => {
+const DTable = ({ items, title, show_title }) => {
 
   const dl = {
+    "color": "navy",
     "border-style": "solid",
-    "border-color": "grey",
+    "border-color": "navy",
     "border-radius": "2px",
     "border-top-left-radius": "3px",
     "border-top-right-radius": "3px",
@@ -38,6 +39,7 @@ const DTable = ({ items, title }) => {
     "padding": "0.5em",
     "margin-top": "0.5em",
     "margin-bottom": "0.5em",
+    "background-color": "washed-blue",
   };
 
   const dt = {
@@ -46,7 +48,6 @@ const DTable = ({ items, title }) => {
     "width": "250px",
     "text-align": "right",
     "font-weight": "bold",
-    "color": "grey",
   };
 
   const dd = {
@@ -61,8 +62,10 @@ const DTable = ({ items, title }) => {
 
   return (
     <Fragment>
-      <div class="b f3">{ title }</div>
-      <ul class="list pv2 mv0">
+      { show_title && (
+        <div class="b f3 pl2 navy">{ title }</div>
+      )}
+      <ul class="list pl1 pr2 mv0">
         { items && items.length > 0 && (
           items.map((thing, idx) => (
             <li style={ li }>
@@ -77,12 +80,22 @@ const DTable = ({ items, title }) => {
                 <dd style={ dd }>{ thing.title }</dd>
                 <dt style={ dt }>Subscription ID</dt>
                 <dd style={ dd }>{ thing.subscription_id }</dd>
-                <dt style={ dt }>Next charge</dt>
-                <dd style={ dd }>{ thing.next_charge_scheduled_at }</dd>
+                { thing.next_charge_scheduled_at && (
+                  <Fragment>
+                    <dt style={ dt }>Next charge</dt>
+                    <dd style={ dd }>{ thing.next_charge_scheduled_at }</dd>
+                  </Fragment>
+                )}
                 { thing.box_subscription_id && (
                   <Fragment>
                     <dt style={ dt }>Box subscription id</dt>
                     <dd style={ dd }>{ thing.box_subscription_id }</dd>
+                  </Fragment>
+                )}
+                { thing.box_title && (
+                  <Fragment>
+                    <dt style={ dt }>Box title</dt>
+                    <dd style={ dd }>{ thing.box_title }</dd>
                   </Fragment>
                 )}
                 { thing.delivery_at && (
@@ -119,6 +132,18 @@ const DTable = ({ items, title }) => {
                   <Fragment>
                     <dt style={ dt }>Charge day</dt>
                     <dd style={ dd }>{ weekdays[thing.order_day_of_week + 1] }</dd>
+                  </Fragment>
+                )}
+                { thing.subscribed_quantity && (
+                  <Fragment>
+                    <dt style={ dt }>Subscribed quantity</dt>
+                    <dd style={ dd }>{ thing.subscribed_quantity }</dd>
+                  </Fragment>
+                )}
+                { thing.listed_quantity && (
+                  <Fragment>
+                    <dt style={ dt }>Listed quantity</dt>
+                    <dd style={ dd }>{ thing.listed_quantity }</dd>
                   </Fragment>
                 )}
               </dl>

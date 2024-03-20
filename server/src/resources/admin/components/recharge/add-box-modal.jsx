@@ -23,15 +23,16 @@ import Button from "../lib/button";
  * @returns {Element} IconButton
  */
 const ShowLink = (opts) => {
-  const { name, title, color } = opts;
+  console.log("show link opts", opts);
+  const { admin, name, title, color } = opts;
   return (
     <button
-      class={ `b navy dib bg-white bg-animate hover-white hover-bg-navy w-20 pv2 outline-0 mv1 pointer b--navy ba br2 br--left` }
+      class={ `b navy dib bg-white bg-animate hover-white hover-bg-navy ${admin ? "w-20" : "w-100 w-20-ns" } pv2 outline-0 mv1 pointer b--navy ba br2 br--left` }
       title="Add Box"
       type="button"
       name="add-box"
       >
-        <span class="v-mid di">Add box subscription</span>
+        <span class="v-mid di">Add Box Subscription</span>
     </button>
   );
 };

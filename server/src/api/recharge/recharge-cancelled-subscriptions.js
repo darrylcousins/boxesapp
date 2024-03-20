@@ -1,22 +1,35 @@
 /*
- * @module api/recharge/recharge-customer-charges.js
+ * @module api/recharge/recharge-cancelled-subscriptions.js
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
 import { makeRechargeQuery, getLastOrder } from "../../lib/recharge/helpers.js";
 import { reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
-import fs from "fs";
+import { getIOSocket } from "./lib.js";
 
 /*
  * Retrieve all cancelled subscriptions for customer
  *
- * @function recharge/recharge-customer-charges.js
+ * @function recharge/recharge-cancelled-subscriptions.js
  * @param (Http request object) req
  * @param (Http response object) res
  * @param (function) next
  */
 export default async (req, res, next) => {
+
   let query;
+  let io;
+  let session_id;
+  let socket;
+  const quiet = true;
+  if (Object.hasOwn(req.query, "session_id")) {
+    req.body.session_id = req.query.session_id;
+
+    socket = getIOSocket(req, quiet);
+    io = socket.io;
+    session_id = socket.session_id;
+  };
+
 
   if (Object.hasOwnProperty.call(req.params, "customer_id")) {
     query = [
@@ -34,10 +47,12 @@ export default async (req, res, next) => {
       path: `subscriptions`,
       query,
       title: "Cancelled subscriptions",
+      io,
     });
 
     if (!subscriptions || !subscriptions.length) {
       // return a result of none
+      if (io) io.emit("finished", { session_id });
       res.status(200).json([]);
       return;
     };
@@ -54,7 +69,7 @@ export default async (req, res, next) => {
     charge.address_id = address_id;
     charge.scheduled_at = null;
 
-    const grouped = await reconcileGetGrouped({ charge });
+    const grouped = await reconcileGetGrouped({ charge, io });
 
     const result = [];
 
@@ -81,6 +96,8 @@ export default async (req, res, next) => {
         lastOrder
       });
     };
+
+    if (io) io.emit("finished", { session_id });
 
     res.status(200).json(result);
   } catch(err) {

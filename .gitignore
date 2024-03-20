@@ -14,17 +14,24 @@ assets
 assets/product-images
 assets/logos
 
+
+# extra bits in scripts
+scripts/report
+
 # themes
 theme*/
 
-# testing files and broken tests
+# debug folder, testing files and broken tests
+debug
 recharge.*.json
 shopify.*.json
 charge.*.json
 order.*.json
 streamside.*.json
 *.bak.js
+*bak.js
 *.bak.jsx
+*bak.jsx
 get-streamside*
 
 # a configuration file

@@ -7,6 +7,7 @@ import { upsertPending } from "../../api/recharge/lib.js";
 import { updateSubscription, updateChargeDate, getSubscription } from "../../lib/recharge/helpers.js";
 import subscriptionCreatedMail from "../../mail/subscription-created.js";
 import { getBoxesForCharge, getMetaForCharge, writeFileForCharge  } from "./helpers.js";
+import fs from "fs";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
@@ -15,13 +16,18 @@ import { getBoxesForCharge, getMetaForCharge, writeFileForCharge  } from "./help
  * to be updated. As does also the next charge date to sync with 3 days before
  * delivery
  *
+ * Later a new charge is created after an order is processed and at point the
+ * Delivery Date will need to be updated
+ *
+ * NOTE Returns false if no action is taken and true if some update occured
+ *
  */
-export default async function chargeCreated(topic, shop, body, { io, sockets }) {
+export default async function chargeCreated(topic, shop, body) {
 
   const mytopic = "CHARGE_CREATED";
   if (topic !== mytopic) {
     _logger.notice(`Recharge webhook ${topic} received but expected ${mytopic}`, { meta: { recharge: {} } });
-    return;
+    return false;
   };
   const topicLower = topic.toLowerCase().replace(/_/g, "/");
 
@@ -30,14 +36,11 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
   writeFileForCharge(charge, mytopic.toLowerCase().split("_")[1]);
 
   let meta;
+  let deliveryDate;
+  let days;
 
   // hold a list of box subscription centred meta data for logging ie hold subscription_id for a box
   let listOfMeta = [];
-
-  // Only process charges that have been successful
-  if ( charge.status !== "success") {
-    return;
-  };
 
   // get the line_items not updated with a box_subscription_id property and sort into boxes
   // and a simple list of box subscription ids already updated with box_subscription_id
@@ -46,27 +49,93 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
   // newly created order - it is used by charge/updated, but not here
   const { box_subscriptions_possible, box_subscription_ids } = getBoxesForCharge(charge);
 
-  /* verify that customer is in local mongodb, and set or update charge list
-   */
-  const doc = {
-    first_name: charge.billing_address.first_name,
-    last_name: charge.billing_address.last_name,
-    email: charge.customer.email,
-    recharge_id: parseInt(charge.customer.id),
-    shopify_id: parseInt(charge.customer.external_customer_id.ecommerce),
+  if ( charge.status === "success") {
+    /* verify that customer is in local mongodb, and set or update charge list */
+    const doc = {
+      first_name: charge.billing_address.first_name,
+      last_name: charge.billing_address.last_name,
+      email: charge.customer.email,
+      recharge_id: parseInt(charge.customer.id),
+      shopify_id: parseInt(charge.customer.external_customer_id.ecommerce),
+    };
+    await _mongodb.collection("customers").updateOne(
+      { recharge_id: parseInt(charge.customer.id) },
+      { 
+        "$set" : doc,
+        "$addToSet" : { charge_list: [ parseInt(charge.id), charge.scheduled_at ] },
+      },
+      { "upsert": true }
+    );
   };
-  await _mongodb.collection("customers").updateOne(
-    { recharge_id: parseInt(charge.customer.id) },
-    { 
-      "$set" : doc,
-      "$addToSet" : { charge_list: [ parseInt(charge.id), charge.scheduled_at ] },
-    },
-    { "upsert": true }
-  );
+
+  // Only process charges that have been successful i.e. were created an charged via shopify
+  if ( charge.status !== "success") {
+    // NOTE this is a hack until I can move it into order/processed
+    // Every line_item should share the same delivery date, if not then an error
+    if (box_subscription_ids.length > 0) {
+
+      meta = getMetaForCharge(charge, "charge/created");
+      let lineItemDates;
+      try {
+        // first figure what the delivery day should be for this charge date
+        const currentChargeDate = new Date(Date.parse(charge.scheduled_at));
+        currentChargeDate.setDate(currentChargeDate.getDate() + 3);
+        deliveryDate = currentChargeDate.toDateString();
+
+        // then check if all line_items share the same delivery day, if not then
+        // maybe another workflow is happening - I'm thinking pausing or
+        // rescheduling a box
+        lineItemDates = charge.line_items.map(el => {
+          if (el.properties.find(prop => prop.name === "Delivery Date")) {
+            return el.properties.find(prop => prop.name === "Delivery Date").value;
+          };
+          return null
+        }).filter(el => el !== null);
+        lineItemDates = Array.from(new Set(lineItemDates));
+        if (lineItemDates.length !== 1) {
+          // log this as an error
+          meta.recharge = sortObjectByKeys(meta.recharge);
+          meta.recharge.dates = lineItemDates;
+          _logger.notice(`Charge created but not all dates equal, exiting.`, { meta });
+          return false; // back out for now
+        };
+          
+        // for now assume the the scheduled_at date is correct?
+        for (const line_item of charge.line_items) {
+          const dateItem = line_item.properties.find(el => el.name === "Delivery Date");
+          if (dateItem) {
+            if (dateItem.value !== deliveryDate) {
+              const boxId = line_item.properties.find(el => el.name === "box_subscription_id").value;
+              dateItem.value = deliveryDate; // always the same for every item on the order
+              await updateSubscription({
+                id: line_item.purchase_item_id,
+                body: { properties: line_item.properties },
+                title: `Updating delivery date for ${line_item.title} in charge/created`,
+              });
+            };
+          };
+        };
+
+        // XXX copied from below needs fixing and look at the timer before sending email
+        // XXX XXX XXX XXX XXX 
+        //const entry_id = await upsertPending({
+        //});
+
+      } catch(err) {
+        _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+        return false;
+      };
+      meta.recharge = sortObjectByKeys(meta.recharge);
+      meta.recharge.dates = lineItemDates;
+      _logger.notice(`Charge created and updated delivery dates.`, { meta });
+      return true;
+    };
+    return false;
+  };
 
   // nothing further to process if this is empty
   if (box_subscriptions_possible.length === 0) {
-    return;
+    return false;
   };
 
   if (box_subscriptions_possible.length > 1) {
@@ -82,7 +151,7 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
       description: "charge/created webhook exited so action required",
     };
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-    return;
+    return false;
   };
 
   /* 
@@ -96,7 +165,6 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
 
     let boxSubscription; // hang on the box subscription for logging
     /* Collect values used when updating subscriptions */
-    let deliveryDate;
     let currentDeliveryDate;
     let boxSubscriptionId;
     let nextChargeScheduledAt;
@@ -122,7 +190,7 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
      * Note this will break if the user sets units to days, which should
      * not be possible
      */
-    const days = parseInt(subscription.order_interval_frequency) * 7; // number of weeks by 7
+    days = parseInt(subscription.order_interval_frequency) * 7; // number of weeks by 7
     const dateItem = boxSubscription.properties.find(el => el.name === "Delivery Date");
     currentDeliveryDate = dateItem.value;
     const dateObj = new Date(Date.parse(currentDeliveryDate));
@@ -238,7 +306,8 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
     result[0].attributes.nextDeliveryDate = deliveryDate;
     result[0].attributes.lastOrder.current = true;
 
-    // email template used an array of subscriptions - here it is an array of one
+    // email template used an array of subscriptions - here it is an array of
+    // one, only on the creation of a new subscription via a shopify order
     const mailOpts = {
       subscription: result[0],
       address: updatedCharge.shipping_address };
@@ -262,7 +331,7 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
     for (const update of updates) {
       const opts = {
         id: update.id,
-        title: update.title,
+        title: `Updating properties for ${update.title} for new subscription`,
         body: update.body,
       };
       await updateSubscription(opts);
@@ -281,9 +350,10 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    return false;
   };
 
-  return;
+  return true;
 };
 
 

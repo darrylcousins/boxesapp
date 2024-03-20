@@ -3,9 +3,12 @@
  */
 
 import { ObjectId } from "mongodb";
+import { writeFileForCharge } from "./helpers.js";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
+ *
+ * NOTE Returns false if no action is taken and true if some update occured
  *
  */
 export default async function chargeDeleted(topic, shop, body, { io, sockets }) {
@@ -13,11 +16,13 @@ export default async function chargeDeleted(topic, shop, body, { io, sockets }) 
   const mytopic = "CHARGE_DELETED";
   if (topic !== mytopic) {
     _logger.notice(`Recharge webhook ${topic} received but expected ${mytopic}`, { meta: { recharge: {} } });
-    return;
+    return false;
   };
   const topicLower = topic.toLowerCase().replace(/_/g, "/");
 
   const { charge } = JSON.parse(body);
+
+  writeFileForCharge(charge, mytopic.toLowerCase().split("_")[1]);
 
   try {
 
@@ -54,14 +59,17 @@ export default async function chargeDeleted(topic, shop, body, { io, sockets }) 
       console.log("Deleting updates pending entry charge/deleted");
       console.log("=======================");
       await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
+      if (parseInt(process.env.DEBUG) === 1) {
+        _logger.notice("Deleting updates_pending entry charge/deleted", { meta: { recharge: entry }});
+      };
     };
 
-
   } catch(err) {
-
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    return false;
   };
 
+  return true;
 };
 
 

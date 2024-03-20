@@ -40,6 +40,7 @@ function *Credits({ mode }) {
    */
   let loading = true;
 
+  let staticUrl = ""; // see vite.config.js for running dev on port
   /*
    * Control the collapse of the form
    * @function toggleCollapse
@@ -48,7 +49,6 @@ function *Credits({ mode }) {
     collapsed = !collapsed;
     await this.refresh();
     if (!collapsed) { // component has been collapsed
-      console.log("Want to scroll window");
       setTimeout(() => {
         const content = document.querySelector("#credit-content");
         /* css html { scroll-behaviour: smooth } */
@@ -59,7 +59,7 @@ function *Credits({ mode }) {
   };
 
   const pullContent = () => {
-    fetch("credits.md", {headers: {'Accept': 'text/markdown'}})
+    fetch(`${staticUrl}/credits.md`, {headers: {'Accept': 'text/markdown'}})
       .then((res) => {
         if (!res.ok) {
           throw new Error(`${res.status} (${res.statusText})`);

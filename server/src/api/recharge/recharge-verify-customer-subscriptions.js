@@ -24,12 +24,12 @@ export default async (req, res, next) => {
   try {
 
     // customer object only requires recharge_id
-    const { orphans, date_mismatch, price_mismatch } = await verifyCustomerSubscriptions({ customer, box_price_table: [] });
+    const { orphans, date_mismatch, price_mismatch, count_mismatch } = await verifyCustomerSubscriptions({ customer, price_table: [] });
     const query = { customer_id: customer.recharge_id };
 
     // actually confident that I can delete all the orphans but we shan't at
     // the moment, they will be emailed to admin and self and stored on a table
-    if (orphans.length || date_mismatch.length || price_mismatch.length) {
+    if (orphans.length || date_mismatch.length || price_mismatch.length || count_mismatch.length) {
       // store data on faulty_subscription table
       // here it will be updating the timestamp only for most cases
       delete customer._id;
@@ -43,6 +43,7 @@ export default async (req, res, next) => {
         { "$set" : {
           orphans,
           date_mismatch,
+          count_mismatch,
           price_mismatch,
           timestamp,
         }},
@@ -53,6 +54,7 @@ export default async (req, res, next) => {
       return res.status(200).json({
         orphans,
         date_mismatch,
+        count_mismatch,
         price_mismatch,
         timestamp,
       });

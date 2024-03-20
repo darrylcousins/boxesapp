@@ -12,13 +12,15 @@ import { findChangeMessages, getBoxesForCharge, getMetaForCharge, writeFileForCh
  * to be updated. As does also the next charge date to sync with 3 days before
  * delivery
  *
+ * NOTE Returns false if no action is taken and true if some update occured
+ *
  */
 export default async function chargeUpdated(topic, shop, body, { io, sockets }) {
 
   const mytopic = "CHARGE_UPDATED";
   if (topic !== mytopic) {
     _logger.notice(`Recharge webhook ${topic} received but expected ${mytopic}`, { meta: { recharge: {} } });
-    return;
+    return false;
   };
   const topicLower = topic.toLowerCase().replace(/_/g, "/");
 
@@ -27,12 +29,10 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
   if (charge.shipping_lines.length > 0 && charge.shipping_lines[0].code.includes("PENDING")) {
     _logger.notice(`Charge received but still pending`,
       { meta: { recharge: {charge_id: charge.id} } });
-    return;
+    return false;
   };
 
   writeFileForCharge(charge, mytopic.toLowerCase().split("_")[1]);
-
-  //let meta = getMetaForCharge(charge, topicLower);
 
   // get the line_items not updated with a box_subscription_id property and sort into boxes
   // and a simple list of box subscription ids already updated with box_subscription_id
@@ -85,6 +85,7 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
           countMatch = rc_ids_removed.length === meta.recharge.rc_subscription_ids.length;
           if (countMatch) {
             meta.recharge.update_label = updates_pending.action;
+            meta.recharge.rc_subscription_ids = updates_pending.rc_subscription_ids;
             query.action = updates_pending.action;
             const messages = findChangeMessages(query);
             if (messages.length > 0) meta.recharge.change_messages = messages;
@@ -105,6 +106,9 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
             console.log("Deleting updates pending entry charge/updated");
             console.log("=============================================");
             await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(updates_pending._id) });
+            if (parseInt(process.env.DEBUG) === 1) {
+              _logger.notice("Deleting updates_pending entry charge/updated", { meta: { recharge: updates_pending }});
+            };
 
           };
         };
@@ -135,6 +139,8 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    return false;
   };
 
+  return true;
 };

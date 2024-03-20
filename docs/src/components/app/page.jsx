@@ -32,7 +32,10 @@ import {
  * @example
  * { !loading && <Navigation /> }
  */
-function *Page() {
+async function *Page() {
+
+  let staticUrl = ""; // see vite.config.js for running dev on port
+
   /**
    * Loading indicator
    * @member {boolean} loading
@@ -70,6 +73,11 @@ function *Page() {
    * @member {string} html
    */
   let html = "";
+  /**
+   * If we have another component to render, i.e. Reports
+   * @member {object} component
+   */
+  let Component = null;
 
   addEventListener("beforeunload", () => { return false; });
 
@@ -118,12 +126,22 @@ function *Page() {
    * Promise fetching markdown content
    * @method {Promise} pullPage
    */
-  const pullPage = (pathname) => {
-    fetch(`.${pathname}.md`, {
-      headers: {
-        "Accept": "text/markdown",
-        "Cache-Control": "no-cache",
-      }})
+  const pullPage = async (pathname) => {
+    console.log(pathname);
+    if (pathname === "/reports") {
+      loading = false;
+      showAlert = false;
+      Component = await import("./reports.jsx").then(({ default: Reports }) => Reports);
+      this.refresh();
+      return;
+    };
+    Component = null;
+
+    const headers = {
+      "Accept": "text/markdown",
+    };
+    if (staticUrl.length < 2) headers["Cache-Control"] = "no-cache";
+    fetch(`${staticUrl}${pathname}.md`, {headers})
       .then((res) => {
         if (!res.ok) {
           throw new Error(`${res.status} (${res.statusText})`);
@@ -183,9 +201,9 @@ ${ `${ fence }` }
    * The ev.target is in Navigation
    */
   this.addEventListener("click", async (ev) => {
-    if (typeof ev.target.dataset.page === "undefined") return; // ignore other clicks
-    ev.preventDefault();
+    if (typeof ev.target.dataset.page === "undefined") return false; // ignore other clicks
 
+    ev.preventDefault();
     pathname = ev.target.dataset.page;
     history.pushState("", "", pathname)
 
@@ -199,7 +217,7 @@ ${ `${ fence }` }
 
     animate.addEventListener("finish", async () => {
       //await delay(1000); // pretend network load
-      pullPage(pathname);
+      await pullPage(pathname);
       options.duration = 5000;
       animate = markdown.animate({ opacity: 1 }, animationOptions);
     });
@@ -211,8 +229,9 @@ ${ `${ fence }` }
   });
 
   let pathname = window.location.pathname === "/" ? "/index" : window.location.pathname;
-
-  pullPage(pathname);
+  console.log(window.location.pathname);
+  console.log(pathname);
+  await pullPage(pathname);
 
   const toggleMode = (value) => {
     mode = value;
@@ -228,7 +247,7 @@ ${ `${ fence }` }
   // initialized with dark-mode
   document.documentElement.classList.toggle(`${mode}-mode`, true);
 
-  while(true) {
+  for await (const _ of this) { // eslint-disable-line no-unused-vars
     yield (
       <Fragment>
         <div id="overlay" class="dn"></div>
@@ -263,7 +282,7 @@ ${ `${ fence }` }
             <a
               href="https://responsibleaidisclosure.com/"
               title="RAID: Responsible Ai Disclosure">
-            <img src="no-ai.png"
+            <img src={ `${staticUrl}/no-ai.png` }
               class="outline-0"
               style="height: 25px;"
               height="25px"
@@ -275,7 +294,7 @@ ${ `${ fence }` }
             <a
               href="https://showyourstripes.info"
               title="ShowYourStripes">
-            <img src="stripes-global-trimmed.png"
+            <img src={ `${staticUrl}/stripes-global-trimmed.png` }
               title="ShowYourStripes"
               class="outline-0"
               style="overflow: none"
@@ -296,10 +315,16 @@ ${ `${ fence }` }
         )}
         <div id="page-wrapper" role="document">
           <div id="page-content" role="main" class={ `markdown-body ${mode}-mode` }>
-            { parsed ? (
-              <Raw value={ html } />
+            { Component ? (
+              <Component mode={ mode } />
             ) : (
-              <Raw value={ md_html } />
+              <Fragment>
+                { parsed ? (
+                  <Raw value={ html } />
+                ) : (
+                  <Raw value={ md_html } />
+                )}
+              </Fragment>
             )}
           </div>
           <footer class="footer pb2 pt3 mt3 tl bt nowrap">
@@ -310,9 +335,9 @@ ${ `${ fence }` }
             Darryl Cousins
             <span class="ml1">&lt;
               <a class="link dim"
-                href="mailto:cousinsd@proton.me"
-                title="cousinsd@proton.me">
-                cousinsd@proton.me
+                href="mailto:cousinsd@cousinsd.net"
+                title="cousinsd@cousinsd.net">
+                cousinsd@cousinsd.net
               </a>&gt;
             </span>
           </footer>

@@ -354,6 +354,7 @@ function FormModalWrapper(Component, options) {
             color={color}
             title={linkTitle ? linkTitle : title}
             showModal={showModal}
+            {...props}
           />
           {visible && (
             <Portal root={main}>

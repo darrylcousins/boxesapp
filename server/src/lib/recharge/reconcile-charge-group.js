@@ -7,7 +7,7 @@ import { getNZDeliveryDay } from "../dates.js";
 import { getLastOrder, makeRechargeQuery, findBoxes } from "./helpers.js";
 import isEqual from "lodash.isequal";
 import { winstonLogger } from "../../../config/winston.js";
-import reconcileBoxLists from "../../api/reconcile-box-lists.js";
+import reconcileBoxLists from "./reconcile-box-lists.js";
 
 /* helper method because logging also is performed outside the server thread */
 const getLogger = () => {
@@ -35,12 +35,14 @@ export const reconcileGetGrouped = async ({ charge }) => {
    * { box: the box line item, includes: the other line items, charge: the parsed charge }
    */
 
+  const box_subscription_ids = []; // collect ids of items that have and Including property
   const line_items = [ ...charge.line_items ];
   // ensure the box is at the start to pick up the box subscription
-  for(var x in line_items) line_items[x].properties.some(el => el.name === "Including") ? line_items.unshift(line_items.splice(x,1)[0]) : 0;
+  for(var x in line_items) line_items[x].variant_title !== null ? line_items.unshift(line_items.splice(x,1)[0]) : 0;
   try {
     for (const line_item of line_items) {
       const box_subscription_property = line_item.properties.find(el => el.name === "box_subscription_id");
+      const box_subscription = line_item.properties.find(el => el.name === "Including");
       if (!box_subscription_property) {
         // should never happen! But what to do if it does? Maybe run the subscription-create webhook script?
         // Jun 2023 Switching to updating box_subscription_id on first charge created webhook
@@ -49,11 +51,16 @@ export const reconcileGetGrouped = async ({ charge }) => {
         continue; // so we don't throw an error
       };
       const box_subscription_id = parseInt(box_subscription_property.value);
+      if (box_subscription) {
+        box_subscription_ids.push(line_item.purchase_item_id.toString());
+      };
       if (!grouped.hasOwnProperty(box_subscription_id)) {
         grouped[box_subscription_id] = {"box": null, "included": [], "rc_subscription_ids": []}; // initilize
       };
-      if (line_item.purchase_item_id === box_subscription_id) {
+      if (line_item.purchase_item_id === box_subscription_id && box_subscription) {
         grouped[box_subscription_id].box = line_item;
+        // in order to properly verify the subscription I really do need the subscription!!!
+      } else if (line_item.purchase_item_id !== box_subscription_id && box_subscription) {
       } else {
         grouped[box_subscription_id].included.push(line_item);
       };
@@ -81,8 +88,11 @@ export const reconcileGetGrouped = async ({ charge }) => {
       };
       grouped[box_subscription_id].rc_subscription_ids.push(rc_subscription_id);
       grouped[box_subscription_id].charge = charge;
-
-
+    };
+    for (const id of box_subscription_ids) {
+      if (!Object.keys(grouped).includes(id)) {
+        grouped[id] = {"box": null, "included": [], "rc_subscription_ids": [], charge}; // initilize
+      };
     };
     for (const [box_subscription_id, group] of Object.entries(grouped)) {
 
@@ -123,7 +133,7 @@ export const reconcileGetGroups = async ({ charges }) => {
   return groups;
 };
 
-export const reconcileChargeGroup = async ({ subscription, includedSubscriptions }) => {
+export const reconcileChargeGroup = async ({ subscription, includedSubscriptions, io }) => {
 
   // this is the box
   // make properties into easily accessible object
@@ -161,6 +171,8 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   const nextDeliveryDate = boxProperties["Delivery Date"];
   // subscription.order_interval_unit === "week" Always, boxesapp insists on it
   const days = subscription.order_interval_frequency * 7;
+
+  if (io) io.emit("message", `Finding a current ${subscription.product_title} for ${nextDeliveryDate} ...`);
 
   // if a box matches the delivery date, then we have a next box
   // otherwise just trying to find matches
@@ -210,7 +222,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
       product_id: parseInt(subscription.external_product_id.ecommerce),
       subscription_id: subscription.id,
     };
-    lastOrder = await getLastOrder(orderQuery);
+    lastOrder = await getLastOrder(orderQuery, io);
   } catch(err) {
     lastOrder = {};
   };
@@ -219,9 +231,11 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   // change box for example
   let reconciled;
   if (hasNextBox) {
+    if (io) io.emit("message", `Reconciling to ${fetchBox.delivered} ...`);
     reconciled = await reconcileBoxLists(fetchBox, boxProperties);
     reconciled.properties.box_subscription_id = `${subscription.id}`;
   } else {
+    if (io) io.emit("message", `No current box for the moment ...`);
     reconciled = { properties: boxProperties, messages: [], updates: [] };
   };
 
@@ -273,7 +287,7 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
  * @function gatherData
  * @returns { grouped }
  */
-export const gatherData = async ({ grouped, result }) => {
+export const gatherData = async ({ grouped, result, io }) => {
 
   for (const group of Object.values(grouped)) {
 
@@ -285,7 +299,8 @@ export const gatherData = async ({ grouped, result }) => {
     const nextChargeDate = getNZDeliveryDay(chargeDate.getTime());
 
     let subscription;
-    // XXX in order to get the frequency I need to get the actual subscription
+    // NOTE in order to get the frequency I need to get the actual subscription
+    // XXX need to fix this in the verify script!!!! Because I'm always be called!!!
     if (!Object.hasOwnProperty.call(group, "subscription")) {
       let res;
       try {
@@ -294,9 +309,11 @@ export const gatherData = async ({ grouped, result }) => {
 
         // XXX try/catch? This can fail with 404 when subscriptions have been
         // orphaned so the box_subscription_id value is dead
+        const title = Object.hasOwn(group.box, "product_title") ? group.box.product_title : group.box.title;
         res = await makeRechargeQuery({
           path: `subscriptions/${item_id}`,
-          title: group.box.title
+          title: `Fetching subscription ${title} ${group.box.variant_title}`,
+          io,
         });
       } catch(err) {
         getLogger().error({message: `gatherData ${err.message}`, level: err.level, stack: err.stack, meta: err});
@@ -341,9 +358,10 @@ export const gatherData = async ({ grouped, result }) => {
       nowAvailableAsAddOns,
       lastOrder,
     } = await reconcileChargeGroup({
-      subscription, includedSubscriptions
+      subscription, includedSubscriptions, io,
     });
 
+    if (io) io.emit("message", `Collecting updates ...`);
     const updates = subscriptionUpdates.map(el => {
       return {
         subscription_id: el.subscription_id, // missing
@@ -356,6 +374,7 @@ export const gatherData = async ({ grouped, result }) => {
     });
 
     if (updates.length > 0) {
+      if (io) io.emit("message", `Found updates ...`);
       // need to adjust rc_subscription_ids
       const rc_subscription_ids = [ ...group.rc_subscription_ids ];
       for (const update of updates) {
@@ -415,6 +434,9 @@ export const gatherData = async ({ grouped, result }) => {
         fetchBox.includedProducts = previousBox.includedProducts;
         fetchBox.addOnProducts = previousBox.addOnProducts;
       };
+    } else {
+      // need to inject the price the verify script will alert to any problems
+      fetchBox.shopify_price = subscription.price;
     };
 
     /*

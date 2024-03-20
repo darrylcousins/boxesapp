@@ -34,7 +34,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   await renderer.render(
     <Fragment>
       <Page />
-
     </Fragment>
   , document.querySelector("#app"));
 });

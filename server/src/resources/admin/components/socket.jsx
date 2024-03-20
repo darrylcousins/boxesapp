@@ -5,6 +5,7 @@
  */
 
 import { io } from "socket.io-client";
+import { sleepUntil } from "./helpers";
 
 /*
  * Get and connect to socket.io, on connect insert the session_id into the
@@ -16,7 +17,7 @@ import { io } from "socket.io-client";
  * complete, we could wait for a signal via a socket that would indicate the
  * the server side process had been completed.
  */
-const appendMessage = (data, colour, divId) => {
+const appendMessage = async (data, colour, divId) => {
   //console.log(data);
 
   /* helper method to check if we to scroll messages into view
@@ -28,26 +29,31 @@ const appendMessage = (data, colour, divId) => {
       return !(rect.bottom - viewHeight >= 0);
   };
 
-  const socketMessages = document.getElementById(divId);
-  if (socketMessages) {
-    socketMessages.classList.add("pa3"); // only add padding when we have content - whitespace fix
-    let innerDiv = socketMessages.firstElementChild;
-    if (!innerDiv) {
-      innerDiv = document.createElement("div");
-      socketMessages.appendChild(innerDiv);
-    };
-    let message = document.createElement("p");
-    message.classList.add("mt0", "mb1", "pv0", colour);
-    message.textContent = data;
-    innerDiv.appendChild(message);
-    socketMessages.scrollTo({
-      top: socketMessages.scrollHeight,
-      behavior: "smooth",
+  await sleepUntil(() => document.getElementById(divId), 50)
+    .then((res) => {
+      const socketMessages = res;
+      if (socketMessages) {
+        socketMessages.classList.add("pa3"); // only add padding when we have content - whitespace fix
+        let innerDiv = socketMessages.firstElementChild;
+        if (!innerDiv) {
+          innerDiv = document.createElement("div");
+          socketMessages.appendChild(innerDiv);
+        };
+        let message = document.createElement("p");
+        message.classList.add("mt0", "mb1", "pv0", colour);
+        message.textContent = data;
+        innerDiv.appendChild(message);
+        socketMessages.scrollTo({
+          top: socketMessages.scrollHeight,
+          behavior: "smooth",
+        });
+        if (!checkVisible(socketMessages)) {
+          socketMessages.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
+        };
+      };
+    }).catch((e) => {
+      // no need for action
     });
-    if (!checkVisible(socketMessages)) {
-      socketMessages.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
-    };
-  };
 };
 
 export const getSessionId = async (callback, data, divId, component) => {
@@ -73,7 +79,7 @@ export const getSessionId = async (callback, data, divId, component) => {
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
     const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
     const start = `[warn]`.padEnd(9);
-    appendMessage(`${start} [${d}] ${data}`, "red", divId);
+    await appendMessage(`${start} [${d}] ${data}`, "red", divId);
   });
   socket.on('message', async (data) => { // start and othe info
     //console.log('message', data);
@@ -82,7 +88,7 @@ export const getSessionId = async (callback, data, divId, component) => {
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
     const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
     const start = `[info]`.padEnd(9);
-    appendMessage(`${start} [${d}] ${data}`, "dark-blue", divId);
+    await appendMessage(`${start} [${d}] ${data}`, "dark-blue", divId);
   });
   socket.on('progress', async (data) => { // usually progress from bull job
     //console.log('progress', data);
@@ -91,7 +97,7 @@ export const getSessionId = async (callback, data, divId, component) => {
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
     const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
     const start = `[step]`.padEnd(9);
-    appendMessage(`${start} [${d}] ${data}`, "black", divId);
+    await appendMessage(`${start} [${d}] ${data}`, "black", divId);
   });
   socket.on('completed', async (data) => { // usually from webhook confiming update from Recharge
     //console.log('completed', data);
@@ -100,7 +106,7 @@ export const getSessionId = async (callback, data, divId, component) => {
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
     const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
     const start = `[success]`.padEnd(9);
-    appendMessage(`${start} [${d}] ${data}`, "dark-green", divId);
+    await appendMessage(`${start} [${d}] ${data}`, "dark-green", divId);
   });
   socket.on('error', async (data) => { // usually progress from bull job
     //console.log('progress', data);
@@ -109,7 +115,7 @@ export const getSessionId = async (callback, data, divId, component) => {
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
     const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
     const start = `[error]`.padEnd(9);
-    appendMessage(`${start} [${d}] ${data}`, "red", divId);
+    await appendMessage(`${start} [${d}] ${data}`, "red", divId);
   });
   socket.on('charge', async (charge_id) => { // when the subscription updates are complete (remove updates_pending entry)
     component.dispatchEvent(
@@ -121,18 +127,18 @@ export const getSessionId = async (callback, data, divId, component) => {
   });
   socket.on('finished', async (data) => {
     // some care needed here to make sure we send to the correct component
+    console.log(data);
     if (data.session_id === session_id) {
       console.log('closing connection for id', session_id);
-      console.log(data);
+      //console.log(data);
       const date = new Date();
       date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
       const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
       const start = `[success]`.padEnd(9);
       const message = "Finished, closing connection";
-      appendMessage(`${start} [${d}] ${message}`, "dark-green", divId);
+      await appendMessage(`${start} [${d}] ${message}`, "dark-green", divId);
       socket.disconnect();
       let event = data.action !== "created" ? "socket.closed" : "subscription.created";
-      console.log(event);
       window.dispatchEvent(
         new CustomEvent(event, {
           bubbles: true,

@@ -4,6 +4,7 @@
  */
 
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import { getIOSocket } from "./lib.js";
 
 /*
  * @function recharge/recharge-customer.js
@@ -15,6 +16,17 @@ import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
  * now uses customers stored in mongodb)
  */
 export default async (req, res, next) => {
+
+  let io;
+  let session_id;
+  let socket;
+  if (Object.hasOwn(req.query, "session_id")) {
+    req.body.session_id = req.query.session_id;
+    socket = getIOSocket(req);
+    io = socket.io;
+    session_id = socket.io;
+  };
+
   // get recharge customer using shopify customer id
   let path = "customers";
   let query;
@@ -33,7 +45,8 @@ export default async (req, res, next) => {
     const result = await makeRechargeQuery({
       path,
       query,
-      title: "Recharge Customer"
+      title: "Recharge Customer",
+      io,
     });
     if (result.customer) {
       res.status(200).json(result.customer);

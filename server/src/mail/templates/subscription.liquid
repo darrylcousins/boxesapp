@@ -45,31 +45,37 @@
       <mj-column>
         <mj-table>
           {% if subscription.attributes.newIncludedInThisBox.size > 0 %}
-            <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-              <td valign="top" width="120px">
-                New in this weeks box:
+            <tr style="padding-bottom:5px;">
+              <td valign="top" style="color:#777;text-align:left;">
+                New includes this week:
               </td>
-              <td valign="top" style="padding: 5px 0px 5px 20px">
+            </tr>
+            <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
+              <td valign="top" style="padding: 0px 0px 5px 120px">
                 {{ subscription.attributes.newIncludedInThisBox | join: ", " }}
               </td>
             </tr>
           {% endif %}
           {% if subscription.attributes.notIncludedInThisBox.size > 0 %}
-            <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-              <td valign="top" width="120px">
-                Not included in this weeks box:
+            <tr style="padding-bottom:5px;">
+              <td valign="top" style="color:#777;text-align:left;">
+                Not included this week:
               </td>
-              <td valign="top" style="padding: 5px 0px 5px 20px">
+            </tr>
+            <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
+              <td valign="top" style="padding: 0px 0px 5px 120px">
                 {{ subscription.attributes.notIncludedInThisBox | join: ", " }}
               </td>
             </tr>
           {% endif %}
           {% if subscription.attributes.nowAvailableAsAddOns.size > 0 %}
-            <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
-              <td valign="top" width="120px">
-                New add ons in this weeks box:
+            <tr style="padding-bottom:5px;">
+              <td valign="top" style="color:#777;text-align:left;">
+                New add ons this week:
               </td>
-              <td valign="top" style="padding: 5px 0px 5px 20px">
+            </tr>
+            <tr style="padding-bottom:5px;border-bottom:1px solid #ddd">
+              <td valign="top" style="padding: 0px 0px 5px 120px">
                 {{ subscription.attributes.nowAvailableAsAddOns | join: ", " }}
               </td>
             </tr>

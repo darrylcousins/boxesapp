@@ -35,6 +35,17 @@ export const displayMessages = (display, messages) => {
   };
 };
 
+/**
+ * Helper method to pluralize a word
+ * Doesn't account for 'es' as pluralize
+ *
+ * @function pluralize
+ */
+export const pluralize = (count, word) => {
+  if (count === 1) return word;
+  return word + "s";
+};
+
 /*
  * Helper method to get time taken as a mins:secs string
  */

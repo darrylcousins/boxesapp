@@ -1,5 +1,5 @@
 {
-  "navigation":[
+  "navigation": [
     {
       "title":"Home",
       "link":"/index",
@@ -69,6 +69,11 @@
       "title":"Thoughts",
       "link":"/thoughts",
       "description":"A wishlist, todo, and ramblings"
+    },
+    {
+      "title":"Reports",
+      "link":"/reports",
+      "description":"Some analysis of debug logs"
     }
   ]
 }

@@ -59,12 +59,12 @@ const main = async () => {
         });
       };
 
-      const { orphans, date_mismatch, price_mismatch, price_table } = await verifyCustomerSubscriptions({ customer, box_price_table });
+      const { orphans, date_mismatch, price_mismatch, count_mismatch, price_table } = await verifyCustomerSubscriptions({ customer, box_price_table });
       box_price_table = [ ...price_table ];
 
       // actually confident that I can delete all the orphans but we shan't at
       // the moment, they will be emailed to admin and self and stored on a table
-      if (orphans.length || date_mismatch.length || updates_pending.length || price_mismatch.length) {
+      if (orphans.length || date_mismatch.length || updates_pending.length || price_mismatch.length || count_mismatch.length) {
         // store data on faulty_subscription table
         delete customer._id;
         delete customer.subscriptions_active_count;
@@ -77,18 +77,18 @@ const main = async () => {
             orphans,
             date_mismatch,
             price_mismatch,
+            count_mismatch,
             timestamp: new Date(),
           }},
           { "upsert": true }
         );
-
-        console.log(date_mismatch);
 
         result.push({
           customer,
           orphans,
           date_mismatch,
           price_mismatch,
+          count_mismatch,
           updates_pending,
         });
       };

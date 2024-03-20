@@ -36,7 +36,7 @@ async function makeMongoConnection() {
 /*
  * In this case it is the resposibility of the caller to close the connection
  * Only used so far in makeShopQuery which is called in a separate process from worker
- * @function getMong
+ * @function getMongo
  */
 export const getMongo = async () => {
   let mongo;

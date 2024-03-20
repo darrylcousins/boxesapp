@@ -104,3 +104,4 @@ Maybe analyse cancel/edit/delete emails to look for patterns and customer behavi
 [crankjs]: https://crankjs.org/
 [mongo]: https://mongodb.com
 [shopify]: https://shopify.com
+[recharge]: https://rechargepayments.com

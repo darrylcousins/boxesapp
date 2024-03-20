@@ -16,9 +16,7 @@ import charge from "../recharge.charge.json" assert { type: "json" };
 const run = async () => {
   global._mongodb = await getMongoConnection();
   try {
-    const mytopic = "CHARGE_UPCOMING";
     await chargeUpcoming("CHARGE_UPCOMING", "shop", JSON.stringify(charge));
-
   } catch(e) {
     console.error(e);
   } finally {

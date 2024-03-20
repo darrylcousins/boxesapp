@@ -4,12 +4,13 @@
  */
 
 import subscriptionActionMail from "../../mail/subscription-action.js";
+
 /*
  * @function getIOSocket
  *
  * A function to return io and socket
  */
-export const getIOSocket = (req) => {
+export const getIOSocket = (req, quiet) => {
   let io;
   let sockets;
   const { session_id } = req.body;
@@ -18,7 +19,7 @@ export const getIOSocket = (req) => {
     if (sockets && Object.hasOwnProperty.call(sockets, session_id)) {
       const socket_id = sockets[session_id];
       io = req.app.get("io").to(socket_id);
-      io.emit("message", "Received request, processing data...");
+      if (!quiet) io.emit("message", "Received request, processing data...");
     };
   };
   return { io, session_id };
@@ -169,9 +170,10 @@ export const upsertPending = async (data) => {
       "returnDocument": "after",
     }
   );
-  // error checking?
-  //console.log(upsert);
-  //console.log("updserted data", upsert);
+
+  if (parseInt(process.env.DEBUG) === 1) {
+    _logger.notice("Insert updates_pending entry", { meta: { recharge: update_pending }});
+  };
 
   return upsert._id;
 };

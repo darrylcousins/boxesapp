@@ -93,6 +93,7 @@ async function* VerifySubscriptions({ customers }) {
             // and update orphans and date_mismatch arrays
             customers[idx].orphans = json.orphans;
             customers[idx].date_mismatch = json.date_mismatch;
+            customers[idx].count_mismatch = json.count_mismatch;
             customers[idx].price_mismatch = json.price_mismatch;
             customers[idx].timestamp = json.timestamp;
           };
@@ -111,18 +112,26 @@ async function* VerifySubscriptions({ customers }) {
   for await (const props of this) { // eslint-disable-line no-unused-vars
     if (customers && customers.length) {
     yield (
-      <div class="w-100 pv4 ph5 br3 ba b--black-20 bw1" id="updates_pending" style="border-top: 3px red solid">
+      <div class="alert-box dark-blue w-100 pv4 ph5 br3 ba b--dark-blue bw1" id="updates_pending">
         <div class="center">
-          <h4 class="fw5 black">Verify Subscriptions</h4>
+          <h4 class="fw5 navy">Verify Subscriptions</h4>
         </div>
         <p>
-          These entries of date mismatches and orphans have been found by the verificaton script run each night, the results { " " }
-          of which have also been emailed to the administrator's email address. { " " }
-          After addressing the problems found the customer's subscriptions can be re-verified by clicking the <b>verify</b> button.
+          Ideally we would never see items here because of all the work done to keep subscriptions in a valid state.{" "}
+          However, things can go wrong, as can be seen here. It could be firstly because of a problem with boxesapp,{" "}
+          or, secondly a manual change had been made in the Recharge admin that has created the error.
+        </p>
+        <p>
+          After addressing the problems the customer's subscriptions can be re-verified by clicking the <b>verify</b> button.
         </p>
         <p>
           <strong>Date mismatches:</strong> If the charge date does not fall 3 days prior to the delivery date then it will { " " }
           be entered here and the dates will need to be corrected before it will pass verification.
+        </p>
+        <p>
+          <strong>Count mismatches:</strong> If the quantity of the subscribed item does not match the listing in the box{ " " }
+          then the quantity needs to be corrected in Recharge admin.{" "}
+          Particulary applies to extra includes or swaps.
         </p>
         <p>
           <strong>Orphans:</strong> Any subscribed products that are not included in a box subscription as an addon or { " " }
@@ -139,9 +148,9 @@ async function* VerifySubscriptions({ customers }) {
         { fetchError && <Error msg={ fetchError } /> }
         { customers && customers.length > 0 && (
           customers.map((entry, idx) => (
-            <div class="w-100 pv4 ph5 br3 ba b--black-20 bw1" id={ `${entry.customer.last_name}-${idx}` }>
+            <div class="w-100 pv4 ph5 br3 dark-blue ba b--navy bw1" id={ `${entry.customer.last_name}-${idx}` }>
               <div class="cf" />
-              <div class="f3 b">
+              <div class="f3 b navy">
                 { entry.customer.first_name } {entry.customer.last_name } &lt;{ entry.customer.email }&gt; { " " }
               </div>
               <div class="pt3 mb5">
@@ -156,15 +165,18 @@ async function* VerifySubscriptions({ customers }) {
               </div>
               <div class="cf" />
               { entry.date_mismatch && entry.date_mismatch.length > 0 && (
-                <DTable items={ entry.date_mismatch } title="Date mismatches" />
+                <DTable items={ entry.date_mismatch } title="Date mismatches" show_title={ true } />
+              )}
+              { entry.count_mismatch && entry.count_mismatch.length > 0 && (
+                <DTable items={ entry.count_mismatch } title="Count mismatches" show_title={ true } />
               )}
               <div class="cf" />
               { entry.orphans && entry.orphans.length > 0 && (
-                <DTable items={ entry.orphans } title="Orphaned items" />
+                <DTable items={ entry.orphans } title="Orphaned items" show_title={ true } />
               )}
               <div class="cf" />
               { entry.price_mismatch && entry.price_mismatch.length > 0 && (
-                <DTable items={ entry.price_mismatch } title="Price mismatches" />
+                <DTable items={ entry.price_mismatch } title="Price mismatches" show_title={ true } />
               )}
               <div class="cf" />
             </div>

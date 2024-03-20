@@ -425,8 +425,8 @@ export default async (req, res, next) => {
       if (Object.keys(body).length) {
         const opts = {
           id: update.subscription_id,
-          title: `${subtitle} subscription ${update.product_title}`,
           body,
+          title: `${subtitle} subscription ${update.product_title}`,
           io,
           session_id,
         };
@@ -464,12 +464,6 @@ export default async (req, res, next) => {
 
     // don't update properties if not changed - i.e. only if delivery date changed
     await updateSubscriptions({ updates, io, session_id });
-
-    /*
-    if (io) io.emit("message", `Customer update email sent (${attributes.customer.email})`);
-    if (io) io.emit("message", "Updates completed - awaiting creation of new charge");
-    if (io) io.emit("finished", session_id);
-    */
 
   } catch(err) {
     res.status(200).json({ error: err.message });

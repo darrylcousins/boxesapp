@@ -7,12 +7,16 @@ import "dotenv/config";
 import { Shopify } from "../../lib/shopify/index.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
 
+/*
+ * NOTE Returns false if no action is taken and true if some update occured
+ *
+ */
 // XXX consider using src/helpers/shopify:makeShopifyQuery ?
 const storeUrl = `https://${process.env.SHOP_NAME}.myshopify.com/admin/api/${process.env.SHOPIFY_API_VERSION}/`;
 
 export default async function updateProductInventory(order) {
 
-  return;
+  return false;
   // No longer doing this for Streamside because they do not track inventory
   if (process.env.SHOP_NAME === "streamsideorganics") {
     return;
@@ -61,8 +65,10 @@ export default async function updateProductInventory(order) {
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    return false;
   };
 
+  return true;
 };
 
 const getInventoryItemId = async (product) => {

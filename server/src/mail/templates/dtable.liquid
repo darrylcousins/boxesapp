@@ -75,6 +75,21 @@
                           ">
                           {{ thing.box_subscription_id }}</dd>
                         {% endif %}
+                        {% if thing.box_title %}
+                          <dt style="
+            float: left;
+            clear: left;
+            width: 150px;
+            text-align: right;
+            font-weight: bold;
+            color: grey;
+                          ">Box title</dt>
+                          <dd style="
+            margin: 0 0 0 160px;
+            padding: 0 0 0.5em 0;
+                          ">
+                          {{ thing.box_title }}</dd>
+                        {% endif %}
                         {% if thing.delivery_at %}
                           <dt style="
             float: left;
@@ -145,6 +160,34 @@
             margin: 0 0 0 160px;
             padding: 0 0 0.5em 0;
                           ">{{ thing.variant_price }}</dd>
+                        {% endif %}
+                        {% if thing.subscribed_quantity %}
+                          <dt style="
+            float: left;
+            clear: left;
+            width: 150px;
+            text-align: right;
+            font-weight: bold;
+            color: grey;
+                          ">Subscribed quantity</dt>
+                          <dd style="
+            margin: 0 0 0 160px;
+            padding: 0 0 0.5em 0;
+                          ">{{ thing.subscribed_quantity }}</dd>
+                        {% endif %}
+                        {% if thing.listed_quantity %}
+                          <dt style="
+            float: left;
+            clear: left;
+            width: 150px;
+            text-align: right;
+            font-weight: bold;
+            color: grey;
+                          ">Listed quantity</dt>
+                          <dd style="
+            margin: 0 0 0 160px;
+            padding: 0 0 0.5em 0;
+                          ">{{ thing.listed_quantity }}</dd>
                         {% endif %}
                       </dl>
                     </li>

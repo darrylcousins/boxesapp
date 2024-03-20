@@ -12,8 +12,10 @@ import { winstonLogger } from "../../../config/winston.js"
 /*
  * Helper method for debugging the flow of updates made to recharge so that we
  * can allow the user to further edit their box. See registry.js.
+ * The result is true or false. Webhook handlers return false if no action was
+ * taken or an error occurred.
 */
-export const logWebhook = async (topic, body) => {
+export const logWebhook = async (topic, body, key) => {
   const dt = new Date();
   let month = ("0" + (dt.getMonth() + 1)).slice(-2);
   let day = ("0" + dt.getDate()).slice(-2);
@@ -22,36 +24,141 @@ export const logWebhook = async (topic, body) => {
   let data = {};
   if (topic === "CHARGE_DELETED") {
     data.charge_id = body.charge.id;
-  } else if (topic.startsWith("CHARGE")) {
-    const { charge } = body;
-    let properties = {};
-    let title;
-    for (const line_item of charge.line_items) {
-      if (line_item.properties.some(el => el.name === "Including")) {
-        title = line_item.title;
-        properties = line_item.properties.reduce(
-          (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
-          {});
+  } else if (topic.startsWith("PRODUCT")) {
+    let product;
+    if (Object.hasOwn(body, "product")) {
+      product = body.product;
+    } else {
+      product = body;
+    };
+    data.product_id = product.id;
+    data.title = product.title;
+  } else if (topic.startsWith("ORDER") && key === "shopify") {
+    let order;
+    if (Object.hasOwn(body, "order")) {
+      order = body.order;
+    } else {
+      order = body;
+    };
+    let deliver_at;
+    let box_titles = [];
+    let box_subscription_ids = [];
+    let rc_subscription_ids = [];
+    for (const line_item of order.line_items) {
+      const properties = line_item.properties.reduce(
+        (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
+        {});
+      if (Object.hasOwn(properties, "Including")) {
+        box_titles.push(line_item.title);
+        deliver_at = properties["Delivery Date"];
       };
+      const rc_ids = {
+        shopify_product_id: line_item.id,
+        quantity: line_item.quantity,
+        title: line_item.name,
+        properties,
+      };
+      if (Object.hasOwn(properties, "box_subscription_id")) {
+        box_subscription_ids.push(parseInt(properties["box_subscription_id"]));
+        rc_ids.box_subscripion_id = parseInt(properties["box_subscription_id"]);
+      };
+      rc_subscription_ids.push(rc_ids);
+    };
+    data = {
+      box_titles,
+      box_subscription_ids: Array.from(new Set(box_subscription_ids)),
+      rc_subscription_ids,
+    };
+    data.order_id = order.id;
+    data.created_at = order.created_at;
+    data.contact_email = order.contact_email;
+  } else if (topic.startsWith("ORDER") && key === "recharge") {
+    let order;
+    if (Object.hasOwn(body, "order")) {
+      order = body.order;
+    } else {
+      order = body;
+    };
+    let deliver_at;
+    let box_titles = [];
+    let box_subscription_ids = [];
+    let rc_subscription_ids = [];
+    for (const line_item of order.line_items) {
+      const properties = line_item.properties.reduce(
+        (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
+        {});
+      if (Object.hasOwn(properties, "Including")) {
+        box_titles.push(line_item.title);
+        box_subscription_ids.push(line_item.purchase_item_id);
+        deliver_at = properties["Delivery Date"];
+      };
+      rc_subscription_ids.push({
+        shopify_product_id: line_item.external_product_id.ecommerce,
+        subscription_id: line_item.purchase_item_id,
+        quantity: line_item.quantity,
+        title: line_item.title,
+        box_subscription_id: parseInt(properties["box_subscription_id"]),
+        properties,
+      });
+    };
+    data = {
+      charge_id: order.charge.id,
+      address_id: order.address_id,
+      customer_id: order.customer.id,
+      scheduled_at: order.scheduled_at.split("T")[0],
+      status: order.status,
+      deliver_at,
+      box_titles,
+      box_subscription_ids,
+      rc_subscription_ids,
+    };
+  } else if (topic.startsWith("CHARGE")) {
+    let charge;
+    if (Object.hasOwn(body, "charge")) {
+      charge = body.charge;
+    } else {
+      charge = body;
+    };
+    let deliver_at;
+    let box_titles = [];
+    let box_subscription_ids = [];
+    let rc_subscription_ids = [];
+    for (const line_item of charge.line_items) {
+      const properties = line_item.properties.reduce(
+        (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
+        {});
+      if (Object.hasOwn(properties, "Including")) {
+        box_titles.push(line_item.title);
+        box_subscription_ids.push(line_item.purchase_item_id);
+        deliver_at = properties["Delivery Date"];
+      };
+      rc_subscription_ids.push({
+        shopify_product_id: line_item.external_product_id.ecommerce,
+        subscription_id: line_item.purchase_item_id,
+        quantity: line_item.quantity,
+        title: line_item.title,
+        box_subscription_id: parseInt(properties["box_subscription_id"]),
+        properties,
+      });
     };
     data = {
       charge_id: charge.id,
       address_id: charge.address_id,
       customer_id: charge.customer.id,
       scheduled_at: charge.scheduled_at,
-      box_title: title,
-      deliver_at: properties["Delivery Date"],
-      rc_subscription_ids: charge.line_items.map(el => {
-        return {
-          shopify_product_id: el.external_product_id.ecommerce,
-          subscription_id: el.purchase_item_id,
-          quantity: el.quantity,
-          title: el.title,
-        };
-      }),
+      status: charge.status,
+      deliver_at,
+      box_titles,
+      box_subscription_ids,
+      rc_subscription_ids,
     };
   } else if (topic.startsWith("SUBSCRIPTION")) {
-    const { subscription } = body;
+    let subscription;
+    if (Object.hasOwn(body, "subscription")) {
+      subscription = body.subscription;
+    } else {
+      subscription = body;
+    };
     const properties = subscription.properties.reduce(
       (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
       {});
@@ -63,10 +170,13 @@ export const logWebhook = async (topic, body) => {
       deliver_at: properties["Delivery Date"],
       quantity: subscription.quantity,
       title: subscription.product_title,
+      box_subscription_id: parseInt(properties["box_subscription_id"]),
+      properties,
     };
   };
-  await fs.appendFile("webhooks.txt", `${printDate} ${topic}\n`, "utf8");
-  await fs.appendFile("webhooks.txt", `${JSON.stringify(data, null, 2)}\n`, "utf8");
+  const meta = {};
+  meta[key] = data;
+  _logger.notice(`Webhook received ${topic.toLowerCase().replace("_", "/")}.`, { meta });
 };
 
 /*
@@ -100,7 +210,7 @@ export const makeRechargeQuery = async (opts) => {
 /*
  * Construct and execute a query to recharge, used to get objects or post upates
  *
- * @function makeRechargeQuery
+ * @function doRechargeQuery
  */
 export const doRechargeQuery = async (opts) => {
   const { method, path, limit, query, body, title, finish, failedOnce } = opts;
@@ -138,23 +248,29 @@ export const doRechargeQuery = async (opts) => {
 
     let json = {};
 
+    let meta = { // logging
+      recharge: {
+        uri: url,
+        method: http_method,
+        status: response.status,
+        text: response.statusText,
+      },
+    };
+    if (body) meta.recharge.body = JSON.parse(body);
+    if (title) meta.recharge.title = title;
+    const mapper = (acc, curr, idx) => {
+      const [key, value] = curr;
+      return { ...acc, [key]: value };
+    };
+    if (query) meta.recharge.query = query.reduce(mapper, {});
+
     if (http_method === "DELETE") {
       json = {};
     } else {
       json = await response.json();
 
       // log the error as a notice at log level error
-      let meta;
       if (Object.hasOwnProperty.call(json, "error")) {
-        meta = {
-          recharge: {
-            uri: url,
-            method: http_method,
-            status: response.status,
-            text: response.statusText,
-            error: json.error,
-          },
-        };
         if (!failedOnce && parseInt(response.status) === 409) { // Conflict, a call to this resource is in progress
           // I've tested this and it does work, if the problem persists I could
           // make failedOnce into an integer and make multiple attempts
@@ -162,6 +278,7 @@ export const doRechargeQuery = async (opts) => {
           // valid response so I need to handle it here
           // NB Keep an eye on the logs
           meta.recharge.boxesapp = "Retrying";
+          meta.recharge.error = json.error;
           opts.failedOnce = true;
           meta.recharge = sortObjectByKeys(meta.recharge);
           winstonLogger.notice(`Recharge fetch error`, { meta });
@@ -192,6 +309,11 @@ export const doRechargeQuery = async (opts) => {
       throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}", fetching ${path}${searchString}`);
     };
 
+    if (false) { // Already logging these from job worker see bull/api-worker
+      meta.recharge = sortObjectByKeys(meta.recharge);
+      winstonLogger.notice(`Recharge api request`, { meta });
+    };
+
     return json;
   });
 };
@@ -202,8 +324,8 @@ export const doRechargeQuery = async (opts) => {
  */
 export const getSubscription = async (id, title) => {
   const { subscription } = await makeRechargeQuery({
-    method: "GET",
     path: `subscriptions/${id}`,
+    method: "GET",
     title,
   });
   return subscription;
@@ -217,10 +339,10 @@ export const updateChargeDate = async ({ id, date, title, io, session_id }) => {
   const options = {};
   options.path = `subscriptions/${id}/set_next_charge_date`;
   options.method = "POST";
+  options.title = title;
   options.body = JSON.stringify({ date });
   options.io = io;
   options.session_id = session_id;
-  options.title = title;
   const result = await makeRechargeQuery(options);
   return result;
 };
@@ -233,10 +355,10 @@ export const updateSubscription = async ({ id, title, body, io, session_id }) =>
   const options = {};
   options.path = `subscriptions/${id}`;
   options.method = "PUT";
+  options.title = title;
   options.body = JSON.stringify(body);
   options.io = io;
   options.session_id = session_id;
-  options.title = title;
   const result = await makeRechargeQuery(options);
   return result;
 };
@@ -254,7 +376,7 @@ export const updateSubscriptions = async ({ updates, io, session_id }) => {
     delete update.shopify_product_id;
     const options = {};
 
-    if (Object.hasOwnProperty.call(update, "subscription_id")) {
+    if (Object.hasOwn(update, "subscription_id")) {
       options.path = `subscriptions/${update.subscription_id}`;
       if (update.quantity === 0) {
         options.method = "DELETE";
@@ -264,24 +386,24 @@ export const updateSubscriptions = async ({ updates, io, session_id }) => {
         options.title = `Updating ${update.title}`;
         const body = {
           properties: update.properties,
-          quantity: update.quantity,
         };
-        if (Object.hasOwnProperty.call(update, "price")) body.price = update.price;
-        if (Object.hasOwnProperty.call(update, "order_day_of_week")) body.order_day_of_week = update.order_day_of_week;
-        if (Object.hasOwnProperty.call(update, "charge_interval_frequency")) body.charge_interval_frequency = update.charge_interval_frequency;
-        if (Object.hasOwnProperty.call(update, "order_interval_frequency")) body.order_interval_frequency = update.order_interval_frequency;
-        if (Object.hasOwnProperty.call(update, "order_interval_unit")) body.order_interval_unit = update.order_interval_unit;
-        if (Object.hasOwnProperty.call(update, "external_product_id")) body.external_product_id = update.external_product_id;
-        if (Object.hasOwnProperty.call(update, "external_variant_id")) body.external_variant_id = update.external_variant_id;
-        if (Object.hasOwnProperty.call(update, "product_title")) body.product_title = update.product_title;
-        if (Object.hasOwnProperty.call(update, "variant_title")) body.variant_title = update.variant_title;
+        if (Object.hasOwn(update, "quantity")) body.quantity = update.quantity;
+        if (Object.hasOwn(update, "price")) body.price = update.price;
+        if (Object.hasOwn(update, "order_day_of_week")) body.order_day_of_week = update.order_day_of_week;
+        if (Object.hasOwn(update, "charge_interval_frequency")) body.charge_interval_frequency = update.charge_interval_frequency;
+        if (Object.hasOwn(update, "order_interval_frequency")) body.order_interval_frequency = update.order_interval_frequency;
+        if (Object.hasOwn(update, "order_interval_unit")) body.order_interval_unit = update.order_interval_unit;
+        if (Object.hasOwn(update, "external_product_id")) body.external_product_id = update.external_product_id;
+        if (Object.hasOwn(update, "external_variant_id")) body.external_variant_id = update.external_variant_id;
+        if (Object.hasOwn(update, "product_title")) body.product_title = update.product_title;
+        if (Object.hasOwn(update, "variant_title")) body.variant_title = update.variant_title;
         options.body = JSON.stringify(body);
       };
     } else {
       // creating a new subscription requires post to subscriptions
-      options.title = `Creating ${update.product_title}`;
       options.path = "subscriptions";
       options.method = "POST";
+      options.title = `Creating ${update.product_title}`;
       options.body = JSON.stringify(update);
     };
 
@@ -317,7 +439,7 @@ export const getCharge = async ({ charge_id }) => {
  * @function getLastOrder
  * @returns { order }
  */
-export const getLastOrder = async ({ customer_id, address_id, subscription_id, product_id }) => {
+export const getLastOrder = async ({ customer_id, address_id, subscription_id, product_id, io }) => {
   const { charges } = await makeRechargeQuery({
     path: `charges`,
     query: [
@@ -328,6 +450,7 @@ export const getLastOrder = async ({ customer_id, address_id, subscription_id, p
       ["limit", 1 ],
     ],
     title: "Get last order",
+    io,
   });
   const charge = (charges.length) ? charges[0] : null;
   if (charge) {
@@ -335,6 +458,7 @@ export const getLastOrder = async ({ customer_id, address_id, subscription_id, p
       path: `orders/${charge.external_order_id.ecommerce}.json`,
       fields: ["current_total_price", "order_number", "tags", "line_items"],
       title: "Get order",
+      io,
     });
     if (!order) return {};
     order.delivered = null;
@@ -397,10 +521,6 @@ export const findBoxes = async ({ days, nextDeliveryDate, shopify_product_id }) 
   ];
 
   let dates = await _mongodb.collection("boxes").aggregate(pipeline).toArray();
-  if (nextDeliveryDate === "Sun Mar 10 2024") {
-    console.log(delivered, dayOfWeek)
-    console.log(dates);
-  };
   dates = dates.map(el => el.delivered).reverse();
 
   // if our date is in the array then we have the next box

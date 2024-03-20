@@ -8,12 +8,16 @@ import {
   updatePendingEntry,
 } from "./helpers.js";
 
+/*
+ * NOTE Returns false if no action is taken and true if some update occured
+ *
+ */
 export default async function subscriptionCreated(topic, shop, body, { io, sockets }) {
 
   const mytopic = "SUBSCRIPTION_CREATED";
   if (topic !== mytopic) {
     _logger.notice(`Recharge webhook ${topic} received but expected ${mytopic}`, { meta: { recharge: {} } });
-    return;
+    return false;
   };
   const topicLower = topic.toLowerCase().replace(/_/g, "/");
 
@@ -26,7 +30,7 @@ export default async function subscriptionCreated(topic, shop, body, { io, socke
   // if a new subscription from shopify then the properties won't yet have box_subscription_id
   // this is being set in the charge/created webhook where we have access to all line_items
   if (!Object.hasOwnProperty.call(meta.recharge, "subscription_id")) {
-    return;
+    return false;
   };
 
   try {
@@ -52,6 +56,8 @@ export default async function subscriptionCreated(topic, shop, body, { io, socke
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    return false;
   };
 
+  return true;
 };

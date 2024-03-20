@@ -25,9 +25,11 @@ const fileFormat = winston.format.printf(
 
 const consoleFormat = winston.format.printf(
   info => {
-    // return time only
-    const parts = partsNZTime(info.timestamp);
-    return `${parts[1]} - ${info.level}: ${info.message}`;
+    // use nz time
+    const d = new Date(info.timestamp);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    const s = d.toISOString().replace("T", " ").replace("Z", "");
+    return `${s} - ${info.level}: ${info.message}`;
   }
 );
 
@@ -72,7 +74,6 @@ winstonLogger.stream = {
 };
 
 if (process.env.NODE_ENV !== 'test') {
-  // why no credentials here
   const username = encodeURIComponent(process.env.DB_USER);
   const password = encodeURIComponent(process.env.DB_PASSWORD);
 

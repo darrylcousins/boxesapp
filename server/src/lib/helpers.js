@@ -58,8 +58,10 @@ export const formatDate = (dateObj) => {
   return [year, month, day].join("-");
 };
 
-/* 
- * compare 2 arrays
+/*
+ * @function compareArrays
+ *
+ * A function to compare if two arrays have the same elements regardless of their order
  */
 export const compareArrays = (a, b) => {
   if (a.length !== b.length) return false;

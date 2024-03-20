@@ -96,19 +96,22 @@ export default class Registry {
               sockets = req.app.get("sockets");
 
               // can now pass the sockets to the webhook and from the session_id stored
-              // on the updates_pending table I should be able to emit messages to the
+              // on the updates_pending table we are able to emit messages to the
               // user to give update reports and then finally also when the
               // updates_pending entry is deleted, i.e. when the update is completed
 
             } catch(err) {
               console.log("GOT SESSION AND IO?", err.message);
             };
-
+            if (parseInt(process.env.DEBUG) === 1) {
+              // log before handling
+              await logWebhook(webhookTopic, JSON.parse(reqBody), "recharge");
+            };
             try {
+              // will return true if handled and action taken, false it not
               await webhookHandler(webhookTopic, domain, reqBody,
                 { sockets: req.app.get("sockets"), io: req.app.get("io") }
               );
-              await logWebhook(webhookTopic, JSON.parse(reqBody));
             } catch(error) {
               return reject(error);
             };

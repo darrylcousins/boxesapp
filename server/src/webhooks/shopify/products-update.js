@@ -2,16 +2,24 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { sortObjectByKeys } from "../../lib/helpers.js";
+import { writeFileForProduct } from "../recharge/helpers.js";
 
+/*
+ * NOTE Returns false if no action is taken and true if some update occured
+ *
+ */
 export default async function productsUpdate(topic, shop, body) {
 
   const mytopic = "PRODUCTS_UPDATE";
   if (topic !== mytopic) {
     _logger.notice(`Shopify webhook ${topic} received but expected ${mytopic}`, { meta: { shopify: {} } });
-    return;
+    return false;
   };
 
   const productJson = JSON.parse(body);
+
+  writeFileForProduct(productJson, mytopic.toLowerCase().split("_")[1]);
+
   const shopify_title = productJson.title.replace(/,/g, ""); // cannot allow commas in titles
   const shopify_product_id = parseInt(productJson.id);
   const collection = _mongodb.collection("boxes");
@@ -38,11 +46,11 @@ export default async function productsUpdate(topic, shop, body) {
         boxMeta.product = sortObjectByKeys(boxMeta.product);
         _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta: boxMeta });
       } else {
-        return;
+        return false;
       };
     } catch(err) {
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-      return;
+      return false;
     };
   } else if (productJson.product_type === 'Box Produce') {
     const shopify_price = parseInt(parseFloat(productJson.variants[0].price) * 100);
@@ -121,10 +129,11 @@ export default async function productsUpdate(topic, shop, body) {
         meta.product = sortObjectByKeys(meta.product);
         _logger.notice(`Shopify webhook ${topic.toLowerCase().replace(/_/g, "/")} received.`, { meta });
       } else {
-        return;
+        return false;
       };
     } catch(err) {
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+      return false
     };
   };
   return true;

@@ -1,0 +1,4 @@
+[
+  { "title": "Charge upcoming", "folder": "recharge-charge-upcoming" },
+  { "title": "Order processed", "folder": "recharge-order-processed" }
+]

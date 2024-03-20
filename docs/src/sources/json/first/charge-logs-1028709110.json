@@ -1,0 +1,331 @@
+{
+  "logs": [
+    {
+      "_id": "65f12761ee5b9b1aa4c3ffa8",
+      "timestamp": "2024-03-13T04:11:13.730Z",
+      "level": "notice",
+      "message": "Subscription order processed email sent.",
+      "meta": {
+        "recharge": {
+          "customer_id": 84185810,
+          "charge_id": 1028709110,
+          "subscription_id": [
+            "461604003",
+            "461605019"
+          ],
+          "subject": "Subscription Order Processed #1490",
+          "email": "cousinsd@proton.me"
+        }
+      }
+    },
+    {
+      "_id": "65f12761ee5b9b1aa4c3ffa7",
+      "timestamp": "2024-03-13T04:11:13.565Z",
+      "level": "notice",
+      "message": "Order processed and delivery date updated.",
+      "meta": {
+        "recharge": {
+          "address_id": 151085761,
+          "boxes": [
+            "The Small Vege Box - Saturday",
+            "The Small Vege Box - Saturday"
+          ],
+          "charge_id": 1028709110,
+          "customer_id": 84185810,
+          "delivered": "Sat Mar 16 2024",
+          "email": "cousinsd@proton.me",
+          "next_delivery": "Sat Mar 23 2024",
+          "shopify_order_id": "5584804216982",
+          "shopify_order_number": "#1490",
+          "subscription_ids": [
+            461605019,
+            461604003
+          ],
+          "topic": "order/processed",
+          "type": "recurring"
+        }
+      }
+    },
+    {
+      "_id": "65f105fd98cc092e4c39f2f2",
+      "timestamp": "2024-03-13T01:48:45.299Z",
+      "level": "notice",
+      "message": "Subscription updated email sent.",
+      "meta": {
+        "recharge": {
+          "customer_id": 84185810,
+          "charge_id": 1028709110,
+          "subscription_id": 461604003,
+          "subject": "Subscription Updated The Small Vege Box - Saturday",
+          "email": "cousinsd@proton.me",
+          "type": "updated"
+        }
+      }
+    },
+    {
+      "_id": "65f105f798cc092e4c39f2f1",
+      "timestamp": "2024-03-13T01:48:39.972Z",
+      "level": "notice",
+      "message": "Charge updated (updated) for subscription.",
+      "meta": {
+        "recharge": {
+          "Add on Items": "Cabbage Green",
+          "Box Subscription": "461604003",
+          "Delivery Date": "Sat Mar 16 2024",
+          "Including": "Chard Red (2),Curly Kale,Mesclun Mix,Potato Agria 1kg",
+          "Removed Items": "Coriander Bunch,Onions Brown 4x",
+          "Swapped Items": "Beetroot 1kg (2),Daikon Radish ea (2)",
+          "address_id": 151085761,
+          "charge_id": 1028709110,
+          "charge_processed_at": null,
+          "charge_status": "queued",
+          "customer_id": 84185810,
+          "email": "cousinsd@proton.me",
+          "scheduled_at": "2024-03-13",
+          "subscription_id": 461604003,
+          "title": "The Small Vege Box",
+          "topic": "charge/updated",
+          "update_label": "updated"
+        }
+      }
+    },
+    {
+      "_id": "65f105e898cc092e4c39f2f0",
+      "timestamp": "2024-03-13T01:48:24.941Z",
+      "level": "notice",
+      "message": "Boxesapp api request subscription updated.",
+      "meta": {
+        "recharge": {
+          "Add on Items": "Cabbage Green",
+          "Delivery Date": "Sat Mar 16 2024",
+          "Including": "Chard Red (2),Curly Kale,Mesclun Mix,Potato Agria 1kg",
+          "Removed Items": "Coriander Bunch,Onions Brown 4x",
+          "Swapped Items": "Beetroot 1kg (2),Daikon Radish ea (2)",
+          "address_id": 151085761,
+          "box_subscription_id": "461604003",
+          "change_messages": [
+            "Cabbage Green (1) has been added to your box."
+          ],
+          "charge_id": 1028709110,
+          "customer_id": 84185810,
+          "email": "cousinsd@proton.me",
+          "label": "updated",
+          "next_charge_date": "Wed Mar 13 2024",
+          "next_delivery": "Sat Mar 16 2024",
+          "rc_subscription_ids": [
+            {
+              "shopify_product_id": 6163982876822,
+              "subscription_id": 461604003,
+              "quantity": 1,
+              "title": "The Small Vege Box",
+              "price": 2500,
+              "delivery_at": "Sat Mar 16 2024",
+              "updated": false
+            },
+            {
+              "shopify_product_id": 6559207489686,
+              "subscription_id": 462662374,
+              "quantity": 1,
+              "title": "Daikon Radish ea",
+              "price": 350,
+              "delivery_at": "Sat Mar 16 2024",
+              "updated": true
+            },
+            {
+              "shopify_product_id": 6825436315798,
+              "subscription_id": 463895775,
+              "quantity": 1,
+              "title": "Chard Red",
+              "price": 350,
+              "delivery_at": "Sat Mar 16 2024",
+              "updated": true
+            },
+            {
+              "shopify_product_id": 6621185769622,
+              "subscription_id": 463900660,
+              "quantity": 1,
+              "title": "Beetroot 1kg",
+              "price": 500,
+              "delivery_at": "Sat Mar 16 2024",
+              "updated": true
+            },
+            {
+              "shopify_product_id": 6166842245270,
+              "subscription_id": null,
+              "title": "Cabbage Green",
+              "quantity": 1,
+              "updated": false
+            }
+          ],
+          "scheduled_at": "2024-03-13",
+          "subscription_id": 461604003,
+          "title": "The Small Vege Box - Saturday"
+        }
+      }
+    },
+    {
+      "_id": "65f105c798cc092e4c39f2ef",
+      "timestamp": "2024-03-13T01:47:51.766Z",
+      "level": "notice",
+      "message": "Subscription updated email sent.",
+      "meta": {
+        "recharge": {
+          "customer_id": 84185810,
+          "charge_id": 1028709110,
+          "subscription_id": 461605019,
+          "subject": "Subscription Updated The Small Vege Box - Saturday",
+          "email": "cousinsd@proton.me",
+          "type": "updated"
+        }
+      }
+    },
+    {
+      "_id": "65f105c498cc092e4c39f2ee",
+      "timestamp": "2024-03-13T01:47:48.419Z",
+      "level": "notice",
+      "message": "Charge updated (updated) for subscription.",
+      "meta": {
+        "recharge": {
+          "Add on Items": "Beetroot 1kg,Cabbage Green",
+          "Box Subscription": "461605019",
+          "Delivery Date": "Sat Mar 16 2024",
+          "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Potato Agria 1kg",
+          "Removed Items": "Onions Brown 4x",
+          "Swapped Items": "Daikon Radish ea (2)",
+          "address_id": 151085761,
+          "charge_id": 1028709110,
+          "charge_processed_at": null,
+          "charge_status": "queued",
+          "customer_id": 84185810,
+          "email": "cousinsd@proton.me",
+          "scheduled_at": "2024-03-13",
+          "subscription_id": 461605019,
+          "title": "The Small Vege Box",
+          "topic": "charge/updated",
+          "update_label": "updated"
+        }
+      }
+    },
+    {
+      "_id": "65f105ad98cc092e4c39f2ed",
+      "timestamp": "2024-03-13T01:47:25.954Z",
+      "level": "notice",
+      "message": "Boxesapp api request subscription updated.",
+      "meta": {
+        "recharge": {
+          "Add on Items": "Beetroot 1kg,Cabbage Green",
+          "Delivery Date": "Sat Mar 16 2024",
+          "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Potato Agria 1kg",
+          "Removed Items": "Onions Brown 4x",
+          "Swapped Items": "Daikon Radish ea (2)",
+          "address_id": 151085761,
+          "box_subscription_id": "461605019",
+          "change_messages": [
+            "Swaps have changed.",
+            "Beetroot 1kg quantity has changed from 3 to 1.",
+            "Chard Red (1) has been removed from your box.",
+            "Cabbage Green quantity has changed from 2 to 1.",
+            "Daikon Radish ea (1) has been added to your box."
+          ],
+          "charge_id": 1028709110,
+          "customer_id": 84185810,
+          "email": "cousinsd@proton.me",
+          "label": "updated",
+          "next_charge_date": "Wed Mar 13 2024",
+          "next_delivery": "Sat Mar 16 2024",
+          "rc_subscription_ids": [
+            {
+              "shopify_product_id": 6163982876822,
+              "subscription_id": 461605019,
+              "quantity": 1,
+              "title": "The Small Vege Box",
+              "price": 2500,
+              "delivery_at": "Sat Mar 16 2024",
+              "updated": false
+            },
+            {
+              "shopify_product_id": 6621185769622,
+              "subscription_id": 463896487,
+              "quantity": 1,
+              "title": "Beetroot 1kg",
+              "price": 500,
+              "delivery_at": "Sat Mar 16 2024",
+              "updated": false
+            },
+            {
+              "shopify_product_id": 6825436315798,
+              "subscription_id": 463899682,
+              "quantity": 0,
+              "title": "Chard Red",
+              "price": 350,
+              "delivery_at": "Sat Mar 16 2024",
+              "updated": false
+            },
+            {
+              "shopify_product_id": 6166842245270,
+              "subscription_id": 463913544,
+              "quantity": 1,
+              "title": "Cabbage Green",
+              "price": 450,
+              "delivery_at": "Sat Mar 16 2024",
+              "updated": false
+            },
+            {
+              "shopify_product_id": 6559207489686,
+              "subscription_id": null,
+              "title": "Daikon Radish ea",
+              "quantity": 1,
+              "updated": false
+            }
+          ],
+          "scheduled_at": "2024-03-13",
+          "subscription_id": 461605019,
+          "title": "The Small Vege Box - Saturday"
+        }
+      }
+    },
+    {
+      "_id": "65f0f335e7d95941676b2083",
+      "timestamp": "2024-03-13T00:28:37.046Z",
+      "level": "notice",
+      "message": "Subscription updated email sent.",
+      "meta": {
+        "recharge": {
+          "customer_id": 84185810,
+          "charge_id": 1028709110,
+          "subscription_id": 461605019,
+          "subject": "Subscription Updated The Small Vege Box - Saturday",
+          "email": "cousinsd@proton.me",
+          "type": "updated"
+        }
+      }
+    },
+    {
+      "_id": "65f0f333e7d95941676b2082",
+      "timestamp": "2024-03-13T00:28:35.005Z",
+      "level": "notice",
+      "message": "Charge updated (updated) for subscription.",
+      "meta": {
+        "recharge": {
+          "Add on Items": "Cabbage Green (2)",
+          "Box Subscription": "461605019",
+          "Delivery Date": "Sat Mar 16 2024",
+          "Including": "Chard Red (2),Curly Kale,Mesclun Mix,Potato Agria 1kg",
+          "Removed Items": "Coriander Bunch,Onions Brown 4x",
+          "Swapped Items": "Beetroot 1kg (4),Daikon Radish ea",
+          "address_id": 151085761,
+          "charge_id": 1028709110,
+          "charge_processed_at": null,
+          "charge_status": "queued",
+          "customer_id": 84185810,
+          "email": "cousinsd@proton.me",
+          "scheduled_at": "2024-03-13",
+          "subscription_id": 461605019,
+          "title": "The Small Vege Box",
+          "topic": "charge/updated",
+          "update_label": "updated"
+        }
+      }
+    }
+  ]
+}

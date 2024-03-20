@@ -11,6 +11,9 @@ import chargeUpcoming from "../../webhooks/recharge/charge-upcoming.js";
 import chargeUpdated from "../../webhooks/recharge/charge-updated.js";
 import chargeDeleted from "../../webhooks/recharge/charge-deleted.js";
 import orderProcessed from "../../webhooks/recharge/order-processed.js";
+import orderUpcoming from "../../webhooks/recharge/order-upcoming.js";
+import orderCreated from "../../webhooks/recharge/order-created.js";
+import orderSuccess from "../../webhooks/recharge/order-success.js";
 import subscriptionCreated from "../../webhooks/recharge/subscription-created.js";
 import subscriptionDeleted from "../../webhooks/recharge/subscription-deleted.js";
 import subscriptionUpdated from "../../webhooks/recharge/subscription-updated.js";
@@ -24,6 +27,9 @@ export const webhook_topics = {
   "SUBSCRIPTION_ACTIVATED": subscriptionActivated,
   "SUBSCRIPTION_CANCELLED": subscriptionCancelled,
   "ORDER_PROCESSED": orderProcessed,
+  "ORDER_UPCOMING": orderUpcoming,
+  "ORDER_CREATED": orderCreated,
+  "ORDER_SUCCESS": orderSuccess,
   "CHARGE_CREATED": chargeCreated,
   "CHARGE_UPCOMING": chargeUpcoming,
   "CHARGE_UPDATED": chargeUpdated,

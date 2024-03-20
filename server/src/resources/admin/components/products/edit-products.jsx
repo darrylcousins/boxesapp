@@ -40,7 +40,8 @@ import {
  */
 function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, nextChargeDate, isEditable, key, id }) {
 
-  const showDetails = !hideDetails;  // if undefined or null show the details
+  // if undefined or null show the details. i.e. for admin to see ids
+  const showDetails = !hideDetails;
 
   /**
    * True while loading data from api // box price
@@ -556,12 +557,23 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
         const key = ev.target.getAttribute("data-id");
         const idx = ev.target.getAttribute("data-idx");
         const { value } = ev.target;
-        boxLists[key][idx].quantity = parseInt(value, 10);
+        let quantity = parseInt(value, 10);
+        if (quantity === 0) {
+          this.dispatchEvent(toastEvent({
+            notice: "Delete an item by using the x",
+            bgColour: "black",
+            borderColour: "black"
+          }));
+          return;
+        };
+        boxLists[key][idx].quantity = quantity;
+        /*
         if (key === "Add on Items" && parseInt(value, 10) === 0) {
           boxLists[key].splice(idx, 1);
         };
+        */
         ev.target.blur();
-        const count = (["Including", "Swapped Items"].includes(key)) ? parseInt(value, 10) - 1 : parseInt(value, 10);
+        const count = (["Including", "Swapped Items"].includes(key)) ? quantity - 1 : quantity;
 
         updatePricedItems({
           product: boxLists[key][idx],
@@ -569,7 +581,7 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
         });
 
         animateFadeForAction(document.querySelector("#pricedItems"), () => this.refresh());
-        const notice = `Updated ${boxLists[key][idx].shopify_title} to ${value}`;
+        const notice = `Updated ${boxLists[key][idx].shopify_title} to ${quantity}`;
         this.dispatchEvent(toastEvent({
           notice,
           bgColour: "black",
@@ -718,7 +730,8 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
     };
     await collectPrices(); // updates pricedItems to included prices
     loading = false;
-    await getBoxPrice(); // refresh called from getBoxPrice
+    this.refresh();
+    //await getBoxPrice(); // refresh called from getBoxPrice
   };
 
   const getListData = () => {

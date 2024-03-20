@@ -1,6 +1,7 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
+import { ObjectId } from "mongodb";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import { updateSubscriptions } from "../../lib/recharge/helpers.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
@@ -15,13 +16,16 @@ import { upsertPending } from "../../api/recharge/lib.js";
  * customer notification.
  * 
  * So we need to compare the subscribed items to the box
+ *
+ * NOTE Returns false if no action is taken and true if some update occured
+ *
  */
 export default async function chargeUpcoming(topic, shop, body) {
 
   const mytopic = "CHARGE_UPCOMING";
   if (topic !== mytopic) {
     _logger.notice(`Recharge webhook ${topic} received but expected ${mytopic}`, { meta: { recharge: {} } });
-    return;
+    return false;
   };
   const topicLower = topic.toLowerCase().replace(/_/g, "/");
 
@@ -37,9 +41,17 @@ export default async function chargeUpcoming(topic, shop, body) {
   try {
     result = await gatherData({ grouped, result });
 
+    let entries = [];
     for (const [idx, subscription] of result.entries()) {
 
-      if (subscription.updates && subscription.updates.length) {
+      const meta = getMetaForBox(subscription.attributes.subscription_id, charge, topicLower);
+      meta.recharge = sortObjectByKeys(meta.recharge); 
+
+      if (!(subscription.updates && subscription.updates.length)) {
+
+        _logger.notice(`Charge upcoming without updates.`, { meta });
+
+      } else {
 
         // need to set data in updates_pending to prevent user from editing
         // subscription in this timeframe from updates
@@ -53,7 +65,7 @@ export default async function chargeUpcoming(topic, shop, body) {
           action: "upcoming",
           subscription_id: subscription.attributes.subscription_id,
           address_id: charge.address_id,
-          customer_id: charge.customer_id,
+          customer_id: charge.customer.id,
           charge_id: charge.id,
           scheduled_at: charge.scheduled_at,
           title: subscription.attributes.title,
@@ -61,14 +73,14 @@ export default async function chargeUpcoming(topic, shop, body) {
           rc_subscription_ids,
           deliver_at: subscription.attributes.nextDeliveryDate,
         };
-        const entry_id = await upsertPending(
-          pendingData
-        );
-        // just to add to the logging
+        const entry_id = await upsertPending(pendingData);
+        entries.push(new ObjectId(entry_id));
+        // just to add to the logging, not required in the updates_pending table
         for (const [key, value] of Object.entries(subscription.properties)) {
           pendingData[key] = value;
         };
         pendingData.change_messages = subscription.messages;
+
         _logger.notice(`Charge upcoming updates required.`, { meta: { recharge: sortObjectByKeys(pendingData) } });
 
         // Reconcile the items in the subscription with the new box
@@ -109,12 +121,6 @@ export default async function chargeUpcoming(topic, shop, body) {
 
         result[idx] = subscription;
 
-      } else {
-
-        const meta = getMetaForBox(subscription.attributes.subscription_id, charge, topicLower);
-        meta.recharge = sortObjectByKeys(meta.recharge); 
-        _logger.notice(`Charge upcoming without updates.`, { meta });
-
       };
 
       // update the box and freeze it from further editing
@@ -126,10 +132,30 @@ export default async function chargeUpcoming(topic, shop, body) {
       });
     };
 
-    await chargeUpcomingMail({ subscriptions: result, attributes: { ...result[0].attributes, address: charge.shipping_address } });
+    const mailOpts = {
+      subscriptions: result,
+      attributes: { ...result[0].attributes, address: charge.shipping_address }
+    };
+    if (entries.length === 0) {
+      await chargeUpcomingMail(mailOpts);
+    };
+
+    let res;
+    let timer;
+    // only once all updates are complete do we send the email
+    timer = setInterval(async () => {
+      res = await _mongodb.collection("updates_pending").find({ "_id": { "$in": entries } }).toArray();
+      if (res.length === 0) {
+        clearInterval(timer);
+        // compile data for email to customer the updates have been completed
+        await chargeUpcomingMail(mailOpts);
+      };
+    }, 10000);
+
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    return false;
   };
 
   return true;

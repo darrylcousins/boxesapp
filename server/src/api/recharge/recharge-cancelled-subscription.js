@@ -1,5 +1,5 @@
 /*
- * @module api/recharge/recharge-customer-charges.js
+ * @module api/recharge/recharge-cancelled-subscription.js
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
@@ -11,7 +11,7 @@ import { sortObjectByKeys, compareArrays } from "../../lib/helpers.js";
  * Retrieve cancelled subscriptions for customer, but trying to find a single group
  * This is to load a single "box subscription" after cancelling
  *
- * @function recharge/recharge-customer-charges.js
+ * @function recharge/recharge-cancelled-subscription.js
  * @param (Http request object) req
  * @param (Http response object) res
  * @param (function) next

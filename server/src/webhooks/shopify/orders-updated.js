@@ -3,18 +3,26 @@
  */
 import { mongoUpdate } from "../../lib/mongo/mongo.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
+import { writeFileForOrder } from "../recharge/helpers.js";
 
+/*
+ * NOTE Returns false if no action is taken and true if some update occured
+ *
+ */
 export default async function ordersUpdated(topic, shop, body) {
 
   const mytopic = "ORDERS_UPDATED";
   if (topic !== mytopic) {
     _logger.notice(`Shopify webhook ${topic} received but expected ${mytopic}`, { meta: { shopify: {} } });
-    return;
+    return false;
   };
 
   // primary pupose to update delivery date if tag has been changed
   const collection = _mongodb.collection("orders");
   const orderJson = JSON.parse(body);
+
+  writeFileForOrder(orderJson, mytopic.toLowerCase().split("_")[1], "shopify");
+
   // Updating 
   try {
     for (const tag of orderJson.tags.split(",").map(el => el.trim()).filter(el => el !== "")) {
@@ -55,7 +63,7 @@ export default async function ordersUpdated(topic, shop, body) {
     };
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-    return;
+    return false;
   };
   return true;
 };

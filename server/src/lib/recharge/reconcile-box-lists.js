@@ -1,5 +1,5 @@
 /*
- * @module api/reconcile-box
+ * @module api/reconcile-box-lists
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
@@ -8,7 +8,7 @@ import {
   makeItemString,
   compareArrays,
   sortObjectArrayByKey,
-} from "../lib/helpers.js";
+} from "../helpers.js";
 
 
 /*
@@ -71,7 +71,7 @@ export default async function reconcileBoxLists(box, boxLists) {
 
   const messages = [];
   if (!compareArrays([ ...thisIncludes, ...lists["removed"] ].map(el => el.title), availableIncludes)) {
-    messages.push("The included items do not match the box included items");
+    messages.push("The included items have been changed this week");
   };
 
   // first run deals with just removing or moving items
@@ -152,9 +152,7 @@ export default async function reconcileBoxLists(box, boxLists) {
                   lists["addons"].push(item); // keep quantity on list
                   lists["includes"].splice(idx, 1); // remove from addons
                   updates["includes"].splice(updates["includes"].indexOf(item), 1); // remove from includes
-                  // need to decrease as for with extra swaps
-                  updates["addons"].push({ title: item.title, quantity: item.quantity - 1 });
-                  //updates["addons"].push(item); // replace by the above line to fix problem?
+                  updates["addons"].push(item); // how to fix the extra quantity number?
                   break;
                 case "addons":
                   // do nothing
@@ -213,6 +211,8 @@ export default async function reconcileBoxLists(box, boxLists) {
     };
   };
   // these should match the extra subscribed items and will register deletions with zerod quantity
+  // NOTE XXX
+  // it will also remain true to the quantity - errors on charge-upcoming, those moved from includes increment falsely
   const includedSubscriptions = sortObjectArrayByKey([ 
     ...updates["includes"],
     ...updates["swaps"].filter(el => el.quantity > 1).map(el => ({ title: el.title, quantity: el.quantity - 1 })),

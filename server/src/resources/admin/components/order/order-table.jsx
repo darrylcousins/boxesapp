@@ -26,7 +26,6 @@ import { capWords, sortObjectByKey } from "../helpers";
  * @param {number} props.index The index of the row
  */
 function* TableRow({ order, index, selected }) {
-  console.log(order);
 
   for ({ order, index, selected } of this) {
 

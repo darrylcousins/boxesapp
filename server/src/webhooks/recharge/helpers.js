@@ -177,11 +177,13 @@ export const getMetaForCharge = (charge, topic) => {
   /* Start logging all details */
   const rc_subscription_ids = [];
   let properties;
-  let title;
+  const titles = [];
+  const box_subscription_ids = [];
   let deliver_at;
   for (const line_item of charge.line_items) {
     if (line_item.properties.some(el => el.name === "Including")) {
-      title = line_item.title;
+      titles.push(line_item.title);
+      box_subscription_ids.push(line_item.purchase_item_id);
       properties = line_item.properties.reduce(
         (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
         {});
@@ -205,7 +207,8 @@ export const getMetaForCharge = (charge, topic) => {
   const meta = {
     recharge: {
       topic,
-      title,
+      [`box${titles.length > 0 ? "es" : ""}`]: titles, // store as array
+      [`box_subscription_id${box_subscription_ids.length > 0 ? "s" : ""}`]: box_subscription_ids, // store as array
       charge_id: charge.id,
       customer_id: charge.customer.id,
       email: charge.customer.email,
@@ -219,7 +222,10 @@ export const getMetaForCharge = (charge, topic) => {
   const shopify_order_id = isNaN(parseInt(charge.external_order_id.ecommerce)) ? 
     "" : parseInt(charge.external_order_id.ecommerce);
   if (shopify_order_id) meta.recharge.shopify_order_id = shopify_order_id;
-  if (properties) {
+  const shopify_order_number = Object.hasOwn(charge, "external_order_name") ? 
+    charge.external_order_name.ecommerce : "";
+  if (shopify_order_number) meta.recharge.shopify_order_number = shopify_order_number;
+  if (properties && box_subscription_ids.length < 2) {
     delete properties.Likes;
     delete properties.Dislikes;
     for (const [key, value] of Object.entries(properties)) {
@@ -279,17 +285,18 @@ export const getMetaForSubscription = (subscription, topic) => {
 /*
  * @ function writeFile
  */
-export const writeFile = (json, type, topic) => {
+export const writeFile = (json, type, topic, key) => {
 
-  if (!topic.toLowerCase().startsWith("CHARGE")) return;
+  if (parseInt(process.env.DEBUG) !== 1) return;
 
-  if (process.env.NODE_ENV !== "development") return;
+  if (!key) key = "recharge";
 
   /* development logging stuff */
-  const d = new Date();
-  const s = `${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}`;
+  const s = new Date().toISOString().replace("T", "-").replace("Z", "");
+  let json_id;
+  if (Object.hasOwn(json[type], "id")) json_id = `-${json[type].id}`;
   try {
-    fs.writeFileSync(`recharge.${type}-${topic}-${s}-${json.id}.json`, JSON.stringify(json, null, 2));
+    fs.writeFileSync(`debug/${key}.${type}-${topic}-${s}${json_id ? json_id: ""}.json`, JSON.stringify(json, null, 2));
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
@@ -300,21 +307,29 @@ export const writeFile = (json, type, topic) => {
  * @function writeFileForSubscription
  */
 export const writeFileForSubscription = (subscription, topic) => {
-  writeFile(subscription, "subscription", topic);
+  writeFile({ subscription }, "subscription", topic, "recharge");
 };
 
 /*
  * @function writeFileForCharge
  */
 export const writeFileForCharge = (charge, topic) => {
-  writeFile(charge, "charge", topic);
+  writeFile({ charge }, "charge", topic, "recharge");
 };
 
 /*
  * @function writeFileForOrder
  */
-export const writeFileForOrder = (order, topic) => {
-  writeFile(order, "order", topic);
+export const writeFileForOrder = (order, topic, key) => {
+  if (!key) key = "recharge";
+  writeFile({ order }, "order", topic, key);
+};
+
+/*
+ * @function writeFileForOrder
+ */
+export const writeFileForProduct = (product, topic) => {
+  writeFile({ product }, "product", topic, "shopify");
 };
 
 /*

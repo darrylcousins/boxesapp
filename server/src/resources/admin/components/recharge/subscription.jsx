@@ -53,7 +53,7 @@ import {
  * import {renderer} from '@b9g/crank/dom';
  * renderer.render(<Subscription subscription={subscription} />, document.querySelector('#app'))
  */
-async function *Subscription({ subscription, customer, idx, admin, newSubscription }) {
+async function *Subscription({ subscription, customer, idx, admin, newSubscription, brokenSubscriptions }) {
 
   /*
   console.log("TITLE", subscription.attributes.title);
@@ -150,12 +150,6 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
    */
   let editsPending = Boolean(subscription.attributes.pending);
   /**
-   * The subscription logs if any
-   *
-   * @member {object} subscriptionLogs
-   */
-  let subscriptionLogs = [];
-  /**
    * timer
    *
    * @member {object} Keeping a track of how long updated take
@@ -185,7 +179,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
    */
   const collectMessages = async (ev) => {
     // default sleep is for 10 seconds - pass a value if needed
-    await sleepUntil(() => document.getElementById(`displayMessages-${subscription.attributes.subscription_id}`))
+    await sleepUntil(() => document.getElementById(`displayMessages-${subscription.attributes.subscription_id}`), 500)
       .then((res) => {
         displayMessages(res, ev.detail.messages);
       }).catch((e) => {
@@ -413,6 +407,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
     };
 
     const callback = async (data) => {
+      // data now contains the session_id and provides a connected socket
       await PostFetch({ src, data, headers })
         .then((result) => {
           const { error, json } = result;
@@ -469,7 +464,14 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
     };
 
     // already an included subscribed product
+    let includedIdx = -1;
     const included = subscription.includes.find(el => el.shopify_product_id === product.shopify_product_id);
+    if (included) includedIdx = subscription.includes.indexOf(included);
+
+    // already an removed subscribed product
+    let removedIdx = -1;
+    const removed = subscription.removed.find(el => el.shopify_product_id === product.shopify_product_id);
+    if (removed) removedIdx = subscription.removed.indexOf(removed);
 
     const propertyTemplate = [
       { name: "Delivery Date", value: subscription.box.delivered },
@@ -516,12 +518,24 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
           };
         };
       };
-      // this swap only happens when a swap has been incremented so no change to rc_ids is necessary
-      // unless it was already moved from elsewhere
+
+      if (type.from === "Swapped Items" && type.to === "Available Products") {
+        // if it was in included - i.e. with a quantity and subscription then move to removed
+        if (included) {
+          // move item back into includes
+          //subscription.includes[includedIdx].quantity = 1; // it was probably 0
+          subscription.removed.push(included);
+          subscription.includes.splice(includedIdx, 1);
+        };
+        // do we need something as for included products with the rc_subscription_ids?
+      };
+
       if (type.from === "Swapped Items" && type.to === "Add on Items") {
         // here a bug exists that the item quantity has been increased yet I'm not removing the new subscription from rc_ids
+        // is that fixed?
         rc_subscription = rc_subscription_ids.find(el => el.shopify_product_id === parseInt(product.shopify_product_id));
       };
+
       if (type.from === "Removed Items" && type.to === "Including") {
         // here a bug exists that the item quantity has been increased yet I'm not removing the new subscription from rc_ids
         rc_subscription = rc_subscription_ids.find(el => el.shopify_product_id === parseInt(product.shopify_product_id));
@@ -537,11 +551,10 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
         };
       };
       if (type.from === "Available Products" && type.to === "Add on Items") {
-        const removedIdx = subscription.removed.findIndex(el => el.shopify_product_id === product.shopify_product_id);
-        if (removedIdx !== -1) {
+        if (removed) {
           subscription.removed[removedIdx].quantity = 1; // will have been set to zero
           rc_subscription = rc_subscription_ids.find(el => el.shopify_product_id === parseInt(product.shopify_product_id));
-          subscription.includes.push(subscription.removed[removedIdx]);
+          subscription.includes.push(removed);
           if (rc_subscription) {
             rc_subscription.quantity = 1;
           } else {
@@ -559,8 +572,10 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
       };
     };
 
+    let addingWithList = type.to;
     if (Object.hasOwnProperty.call(type, "count")) {
       // fix depending on the list, i.e. if Including then decrement by 1, so that zero will remove in from includes
+      addingWithList = type.count;
       quantity = (type.count === "Add on Items") ? product.quantity : product.quantity - 1;
       if (included) {
         if (quantity === 0 && type.count === "Add on Items") {
@@ -591,22 +606,33 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
       };
     };
     if (addingProduct) {
-      subscription.includes.push({
-        product_title: product.shopify_title,
-        title: product.shopify_title,
-        ...subscription.attributes.templateSubscription,
-        price: `${(product.shopify_price * 0.01).toFixed(2)}`,
-        total_price: `${(product.shopify_price * 0.01).toFixed(2)}`,
-        quantity,
-        external_product_id: {
-          ecommerce: `${product.shopify_product_id}`
-        },
-        external_variant_id: {
-          ecommerce: `${product.shopify_variant_id}`
-        },
-        properties: [ ...propertyTemplate ],
-        shopify_product_id: product.shopify_product_id, // so we can still find it in the list
-      });
+      // has this product already been removed?
+      //
+      // Example case: item was in addons, removed from addons, swapped and then incremented to quatity>1
+      if (removed) {
+        // move item back into includes
+        subscription.removed[removedIdx].quantity = parseInt(quantity); // fix the quantity
+        subscription.includes.push(removed)
+        subscription.removed.splice(removedIdx, 1);
+      } else {
+        // push in a whole new item using templateSubscription
+        subscription.includes.push({
+          product_title: product.shopify_title,
+          title: product.shopify_title,
+          ...subscription.attributes.templateSubscription,
+          price: `${(product.shopify_price * 0.01).toFixed(2)}`,
+          total_price: `${(product.shopify_price * 0.01).toFixed(2)}`,
+          quantity,
+          external_product_id: {
+            ecommerce: `${product.shopify_product_id}`
+          },
+          external_variant_id: {
+            ecommerce: `${product.shopify_variant_id}`
+          },
+          properties: [ ...propertyTemplate ],
+          shopify_product_id: product.shopify_product_id, // so we can still find it in the list
+        });
+      };
 
       // bugfix here, found that I can push a new item onto rc_subscription_ids
       // even though it may already be present with quantity set to zero, i.e.
@@ -616,6 +642,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
       if (rc_product) {
         // simply update the quantity
         rc_product.quantity = parseInt(quantity);
+        rc_product = rc_subscription_ids.find(el => el.shopify_product_id === parseInt(product.shopify_product_id));
       } else {
         rc_subscription_ids.push({
           shopify_product_id: parseInt(product.shopify_product_id),
@@ -688,8 +715,9 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
     };
     if (updates.length > 0 || updateBox) {
       subscriptionBox.properties = Object.entries(subscription.properties).map(([name, value]) => {
-        return { name, value };
-      });
+        if (name !== "box_subscription_id") return { name, value };
+        return null;
+      }).filter(el => el !== null);
       subscriptionBox.properties.push({
         name: "box_subscription_id", value: `${subscription.attributes.subscription_id}`
       });
@@ -716,7 +744,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
           detail: { charge_id: subscription.attributes.charge_id },
         })
       );
-    }, 1000);
+    }, 500);
   };
 
   /*
@@ -727,7 +755,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
 
     // looking a the api, only charge_id and subscription_id are used!
     let uri = `/api/recharge-customer-charge/${charge_id}`;
-    uri = `${uri}?customer_id=${subscription.attributes.customer.id}`;
+    uri = `${uri}?customer_id=${subscription.attributes.customer.id}`; // recharge id
     uri = `${uri}&address_id=${subscription.attributes.address_id}`;
     uri = `${uri}&subscription_id=${subscription.attributes.subscription_id}`;
     uri = `${uri}&scheduled_at=${subscription.attributes.scheduled_at}`;
@@ -747,7 +775,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
             }));
             return null;
           } else {
-            loading = false;
+            //loading = false; // finish loading after final refresh
             return json.subscription;
           };
         };
@@ -845,6 +873,16 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
       console.warn("No socketMessages object");
     };
 
+    loading = true;
+    await this.refresh();
+
+    await sleepUntil(() => document.getElementById(`subscription-${subscription.attributes.subscription_id}`), 500)
+      .then((res) => {
+        res.classList.add("disableevents");
+      }).catch((e) => {
+        // no need for action
+      });
+
     if (action === "cancelled") {
       // in this case we must remove the subscription and load it as a cancelled subscription
 
@@ -858,7 +896,6 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
               bubbles: true,
               detail: {
                 subscription: cancelled,
-                //list: "chargeGroups",
                 subscription_id: cancelled.box.id,
               },
             })
@@ -875,23 +912,18 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
       // refetch the charge and adapt to subscription object
       if (editsPending && action !== "deleted" ) {
         const charge = await getCharge(subscription.attributes.charge_id);
-        if (admin) await getLogs();
-
         //console.log(charge);
         editsPending = false;
-
         if (charge) {
           for (const key of Object.keys(charge)) {
             subscription[key] = charge[key];
           };
         };
       };
-
       unskippable = isUnSkippable();
 
       // reset ids_orig
       rc_subscription_ids_orig = subscription.attributes.rc_subscription_ids.map(el => { return {...el}; });
-
       if (collapsed) {
         // restore buttons
         this.dispatchEvent(
@@ -902,10 +934,11 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
         );
       };
     };
-
-    await sleepUntil(() => document.getElementById(`subscription-${subscription.attributes.subscription_id}`))
+    await sleepUntil(() => document.getElementById(`subscription-${subscription.attributes.subscription_id}`), 500)
       .then((res) => {
         animateFadeForAction(res, () => {
+          res.classList.remove("disableevents");
+          loading = false;
           this.refresh();
         });
       }).catch((e) => {
@@ -1140,47 +1173,6 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
     return data;
   };
 
-  /*
-   * @function getLogs
-   * Fetch recent logs for this subscription
-   */
-  const getLogs = async () => {
-    const { customer, subscription_id } = subscription.attributes;
-    const uri = `/api/customer-logs?customer_id=${customer.id}&subscription_id=${subscription_id}`;
-    return Fetch(encodeURI(uri))
-      .then((result) => {
-        const { error, json } = result;
-        if (error !== null) {
-          fetchError = error;
-          loading = false;
-          this.refresh();
-          return null;
-        };
-        // ensure distinct on timestamp (later fixed)
-        const logs = [];
-        const map = new Map();
-        for (const item of json.logs) {
-          if(!map.has(item.timestamp)){
-            map.set(item.timestamp, true);    // set any value to Map
-            logs.push({
-              timestamp: item.timestamp,
-              message: item.message
-            });
-          };
-        };
-        subscriptionLogs = json.logs;
-      })
-      .catch((err) => {
-        fetchError = err;
-        loading = false;
-        this.refresh();
-        return null;
-      });
-    return;
-  };
-
-  if (admin) getLogs();
-
   const modalWindow = document.getElementById("modal-window");
   const host = localStorage.getItem("host"); // server host e.g. https://myshop.boxexapp.nz
 
@@ -1198,13 +1190,13 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
 
   window.document.addEventListener("keyup", hideExplainer);
 
-  for await ({ subscription, idx, admin } of this) { // eslint-disable-line no-unused-vars
+  for await ({ subscription, idx, admin, newSubscription, brokenSubscriptions } of this) { // eslint-disable-line no-unused-vars
 
     yield (
       CancelledSubscription ? (
         <Cancelled subscription={ CancelledSubscription } idx={ idx } admin={ admin } />
       ) : (
-        <Fragment>
+        <div class={ brokenSubscriptions.includes(subscription.attributes.subscription_id) ? "disableevents" : "" }>
           <h4 class="tl mb0 w-100 fg-streamside-maroon">
             { newSubscription && (
               <span class="b pv2 ph3 white bg-dark-blue ba b--navy br2 mr3" style="font-size: smaller">New</span>
@@ -1235,7 +1227,8 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
             <div id={`skip_cancel-${subscription.attributes.subscription_id}`} class="cf w-100 pv2">
               { admin && (
                 <div class="fl w-30">
-                  <LogsModal logs={ subscriptionLogs }
+                  <LogsModal customer_id={ subscription.attributes.customer.id }
+                      subscription_id={ subscription.attributes.subscription_id }
                       admin={ admin }
                       box_title={ `${subscription.attributes.title} - ${subscription.attributes.variant}` } />
                 </div>
@@ -1315,26 +1308,34 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
           )}
           <div id={ messageDivId } class="tl socketMessages"></div>
           { subscription.messages.length > 0 && subscription.attributes.hasNextBox && !editsPending && (
-              <div class="alert-box dark-blue pv2 ma2 br3 ba b--dark-blue bg-washed-blue">
-                  <Fragment>
-                    <p class="pa3">Your subscription needs to be reconciled with the upcoming box:</p>
-                    <ul class="ma0">
-                      { subscription.messages.map(el => <li>{el}</li>) }
-                    </ul>
-                    { subscription.attributes.nowAvailableAsAddOns.length > 0 && (
-                      <p class="pl5">New available this week: { subscription.attributes.nowAvailableAsAddOns.join(", ") }</p>
-                    )}
-                    <div class="tr mv2 mr3">
-                      <Button type="primary-reverse"
-                        title="Continue"
-                        onclick={(ev) => saveChanges("updates", ev)}>
-                        <span class="b">
-                          Apply changes to continue
-                        </span>
-                      </Button>
-                    </div>
-                  </Fragment>
-              </div>
+            <div class="alert-box dark-blue pv2 ma2 br3 ba b--dark-blue bg-washed-blue">
+                <Fragment>
+                  <p class="pa3">Before continuing the subscription needs to be reconciled with the upcoming box:</p>
+                  <ul class="ma0">
+                    { subscription.messages.map(el => <li>{el}</li>) }
+                  </ul>
+                  { subscription.attributes.nowAvailableAsAddOns.length > 0 && (
+                    <p class="pl5">New available this week: { subscription.attributes.nowAvailableAsAddOns.join(", ") }</p>
+                  )}
+                  <div class="tr mv2 mr3">
+                    <Button type="primary-reverse"
+                      title="Continue"
+                      onclick={(ev) => saveChanges("updates", ev)}>
+                      <span class="b">
+                        Apply changes to continue
+                      </span>
+                    </Button>
+                    <Button type="success-reverse"
+                      onclick={toggleCollapse}
+                      title={ collapsed ? "Show products" : "Hide products" }
+                    >
+                      <span class="b">
+                        { collapsed ? "Show products" : "Hide products" }
+                      </span>
+                    </Button>
+                  </div>
+                </Fragment>
+            </div>
           )}
           { loading && <div id={ `loader-${idx}` }><BarLoader /></div> }
           { fetchError && <Error msg={fetchError} /> }
@@ -1362,6 +1363,17 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
                     Save
                   </Button>
                 </div>
+                { false && (
+                  <div class="dib pr2" id="testChanges">
+                    <Button
+                      onclick={ (ev) => testChanges("includes", ev) }
+                      hover="dim"
+                      border="navy"
+                      type="primary">
+                      Test
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1406,7 +1418,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
               </ModalTemplate>
             </Portal>
           )}
-        </Fragment>
+        </div>
       )
     )
   };

@@ -11,6 +11,9 @@ import { weekdays } from "../../lib/dates.js";
  * @param (Http request object) req
  * @param (Http response object) res
  * @param (function) next
+ *
+ * This was being used in resources/edit-products to ensure we always displayed the correct shopify price
+ * but because now data is verified before display it is no longer used (exception of order?)
  */
 export default async (req, res, next) => {
   const variant_id = parseInt(req.params.variant_id);

@@ -1,5 +1,11 @@
 # Change Log - Early 2024
 
+[//]: #
+
+This may be the most platform independent comment
+
+)
+
 After last winter's chunk of work, including changes to running system
 processes, I was still left with some nagging problems.
 
@@ -18,7 +24,7 @@ confidently say that the past 8 weeks I have been working ~25 hours a week of
 boxesapp. What was something of a hobby project has increasingly felt like
 work.
 
-So then, the change log:
+So then, the change log (with comments) cool:
 
 ## Box Edits
 
@@ -59,8 +65,9 @@ Some cosmetic changes here with links and buttons. Also, because I had test
 subscriber with over a dozen subscriptions with a new charge for every day of
 the week I found loading all charges (reconciling, verifying etc) took a wee
 minute. So now the administrator can load a single charge at a time. This is
-dependent on the locally stored list of charges, but these can be refreshed at
-will.
+dependent on the locally stored list of charges being correctly synced (nightly
+cronjob), but these can be resynced at will with a link alongside the
+subscriber name.
 
 ## Add Box Subscription
 
@@ -113,6 +120,17 @@ addition to the nightly email. The alerts list all the faulty subscriptions
 found and prompts for action. Once action is taken individual customer accounts
 can be re-verified. Stale `updates_pending` entries can now be deleted by the
 shop administrator.
+
+The verify script checks for:
+
+* Date mismatches between charge date and delivery date
+* Price mismatches for the box
+* Orphans: Items in a charge that aren't listed as extras in the actual box.
+* Quantity mismatches: Subscribed items with a quantity that do not match the actual box.
+
+Aside from the nightly run of the script, all subscriptions are verified when
+loaded into the front end. This was primarily to prevent editing of a broken
+box. The fault is also logged and presented to the shop administrator.
 
 ## Freeze Boxes
 

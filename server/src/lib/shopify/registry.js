@@ -5,6 +5,7 @@
 import "dotenv/config";
 import "isomorphic-fetch";
 import crypto from "crypto";
+import { logWebhook } from "../recharge/helpers.js";
 import { Shopify } from "./index.js";
 
 export default class Registry {
@@ -83,6 +84,9 @@ export default class Registry {
         } else {
           webhookHandler = this.getHandler(webhookTopic);
           if (webhookHandler) {
+            if (parseInt(process.env.DEBUG) === 1) {
+              await logWebhook(webhookTopic, JSON.parse(reqBody), "shopify");
+            };
             try {
               await webhookHandler(webhookTopic, domain, reqBody);
             } catch(err) {

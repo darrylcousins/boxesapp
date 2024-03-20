@@ -705,18 +705,18 @@ async function* ChangeBox(props) {
     if (customer.has_payment_method_in_dunning || !customer.has_valid_payment_method) {
       yield (
         <Fragment>
-          <div class="alert-box dark-red mv2 pa4 br3 ba b--dark-red bg-washed-red">
+          <div class="alert-box navy mv2 pa4 br3 ba b--navy bg-washed-blue">
             Ooops! It appears that we do not have a valid payment method to {" "}
             bill a new box subscription to or perhaps another charge has {" "}
             recently failed.<br />
             Please contact {" "}
-            <a class="link b red"
+            <a class="link b navy"
               href={ `mailto://${localStorage.getItem("admin_email")}?subject=${localStorage.getItem("email_subject")}` }
             >{ localStorage.getItem("shop_title") }</a> {" "}
             to address this problem.
           </div>
           <div class="cf tr mr2 mb2">
-            <Button type="secondary" onclick={closeModal}>
+            <Button type="primary" onclick={closeModal}>
               Cancel
             </Button>
           </div>
@@ -765,7 +765,10 @@ async function* ChangeBox(props) {
             )}
             { currentBoxes && (
               <div class="alert-box dark-blue pa3 mt0 mb3 br3 ba b--dark-blue bg-washed-blue">
-                Delivery dates can be paused or rescheduled after changes are saved.
+                <ul class="list ml1">
+                  <li>Delivery dates can be paused or rescheduled after changes have been saved.</li>
+                  <li>Products in the box can be changed and edited after changes have been saved.</li>
+                </ul>
               </div>
             )}
             { alertMessage && (
@@ -860,11 +863,13 @@ async function* ChangeBox(props) {
                 </p>
               </div>
               <div class="cf tr mr2 mb2">
-                { selectedBox || !subscription && (
+                { selectedBox || !subscription ? (
                   <Button type={ checkedPolicy ? "primary" : "secondary" } 
                     onclick={thisSave} classes={ checkedPolicy ? null : "disable o-60" }>
                     Save
                   </Button>
+                ) : (
+                  ""
                 )}
                 { subscription && (
                   <Button type={ selectedBox ? "secondary" : "primary" } 

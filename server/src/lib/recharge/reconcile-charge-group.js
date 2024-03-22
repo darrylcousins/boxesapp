@@ -239,6 +239,8 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     reconciled = { properties: boxProperties, messages: [], updates: [] };
   };
 
+  console.log("reconciled updates", reconciled.updates);
+
   const subscriptionUpdates = [];
   if (reconciled.messages.length > 0 && hasNextBox) { // don't collect updates unless the nextBox is present
     // push the subscription with new properties

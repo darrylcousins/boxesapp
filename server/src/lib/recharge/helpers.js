@@ -309,11 +309,6 @@ export const doRechargeQuery = async (opts) => {
       throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}", fetching ${path}${searchString}`);
     };
 
-    if (false) { // Already logging these from job worker see bull/api-worker
-      meta.recharge = sortObjectByKeys(meta.recharge);
-      winstonLogger.notice(`Recharge api request`, { meta });
-    };
-
     return json;
   });
 };

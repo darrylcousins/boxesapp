@@ -126,8 +126,10 @@ async function *Page() {
    * Promise fetching markdown content
    * @method {Promise} pullPage
    */
-  const pullPage = async (pathname) => {
+  const pullPage = async (pathname, index) => {
     console.log(pathname);
+    if (!index) history.pushState("", "", pathname);
+    //history.replaceState("", "", pathname)
     if (pathname === "/reports") {
       loading = false;
       showAlert = false;
@@ -205,7 +207,6 @@ ${ `${ fence }` }
 
     ev.preventDefault();
     pathname = ev.target.dataset.page;
-    history.pushState("", "", pathname)
 
     // hide pushmenu
     document.querySelector("#menu-switch").checked = false;
@@ -229,9 +230,11 @@ ${ `${ fence }` }
   });
 
   let pathname = window.location.pathname === "/" ? "/index" : window.location.pathname;
-  console.log(window.location.pathname);
-  console.log(pathname);
-  await pullPage(pathname);
+  console.log("first load?", pathname);
+  if (pathname === "/index.html") {
+    pathname = "/index";
+  };
+  await pullPage(pathname, window.location.pathname === "/index.html");
 
   const toggleMode = (value) => {
     mode = value;
@@ -246,6 +249,11 @@ ${ `${ fence }` }
 
   // initialized with dark-mode
   document.documentElement.classList.toggle(`${mode}-mode`, true);
+
+  window.addEventListener("popstate", (event) => {
+    pathname = document.location.pathname;
+    pullPage(pathname);
+  });
 
   for await (const _ of this) { // eslint-disable-line no-unused-vars
     yield (
@@ -329,8 +337,12 @@ ${ `${ fence }` }
           </div>
           <footer class="footer pb2 pt3 mt3 tl bt nowrap">
             <div id="timestamp" class="mb2">
-              Published December 20 2022.<br />
-              Updated August 2023.<br />
+              First published December 20 2022.<br />
+              Last updated March 2024. { " " }
+              (<a href="/site-changelog"
+                class={ `${mode} link dim` }
+                data-page="/site-changelog"
+                title="Changelog for this site">log</a>)
             </div>
             Darryl Cousins
             <span class="ml1">&lt;

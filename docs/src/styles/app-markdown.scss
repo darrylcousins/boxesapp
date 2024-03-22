@@ -13,6 +13,32 @@
 .markdown-body h4.mb0 {
   margin-bottom: 0px;
 }
+.markdown-body a.listing {
+  color: var(--color-muted-fg);
+}
+.markdown-body a.listing:hover {
+  text-decoration: none;
+}
+.markdown-body a.listing.selected {
+  color: var(--color-accent-fg);
+}
+.markdown-body code {
+  padding: 0.2em 0.4em 0.1em 0.4em;
+}
+.markdown-body code.listing {
+  padding: 0.4em 0.6em 0.3em 0.6em;
+  font-weight: bold;
+  font-size: 90%;
+}
+.border-muted {
+  border-color: var(--color-border-muted);
+}
 .smaller {
   font-size: smaller;
+}
+.truncate {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  /*font-size: smaller;*/
 }

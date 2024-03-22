@@ -31,12 +31,6 @@ export default async function chargeDeleted(topic, shop, body, { io, sockets }) 
     };
 
     const entry = await _mongodb.collection("updates_pending").findOne(my_query);
-    /*
-    console.log("Charge DELETED ================");
-    console.log("Charge:", charge);
-    console.log("updates_pending?:", entry);
-    console.log("End charge DELETED ================");
-    */
     if (entry && entry.action === "cancelled") {
 
       if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
@@ -54,13 +48,9 @@ export default async function chargeDeleted(topic, shop, body, { io, sockets }) 
         });
       };
 
-      // we can remove this entry
-      console.log("=======================");
-      console.log("Deleting updates pending entry charge/deleted");
-      console.log("=======================");
       await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
       if (parseInt(process.env.DEBUG) === 1) {
-        _logger.notice("Deleting updates_pending entry charge/deleted", { meta: { recharge: entry }});
+        _logger.notice("Deleting updates pending entry charge/deleted", { meta: { recharge: entry }});
       };
     };
 

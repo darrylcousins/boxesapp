@@ -1,11 +1,5 @@
 # Change Log - Early 2024
 
-[//]: #
-
-This may be the most platform independent comment
-
-)
-
 After last winter's chunk of work, including changes to running system
 processes, I was still left with some nagging problems.
 

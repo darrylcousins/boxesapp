@@ -21,6 +21,11 @@ export default async function subscriptionActivated(topic, shop, body, { io, soc
 
   writeFileForSubscription(subscription, mytopic.toLowerCase().split("_")[1]);
 
+  if (parseInt(process.env.DEBUG) === 1) {
+    const meta = getMetaForSubscription(subscription, topicLower);
+    _logger.notice(`Activated ${meta.recharge.title}.`, { meta });
+  };
+
   return false;
 };
 

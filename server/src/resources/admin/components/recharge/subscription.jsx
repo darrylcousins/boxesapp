@@ -862,8 +862,6 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
         bgColour: "black",
         borderColour: "black"
       }));
-    } else {
-      console.warn("No timer object");
     };
 
     if (socketMessages) {
@@ -874,7 +872,10 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
     };
 
     loading = true;
-    await this.refresh();
+    if (timer) {
+      timer = null;
+      await this.refresh();
+    };
 
     await sleepUntil(() => document.getElementById(`subscription-${subscription.attributes.subscription_id}`), 500)
       .then((res) => {
@@ -1325,6 +1326,17 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
                         Apply changes to continue
                       </span>
                     </Button>
+                    { true && (
+                      <div class="dib pr2" id="testChanges">
+                        <Button
+                          onclick={ (ev) => testChanges("updates", ev) }
+                          hover="dim"
+                          border="navy"
+                          type="primary">
+                          Test
+                        </Button>
+                      </div>
+                    )}
                     <Button type="success-reverse"
                       onclick={toggleCollapse}
                       title={ collapsed ? "Show products" : "Hide products" }
@@ -1363,7 +1375,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
                     Save
                   </Button>
                 </div>
-                { false && (
+                { true && (
                   <div class="dib pr2" id="testChanges">
                     <Button
                       onclick={ (ev) => testChanges("includes", ev) }

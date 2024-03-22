@@ -16,14 +16,14 @@ import { MenuIcon } from "../lib/icon.jsx";
  * @example
  * { !loading && <Navigation /> }
  */
-function *Navigation({ pathname, mode }) {
+async function *Navigation({ pathname, mode }) {
+  let staticUrl = ""; // see vite.config.js for running dev on port
+
   /**
    * Loading indicator
    * @member {boolean} loading
    */
   let loading = true;
-
-  let staticUrl = ""; // see vite.config.js for running dev on port
 
   /**
    * Navigation json definition
@@ -35,7 +35,11 @@ function *Navigation({ pathname, mode }) {
    * Promise fetching navigation json definition
    * @member {Promise} pull
    */
-  const pull = fetch(`${staticUrl}/navigation.json`, {headers: {'Accept': 'application/json'}})
+  const headers = {
+    "Accept": "application/json",
+  };
+  if (staticUrl.length < 2) headers["Cache-Control"] = "no-cache";
+  const pull = fetch(`${staticUrl}/navigation.json`, {headers})
     .then((res) => {
       if (!res.ok) {
         throw new Error(`${res.status} (${res.statusText})`);
@@ -53,7 +57,7 @@ function *Navigation({ pathname, mode }) {
     this.refresh();
   });
 
-  for ({ pathname, mode } of this) {
+  for await ({ pathname, mode } of this) {
     yield (
       <Fragment>
         { !loading && navigation.length > 0 && (

@@ -42,6 +42,9 @@ export default async function subscriptionUpdated(topic, shop, body, { io, socke
         io.emit("completed", `Subscription ${topic}: ${meta.recharge.title}${variant_title}`);
       };
 
+      // schedule_only comes from changeBoxModal and indicates that only the
+      // schedule was changed and therefore no change to the charge and the
+      // updates_pending entry would never be removed otherwise
       if (entry.action === "changed" && entry.schedule_only === true) {
         // check that all have been updated
         const allUpdated = entry.rc_subscription_ids.every(el => {
@@ -49,12 +52,9 @@ export default async function subscriptionUpdated(topic, shop, body, { io, socke
           return el.updated === true && Number.isInteger(el.subscription_id);
         });
         if (allUpdated) {
-          console.log("=======================");
-          console.log("Deleting updates pending entry subscription/updated");
-          console.log("=======================");
           await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
           if (parseInt(process.env.DEBUG) === 1) {
-            _logger.notice("Deleting updates_pending entry subscription/updated", { meta: { recharge: entry }});
+            _logger.notice("Deleting updates pending entry subscription/updated", { meta: { recharge: entry }});
           };
           if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
             io.emit("completed", `Updates completed, removing updates entry.`);
@@ -67,6 +67,10 @@ export default async function subscriptionUpdated(topic, shop, body, { io, socke
               scheduled_at: entry.scheduled_at,
               charge_id: entry.charge_id,
             });
+          };
+        } else {
+          if (parseInt(process.env.DEBUG) === 1) {
+            _logger.notice(`Updated ${meta.recharge.title} - entry stil pending.`, { meta: { recharge: entry } });
           };
         };
       };

@@ -70,6 +70,7 @@ export default async function chargeCreated(topic, shop, body) {
 
   // Only process charges that have been successful i.e. were created an charged via shopify
   if ( charge.status !== "success") {
+    /*
     // NOTE this is a hack until I can move it into order/processed
     // Every line_item should share the same delivery date, if not then an error
     if (box_subscription_ids.length > 0) {
@@ -116,20 +117,16 @@ export default async function chargeCreated(topic, shop, body) {
           };
         };
 
-        // XXX copied from below needs fixing and look at the timer before sending email
-        // XXX XXX XXX XXX XXX 
-        //const entry_id = await upsertPending({
-        //});
-
       } catch(err) {
         _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
         return false;
       };
       meta.recharge = sortObjectByKeys(meta.recharge);
-      meta.recharge.dates = lineItemDates;
+      meta.recharge.deliver_at = lineItemDates;
       _logger.notice(`Charge created and updated delivery dates.`, { meta });
       return true;
     };
+    */
     return false;
   };
 

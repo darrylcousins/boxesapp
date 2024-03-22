@@ -29,17 +29,17 @@ const run = async () => {
     // Step one: collect files from debug at a timestamp delta - utc time
 
     let folder = "./debug";
-    let dateString = "2024-03-19T04:07:00Z";
-    // NOTE try to land about the middle, we go 4 minutes either side
+    let dateString = "2024-03-21T08:03:07Z";
 
     const d = new Date(Date.parse(dateString));
-    d.setMinutes(d.getMinutes() - 4);
+    d.setMinutes(d.getMinutes() - 2);
+    // NOTE try to land about the middle, we go 4 minutes either side
 
     const startTime = new Date(d);
     let start = startTime.toISOString().replace("T", "-").replace("Z", "");
     console.log("start", startTime.toISOString().replace("T", " ").replace("Z", ""))
 
-    d.setMinutes(d.getMinutes() + 8);
+    d.setMinutes(d.getMinutes() + 2);
     const endTime = new Date(d);
     let end = endTime.toISOString().replace("T", "-").replace("Z", "");
     console.log("end", endTime.toISOString().replace("T", " ").replace("Z", ""))
@@ -67,6 +67,7 @@ const run = async () => {
     let recharge_charge_ids = [];
     let recharge_order_ids = [];
     let shopify_order_ids = [];
+    let next_charge_scheduled_at = []; // should only be one of these
     const customer_email = "cousins@proton.me";
     const customer_id = 84185810;
     const regexEmail = new RegExp(/cousinsd@proton.me/); // email is common between shopify and recharge
@@ -99,15 +100,23 @@ const run = async () => {
                     if (key === "order") shopify_order_ids.push(obj.id);
                   };
                   if (partner === "recharge") {
-                    shopify_order_ids.push(obj.external_order_id.ecommerce);
+                    if (Object.hasOwn(obj, "external_order_id")) {
+                      shopify_order_ids.push(obj.external_order_id.ecommerce);
+                    };
                     if (key === "order") {
                       recharge_order_ids.push(obj.id);
                       recharge_charge_ids.push(obj.charge.id);
                     };
+                    if (key === "subscription") {
+                      recharge_subscription_ids.push(obj.id);
+                      next_charge_scheduled_at.push(obj.next_charge_scheduled_at);
+                    };
                     if (key === "charge") recharge_charge_ids.push(obj.id);
-                    for (const item of obj.line_items) {
-                      if (item.properties.some(el => el.name === "box_subscription_id")) {
-                        recharge_subscription_ids.push(item.purchase_item_id);
+                    if (Object.hasOwn(obj, "line_items")) {
+                      for (const item of obj.line_items) {
+                        if (item.properties.some(el => el.name === "box_subscription_id")) {
+                          recharge_subscription_ids.push(item.purchase_item_id);
+                        };
                       };
                     };
                   };
@@ -123,6 +132,8 @@ const run = async () => {
     console.log("rc charge ids", recharge_charge_ids);
     recharge_order_ids = Array.from(new Set(recharge_order_ids));
     console.log("rc order ids", recharge_order_ids);
+    next_charge_scheduled_at = Array.from(new Set(next_charge_scheduled_at));
+    console.log("next charge scheduled at", next_charge_scheduled_at);
     shopify_order_ids = shopify_order_ids.map(el => parseInt(el)).filter(el => el);
     shopify_order_ids = Array.from(new Set(shopify_order_ids));
     console.log("shopify order ids", shopify_order_ids);
@@ -167,6 +178,18 @@ const run = async () => {
         ],
       });
     };
+    // a catch all for creating subscriptions
+    // if catching unwanted then try "meta.recharge.body.next_charge_scheduled_at
+    /*
+    query["$or"].push({
+      "meta.recharge.method": { "$eq": "POST", "$exists": true },
+    });
+    */
+    for (const d of next_charge_scheduled_at) {
+      query["$or"].push({
+        "meta.recharge.body.next_charge_scheduled_at": { "$eq": d , "$exists": true },
+      });
+    };
     for (const id of recharge_charge_ids) {
       query["$or"].push({
         "meta.recharge.path": { "$regex": `.*${id}$` , "$exists": true },
@@ -184,20 +207,15 @@ const run = async () => {
       query["$or"].push({
         "meta.shopify.path": { "$regex": `.*${id}$` , "$exists": true },
       });
+      query["$or"].push({
+        "meta.shopify.order_id": { "$eq": id , "$exists": true },
+      });
     };
     const result = await _mongodb.collection("logs").find(query).sort({timestamp: 1}).toArray();
-    console.log("==================================================");
-    for (const log of res) {
-      console.log(log);
-    };
-    console.log(allHooks);
-    console.log(result.length);
-
-    console.log(collectFiles);
 
     // put together json depiction:
     // list the files and group by type
-    const fileListing = { recharge : [], shopify: [] };
+    const fileListing = [];
     for (const f of collectFiles) {
       const parts = f.split(".");
       const fileDate = getDate(f);
@@ -209,25 +227,19 @@ const run = async () => {
       const milliseconds = parts[2].split("-")[0];
       const objId = parts[2].split("-")[1];
       const time = `${subparts[5]}.${milliseconds}`;
-      fileListing[partner].push({
-        key, objId, webhook, day, time, filename: f, fileDate
+      fileListing.push({
+        partner, key, objId, webhook, day, time, filename: f, fileDate
       });
     };
-    console.log(fileListing);
 
     // get time delta between 1st and last log
     const firstLog = new Date(result[0].timestamp)
-    console.log(firstLog.toISOString());
     const lastLog = new Date(result[result.length - 1].timestamp);
-    console.log(lastLog.toISOString());
-
-    console.log((lastLog - firstLog)/1000);
 
     const finalListing = {
       timedelta: (lastLog - firstLog)/1000,
       files: fileListing,
     };
-    console.log(finalListing);
 
     // now save the files into a directory
     let report = "reports"; // catch all, up to me to move it into docs
@@ -237,7 +249,6 @@ const run = async () => {
     */
 
     const reportFolder= new URL(`./${report}/`, import.meta.url);
-    console.log(reportFolder.pathname);
     try {
       await fs.mkdir(reportFolder);
     } catch (err) {
@@ -246,7 +257,6 @@ const run = async () => {
     // remove all existing files in that folder
     try {
       await fs.access(reportFolder);
-      console.log("can access");
       try {
         await fs.writeFile(path.join(reportFolder.pathname, "log.json"), 
           JSON.stringify(result, null, 2).replaceAll("cousinsd@proton", "jon.doe@mail"), { 

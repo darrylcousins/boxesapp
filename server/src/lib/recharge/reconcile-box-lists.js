@@ -68,6 +68,7 @@ export default async function reconcileBoxLists(box, boxLists) {
     updates[key] = value.map(el => el); // copy items
   };
   updates["deletes"] = []; // to push deleted extras
+  updates["changed"] = []; // to push changed quantities
 
   const messages = [];
   if (!compareArrays([ ...thisIncludes, ...lists["removed"] ].map(el => el.title), availableIncludes)) {
@@ -122,8 +123,10 @@ export default async function reconcileBoxLists(box, boxLists) {
                 case "addons":
                   item.quantity -= 1;
                   if (item.quantity > 0) {
-                    messages.push(`Add on item ${item.title} included as an extra for this box.`);
+                    messages.push(`Add on item ${item.title}${item.quantity > 1
+                        ? ` (${item.quantity})` : ""} included as an extra for this box.`);
                     updates["includes"].push(item);
+                    updates["changed"].push({ ...item });
                   } else {
                     messages.push(`Add on item ${item.title} already included so removed as an add on.`);
                     updates["deletes"].push(item);
@@ -134,8 +137,10 @@ export default async function reconcileBoxLists(box, boxLists) {
                 case "swaps": // swaps come from addons so if now in included we can move as extra include and remove the swap
                   item.quantity -= 1;
                   if (item.quantity > 0) {
-                    messages.push(`Extra swapped item ${item.title} included as an extra include for this box.`);
+                    messages.push(`Extra swapped item ${item.title}${item.quantity > 1
+                        ? ` (${item.quantity})` : ""} included as an extra include for this box.`);
                     updates["includes"].push(item);
+                    updates["changed"].push({ ...item });
                   } else {
                     messages.push(`Swapped item ${item.title} already included in this box.`);
                   };
@@ -241,6 +246,6 @@ export default async function reconcileBoxLists(box, boxLists) {
     properties: finalProperties,
     messages, 
     subscriptions: includedSubscriptions.filter(el => el.quantity > 0), // excludes the zerod items
-    updates: updates["deletes"], // zerod items only
+    updates: [ ...updates["deletes"], ...updates["changed"], ] // zerod items only and decremented numbers
   };
 };

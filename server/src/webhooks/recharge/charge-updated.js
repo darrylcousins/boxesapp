@@ -66,7 +66,6 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
       // all rc_subscription_ids are true for this query
       const updates_pending = await _mongodb.collection("updates_pending").findOne(query);
       // failing my query do the query match here
-      //console.log("found updates pending?", updates_pending);
       if (updates_pending) {
 
         // items with quantity set to zero will be removed on subscription/deleted
@@ -74,9 +73,6 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
           // check that all subscriptions have updated or have been created
           return el.updated === true && Number.isInteger(el.subscription_id);
         });
-        //console.log("all updated?", allUpdated);
-        //console.log("meta rcs", meta.recharge.rc_subscription_ids);
-        //console.log("pending rcs", updates_pending.rc_subscription_ids);
 
         let countMatch = null;
         if (allUpdated) {
@@ -102,14 +98,20 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
 
             // safely and surely remove the entry, only other place is on charge/deleted
             // and in subscription/updated if only delivery schedule changed
-            console.log("=============================================");
-            console.log("Deleting updates pending entry charge/updated");
-            console.log("=============================================");
             await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(updates_pending._id) });
             if (parseInt(process.env.DEBUG) === 1) {
-              _logger.notice("Deleting updates_pending entry charge/updated", { meta: { recharge: updates_pending }});
+              _logger.notice("Deleting updates pending entry charge/updated", { meta: { recharge: updates_pending }});
             };
-
+          } else { // countMatch wrong
+            if (parseInt(process.env.DEBUG) === 1) {
+              meta.recharge.pending_subscription_ids = rc_ids_removed;
+              _logger.notice("Charge updated, pending updates", { meta });
+            };
+          };
+        } else { // not all updated
+          if (parseInt(process.env.DEBUG) === 1) {
+            meta.recharge.pending_subscription_ids = updates_pending.rc_subscription_ids;
+            _logger.notice("Charge updated, pending updates", { meta });
           };
         };
 

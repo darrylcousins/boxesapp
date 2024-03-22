@@ -23,7 +23,6 @@ import Button from "../lib/button";
  * @returns {Element} IconButton
  */
 const ShowLink = (opts) => {
-  console.log("show link opts", opts);
   const { admin, name, title, color } = opts;
   return (
     <button

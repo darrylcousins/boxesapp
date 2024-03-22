@@ -72,6 +72,9 @@ export default async (req, res, next) => {
 
   try {
 
+    meta.recharge = sortObjectByKeys(meta.recharge);
+    _logger.notice(`Boxesapp api request subscription ${label}.`, { meta });
+
     const entry_id = await upsertPending({
       action: label, // updated or reconciled
       customer_id: customer.id,
@@ -114,9 +117,6 @@ export default async (req, res, next) => {
       if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
       throw err;
     };
-
-    meta.recharge = sortObjectByKeys(meta.recharge);
-    _logger.notice(`Boxesapp api request subscription ${label}.`, { meta });
 
     //for (const update of updates) console.log(update);
     await updateSubscriptions({ updates, io, session_id });

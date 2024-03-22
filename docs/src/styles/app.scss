@@ -54,10 +54,10 @@ html, body { margin: 0; padding: 0; height: 100%; }
 .footer {
   border-color: var(--color-border-muted);
 }
-.footer > span {
+.footer > span > a {
   color: var(--color-accent-fg);
 }
-.footer > span > a {
+.footer > div > a {
   color: var(--color-accent-fg);
 }
 .link {

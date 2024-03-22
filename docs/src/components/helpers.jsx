@@ -214,6 +214,7 @@ export const transitionElementHeight = (element, start) => {
   // simply using el.scrollHeight can give some odd results when element is shrinking
   element.childNodes.forEach(el => {
     if (typeof el.scrollHeight !== "undefined") calculatedHeight += el.scrollHeight;
+    if (el.classList.contains("bb") || el.classList.contains("bt")) calculatedHeight += 1;
   });
   element.style.height = calculatedHeight + "px";
 }

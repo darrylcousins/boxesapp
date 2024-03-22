@@ -127,7 +127,6 @@ export const getSessionId = async (callback, data, divId, component) => {
   });
   socket.on('finished', async (data) => {
     // some care needed here to make sure we send to the correct component
-    console.log(data);
     if (data.session_id === session_id) {
       console.log('closing connection for id', session_id);
       //console.log(data);

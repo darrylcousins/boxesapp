@@ -9,6 +9,22 @@ import { createElement, Fragment } from "@b9g/crank";
 import CollapseWrapper from "../lib/collapse-animator.jsx";
 import { DoubleArrowDownIcon } from "../lib/icon.jsx";
 import { DoubleArrowUpIcon } from "../lib/icon.jsx";
+
+/**
+ * Possible selections to make on object type
+ *
+ * @member possibleObjects
+ * @type {array}
+ */
+const possibleObjects = ["order", "recharge", "shopify", "mail", "product", "all"];
+/**
+ * Property titles - can be excluded in log listing to keep thing tidier - can also be included!
+ *
+ * @member possibleObjects
+ * @type {array}
+ */
+const propertyAttributes = ["Including", "Add on Items", "Removed Items", "Swapped Items"];
+
 /*
  * Helper method for tidy date strings from timestamp
  */
@@ -16,6 +32,27 @@ const dateString = (el) => {
   return el.timestamp.replace("T", " ").replace("Z", "");
   const date = new Date(el.timestamp);
   return `${date.toDateString()} ${date.toLocaleTimeString({ hour: "2-digit", minute: "2-digit" })}`;
+};
+
+/*
+ * Helper method
+ */
+const getLogMessage = (el) => {
+  // if an api call, then include title
+  if (el.message.startsWith("API call")) {
+    const obj = Object.keys(el.meta)[0];
+    let metaData;
+    if (possibleObjects.includes(obj)) {
+      if (Object.hasOwn(el.meta[obj], "title")) {
+        return el.meta[obj].title;
+      };
+    };
+  } else if (el.message.startsWith("Webhook")) {
+    const str = el.message.slice(8);
+    return str.charAt(0).toUpperCase() + str.substring(1).toLowerCase();
+  };
+
+  return el.message;
 };
 
 /*
@@ -39,21 +76,6 @@ const getMetaObject = (el) => {
   return str;
 };
 
-/**
- * Possible selections to make on object type
- *
- * @member possibleObjects
- * @type {array}
- */
-const possibleObjects = ["order", "recharge", "shopify", "mail", "product", "all"];
-/**
- * Property titles - can be excluded in log listing to keep thing tidier - can also be included!
- *
- * @member possibleObjects
- * @type {array}
- */
-const propertyAttributes = ["Including", "Add on Items", "Removed Items", "Swapped Items"];
-
 /*
  * Helper method to render comma separated list
  */
@@ -69,7 +91,9 @@ const formatList = (str) => {
  * Helper method to render objects
  */
 const formatObj = (obj, title) => {
-  if (obj === null) return <div>{ title }: null</div>;
+  if (obj === null) return (
+    <Fragment><span class="gray">{title}:</span> null</Fragment>
+  );
 
   const final = [];
   let classes;
@@ -88,9 +112,9 @@ const formatObj = (obj, title) => {
       classes.push("bb b--gray pb2 mt2");
     } else {
       if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-        final.push(`${key}: ${value}`);
+        final.push(<Fragment><span class="gray">{key}:</span> <span>{value}</span></Fragment>);
       } else if (value === null) {
-        final.push(`${key}: null`);
+        final.push(<Fragment><span class="gray">{key}:</span> <span>{null}</span></Fragment>);
       } else {
         final.push(formatObj(value, key));
       };
@@ -204,10 +228,10 @@ const formatMeta = (el, logLevel, includeProperties, includeRcIDs, includeMessag
       <div class="dt dt-fixed w-100 mv1">
         { metaData.map(([title, str]) => (
             <div class="dt-row w-100">
-              <div class="dtc w-30 gray tr pr2">
+              <div class="dtc w-40 gray tr pr2">
                 { title }:
               </div>
-              <div class="dtc w-70" style="min-width: 500px; width: 500px; word-wrap: break-word;">
+              <div class="dtc w-60" style="min-width: 500px; width: 500px; word-wrap: break-word;">
                 { formatOther(str, title) }
               </div>
             </div>
@@ -236,6 +260,7 @@ const formatMeta = (el, logLevel, includeProperties, includeRcIDs, includeMessag
 export {
   formatMeta,
   getMetaObject,
+  getLogMessage,
   possibleObjects,
   dateString,
 };

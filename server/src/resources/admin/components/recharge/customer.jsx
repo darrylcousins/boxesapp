@@ -55,7 +55,6 @@ async function *Customer({ customer, charge, admin }) {
   } else {
     shopify_customer_id = customer.id; // customer portal in shopify
   };
-  console.log("on Load", shopify_customer_id);
   /**
    * True while loading data from api
    *
@@ -521,7 +520,6 @@ async function *Customer({ customer, charge, admin }) {
       });
     } else {
       rechargeCustomer = customer;
-      await this.refresh();
       if (!charge) {
         await getChargeGroups(customer.id).then(async (result) => {
           loadingLabel = loadingLabelDefault.replace("current", "cancelled");;
@@ -543,7 +541,6 @@ async function *Customer({ customer, charge, admin }) {
         brokenSubscriptions = [...date_mismatch, ...orphans, ...price_mismatch, ...count_mismatch].map(el => el.box_subscription_id);
       };
       loading = false;
-      this.refresh();
     };
   };
 
@@ -614,8 +611,7 @@ async function *Customer({ customer, charge, admin }) {
   };
 
   const loadingSocketClosed = async (ev) => {
-    //ev.stopImmediatePropagation();
-    console.log(event);
+    //ev.stopImmediatePropagation(); // caused Subscription to miss out?
     if (loadingSession === ev.detail.session_id) {
       await sleepUntil(() => document.getElementById(`loadMessages-${shopify_customer_id}`), 800)
         .then((res) => {

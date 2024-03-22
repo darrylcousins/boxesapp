@@ -14,15 +14,13 @@ global._mongodb;
 //_logger.notice = (e, meta) => console.log(e, meta);
 
 import orderProcessed from "../src/webhooks/recharge/order-processed.js";
-import order from "../recharge.subscription.json" assert { type: "json" };
+import order from "../recharge.order.json" assert { type: "json" };
 
 const run = async () => {
   global._mongodb = await getMongoConnection();
   try {
     console.log('this ran');
-    const mytopic = "SUBSCRIPTION_PROCESSED";
-    //await orderProcessed("ORDER_PROCESSED", "shop", JSON.stringify({ order: order.order }));
-    await logWebhook(mytopic, order, "recharge");
+    await orderProcessed("ORDER_PROCESSED", "shop", JSON.stringify({ order: order.order }));
 
   } catch(e) {
     console.error(e);

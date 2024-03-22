@@ -49,7 +49,7 @@ const formatList = (str) => {
  * Helper method to render objects
  */
 const formatObj = (obj, title) => {
-  if (obj === null) return <div>{ title }: null</div>;
+  if (obj === null) return <Fragment><span class="gray">{ title }:</span> null</Fragment>;
 
   const final = [];
   let classes;
@@ -68,9 +68,11 @@ const formatObj = (obj, title) => {
       classes.push("bb b--black-20");
     } else {
       if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-        final.push(`${key}: ${value}`);
+        //final.push(`${key}: ${value}`);
+        final.push(<Fragment><span class="gray">{key}:</span> <span>{value}</span></Fragment>);
       } else if (value === null) {
-        final.push(`${key}: null`);
+        //final.push(`${key}: null`);
+        final.push(<Fragment><span class="gray">{key}:</span> <span>{ null }</span></Fragment>);
       } else {
         final.push(formatObj(value, key));
       };
@@ -94,6 +96,7 @@ const formatObj = (obj, title) => {
       );
     };
   } else {
+    console.log(final);
     return (
       final.map(el => <div class={ classes.join(" ") }>{ el }</div>)
     );

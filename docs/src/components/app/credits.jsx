@@ -21,6 +21,7 @@ import { DoubleArrowUpIcon } from "../lib/icon.jsx";
  * { <Credits /> }
  */
 function *Credits({ mode }) {
+  let staticUrl = ""; // see vite.config.js for running dev on port
 
   /**
    * Parsed markdown content
@@ -40,7 +41,6 @@ function *Credits({ mode }) {
    */
   let loading = true;
 
-  let staticUrl = ""; // see vite.config.js for running dev on port
   /*
    * Control the collapse of the form
    * @function toggleCollapse
@@ -59,7 +59,11 @@ function *Credits({ mode }) {
   };
 
   const pullContent = () => {
-    fetch(`${staticUrl}/credits.md`, {headers: {'Accept': 'text/markdown'}})
+    const headers = {
+      "Accept": "text/markdown",
+    };
+    if (staticUrl.length < 2) headers["Cache-Control"] = "no-cache";
+    fetch(`${staticUrl}/credits.md`, {headers})
       .then((res) => {
         if (!res.ok) {
           throw new Error(`${res.status} (${res.statusText})`);

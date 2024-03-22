@@ -32,9 +32,11 @@ export default async (req, res) => {
 
   let searchTerm;
   let searchDates;
+  console.log(object_id);
   if (object_id) { // added time as an option
 
     const decoded = decodeURIComponent(object_id);
+    console.log(decoded);
     if (decoded !== object_id) { // if given an interger id then they will be the same
       const searchFrom = new Date(Date.parse(decoded));
       if (validDate(searchFrom)) {
@@ -74,12 +76,6 @@ export default async (req, res) => {
     };
   };
   if (level === "error") { // include the fetch errors stored as notices
-    // a wildcard operator would be handy:
-    //query[`meta.*.error`] = { "$exists": true };
-    // but is unsupported, it could be donw with aggregation:
-    // 1. add a new field "newNode: { $objectToArray: "meta" }
-    // 2. then newNode.v.error: { $exists: true } // with v being the default value of the array
-    // However I've only got shopify and recharge to worry about
     /*
     orQuery.push(
       { "meta.recharge.error": { "$exists": true } },

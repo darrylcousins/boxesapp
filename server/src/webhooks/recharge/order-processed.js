@@ -1,11 +1,12 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
+import { ObjectId } from "mongodb";
 import { getSubscription, updateSubscription, makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import chargeProcessedMail from "../../mail/charge-processed.js";
 import { sortObjectByKeys, matchNumberedString } from "../../lib/helpers.js";
 import { writeFileForOrder, getMetaForCharge } from "./helpers.js";
-import fs from "fs";
+import { upsertPending } from "../../api/recharge/lib.js";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
@@ -64,6 +65,8 @@ export default async function orderProcessed(topic, shop, body) {
   _logger.notice(`Order line_items (charge: ${order.charge.id})`, { meta: { recharge: { 
     order_id: order.id,
     charge_id: order.charge.id,
+    customer_id: order.customer.id,
+    email: order.customer.email,
     line_items: lines,
   }}});
   // Figure out how many box subscriptions are included in this order
@@ -130,7 +133,7 @@ export default async function orderProcessed(topic, shop, body) {
     };
   };
 
-  // NOTE All of this is simply to gather the data for the email to customer
+  // NOTE All of this is to gather the data for the email to customer
   // NOTE If proven successful then move the delivery updates into here too.
   try {
     let deliveryDate; // updated delivery date as string
@@ -139,6 +142,8 @@ export default async function orderProcessed(topic, shop, body) {
     let days;
     let box_subscription_id;
     let box_subscription_property;
+    const entries = []; // the update pending ids
+    let allLineItems = []; // collect the fixed_line_items for delivery date update
 
     // XXX loop through, rather put ...
     // loop line_items and find the parent box subscription and calculate new delivery date
@@ -231,7 +236,14 @@ export default async function orderProcessed(topic, shop, body) {
         ...lists["swaps"],
         ...lists["addons"] ];
 
-      let fixed_line_items = [];
+      const fixed_line_items = [{
+        purchase_item_id: box_subscription_id,
+        shopify_product_id: parseInt(line_item.external_product_id.ecommerce),
+        title: line_item.title,
+        quantity: line_item.quantity,
+        price: parseFloat(line_item.original_price) * 100,
+        properties: box.properties,
+      }];
       // NOTE using the lists to find the included line_item products, because
       // the properties may have swapped around
       for (const item of includedSubscriptions) {
@@ -239,11 +251,15 @@ export default async function orderProcessed(topic, shop, body) {
         const line_el = order.line_items.find(el => {
           return el.title === item.title && el.quantity === item.quantity;
         });
-        // NOTE fix the properties
+        // NOTE fix the properties, could actually push in the new delivery
+        // date here for updating later, I've left the old in for the report to
+        // recharge
         fixed_line_items.push({
           purchase_item_id: line_el.purchase_item_id,
+          shopify_product_id: parseInt(line_el.external_product_id.ecommerce),
           title: line_el.title,
           quantity: line_el.quantity,
+          price: parseFloat(line_el.original_price) * 100,
           properties: [
             { name: "Delivery Date", value: currentDeliveryDate },
             { name: "Add on product to", value: boxTitle },
@@ -256,18 +272,43 @@ export default async function orderProcessed(topic, shop, body) {
         subscriptions[box_subscription_id].includes.push({
           shopify_product_id: parseInt(line_el.external_product_id.ecommerce),
           title: line_el.title,
-          price: line_el.unit_price,
+          price: line_el.unit_price, /// unit price? it;s for the email only - discounts?
           quantity: line_el.quantity,
           total_price: line_el.total_price,
         });
       };
+
+      // NOTE if successful we can move the delivery date update into here too
+      _logger.notice(`Order line_items fixed (box: ${box_subscription_id})`, { meta: { recharge: {
+        order_id: order.id,
+        charge_id: order.charge.id,
+        customer_id: order.customer.id,
+        email: order.customer.email,
+        box_subscription_id,
+        line_items: fixed_line_items,
+      }}});
+
+      const entry_id = await upsertPending({
+        action: "processed",
+        charge_id: order.charge.id,
+        customer_id: order.customer.id,
+        address_id: order.address_id,
+        subscription_id: box_subscription_id,
+        scheduled_at: order.scheduled_at.split("T")[0],
+        deliver_at: deliveryDate,
+        rc_subscription_ids: fixed_line_items.map(el => ({
+          shopify_product_id: el.shopify_product_id,
+          subscription_id: el.purchase_item_id,
+          title: el.title,
+          quanity: el.quantity,
+          price: el.price,
+        })),
+        title: line_item.title,
+        session_id: null,
+      });
+      entries.push(new ObjectId(entry_id));
+      allLineItems = [ ...allLineItems, ...fixed_line_items];
     };
-    // NOTE if successful we can move the delivery date update into here too
-    _logger.notice(`Order line_items fixed (charge: ${order.charge.id})`, { meta: { recharge: {
-      order_id: order.id,
-      charge_id: order.charge.id,
-      line_items: fixed_line_items,
-    }}});
 
     // more attributes used in the email
     attributes.customer = order.customer;
@@ -298,11 +339,41 @@ export default async function orderProcessed(topic, shop, body) {
       });
     };
 
+    // update the delivery date for all items
+    for (const line_item of allLineItems) {
+      const dateItem = line_item.properties.find(el => el.name === "Delivery Date");
+      if (dateItem) {
+        if (dateItem.value !== deliveryDate) {
+          const boxId = line_item.properties.find(el => el.name === "box_subscription_id").value;
+          dateItem.value = deliveryDate; // always the same for every item on the order
+          const opts = {
+            id: line_item.purchase_item_id,
+            body: { properties: line_item.properties },
+            title: `Updating delivery date for ${line_item.title} in order/processed`,
+          };
+          await updateSubscription(opts);
+        };
+      };
+    };
+
+    const mailOpts = {
+      subscriptions: finalSubscriptions,
+      attributes,
+    };
+
+    let res;
+    let timer;
+    // only once all updates are complete do we send the email
+    timer = setInterval(async () => {
+      res = await _mongodb.collection("updates_pending").find({ "_id": { "$in": entries } }).toArray();
+      if (res.length === 0) {
+        clearInterval(timer);
+        await chargeProcessedMail(mailOpts);
+      };
+    }, 10000);
+
     meta.recharge = sortObjectByKeys(meta.recharge);
     _logger.notice(`Order processed for ${order.customer.email}.`, { meta });
-
-    // send the email
-    await chargeProcessedMail({ subscriptions: finalSubscriptions, attributes });
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

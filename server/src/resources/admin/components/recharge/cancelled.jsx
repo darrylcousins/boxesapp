@@ -6,7 +6,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
-import { Fetch } from "../lib/fetch";
+import { Fetch, PostFetch } from "../lib/fetch";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
 import Timer from "../lib/timer";
@@ -32,6 +32,7 @@ import {
  */
 async function* Cancelled({ subscription, customer, idx, admin }) {
 
+  console.log(subscription);
   /**
    * True while loading data from api
    * Starts false until search term submitted
@@ -97,146 +98,47 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
     return result;
   };
 
-  /**
-   * @function getActivatedSubscription
-   * Reload this particular charge from the server as a 'subsciption' object
+  /*
+   * @function getSubscription
+   * Fetch the charge as a "subscription" object
+   * This is used to reload the subscription on updates.completed after some action was performed
+   * It simply replace all the properties with the returned properties
    */
-  const getActivatedSubscription = async (data) => {
-    // this call needs to check updates_pending and return message, otherwise we get the subscription
-
-    // looking at api only charge_id and subscription_id are used
-    let uri = `/api/recharge-customer-charge/${data.charge_id}`;
-    uri = `${uri}?customer_id=${data.customer_id}`;
-    uri = `${uri}&address_id=${data.address_id}`;
-    uri = `${uri}&subscription_id=${data.subscription_id}`;
-    uri = `${uri}&scheduled_at=${data.scheduled_at}`;
-
-    return await Fetch(encodeURI(uri))
+  const getSubscription = async (data) => {
+    let src = `/api/recharge-customer-subscription`;
+    if (Object.hasOwn(data, "session_id")) {
+      src = `${src}?session_id=${data.session_id}`;
+    };
+    const headers = { "Content-Type": "application/json" };
+    // need to use the event data because with change event the schedule will have changed
+    const body = {
+      address_id: data.address_id,
+      subscription_id: data.subscription_id,
+      scheduled_at: data.scheduled_at,
+      customer, // a recharge customer object
+      lastOrder: subscription.attributes.lastOrder, // avoids 2 api calls to get the lastOrder
+      action: data.action,
+    };
+    return await PostFetch({ src, data: body, headers })
       .then((result) => {
         const { error, json } = result;
         if (error !== null) {
           fetchError = error;
-          return null;
+          loading = false;
+          this.refresh();
         } else {
-          return json.subscription;
+          return json;
         };
       })
       .catch((err) => {
         fetchError = err;
+        loading = false;
+        this.refresh();
       });
   };
 
-  /**
-   * @function reloadCharge
-   * Reload this particular charge from the server as a 'subsciption' object
-   * @listens socket.closed
-   */
-  const reloadCharge = async (ev) => {
-
-    ev.stopPropagation();
-
-    const { detail } = ev;
-
-    if (!["cancelled", "deleted", "reactivated"].includes(detail.action)) return;
-
-    const { charge_id, session_id, subscription_id, action } = detail;
-
-    // get the message blocks to remove them
-    const socketMessages = document.getElementById(messageDivId);
-    const saveMessages = document.getElementById(`save-${messageDivId}`);
-
-    if (socketMessages) {
-      socketMessages.classList.add("closed"); // uses css transitions
-    };
-
-    if (saveMessages) {
-      saveMessages.classList.add("closed"); // uses css transitions
-    };
-
-    if (timer) {
-      const timeTaken = findTimeTaken(timer);
-      timer = null;
-
-      this.dispatchEvent(toastEvent({
-        notice: `Updates completed after ${timeTaken} minutes` ,
-        bgColour: "black",
-        borderColour: "black"
-      }));
-    } else {
-      console.warn("No timer object");
-    };
-
-    // use timeoout to wait for the collapse to complete
-    setTimeout(async () => {
-      if (socketMessages) {
-        // clear the socket messaages
-        socketMessages.innerHTML = "";
-      } else {
-        console.warn("No socketMessages object");
-      };
-
-      if (action === "reactivated") {
-        // in this case we must reload as the new subscription from charge_id and subscriptionid from ev.detai??
-
-        const reactivated = await getActivatedSubscription(detail);
-        // then dispatch event to Customer which will shuffle the grouped subscriptions
-        const subdiv = document.querySelector(`#subscription-${detail.subscription_id}`);
-        if (subdiv) {
-          setTimeout(() => {
-            animateFadeForAction(subdiv, () => {
-              this.dispatchEvent(
-                new CustomEvent("subscription.reactivated", {
-                  bubbles: true,
-                  detail: {
-                    subscription: reactivated,
-                    //list: "chargeGroups",
-                    subscription_id: detail.subscription_id,
-                  },
-                })
-              );
-            });
-          }, 100);
-          /*
-        } else {
-          console.log("darn no subdiv", `#subscription-${detail.subscription_id}`);
-          setTimeout(() => {
-              this.dispatchEvent(
-                new CustomEvent("subscription.reactivated", {
-                  bubbles: true,
-                  detail: {
-                    subscription: reactivated,
-                    //list: "chargeGroups",
-                    subscription_id: reactivated.id,
-                  },
-                })
-              );
-          }, 100);
-          */
-        };
-
-      } else if (action === "deleted") {
-        const subdiv = document.querySelector(`#subscription-${detail.subscription_id}`);
-        setTimeout(() => {
-          animateFadeForAction(subdiv, () => {
-            this.dispatchEvent(
-              new CustomEvent("subscription.deleted", {
-                bubbles: true,
-                detail: {
-                  subscription,
-                  subscription_id: detail.subscription_id
-                },
-              })
-            );
-          });
-        }, 100);
-      };
-
-    });
-    return;
-  };
-
-  // socket.closed when webhooks are received that verify that all updates have been completed
-  window.addEventListener("socket.closed", reloadCharge);
+  // updates.completed when webhooks are received that verify that all updates have been completed
+  window.addEventListener("updates.completed", reloadSubscription);
 
   /**
    * @function reloadCharge
@@ -250,7 +152,6 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
     ev.stopPropagation();
     editsPending = true; // on deletes no need to start timer for reload
     await this.refresh();
-
     return;
   };
 
@@ -262,7 +163,9 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
 
     yield (
       <Fragment>
-        <div class="mb2 pb2 bb b--black-80">
+        <div 
+          id={ `subscription-${subscription.box.id}` }
+          class="mb2 pb2 bb b--black-80">
           <h3 class="tl mb2 w-100 fg-streamside-maroon">
             {subscription.box.product_title} - {subscription.box.variant_title}
           </h3>
@@ -336,7 +239,7 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
           )}
           { (editsPending ) && (
             <Fragment>
-              <div id={ `save-${messageDivId }` } class="tl saveMessages">
+              <div id={ `saveMessages-${subscription.box.id }` } class="tl w-100 saveMessages">
                 <div class="alert-box dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
                   <p class="pa3 ma0">
                     <div>Your updates have been queued for saving.</div>

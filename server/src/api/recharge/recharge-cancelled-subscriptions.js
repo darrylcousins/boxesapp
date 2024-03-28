@@ -31,18 +31,15 @@ export default async (req, res, next) => {
   };
 
 
-  if (Object.hasOwnProperty.call(req.params, "customer_id")) {
-    query = [
-      ["customer_id", req.params.customer_id ],
-      ["status", "cancelled" ]
-    ];
-  } else if (Object.hasOwnProperty.call(req.body, "ids")) {
-    query = [
-      ["ids", req.body.ids ],
-    ];
-  };
-
   try {
+
+    if (Object.hasOwnProperty.call(req.params, "customer_id")) {
+      query = [
+        ["customer_id", req.params.customer_id ],
+        ["status", "cancelled" ]
+      ];
+    };
+
     const { subscriptions } = await makeRechargeQuery({
       path: `subscriptions`,
       query,
@@ -51,7 +48,7 @@ export default async (req, res, next) => {
     });
 
     if (!subscriptions || !subscriptions.length) {
-      // return a result of none
+      // emitting finish to stop loading routine
       if (io) io.emit("finished", { session_id });
       res.status(200).json([]);
       return;
@@ -75,8 +72,7 @@ export default async (req, res, next) => {
 
     for (const [subscription_id, group] of Object.entries(grouped)) {
       // removing charge object which duplicates included
-      let lastOrder = {};
-      // 404 most likely
+      let lastOrder;
       try {
         const query = {
           customer_id: group.box.customer_id,
@@ -86,6 +82,7 @@ export default async (req, res, next) => {
         };
         lastOrder = await getLastOrder(query);
       } catch(err) {
+        // 404 most likely
         lastOrder = {};
       };
 
@@ -97,6 +94,7 @@ export default async (req, res, next) => {
       });
     };
 
+    // emitting finish to stop loading routine
     if (io) io.emit("finished", { session_id });
 
     res.status(200).json(result);

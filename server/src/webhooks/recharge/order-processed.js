@@ -4,7 +4,7 @@
 import { ObjectId } from "mongodb";
 import { getSubscription, updateSubscription, makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import chargeProcessedMail from "../../mail/charge-processed.js";
-import { sortObjectByKeys, matchNumberedString } from "../../lib/helpers.js";
+import { formatDate, sortObjectByKeys, matchNumberedString } from "../../lib/helpers.js";
 import { writeFileForOrder, getMetaForCharge } from "./helpers.js";
 import { upsertPending } from "../../api/recharge/lib.js";
 
@@ -118,7 +118,7 @@ export default async function orderProcessed(topic, shop, body) {
   ];
   const queryResult = await makeRechargeQuery({
     path: `subscriptions`,
-    title: `Collecting subscriptions for order processed email`,
+    title: `Collecting subscriptions for order processed webhook`,
     query,
   });
   const fetchSubscriptions = queryResult.subscriptions;
@@ -247,35 +247,72 @@ export default async function orderProcessed(topic, shop, body) {
       // NOTE using the lists to find the included line_item products, because
       // the properties may have swapped around
       for (const item of includedSubscriptions) {
-        // but cannot find the same item?
-        const line_el = order.line_items.find(el => {
+        // try to find the correct item, if we find multiple matches then
+        // obliged to get the subscription and check the properties
+        let line_el;
+        const possible_els = order.line_items.filter(el => {
           return el.title === item.title && el.quantity === item.quantity;
         });
+        if (possible_els.length === 0) {
+          _logger.error({
+            message: "Unable to match line item to subscription",
+            level: "error",
+            meta: {
+              order_id: order.id,
+              charge_id: order.charge.id,
+              email: order.customer.email,
+              line_items: order.line_items,
+              box_subscription_id,
+              missing_item: item.title,
+            },
+          });
+        } else if (possible_els.length === 1) {
+          line_el = possible_els[0]; // easy match
+        } else {
+          // get the subscription and check propertes with "box_subscription_id"
+          const fetched = await makeRechargeQuery({
+            path: `subscriptions`,
+            title: `Collecting subscriptions for match in order/processed`,
+            query : [
+              ["limit", 250 ],
+              ["status", "active" ],
+              ["ids", possible_els.map(el => el.purchase_item_id) ],
+            ]
+          });
+          for (const el of fetched.subscriptions) {
+            if (parseInt(el.properties.find(prop => prop.name === "box_subscription_id").value) === parseInt(box_subscription_id)) {
+              line_el = possible_els.find(item => item.purchase_item_id === el.id);
+              break; // drop out of the loop
+            };
+          };
+        };
         // NOTE fix the properties, could actually push in the new delivery
         // date here for updating later, I've left the old in for the report to
         // recharge
-        fixed_line_items.push({
-          purchase_item_id: line_el.purchase_item_id,
-          shopify_product_id: parseInt(line_el.external_product_id.ecommerce),
-          title: line_el.title,
-          quantity: line_el.quantity,
-          price: parseFloat(line_el.original_price) * 100,
-          properties: [
-            { name: "Delivery Date", value: currentDeliveryDate },
-            { name: "Add on product to", value: boxTitle },
-            { name: "box_subscription_id", value: box_subscription_id },
-          ],
-        });
-        const idx = order.line_items.indexOf(line_el);
-        order.line_items.splice(idx, 1); // remove this item
-        subscriptions[box_subscription_id].attributes.totalPrice += parseFloat(line_el.total_price);
-        subscriptions[box_subscription_id].includes.push({
-          shopify_product_id: parseInt(line_el.external_product_id.ecommerce),
-          title: line_el.title,
-          price: line_el.unit_price, /// unit price? it;s for the email only - discounts?
-          quantity: line_el.quantity,
-          total_price: line_el.total_price,
-        });
+        if (line_el) {
+          fixed_line_items.push({
+            purchase_item_id: line_el.purchase_item_id,
+            shopify_product_id: parseInt(line_el.external_product_id.ecommerce),
+            title: line_el.title,
+            quantity: line_el.quantity,
+            price: parseFloat(line_el.original_price) * 100,
+            properties: [
+              { name: "Delivery Date", value: currentDeliveryDate },
+              { name: "Add on product to", value: boxTitle },
+              { name: "box_subscription_id", value: box_subscription_id },
+            ],
+          });
+          const idx = order.line_items.indexOf(line_el);
+          order.line_items.splice(idx, 1); // remove this item
+          subscriptions[box_subscription_id].attributes.totalPrice += parseFloat(line_el.total_price);
+          subscriptions[box_subscription_id].includes.push({
+            shopify_product_id: parseInt(line_el.external_product_id.ecommerce),
+            title: line_el.title,
+            price: line_el.unit_price, /// unit price? it;s for the email only - discounts?
+            quantity: line_el.quantity,
+            total_price: line_el.total_price,
+          });
+        };
       };
 
       // NOTE if successful we can move the delivery date update into here too
@@ -288,20 +325,24 @@ export default async function orderProcessed(topic, shop, body) {
         line_items: fixed_line_items,
       }}});
 
+      const scheduled_at = new Date(Date.parse(order.scheduled_at));
+      scheduled_at.setDate(scheduled_at.getDate() + days);
+
       const entry_id = await upsertPending({
         action: "processed",
         charge_id: order.charge.id,
         customer_id: order.customer.id,
         address_id: order.address_id,
-        subscription_id: box_subscription_id,
-        scheduled_at: order.scheduled_at.split("T")[0],
+        subscription_id: parseInt(box_subscription_id),
+        scheduled_at: formatDate(scheduled_at), // see notes at formatDate
         deliver_at: deliveryDate,
         rc_subscription_ids: fixed_line_items.map(el => ({
           shopify_product_id: el.shopify_product_id,
-          subscription_id: el.purchase_item_id,
+          subscription_id: parseInt(el.purchase_item_id),
           title: el.title,
-          quanity: el.quantity,
+          quantity: el.quantity,
           price: el.price,
+          updated: false,
         })),
         title: line_item.title,
         session_id: null,

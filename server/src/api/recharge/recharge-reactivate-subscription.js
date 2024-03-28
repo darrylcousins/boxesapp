@@ -38,7 +38,7 @@ export default async (req, res, next) => {
       subscription_id: el.id,
       shopify_product_id: parseInt(el.external_product_id.ecommerce),
       quantity: el.quantity,
-      updated: false
+      updated: false, // still figuring this one out
     };
   });
 
@@ -63,6 +63,9 @@ export default async (req, res, next) => {
   for (const [key, value] of Object.entries(properties)) {
     meta.recharge[key] = value;
   };
+
+  meta.recharge = sortObjectByKeys(meta.recharge);
+  _logger.notice(`Boxesapp api request subscription ${type}.`, { meta });
 
   const child_props = {
     "Delivery Date": nextdeliverydate,
@@ -158,9 +161,6 @@ export default async (req, res, next) => {
       scheduled_at: nextChargeDate,
     });
 
-    meta.recharge = sortObjectByKeys(meta.recharge);
-    _logger.notice(`Boxesapp api request subscription ${type}.`, { meta });
-
     // first activated the subscription, curious to see what charge date it gives, still don't know
     for (const update of updates) {
       const opts = {
@@ -176,18 +176,6 @@ export default async (req, res, next) => {
 
     await delay(10000); // wait 10 seconds to avoid making call to same route
 
-    // then update properties [Delivery Date]
-    for (const update of updates) {
-      const opts = {
-        id: update.id,
-        title: update.title,
-        body: { properties: update.properties },
-        io,
-        session_id,
-      };
-      await updateSubscription(opts);
-    };
-
     // make sure that the box is first for final update
     for(var x in updates) updates[x].properties.some(el => el.name === "Including") ? updates.unshift(updates.splice(x,1)[0]) : 0;
 
@@ -202,6 +190,20 @@ export default async (req, res, next) => {
       };
       // this will update an existing charge with the matching scheduled_at or create a new charge
       await updateChargeDate(opts);
+    };
+
+    delay(10000);
+
+    // then update properties [Delivery Date]
+    for (const update of updates) {
+      const opts = {
+        id: update.id,
+        title: update.title,
+        body: { properties: update.properties },
+        io,
+        session_id,
+      };
+      await updateSubscription(opts);
     };
 
   } catch(err) {

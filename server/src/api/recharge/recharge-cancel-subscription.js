@@ -64,7 +64,7 @@ export default async (req, res, next) => {
   };
 
   meta.recharge = sortObjectByKeys(meta.recharge);
-  _logger.notice(`Recharge customer api request subscription ${type}.`, { meta });
+  _logger.notice(`Boxesapp api request subscription ${type}.`, { meta });
 
   try {
 

@@ -20,15 +20,6 @@ import { sleepUntil } from "./helpers";
 const appendMessage = async (data, colour, divId) => {
   //console.log(data);
 
-  /* helper method to check if we to scroll messages into view
-  */
-  const checkVisible = (elm) => {
-      var rect = elm.getBoundingClientRect();
-      var viewHeight = Math.max(document.documentElement.clientHeight, window.innerHeight);
-    //return !(rect.bottom < 0 || rect.top - viewHeight >= 0);
-      return !(rect.bottom - viewHeight >= 0);
-  };
-
   await sleepUntil(() => document.getElementById(divId), 50)
     .then((res) => {
       const socketMessages = res;
@@ -47,9 +38,14 @@ const appendMessage = async (data, colour, divId) => {
           top: socketMessages.scrollHeight,
           behavior: "smooth",
         });
-        if (!checkVisible(socketMessages)) {
-          socketMessages.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
+        /*
+        const rect = socketMessages.getBoundingClientRect();
+        const viewHeight = Math.max(document.documentElement.clientHeight, window.innerHeight);
+        if (rect.bottom - viewHeight >= 0) {
+          const y = rect.bottom + window.pageYOffset + 50;
+          window.scrollTo({top: y, behavior: 'smooth'});
         };
+        */
       };
     }).catch((e) => {
       // no need for action
@@ -73,78 +69,60 @@ export const getSessionId = async (callback, data, divId, component) => {
     await callback(data);
   });
   socket.on('fail', async (data) => { // unused for now
-    //console.log('fail', data);
-    // display data or update timer
-    const date = new Date();
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
     const start = `[warn]`.padEnd(9);
-    await appendMessage(`${start} [${d}] ${data}`, "red", divId);
+    await appendMessage(`${start} ${data}`, "red", divId);
   });
   socket.on('message', async (data) => { // start and othe info
-    //console.log('message', data);
-    // display data or update timer
-    const date = new Date();
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
     const start = `[info]`.padEnd(9);
-    await appendMessage(`${start} [${d}] ${data}`, "dark-blue", divId);
+    await appendMessage(`${start} ${data}`, "dark-blue", divId);
   });
   socket.on('progress', async (data) => { // usually progress from bull job
-    //console.log('progress', data);
-    // display data or update timer
-    const date = new Date();
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
     const start = `[step]`.padEnd(9);
-    await appendMessage(`${start} [${d}] ${data}`, "black", divId);
+    await appendMessage(`${start} ${data}`, "black", divId);
   });
   socket.on('completed', async (data) => { // usually from webhook confiming update from Recharge
-    //console.log('completed', data);
-    // display data or update timer
-    const date = new Date();
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
     const start = `[success]`.padEnd(9);
-    await appendMessage(`${start} [${d}] ${data}`, "dark-green", divId);
+    await appendMessage(`${start} ${data}`, "dark-green", divId);
   });
   socket.on('error', async (data) => { // usually progress from bull job
-    //console.log('progress', data);
-    // display data or update timer
-    const date = new Date();
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
     const start = `[error]`.padEnd(9);
-    await appendMessage(`${start} [${d}] ${data}`, "red", divId);
+    await appendMessage(`${start} ${data}`, "red", divId);
   });
-  socket.on('charge', async (charge_id) => { // when the subscription updates are complete (remove updates_pending entry)
-    component.dispatchEvent(
-      new CustomEvent("charge.updated", {
-        bubbles: true,
-        detail: { charge_id },
-      })
-    );
-  });
-  socket.on('finished', async (data) => {
+  socket.on('updates.completed', async (data) => {
     // some care needed here to make sure we send to the correct component
     if (data.session_id === session_id) {
       console.log('closing connection for id', session_id);
-      //console.log(data);
-      const date = new Date();
-      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-      const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
       const start = `[success]`.padEnd(9);
-      const message = "Finished, closing connection";
-      await appendMessage(`${start} [${d}] ${message}`, "dark-green", divId);
-      socket.disconnect();
-      let event = data.action !== "created" ? "socket.closed" : "subscription.created";
+      const message = "Update completed, reloading subscription ...";
+      await appendMessage(`${start} ${message}`, "dark-green", divId);
+
+      // pick up socket.closed with Subscription and subscription.created with Customer
+      //let event = data.action !== "created" ? "socket.closed" : "subscription.created";
+
+      // finished is sent on completion of updates, it comes from:
+      // * webhook recharge/charge-updated
+      // * webhook recharge/charge-deleted
+      // * webhook recharge/subscription-updated
+      // We send "updates.completed" which is captured by Subscription
       window.dispatchEvent(
-        new CustomEvent(event, {
+        new CustomEvent("updates.completed", {
           bubbles: true,
           detail: { ...data },
         })
       );
     };
+  });
+  socket.on('finished', async (data) => { // usually progress from bull job
+    const start = `[success]`.padEnd(9);
+    const message = "Finished, closing connection";
+    await appendMessage(`${start} ${message}`, "dark-green", divId);
+    socket.disconnect();
+    window.dispatchEvent(
+      new CustomEvent("socket.closed", {
+        bubbles: true,
+        detail: { ...data },
+      })
+    );
   });
   /*
   socket.on('connect', async () => {

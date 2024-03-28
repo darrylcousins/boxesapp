@@ -20,6 +20,7 @@ export default async (req, res, next) => {
   try {
     const { customer } = await makeRechargeQuery({
       path: `customers/${recharge_id}`,
+      title: "Get customer for customer update",
     });
 
     if (!customer) {
@@ -36,7 +37,8 @@ export default async (req, res, next) => {
             ["customer_id", customer.id ],
             ["status", "queued" ],
             ["sort_by", "scheduled_at-asc" ],
-          ]
+          ],
+          title: "Get charges for customer update",
         });
 
         if (res.charges) {

@@ -39,6 +39,9 @@ export default async (req, res, next) => {
 
     try {
 
+      meta.recharge = sortObjectByKeys(meta.recharge);
+      _logger.notice(`Boxesapp api request subscription ${type}.`, { meta });
+
       // missing total_price
       const adjusted = includes.map(el => {
         return {
@@ -84,9 +87,6 @@ export default async (req, res, next) => {
       };
       const result = await makeRechargeQuery(opts);
     };
-
-    meta.recharge = sortObjectByKeys(meta.recharge);
-    _logger.notice(`Boxesapp api request subscription ${type}.`, { meta });
 
     // close session almost immediately
     setTimeout(() => {

@@ -77,7 +77,7 @@ export default async (req, res, next) => {
   };
 
   meta.recharge = sortObjectByKeys(meta.recharge);
-  _logger.notice(`Boxesapp api reqest subscription ${type}.`, { meta });
+  _logger.notice(`Boxesapp api request subscription ${type}.`, { meta });
 
   // update attributes - presented in the email - old/updated
   attributes.previousChargeDate = attributes.nextChargeDate;
@@ -142,20 +142,6 @@ export default async (req, res, next) => {
       nextdeliverydate,
     });
 
-    // the order of these matters, doing charge date first gave me odd results
-    for (const update of updates) {
-      const opts = {
-        id: update.id,
-        title: `Updating delivery date ${update.title}`,
-        body: { properties: update.properties },
-        io,
-        session_id,
-      };
-      await updateSubscription(opts);
-    };
-
-    await delay(10000); // wait 10 seconds to avoid making call to same route
-
     for (const update of updates) {
       const opts = {
         id: update.id,
@@ -166,6 +152,22 @@ export default async (req, res, next) => {
       };
       // this will update an existing charge with the matching scheduled_at or create a new charge
       await updateChargeDate(opts);
+    };
+
+    await delay(10000); // wait 10 seconds to avoid making call to same route
+
+    // the order of these matters, doing charge date first gave me odd results,
+    // but then so did doing this update first for which I would not receive
+    // and updated charge webhook
+    for (const update of updates) {
+      const opts = {
+        id: update.id,
+        title: `Updating delivery date ${update.title}`,
+        body: { properties: update.properties },
+        io,
+        session_id,
+      };
+      await updateSubscription(opts);
     };
 
     attributes.nextChargeDate = nextchargedate;

@@ -13,7 +13,7 @@ process.env.NODE_ENV = "test";
 
 import subscriptionUpdated from "../src/webhooks/recharge/subscription-updated.js";
 // box
-import subscription from "../json/recharge.subscription.box.json" assert { type: "json" };
+import subscription from "../recharge.subscription.json" assert { type: "json" };
 // carrots
 //import subscription from "../json/recharge.subscription.carrot.json" assert { type: "json" };
 
@@ -22,7 +22,7 @@ const run = async () => {
     global._mongodb = await getMongoConnection();
 
     const mytopic = "SUBSCRIPTION_UPDATED";
-    await subscriptionUpdated("SUBSCRIPTION_UPDATED", "shop", JSON.stringify({ subscription }));
+    await subscriptionUpdated("SUBSCRIPTION_UPDATED", "shop", JSON.stringify( subscription ), {io: null, sockets: null });
 
   } catch(e) {
     console.error(e);

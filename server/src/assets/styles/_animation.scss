@@ -3,6 +3,9 @@
   transition: height 0.8s ease-out;
   height:auto;
 }
+.collapsible.hide {
+  height:0px;
+}
 .collapsed {
   display: none;
 }

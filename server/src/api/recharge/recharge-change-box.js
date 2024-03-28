@@ -72,7 +72,7 @@ export default async (req, res, next) => {
 
     const { charge } = await makeRechargeQuery({
       path: `charges/${data.charge_id}`,
-      title: `Get Charge (${data.charge_id})`,
+      title: `Get charge (${data.charge_id})`,
       // debugging
       subscription_id: parseInt(data.subscription_id),
       io,

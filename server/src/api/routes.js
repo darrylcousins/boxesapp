@@ -147,17 +147,20 @@ router.post(
   "/remove-orders", 
   await import("./order/remove-orders.js").then(({ default: fn }) => fn));
 router.get(
-  "/recharge-customer-charge/:charge_id", 
+  "/recharge-customer-charge/", 
   await import("./recharge/recharge-customer-charge.js").then(({ default: fn }) => fn));
 router.get(
-  "/recharge-customer-charges/:customer_id", 
-  await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
+  "/recharge-customer-charge/:customer_id", 
+  await import("./recharge/recharge-customer-charge.js").then(({ default: fn }) => fn));
 router.get(
-  "/recharge-customer-charges/:customer_id/:address_id/:scheduled_at", 
-  await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
+  "/recharge-customer-charge/:customer_id/:charge_id", 
+  await import("./recharge/recharge-customer-charge.js").then(({ default: fn }) => fn));
+router.post(
+  "/recharge-customer-subscription/", 
+  await import("./recharge/recharge-customer-subscription.js").then(({ default: fn }) => fn));
 router.get(
-  "/recharge-customer-charges/:customer_id/:address_id/:scheduled_at/:subscription_id", 
-  await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
+    "/recharge-customer-charges/:customer_id", 
+    await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
 router.get(
   "/recharge-customers-update/:recharge_id",
   await import("./recharge/recharge-customers-update.js").then(({ default: fn }) => fn));
@@ -192,8 +195,8 @@ router.post(
   "/recharge-change-box",
   await import("./recharge/recharge-change-box.js").then(({ default: fn }) => fn));
 router.post(
-  "/recharge-add-box",
-  await import("./recharge/recharge-add-box.js").then(({ default: fn }) => fn));
+  "/recharge-create-subscription",
+  await import("./recharge/recharge-create-subscription.js").then(({ default: fn }) => fn));
 router.get(
   "/recharge-subscription/:subscription_id", 
   await import("./recharge/recharge-subscription.js").then(({ default: fn }) => fn));

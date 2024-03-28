@@ -29,6 +29,7 @@ import { getSessionId } from "../socket";
 import {
   animateFadeForAction,
   animateFade,
+  animationOptions,
   collapseElement,
   transitionElementHeight,
   formatCount,
@@ -40,6 +41,7 @@ import {
   matchNumberedString,
   sleepUntil,
   displayMessages,
+  delay,
 } from "../helpers";
 
 /**
@@ -55,6 +57,7 @@ import {
  */
 async function *Subscription({ subscription, customer, idx, admin, newSubscription, brokenSubscriptions }) {
 
+  console.log(subscription);
   /*
   console.log("TITLE", subscription.attributes.title);
   console.log("Box", subscription.box);
@@ -155,6 +158,12 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
    * @member {object} Keeping a track of how long updated take
    */
   let timer = null;
+  /**
+   * loadingSession
+   *
+   * @member {object} Keeping a track of the session_id
+   */
+  let loadingSession = null;
 
   /**
    * Helper method called on load to find problems that will prevent any further changes to box
@@ -179,11 +188,13 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
    */
   const collectMessages = async (ev) => {
     // default sleep is for 10 seconds - pass a value if needed
-    await sleepUntil(() => document.getElementById(`displayMessages-${subscription.attributes.subscription_id}`), 500)
+    console.log("collect messages", ev.detail);
+    await sleepUntil(() => document.getElementById(`displayMessages-${subscription.attributes.subscription_id}`), 3000)
       .then((res) => {
         displayMessages(res, ev.detail.messages);
       }).catch((e) => {
         // no need for action
+        console.log("found no div", e);
       });
   };
 
@@ -252,8 +263,9 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
       })
     );
     await this.refresh();
+    document.getElementById(`products-${subscription.attributes.subscription_id}-${idx}`).classList.add("disableevents");
+    document.getElementById(`buttons-${subscription.attributes.subscription_id}-${idx}`).classList.add("disableevents");
     await doChanges({ key });
-
   };
 
   /*
@@ -748,208 +760,43 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
   };
 
   /*
-   * @function getCharge
+   * @function getSubscription
    * Fetch the charge as a "subscription" object
+   * This is used to reload the subscription on updates.completed after some action was performed
+   * It simply replace all the properties with the returned properties
    */
-  const getCharge = async (charge_id) => {
-
-    // looking a the api, only charge_id and subscription_id are used!
-    let uri = `/api/recharge-customer-charge/${charge_id}`;
-    uri = `${uri}?customer_id=${subscription.attributes.customer.id}`; // recharge id
-    uri = `${uri}&address_id=${subscription.attributes.address_id}`;
-    uri = `${uri}&subscription_id=${subscription.attributes.subscription_id}`;
-    uri = `${uri}&scheduled_at=${subscription.attributes.scheduled_at}`;
-    return Fetch(encodeURI(uri))
+  const getSubscription = async (data) => {
+    let src = `/api/recharge-customer-subscription`;
+    if (Object.hasOwn(data, "session_id")) {
+      src = `${src}?session_id=${data.session_id}`;
+    };
+    const headers = { "Content-Type": "application/json" };
+    // need to use the event data because with change event the schedule will have changed
+    const body = {
+      address_id: data.address_id,
+      subscription_id: data.subscription_id,
+      scheduled_at: data.scheduled_at,
+      customer, // a recharge customer object
+      lastOrder: subscription.attributes.lastOrder, // avoids 2 api calls to get the lastOrder
+      action: data.action,
+    };
+    return await PostFetch({ src, data: body, headers })
       .then((result) => {
         const { error, json } = result;
         if (error !== null) {
           fetchError = error;
           loading = false;
-          return null;
+          this.refresh();
         } else {
-          if (json.message) {
-            this.dispatchEvent(toastEvent({
-              notice: json.message,
-              bgColour: "black",
-              borderColour: "black"
-            }));
-            return null;
-          } else {
-            //loading = false; // finish loading after final refresh
-            return json.subscription;
-          };
+          return json;
         };
       })
       .catch((err) => {
         fetchError = err;
         loading = false;
+        this.refresh();
       });
   };
-
-  /**
-   * @function chargeUpdated
-   * @listens charge.updated From sockets
-   *
-   * When changes have been made to the subscription a new charge is sometimes
-   * created (date changes, added/deleted products etc). Back on the server it
-   * picks up the new charge and sends the charge.id back through the socket so
-   * that we can reload the subscription correctly
-   * This is sent only when all updates have been completed (i.e. when the updates_pending entry is being deleted);
-   */
-  const chargeUpdated = async (ev) => {
-    // set the charge id on the subscription
-    subscription.attributes.charge_id = parseInt(ev.detail.charge_id);
-  };
-
-  this.addEventListener("charge.updated", chargeUpdated);
-
-  /**
-   * @function reloadCharge
-   * Reload this particular charge from the server as a 'subsciption' object
-   * @listens socket.closed
-   */
-  const reloadCharge = async (ev) => {
-
-    const { detail } = ev;
-    //console.log(detail);
-
-    const { charge_id, session_id, subscription_id, action } = detail;
-
-    ev.stopPropagation(); // otherwise other listening components catch this on the window
-
-    if (action === "reactivated") return; // could do better here? Seems adequate.
-
-    // session_id consumed by socket.js
-    // do something with action ? toaster perhaps
-
-    if (subscription_id !== subscription.attributes.subscription_id) {
-      console.log("Subscription id does not match, exiting");
-      return; // drop out and do not reload
-    };
-
-    if (typeof subscription.attributes.charge_id === "undefined") {
-      console.log("Charge id undefined, exiting"); // when user has done cancel/reactivate in one session
-      return; // drop out and do not reload
-    };
-
-    if (subscription.attributes.charge_id !== charge_id) {
-      console.log("Updating charge id", subscription.attributes.charge_id, charge_id);
-      if (typeof charge_id !== "undefined") {
-        subscription.attributes.charge_id = charge_id;
-      };
-    } else {
-      console.log("Charge id matches");
-    };
-
-    // get the message blocks to remove them
-    const socketMessages = document.getElementById(messageDivId);
-    const saveMessages = document.getElementById(`save-${messageDivId}`);
-
-    if (socketMessages) {
-      socketMessages.classList.add("closed"); // uses css transitions
-    };
-
-    if (saveMessages) {
-      saveMessages.classList.add("closed"); // uses css transitions
-    };
-
-    if (timer) {
-      const timeTaken = findTimeTaken(timer);
-      timer = null;
-
-      this.dispatchEvent(toastEvent({
-        notice: `Updates (${action}) completed after ${timeTaken} minutes` ,
-        bgColour: "black",
-        borderColour: "black"
-      }));
-    };
-
-    if (socketMessages) {
-      // clear the socket messaages
-      socketMessages.innerHTML = "";
-    } else {
-      console.warn("No socketMessages object");
-    };
-
-    loading = true;
-    if (timer) {
-      timer = null;
-      await this.refresh();
-    };
-
-    await sleepUntil(() => document.getElementById(`subscription-${subscription.attributes.subscription_id}`), 500)
-      .then((res) => {
-        res.classList.add("disableevents");
-      }).catch((e) => {
-        // no need for action
-      });
-
-    if (action === "cancelled") {
-      // in this case we must remove the subscription and load it as a cancelled subscription
-
-      const cancelled = await getCancelledSubscription();
-      // then dispatch event to Customer which will shuffle the grouped subscriptions
-      const subdiv = document.querySelector(`#subscription-${cancelled.box.id}`);
-      setTimeout(() => {
-        animateFadeForAction(subdiv, () => {
-          this.dispatchEvent(
-            new CustomEvent("subscription.cancelled", {
-              bubbles: true,
-              detail: {
-                subscription: cancelled,
-                subscription_id: cancelled.box.id,
-              },
-            })
-          );
-        });
-      }, 100);
-      return; // and return out of here
-
-    } else {
-      // forces reload of component to make it again editable
-      CollapsibleProducts = CollapseWrapper(EditProducts);
-
-      // otherwise reloading the updated charge
-      // refetch the charge and adapt to subscription object
-      if (editsPending && action !== "deleted" ) {
-        const charge = await getCharge(subscription.attributes.charge_id);
-        //console.log(charge);
-        editsPending = false;
-        if (charge) {
-          for (const key of Object.keys(charge)) {
-            subscription[key] = charge[key];
-          };
-        };
-      };
-      unskippable = isUnSkippable();
-
-      // reset ids_orig
-      rc_subscription_ids_orig = subscription.attributes.rc_subscription_ids.map(el => { return {...el}; });
-      if (collapsed) {
-        // restore buttons
-        this.dispatchEvent(
-          new CustomEvent("customer.enableevents", {
-            bubbles: true,
-            detail: { subscription_id },
-          })
-        );
-      };
-    };
-    await sleepUntil(() => document.getElementById(`subscription-${subscription.attributes.subscription_id}`), 500)
-      .then((res) => {
-        animateFadeForAction(res, () => {
-          res.classList.remove("disableevents");
-          loading = false;
-          this.refresh();
-        });
-      }).catch((e) => {
-        // no need for action
-      });
-
-  };
-
-  // socket.closed when webhooks are received that verify that all updates have been completed
-  window.addEventListener("socket.closed", reloadCharge);
 
   /*
    * @function getCancelledSubscription
@@ -991,6 +838,8 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
   const listingReload = async (ev) => {
     const result = ev.detail.json; // success, action, subscription_id
 
+    console.log("listing.reload", ev.detail);
+
     // start the timer
     timer = new Date();
 
@@ -1016,6 +865,9 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
     // forces reload of component?
     CollapsibleProducts = CollapseWrapper(EditProducts);
     await this.refresh();
+
+    document.getElementById(`products-${subscription.attributes.subscription_id}-${idx}`).classList.add("disableevents");
+    document.getElementById(`buttons-${subscription.attributes.subscription_id}-${idx}`).classList.add("disableevents");
 
     return;
   };
@@ -1191,19 +1043,170 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
 
   window.document.addEventListener("keyup", hideExplainer);
 
+  /*
+   * @function socketClosed
+   * The socket has closed, tidy up
+   * @listens subscription.reload
+   */
+  const socketClosed = async (ev) => {
+    console.log("socket closed", ev.detail)
+    //const { charge_id, session_id, subscription_id, action } = ev.detail;
+    if (ev.detail.subscription_id !== subscription.attributes.subscription_id) {
+      return true;
+    };
+    ev.stopPropagation();
+
+    if (loadingSession !== ev.detail.session_id) {
+      return;
+    };
+
+    const socketMessages = document.getElementById(messageDivId);
+    const saveMessages = document.getElementById(`saveMessages-${subscription.attributes.subscription_id }`);
+
+    // keep things nicely paced and slow
+    socketMessages.classList.add("closed"); // has 2s transition
+    console.log("closed socketMessages");
+    await delay(3000);
+    socketMessages.innerHTML = "";
+    saveMessages.classList.add("closed");
+    console.log("closed saveMessages");
+    await delay(3000);
+    loadingSession = null;
+
+  };
+
+  // subscription.loaded - listens for event when the subscription has been reloaded
+  window.addEventListener("socket.closed", socketClosed);
+
+  /*
+   * @function reloadSubscription
+   * Reload this particular charge from the server as a 'subsciption' object
+   * @listens updates.completed
+   */
+  const reloadSubscription = async (ev) => {
+
+    console.log("reloadSubscription", ev.detail)
+    console.log(ev.detail.subscription_id !== subscription.attributes.subscription_id);
+    console.log(ev.detail.subscription_id, subscription.attributes.subscription_id);
+
+    if (ev.detail.subscription_id !== subscription.attributes.subscription_id) {
+      return;
+    };
+
+    console.log("reloadSubscription", ev.detail)
+
+    ev.stopPropagation();
+
+    if (timer) {
+      const timeTaken = findTimeTaken(timer);
+      timer = null;
+      this.dispatchEvent(toastEvent({
+        notice: `Updates (${ev.detail.action}) completed after ${timeTaken} minutes` ,
+        bgColour: "black",
+        borderColour: "black"
+      }));
+    };
+
+    loadingSession = ev.detail.session_id;
+    const result = await getSubscription(ev.detail);
+    console.log(result);
+
+    // wait until loadingSession is nulled by socket.closed event
+    await sleepUntil(() => !loadingSession, 6000)
+      .then(res => console.log(res))
+      .catch(e => console.log(e));
+
+    // contains the verified subscription (json.subscription)
+    // and verification errors
+    for (const [key, value] of Object.entries(result.subscription)) {
+      subscription[key] = value;
+    };
+    // errors need to dispatch event to Customer so it can update brokenSubscriptions
+    console.log("errors", result.errors);
+    console.log("action", result.action);
+    console.log("down to here");
+
+    // Customer component will need to shuffle the subscription into the correct list
+    if (["cancelled", "reactivated"].includes(result.action)) {
+      this.dispatchEvent(new CustomEvent(`subscription.${result.action}`, {
+        bubbles: true,
+        detail: {
+          subscription_id: subscription.attributes.subscription_id,
+          subscription: result.subscription,
+      }}));
+      return; // Customer will put the cancelled onto the page
+    };
+    // forces reload of component to make it again editable
+    CollapsibleProducts = CollapseWrapper(EditProducts);
+    // reset unskippable vale
+    unskippable = isUnSkippable();
+    editsPending = Boolean(subscription.attributes.pending); // could just go with false
+    // reset ids_orig
+    rc_subscription_ids_orig = subscription.attributes.rc_subscription_ids.map(el => { return {...el}; });
+
+    delay(3000);
+    await sleepUntil(() => document.getElementById(`subscription-${subscription.attributes.subscription_id}`), 500)
+      .then((res) => {
+        animateFadeForAction(res, async () => await this.refresh(), 400);
+        document.getElementById(`products-${subscription.attributes.subscription_id}-${idx}`).classList.remove("disableevents");
+        document.getElementById(`buttons-${subscription.attributes.subscription_id}-${idx}`).classList.remove("disableevents");
+        delay(3000);
+        if (result.errors) {
+          // handle errors only
+          this.dispatchEvent(new CustomEvent("subscription.broken", {
+            detail: {
+              subscription_id: subscription.attributes.subscription_id,
+              errors: result.errors, // an object with date_mismatch, orphans etc
+          }}));
+        };
+        /* restore buttons
+        this.dispatchEvent( new CustomEvent("customer.enableevents", {
+          detail: { subscription_id: subscription.attributes.subscription_id,},
+        }));*/
+
+      }).catch((e) => {
+        // no need for action
+      });
+  };
+
+
+  // updates.completed when webhooks are received that verify that all updates have been completed
+  window.addEventListener("updates.completed", reloadSubscription);
+
+  const userActions = ["reconciled", "updated", "changed", "paused", "rescheduled", "cancelled", "reactivated", "deleted", "created"];
+  const testUserAction = (action) => {
+    console.log(action, subscription.attributes.subscription_id);
+    window.dispatchEvent(
+      new CustomEvent("socket.closed", {
+        bubbles: true,
+        detail: {
+          action,
+          subscription_id: subscription.attributes.subscription_id
+        },
+      })
+    );
+  };
+
   for await ({ subscription, idx, admin, newSubscription, brokenSubscriptions } of this) { // eslint-disable-line no-unused-vars
 
     yield (
       CancelledSubscription ? (
         <Cancelled subscription={ CancelledSubscription } idx={ idx } admin={ admin } />
       ) : (
-        <div class={ brokenSubscriptions.includes(subscription.attributes.subscription_id) ? "disableevents" : "" }>
+        <div 
+          id={ `subscription-${subscription.attributes.subscription_id}` }
+          class={ brokenSubscriptions.includes(subscription.attributes.subscription_id) ? "disableevents" : "" }>
           <h4 class="tl mb0 w-100 fg-streamside-maroon">
             { newSubscription && (
               <span class="b pv2 ph3 white bg-dark-blue ba b--navy br2 mr3" style="font-size: smaller">New</span>
             )}
             {subscription.attributes.title} - {subscription.attributes.variant}
           </h4>
+          { admin && false && (
+            userActions.map(el => (
+              <button onclick={ (ev) => testUserAction(el) }>{ el }</button>
+            ))
+          )}
           { (!subscription.attributes.hasNextBox && !editsPending) && (
             <div class="pv2 orange">Box items not yet loaded for <span class="b">
                 { subscription.attributes.nextDeliveryDate }
@@ -1226,17 +1229,16 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
           </div>
           { subscription.messages.length === 0 && (
             <div id={`skip_cancel-${subscription.attributes.subscription_id}`} class="cf w-100 pv2">
-              { admin && (
-                <div class="fl w-30">
-                  <LogsModal customer_id={ subscription.attributes.customer.id }
-                      subscription_id={ subscription.attributes.subscription_id }
-                      admin={ admin }
-                      box_title={ `${subscription.attributes.title} - ${subscription.attributes.variant}` } />
-                </div>
-              )}
-              <div class={ `${ !admin ? "w-100" : "fl w-70" } tr` }>
+              <div id={ `buttons-${subscription.attributes.subscription_id}-${idx}` }
+                  class="w-100 tr">
                 { ( !editsPending ) && collapsed && (
                   <Fragment>
+                    { admin && (
+                      <LogsModal customer_id={ subscription.attributes.customer.id }
+                        subscription_id={ subscription.attributes.subscription_id }
+                        admin={ admin }
+                        box_title={ `${subscription.attributes.title} - ${subscription.attributes.variant}` } />
+                    )}
                     <EditBoxModal
                       subscription={ subscription }
                       customer={ customer }
@@ -1274,7 +1276,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
           )}
           { (editsPending || subscription.attributes.pending) && (
             <Fragment>
-              <div id={ `save-${messageDivId }` } class="tl saveMessages">
+              <div id={ `saveMessages-${subscription.attributes.subscription_id }` } class="tl w-100 saveMessages">
                 <div class="alert-box relative dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
                   { ( !subscription.attributes.pending) && (
                     <div class="i fr cf mr3 pt2 pb1 ph1 pointer bb"
@@ -1299,6 +1301,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
                     <div>Check your emails for confirmation of the updates you have requested.</div>
                   </p>
                   <div id={ `displayMessages-${subscription.attributes.subscription_id }` } class="fg-streamside-blue">
+                    { " " }
                   </div>
                   { (!subscription.attributes.pending) && (
                     <ProgressLoader />
@@ -1307,7 +1310,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
               </div>
             </Fragment>
           )}
-          <div id={ messageDivId } class="tl socketMessages"></div>
+          <div id={ messageDivId } class="tl w-100 socketMessages"></div>
           { subscription.messages.length > 0 && subscription.attributes.hasNextBox && !editsPending && (
             <div class="alert-box dark-blue pv2 ma2 br3 ba b--dark-blue bg-washed-blue">
                 <Fragment>
@@ -1326,7 +1329,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
                         Apply changes to continue
                       </span>
                     </Button>
-                    { true && (
+                    { false && (
                       <div class="dib pr2" id="testChanges">
                         <Button
                           onclick={ (ev) => testChanges("updates", ev) }
@@ -1375,7 +1378,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
                     Save
                   </Button>
                 </div>
-                { true && (
+                { false && (
                   <div class="dib pr2" id="testChanges">
                     <Button
                       onclick={ (ev) => testChanges("includes", ev) }
@@ -1417,7 +1420,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
                   are a linking between two web services: 1. the store and 2.
                   the subscription service. When an update is requested a
                   number of calls are made between the services to complete the
-                  update. We have recorded delays of up to 3 minutes for the
+                  update. We have recorded eelays of up to 3 minutes for the
                   order to be finalised and updated on our subscriptions
                   service.
                 </p>

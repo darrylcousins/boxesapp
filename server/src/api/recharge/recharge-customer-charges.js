@@ -18,38 +18,38 @@ export default async (req, res, next) => {
   let io;
   let session_id;
   let socket;
-  const quiet = true;
   if (Object.hasOwn(req.query, "session_id")) {
     req.body.session_id = req.query.session_id;
 
-    socket = getIOSocket(req, quiet);
+    socket = getIOSocket(req, true);
     io = socket.io;
     session_id = socket.session_id;
   };
 
-  const { customer_id, address_id, scheduled_at, subscription_id } = req.params;
+  const { customer_id } = req.params;
 
   const query = [
     ["customer_id", customer_id ],
     ["status", "queued" ],
     ["sort_by", "scheduled_at-asc" ],
   ];
-  if (address_id) {
-    query.push(["address_id", req.params.address_id]); // match address id
-    query.push(["scheduled_at", req.params.scheduled_at]); // match scheduled
-  };
-
   let charges;
   try {
     const queryResult = await makeRechargeQuery({
       path: `charges`,
       query,
-      title: "Charges",
+      title: "Get customer charges",
       io,
     });
     charges = queryResult.charges;
   } catch(err) { // may be a 404;
-    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    if (err.message.includes("404") && !customer_id) { // from admin
+      // no need to log it
+      const message = `Failed to find charges for ${customer_id}`;
+      return res.status(200).json({ error: message });
+    } else {
+      _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    };
   };
 
   try {
@@ -72,12 +72,7 @@ export default async (req, res, next) => {
 
     if (io) io.emit("progress", "Returning charge data ...");
 
-    if (subscription_id) {
-      const subscription = data.find(el => el.attributes.subscription_id === parseInt(subscription_id));
-      return res.status(200).json({ subscription, errors });
-    } else {
-      return res.status(200).json({ result: data, errors });
-    };
+    return res.status(200).json({ result: data, errors });
 
   } catch(err) {
     res.status(200).json({ error: err.message });

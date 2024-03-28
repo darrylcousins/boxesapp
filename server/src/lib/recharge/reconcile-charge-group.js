@@ -133,7 +133,7 @@ export const reconcileGetGroups = async ({ charges }) => {
   return groups;
 };
 
-export const reconcileChargeGroup = async ({ subscription, includedSubscriptions, io }) => {
+export const reconcileChargeGroup = async ({ subscription, includedSubscriptions, charge, io }) => {
 
   // this is the box
   // make properties into easily accessible object
@@ -215,16 +215,23 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
   };
 
   let lastOrder = {};
-  try {
-    const orderQuery = {
-      customer_id: subscription.customer_id,
-      //address_id: subscription.address_id, // dropped this because if addresses are merged
-      product_id: parseInt(subscription.external_product_id.ecommerce),
-      subscription_id: subscription.id,
+  if (Object.hasOwn(charge, "lastOrder")) {
+    // property not normally on charge but helpful to set it on charge to
+    // collect it here and prevent 2 api calls - see for example
+    // api/recharge-customer-subscription
+    lastOrder = charge.lastOrder;
+  } else {
+    try {
+      const orderQuery = {
+        customer_id: subscription.customer_id,
+        //address_id: subscription.address_id, // dropped this because if addresses are merged
+        product_id: parseInt(subscription.external_product_id.ecommerce),
+        subscription_id: subscription.id,
+      };
+      lastOrder = await getLastOrder(orderQuery, io);
+    } catch(err) {
+      lastOrder = {};
     };
-    lastOrder = await getLastOrder(orderQuery, io);
-  } catch(err) {
-    lastOrder = {};
   };
 
   // do we really need to run this if no nextBox??? And if I don't what happens with everything else that uses gatherData?
@@ -238,8 +245,6 @@ export const reconcileChargeGroup = async ({ subscription, includedSubscriptions
     if (io) io.emit("message", `No current box for the moment ...`);
     reconciled = { properties: boxProperties, messages: [], updates: [] };
   };
-
-  console.log("reconciled updates", reconciled.updates);
 
   const subscriptionUpdates = [];
   if (reconciled.messages.length > 0 && hasNextBox) { // don't collect updates unless the nextBox is present
@@ -360,7 +365,7 @@ export const gatherData = async ({ grouped, result, io }) => {
       nowAvailableAsAddOns,
       lastOrder,
     } = await reconcileChargeGroup({
-      subscription, includedSubscriptions, io,
+      subscription, includedSubscriptions, charge, io,
     });
 
     if (io) io.emit("message", `Collecting updates ...`);

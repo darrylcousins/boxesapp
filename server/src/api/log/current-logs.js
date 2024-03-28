@@ -13,9 +13,12 @@ import { formatDate } from "../../lib/helpers.js";
 export default async (req, res) => {
 
   const { level, page, object, object_id, fromDate, toDate } = req.params;
+
+  // XXX Trashed from and to in favour of search field date search
   let { from, to } = req.query;
 
   const validDate = (d) => {
+    if (!d) return false;
     if (d.toString() === "Invalid Date") return false;
     if (Number.isNaN(d.getTime())) return false;
     if (!(d instanceof Date)) return false;
@@ -32,23 +35,51 @@ export default async (req, res) => {
 
   let searchTerm;
   let searchDates;
-  console.log(object_id);
+
+  // helper
   if (object_id) { // added time as an option
 
     const decoded = decodeURIComponent(object_id);
-    console.log(decoded);
-    if (decoded !== object_id) { // if given an interger id then they will be the same
-      const searchFrom = new Date(Date.parse(decoded));
-      if (validDate(searchFrom)) {
-        searchDates = [];
-        //searchFrom.setMinutes(searchFrom.getMinutes() + searchFrom.getTimezoneOffset());
-        searchFrom.setMinutes(searchFrom.getMinutes() - 15);
-        searchDates.push(new Date(searchFrom));
-        searchFrom.setMinutes(searchFrom.getMinutes() + 30);
-        searchDates.push(new Date(searchFrom));
+    let parts = decoded.split("and").map(el => el.trim()).filter(el => el !== "");
+
+    if (parts.length > 2) {
+      res.status(200).json({ error: `Too many search terms: ${parts.join(", ")}. Try a date and an id only.` });
+    };
+
+    let searchFrom;
+    for (const part of parts) {
+      if (new RegExp(/^[0-9]*$/).test(part)) {
+        if (!isNaN(parseInt(part)) && !searchTerm) {
+          searchTerm = parseInt(part);
+        } else if (!isNaN(parseInt(part))) {
+          return res.status(200).json({ error: `Unable to search on 2 ids: ${searchTerm}, ${part}` });
+        };
+      } else {
+        const d = new Date(Date.parse(part));
+        if (validDate(d) && !searchFrom) {
+          searchFrom = d;
+        } else if (validDate(d) && searchFrom) {
+          return res.status(200).json({ error: `Unable to search on 2 dates: ${searchFrom.toDateString()}, ${part}` });
+        } else {
+          return res.status(200).json({ error: `Unable to parse the date string: ${part}` });
+        };
       };
-    } else {
-      searchTerm = parseInt(object_id);
+    };
+
+    if (searchFrom) {
+      searchDates = [];
+      //searchFrom.setMinutes(searchFrom.getMinutes() + searchFrom.getTimezoneOffset());
+      const deltaSwitch = decoded.split(":").length;
+      searchDates.push(new Date(searchFrom));
+
+      if (deltaSwitch === 1) {
+        searchFrom.setDate(searchFrom.getDate() + 1);
+      } else if (deltaSwitch === 2) {
+        searchFrom.setHours(searchFrom.getHours() + 1);
+      } else {
+        searchFrom.setMinutes(searchFrom.getMinutes() + 1);
+      };
+      searchDates.push(new Date(searchFrom));
     };
   };
 
@@ -57,23 +88,24 @@ export default async (req, res) => {
 
   // first set up filters
   if (level && level !== "all") query.level = level;
-  if (object && object !== "all") {
+  if (searchTerm && object !== "all") {
+    orQuery.push(
+      { [`meta.${object}.customer_id`]: { "$eq" : searchTerm, "$exists": true } },
+      { [`meta.${object}.subscription_id`]: { "$eq" : searchTerm, "$exists": true } },
+      { [`meta.${object}.charge_id`]: { "$eq" : searchTerm, "$exists": true } },
+      { [`meta.${object}.shopify_order_id`]: { "$eq" : searchTerm, "$exists": true } },
+      { [`meta.${object}.order_number`]: { "$eq" : searchTerm, "$exists": true } },
+    );
+  } else if (searchTerm && object === "all") {
+    orQuery.push(
+      { [`meta.recharge.customer_id`]: { "$eq" : searchTerm, "$exists": true } },
+      { [`meta.recharge.subscription_id`]: { "$eq" : searchTerm, "$exists": true } },
+      { [`meta.recharge.charge_id`]: { "$eq" : searchTerm, "$exists": true } },
+      { [`meta.shopify.shopify_order_id`]: { "$eq" : searchTerm, "$exists": true } },
+      { [`meta.shopify.order_number`]: { "$eq" : searchTerm, "$exists": true } },
+    );
+  } else if (!searchTerm && object !== "all") {
     query[`meta.${object}`] = { "$exists": true };
-    // add in a search term
-    if (searchTerm) {
-      if (object === "recharge") {
-        orQuery.push(
-          { [`meta.${object}.customer_id`]: searchTerm },
-          { [`meta.${object}.subscription_id`]: searchTerm },
-          { [`meta.${object}.charge_id`]: searchTerm },
-        );
-      } else if (object === "shopify") {
-        orQuery.push(
-          { [`meta.${object}.shopify_order_id`]: searchTerm },
-          { [`meta.${object}.order_number`]: searchTerm },
-        );
-      };
-    };
   };
   if (level === "error") { // include the fetch errors stored as notices
     /*
@@ -88,22 +120,14 @@ export default async (req, res) => {
 
   try {
 
+    if (searchDates) {
+      query.timestamp = {"$gte": searchDates[0], "$lt": searchDates[1] };
+    };
+
     let oldestDate;
     const first = await collection.find(query).project({ timestamp: 1 }).sort({ timestamp: 1 }).limit(1).toArray();
     if (first.length > 0) {
       oldestDate = formatDate(first[0].timestamp);
-    };
-
-    if (from && to) {
-      // push the displayed/selected date forward a day so as to include that day
-      to.setDate(to.getDate() + 1);
-      // push the hours back by timezone offset for UTC time as stored in mongo
-      to.setMinutes(to.getMinutes() + to.getTimezoneOffset());
-      from.setMinutes(from.getMinutes() + from.getTimezoneOffset());
-      query.timestamp = {"$gte": from, "$lt": to };
-    };
-    if (searchDates) {
-      query.timestamp = {"$gte": searchDates[0], "$lt": searchDates[1] };
     };
 
     const count = await collection.count(query);

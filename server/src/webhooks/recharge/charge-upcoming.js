@@ -138,19 +138,19 @@ export default async function chargeUpcoming(topic, shop, body) {
     };
     if (entries.length === 0) {
       await chargeUpcomingMail(mailOpts);
+    } else {
+      let res;
+      let timer;
+      // only once all updates are complete do we send the email
+      timer = setInterval(async () => {
+        res = await _mongodb.collection("updates_pending").find({ "_id": { "$in": entries } }).toArray();
+        if (res.length === 0) {
+          clearInterval(timer);
+          // compile data for email to customer the updates have been completed
+          await chargeUpcomingMail(mailOpts);
+        };
+      }, 10000);
     };
-
-    let res;
-    let timer;
-    // only once all updates are complete do we send the email
-    timer = setInterval(async () => {
-      res = await _mongodb.collection("updates_pending").find({ "_id": { "$in": entries } }).toArray();
-      if (res.length === 0) {
-        clearInterval(timer);
-        // compile data for email to customer the updates have been completed
-        await chargeUpcomingMail(mailOpts);
-      };
-    }, 10000);
 
 
   } catch(err) {

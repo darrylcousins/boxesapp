@@ -112,7 +112,7 @@ const formatObj = (obj, title) => {
       classes.push("bb b--gray pb2 mt2");
     } else {
       if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-        final.push(<Fragment><span class="gray">{key}:</span> <span>{value}</span></Fragment>);
+        final.push(<Fragment><span class="gray">{key}:</span> <span>{value.toString()}</span></Fragment>);
       } else if (value === null) {
         final.push(<Fragment><span class="gray">{key}:</span> <span>{null}</span></Fragment>);
       } else {

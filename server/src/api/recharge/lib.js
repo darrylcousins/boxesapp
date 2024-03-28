@@ -87,7 +87,7 @@ export const makeIntervalForFinish = ({req, io, session_id, entry_id, counter, a
                 query[`meta.recharge.subscription_id`] = parseInt(subscription_id);
                 query[`meta.recharge.address_id`] = parseInt(address_id);
                 query[`meta.recharge.scheduled_at`] = scheduled_at;
-                query[`meta.recharge.label`] = mailOpts.type;
+                query[`meta.recharge.update_label`] = mailOpts.type;
                 // get the most recent and one only
                 const result = await _mongodb.collection("logs").find(query).sort({ timestamp: -1 }).limit(1).toArray();
                 if (result.length > 0) {

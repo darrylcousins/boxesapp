@@ -235,25 +235,33 @@ export const delay = (t) => {
  * From https://levelup.gitconnected.com/javascript-wait-until-something-happens-or-timeout-82636839ea93
  *
  */
-export const sleepUntil = async (f, timeoutMs) => {
+export const sleepUntil = async (f, timeoutMs, id) => {
   return new Promise((resolve, reject) => {
     let timeWas = new Date();
-    let wait = setInterval(function() {
-      if (f()) {
+    try {
+      let wait = setInterval(function() {
         try {
-          clearInterval(wait);
+          if (f()) {
+            try {
+              clearInterval(wait);
+            } catch(e) {
+            };
+            resolve(f());
+          } else if (new Date() - timeWas > timeoutMs) { // Timeout
+            try {
+              clearInterval(wait);
+            } catch(e) {
+            };
+            reject(`Couldn't wait long enough for the sleep. id: ${id}`);
+          };
         } catch(e) {
+          console.log(e);
         };
-        resolve();
-      } else if (new Date() - timeWas > timeoutMs) { // Timeout
-        try {
-          clearInterval(wait);
-        } catch(e) {
-        };
-        reject();
-      }
-      }, 20);
-    });
+      }, 10);
+    } catch(e) {
+      console.log(e);
+    };
+  });
 }
 
 

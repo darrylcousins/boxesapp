@@ -78,7 +78,7 @@ export default async (ev) => {
   //const screenBottom = window.innerHeight - contentTop + 100;
   const screenBottom = window.innerHeight - 50 + window.scrollY;
   content.appendChild(notice);
-  notice.style.right = "20px";
+  notice.style.right = "4rem";
   notice.style.top = `${screenBottom}px`;
   //const targetY = 50 + noticeY;
   const targetY = screenBottom - 200 + noticeY;

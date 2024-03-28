@@ -41,7 +41,7 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
   /*
    * Primarily for user editing of box, must prevent further edits until all
    * changes to subscriptions and charges have updated - hence using
-   * mongodb.updates_pending to hold a "flag" object, see also subscription/updated
+   * mongodb.updates_pending to hold a "flag" object, see also subscription/updated and charge/deleted
    */
   try {
     for (const box_subscription_id of box_subscription_ids) {
@@ -50,10 +50,7 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
         subscription_id: parseInt(box_subscription_id),
         customer_id: parseInt(charge.customer.id),
         address_id: parseInt(charge.address_id),
-        //scheduled_at: charge.scheduled_at, // must match the target date
-        //deliver_at: meta.recharge["Delivery Date"],
       };
-      //console.log("charge updated query:", query);
 
       /*
        * NOTE: When only the delivery schedule (e.g. 1 week to 2 weeks) is
@@ -63,12 +60,11 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
        * delivery schedule has changed.
        */
 
-      // all rc_subscription_ids are true for this query
       const updates_pending = await _mongodb.collection("updates_pending").findOne(query);
-      // failing my query do the query match here
       if (updates_pending) {
 
         // items with quantity set to zero will be removed on subscription/deleted
+        // all rc_subscription_ids are true for this query
         const allUpdated = updates_pending.rc_subscription_ids.every(el => {
           // check that all subscriptions have updated or have been created
           return el.updated === true && Number.isInteger(el.subscription_id);
@@ -76,7 +72,8 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
 
         let countMatch = null;
         if (allUpdated) {
-          // filter out the updates that were deleted items and have been updated
+          // filter out the updates that were deleted items and have been
+          // updated and will no longer be part of this charge
           const rc_ids_removed = updates_pending.rc_subscription_ids.filter(el => el.quantity > 0);
           countMatch = rc_ids_removed.length === meta.recharge.rc_subscription_ids.length;
           if (countMatch) {
@@ -86,14 +83,10 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
             const messages = findChangeMessages(query);
             if (messages.length > 0) meta.recharge.change_messages = messages;
 
-            // make log entry before removing so that it is available to get
-            // charge_id from log when reactivating a subscription
             meta.recharge = sortObjectByKeys(meta.recharge);
 
-            // thinking now this is only useful when applying a change and not
-            // necessary on completion so removing
-            delete meta.recharge.rc_subscription_ids;
-
+            // make log entry before removing so that it is available to get
+            // charge_id from log when reactivating a subscription
             await _logger.notice(`Charge updated (${updates_pending.action}) for subscription.`, { meta });
 
             // safely and surely remove the entry, only other place is on charge/deleted
@@ -105,13 +98,13 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
           } else { // countMatch wrong
             if (parseInt(process.env.DEBUG) === 1) {
               meta.recharge.pending_subscription_ids = rc_ids_removed;
-              _logger.notice("Charge updated, pending updates", { meta });
+              _logger.notice("Charge updated, pending updates (not count match)", { meta });
             };
           };
         } else { // not all updated
           if (parseInt(process.env.DEBUG) === 1) {
             meta.recharge.pending_subscription_ids = updates_pending.rc_subscription_ids;
-            _logger.notice("Charge updated, pending updates", { meta });
+            _logger.notice("Charge updated, pending updates (not all updated)", { meta });
           };
         };
 
@@ -120,8 +113,8 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
           const socket_id = sockets[updates_pending.session_id];
           io = io.to(socket_id);
           if (allUpdated && countMatch) {
-            io.emit("completed", `Updates completed, removing updates entry. ChargeID: ${charge.id}`);
-            io.emit("finished", {
+            io.emit("completed", `Updates completed, removing updates entry. subscription: ${updates_pending.subscription_id}`);
+            io.emit("updates.completed", {
               action: updates_pending.action,
               session_id: updates_pending.session_id,
               subscription_id: updates_pending.subscription_id,

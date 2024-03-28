@@ -26,6 +26,7 @@ export default async function chargeDeleted(topic, shop, body, { io, sockets }) 
 
   try {
 
+    // this is the only data that we have here in this charge
     const my_query = {
       charge_id: parseInt(charge.id),
     };
@@ -36,9 +37,9 @@ export default async function chargeDeleted(topic, shop, body, { io, sockets }) 
       if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
         const socket_id = sockets[entry.session_id];
         io = io.to(socket_id);
-        io.emit("completed", `Charge cancelled ${charge.id}`);
-        io.emit("finished", {
-          action: "cancelled",
+        io.emit("completed", `Charge deleted ${charge.id}`);
+        io.emit("updates.completed", {
+          action: entry.action,
           session_id: entry.session_id,
           subscription_id: entry.subscription_id,
           address_id: entry.address_id,

@@ -56,7 +56,7 @@ function CollapseWrapper(Component) {
       // is async generator and I don't know how to fix it
       // XXX NB beware id's that begin with an integer!!
       //await sleepUntil(() => document.querySelector(`#${el.id}`), 1000);
-      await sleepUntil(() => document.querySelector(`#${id}`), 1000);
+      await sleepUntil(() => document.querySelector(`#${id}`), 2000, id);
 
       const element = document.querySelector(`#${id}`);
       if (element) {

@@ -36,6 +36,8 @@ async function *Page() {
 
   let staticUrl = ""; // see vite.config.js for running dev on port
 
+  let pathname;
+  let params;
   /**
    * Loading indicator
    * @member {boolean} loading
@@ -85,16 +87,18 @@ async function *Page() {
     // add event listener for expanding image to all markdown content images if screen size large
     const content = document.querySelector("#page-content");
     const app = document.querySelector("#app");
-    if (window.innerWidth <= 480) { // mw7 40em
-      content.querySelectorAll('img').forEach((el) => {
-        el.removeEventListener("click", showImage);
-        el.classList.remove("pointer");
-      });
-    } else {
-      content.querySelectorAll('img').forEach((el) => {
-        el.addEventListener("click", showImage);
-        el.classList.add("pointer");
-      });
+    if (content) {
+      if (window.innerWidth <= 480) { // mw7 40em
+        content.querySelectorAll('img').forEach((el) => {
+          el.removeEventListener("click", showImage);
+          el.classList.remove("pointer");
+        });
+      } else {
+        content.querySelectorAll('img').forEach((el) => {
+          el.addEventListener("click", showImage);
+          el.classList.add("pointer");
+        });
+      };
     };
   };
 
@@ -126,11 +130,19 @@ async function *Page() {
    * Promise fetching markdown content
    * @method {Promise} pullPage
    */
-  const pullPage = async (pathname, index) => {
-    console.log(pathname);
+  const pullPage = async (pathname, index, params) => {
     if (!index) history.pushState("", "", pathname);
+    let query;
+    if (params) {
+      for (const [key, value] of params.entries()) {
+        query = (!query) ? "?": `${query}&`;
+        query = `${query}${key}=${value}`;
+      };
+      console.log(query);
+    };
     //history.replaceState("", "", pathname)
-    if (pathname === "/reports") {
+    //if (pathname === `/reports${query ? query : ""}`) {
+    if (pathname === `/reports`) {
       loading = false;
       showAlert = false;
       Component = await import("./reports.jsx").then(({ default: Reports }) => Reports);
@@ -164,13 +176,13 @@ async function *Page() {
         html = `
         <h1>${err.message}</h1>
         `;
-      }).finally(async () => {
+      }).finally(() => {
         // animate this
         if (pathname.includes("changelog") || pathname.includes("thoughts")) {
           showAlert = false;
         };
         loading = false;
-        await this.refresh();
+        this.refresh();
         imageEvents();
       });
   };
@@ -217,7 +229,6 @@ ${ `${ fence }` }
     let animate = markdown.animate({ opacity: 0.05 }, options);
 
     animate.addEventListener("finish", async () => {
-      //await delay(1000); // pretend network load
       await pullPage(pathname);
       options.duration = 5000;
       animate = markdown.animate({ opacity: 1 }, animationOptions);
@@ -229,12 +240,12 @@ ${ `${ fence }` }
     return false;
   });
 
-  let pathname = window.location.pathname === "/" ? "/index" : window.location.pathname;
-  console.log("first load?", pathname);
+  pathname = window.location.pathname === "/" ? "/index" : window.location.pathname;
+  params = new URLSearchParams(window.location.search)
   if (pathname === "/index.html") {
     pathname = "/index";
   };
-  await pullPage(pathname, window.location.pathname === "/index.html");
+  await pullPage(pathname, window.location.pathname === "/index.html", params);
 
   const toggleMode = (value) => {
     mode = value;
@@ -324,7 +335,7 @@ ${ `${ fence }` }
         <div id="page-wrapper" role="document">
           <div id="page-content" role="main" class={ `markdown-body ${mode}-mode` }>
             { Component ? (
-              <Component mode={ mode } />
+              <Component mode={ mode } pathname={ pathname } params={ params } />
             ) : (
               <Fragment>
                 { parsed ? (
@@ -339,10 +350,10 @@ ${ `${ fence }` }
             <div id="timestamp" class="mb2">
               First published December 20 2022.<br />
               Last updated March 2024. { " " }
-              (<a href="/site-changelog"
+              &lt;<a href="/site-changelog"
                 class={ `${mode} link dim` }
                 data-page="/site-changelog"
-                title="Changelog for this site">log</a>)
+                title="Changelog for this site">log</a>&gt;
             </div>
             Darryl Cousins
             <span class="ml1">&lt;

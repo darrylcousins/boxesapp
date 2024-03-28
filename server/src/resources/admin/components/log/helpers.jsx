@@ -69,7 +69,7 @@ const formatObj = (obj, title) => {
     } else {
       if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
         //final.push(`${key}: ${value}`);
-        final.push(<Fragment><span class="gray">{key}:</span> <span>{value}</span></Fragment>);
+        final.push(<Fragment><span class="gray">{key}:</span> <span>{`${value}`}</span></Fragment>);
       } else if (value === null) {
         //final.push(`${key}: null`);
         final.push(<Fragment><span class="gray">{key}:</span> <span>{ null }</span></Fragment>);
@@ -96,7 +96,6 @@ const formatObj = (obj, title) => {
       );
     };
   } else {
-    console.log(final);
     return (
       final.map(el => <div class={ classes.join(" ") }>{ el }</div>)
     );

@@ -5,6 +5,7 @@
 
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import { gatherVerifiedData } from "../../lib/recharge/verify-customer-subscriptions.js";
+import { getIOSocket } from "./lib.js";
 
 /*
  * @function recharge/recharge-customer-charge.js
@@ -21,8 +22,19 @@ import { gatherVerifiedData } from "../../lib/recharge/verify-customer-subscript
  */
 export default async (req, res, next) => {
 
-  let charge_id = req.params.charge_id;
-  const { customer_id, subscription_id, address_id, scheduled_at } = req.query;
+  const { customer_id, subscription_id } = req.params;
+  const { charge_id } = req.query;
+
+  let io;
+  let session_id;
+  let socket;
+  if (Object.hasOwn(req.query, "session_id")) {
+    req.body.session_id = req.query.session_id;
+
+    socket = getIOSocket(req);
+    io = socket.io;
+    session_id = socket.session_id;
+  };
 
   try {
     let result = {};
@@ -30,6 +42,7 @@ export default async (req, res, next) => {
       result = await makeRechargeQuery({
         path: `charges/${charge_id}`,
         title: `Get Charge (${charge_id})`,
+        io,
       });
 
     } catch(err) {
@@ -48,10 +61,13 @@ export default async (req, res, next) => {
       const { customer } = await makeRechargeQuery({
         path: `customers/${customer_id}`,
         title: `Get Customer (${customer_id})`,
-        //io,
+        io,
       });
 
-      const { data, errors } = await gatherVerifiedData({ charges: [ result.charge ], customer });
+      const { data, errors } = await gatherVerifiedData({ charges: [ result.charge ], customer, io });
+
+      // emitting finish to stop loading routine
+      if (io) io.emit("finished", { session_id });
 
       if (subscription_id) {
         const subscription = data.find(el => el.attributes.subscription_id === parseInt(subscription_id));

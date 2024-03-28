@@ -45,7 +45,7 @@ const options = {
   id: "add-box", // form id - matches name in ShowLink which is title.toHandle
   title: "Add Box Subscription",
   color: "orange",
-  src: "/api/recharge-add-box",
+  src: "/api/recharge-create-subscription",
   ShowLink,
   saveMsg: "Creating box subscription ... please be patient, it will take some minutes.",
   successMsg: "Updates have been queued, reloading ...",

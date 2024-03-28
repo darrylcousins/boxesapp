@@ -65,9 +65,9 @@ const DTable = ({ items, title, show_title }) => {
       { show_title && (
         <div class="b f3 pl2 navy">{ title }</div>
       )}
-      <ul class="list pl1 pr2 mv0">
-        { items && items.length > 0 && (
-          items.map((thing, idx) => (
+      { items && items.length > 0 ? (
+        <ul class="list pl1 pr2 mv0">
+          { items.map((thing, idx) => (
             <li style={ li }>
               <dl style={ dl } class="alert-box">
                 { thing.message && (
@@ -128,7 +128,7 @@ const DTable = ({ items, title, show_title }) => {
                     <dd style={ dd }>{ thing.variant_price }</dd>
                   </Fragment>
                 )}
-                { thing.order_day_of_week && (
+                { !isNaN(thing.order_day_of_week) && (
                   <Fragment>
                     <dt style={ dt }>Charge day</dt>
                     <dd style={ dd }>{ weekdays[thing.order_day_of_week + 1] }</dd>
@@ -148,9 +148,9 @@ const DTable = ({ items, title, show_title }) => {
                 )}
               </dl>
             </li>
-          )
-        ))}
-      </ul>
+          ))}
+        </ul>
+      ) : "" }
     </Fragment>
   );
 };

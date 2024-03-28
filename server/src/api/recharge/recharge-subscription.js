@@ -4,6 +4,7 @@
  */
 
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import { gatherVerifiedData } from "../../lib/recharge/verify-customer-subscriptions.js";
 
 /*
  * @function recharge/recharge-subscription.js
@@ -18,6 +19,10 @@ export default async (req, res, next) => {
       path: `subscriptions/${subscription_id}`,
       query: [ ["include", "customer,metafields" ] ]
     });
+
+    // but return as a charge.subscriptios object
+    // by getting the charge using getVerifiedData
+    // the other option being to get each individual subscription
 
     res.status(200).json(result);
   } catch(err) {

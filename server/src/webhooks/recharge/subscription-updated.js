@@ -54,11 +54,11 @@ export default async function subscriptionUpdated(topic, shop, body, { io, socke
         if (allUpdated) {
           await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
           if (parseInt(process.env.DEBUG) === 1) {
-            _logger.notice("Deleting updates pending entry subscription/updated", { meta: { recharge: entry }});
+            _logger.notice(`Deleting pending entry subscription/updated (${meta.recharge.title})`, { meta: { recharge: entry }});
           };
           if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
             io.emit("completed", `Updates completed, removing updates entry.`);
-            io.emit("finished", {
+            io.emit("updates.completed", {
               action: entry.action,
               session_id: entry.session_id,
               subscription_id: entry.subscription_id,
@@ -70,9 +70,13 @@ export default async function subscriptionUpdated(topic, shop, body, { io, socke
           };
         } else {
           if (parseInt(process.env.DEBUG) === 1) {
-            _logger.notice(`Updated ${meta.recharge.title} - entry stil pending.`, { meta: { recharge: entry } });
+            _logger.notice(`Updated ${meta.recharge.title} - entry still pending.`, { meta: { recharge: entry } });
           };
         };
+      };
+    } else {
+      if (parseInt(process.env.DEBUG) === 1) {
+        _logger.notice(`Updated ${meta.recharge.title} - unable to update pending.`, { meta: { recharge: entry } });
       };
     };
 

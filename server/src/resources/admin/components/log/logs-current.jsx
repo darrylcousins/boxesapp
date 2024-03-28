@@ -26,6 +26,9 @@ import Checkbox from "../form/fields/checkbox";
  * 
  * **timestamp** allows preload of particular date - see initialize
  *
+ * NOTE Although still present, logs no longer user fromDate, toDate. All date
+ * searching is done with the search field
+ *
  * @generator
  * @yields {Element}
  */
@@ -118,14 +121,16 @@ function* CurrentLogs() {
    * @member fromDate
    * @type {object|null}
    */
-  let fromDate = formatDate(new Date(0));
+  //let fromDate = formatDate(new Date(0));
+  let fromDate = null;
   /**
    * Capture toDate
    *
    * @member toDate
    * @type {object|null}
    */
-  let toDate = formatDate(new Date());
+  //let toDate = formatDate(new Date());
+  let toDate = null;
   /**
    * Capture pageSize
    *
@@ -252,9 +257,10 @@ function* CurrentLogs() {
     uri = logLevel ? `${uri}/${logLevel}` : `${uri}/all`;
     uri = selectedObject ? `${uri}/${selectedObject}` : `${uri}/all`;
     if (searchTerm) {
-      uri = `${uri}/${encodeURIComponent(searchTerm)}`;
+      uri = `${uri}/${encodeURIComponent(searchTerm.trim())}`;
     };
-    uri = `${uri}?from=${ Date.parse(fromDate) }&to=${ Date.parse(toDate) }`;
+    //uri = `${uri}?from=${ Date.parse(fromDate) }&to=${ Date.parse(toDate) }`;
+    console.log(uri);
     Fetch(encodeURI(uri))
       .then((result) => {
         const { error, json } = result;
@@ -271,6 +277,7 @@ function* CurrentLogs() {
           fetchCount = json.count;
           pageSize = json.pageSize;
           oldestDate = json.oldestDate;
+          /*
           if (Date.parse(oldestDate) > Date.parse(fromDate)) {
             fromDate = oldestDate;
             this.dispatchEvent(toastEvent({
@@ -279,6 +286,7 @@ function* CurrentLogs() {
               borderColour: "black"
             }));
           };
+          */
           if (document.getElementById("logs-table")) {
             animateFadeForAction("logs-table", async () => await this.refresh());
           } else {
@@ -295,6 +303,8 @@ function* CurrentLogs() {
 
   /**
    * Handle changes to search dates
+   *
+   * XXX Trashed this in favour of search field date search
    *
    * @function searchDates
    */
@@ -368,17 +378,26 @@ function* CurrentLogs() {
    * @function handleSearchTerm
    */
   const handleSearchTerm = (ev) => {
+    ev.stopPropagation();
+    let target = ev.target;
+    if (["PATH", "SVG"].includes(target.tagName.toUpperCase())) {
+      target = target.closest("button");
+      if (!target) return;
+    };
     const input = document.querySelector("#searchTerm");
-    searchTerm = input.value.trim();
+    searchTerm = input.value;
     searchError = null;
-    const button = document.querySelector("button[name='Search'");
-    if (button) button.blur();
-    if (searchTerm.length > 0 && ev.key === "Enter") {
-      logLevel = "notice";
-      menuSelectObject = true;
+    if (ev.target.name !== "Search") {
+      const button = document.querySelector("button[name='Search'");
+      if (button) button.blur();
+    };
+    if (searchTerm.length > 0 && (ev.key === "Enter" || target.name === "Search")) {
+      return refreshLogs();
     };
     return this.refresh();
   };
+
+  window.addEventListener("keyup", handleSearchTerm);
 
   getLogs();
 
@@ -402,8 +421,8 @@ function* CurrentLogs() {
     loading = true;
     selectedObject = null;
     searchTerm = null;
-    fromDate = formatDate(new Date(0));
-    toDate = formatDate(new Date());
+    //fromDate = formatDate(new Date(0));
+    //toDate = formatDate(new Date());
     await this.refresh();
     getLogs();
   };
@@ -471,7 +490,7 @@ function* CurrentLogs() {
         {fetchLogs.length > 0 && (
           <Pagination callback={ movePage } pageCount={ parseInt(pageCount) } pageNumber={ parseInt(pageNumber) } />
         )}
-        <div class="relative w-100 tr pr2">
+        <div class="relative fr tr pr2">
           <Help id="logsInfo" />
           <p id="logsInfo" class="alert-box info info-right tr b" role="alert">
             Only logs more recent than two days ago are available here.
@@ -482,45 +501,8 @@ function* CurrentLogs() {
             <p class="tc">{ searchError }</p>
           </div>
         )}
-        <div class="w-100 flex-container">
-          <div class="w-100 w-60-ns v-bottom tl">
-            <div class="w-100 flex-container">
-              <div class="w-70 flex">
-                <div class="relative pt2">
-                  <Help id="searchInfo" />
-                  <p id="searchInfo" class="alert-box info info-left tl lh-copy b" role="alert">
-                      &#x2022; Recharge logs can be searched on customer_id, charge_id,
-                      or subscription_id
-                      <br />
-                      &#x2022; Order logs can be searched on the shopify_order_id or the
-                      order_number (e.g. #44444).
-                  </p>
-                </div>
-                <input 
-                  class="dib pa2 mr2 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
-                  type="text"
-                  valid={ !searchError }
-                  id="searchTerm"
-                  onkeydown={ (ev) => handleSearchTerm(ev) }
-                  value={ searchTerm && searchTerm }
-                  placeholder={`customer, subscription id, or timestamp`}
-                  name="searchTerm" />
-              </div>
-              <div class="w-30 flex" style="height: 1.8em">
-                <div onclick={ () => handleSearchTerm({key: "Enter"}) } class="dib">
-                  <IconButton color="dark-gray" title="Search" name="Search">
-                    <SearchIcon />
-                  </IconButton>
-                </div>
-                <div onclick={ () => clearSearchTerm() } class="dib">
-                  <IconButton color="dark-gray" title="Clear Search" name="Clear Search">
-                    <ClearSearchIcon />
-                  </IconButton>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="w-100 w-10-ns v-bottom tr mr2">
+        <div class="w-100 flex-container mt4">
+          <div class="w-30 v-bottom tr mr2">
               <SelectMenu
                 id="selectObject"
                 menu={possibleObjects.map(el => ({text: el, item: el}))}
@@ -531,7 +513,58 @@ function* CurrentLogs() {
                 { selectedObject ? `${selectedObject} messages` : "Filter by" }&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#9662;
               </SelectMenu>
           </div>
-          <div class="w-100 w-40-ns v-bottom tr flex">
+          <div class="w-30 v-bottom tr flex">
+            { " " }
+          </div>
+          <div class="w-40 dt v-btm tl mb3">
+            <div class="dt-row">
+              <div class="dtc v-top">
+                <input 
+                  class="dib pa2 mr2 ba bg-transparent hover-bg-near-white w-100 input-reset br2"
+                  type="text"
+                  valid={ !searchError }
+                  id="searchTerm"
+                  onkeyup={ (ev) => handleSearchTerm(ev) }
+                  value={ searchTerm && searchTerm }
+                  placeholder={`customer, subscription id, or timestamp`}
+                  name="searchTerm" />
+              </div>
+              <div class="dtc v-btm pl3">
+                <div class="dt">
+                  <div name="Search" onclick={ (ev) => handleSearchTerm(ev) } class="dtc">
+                    <IconButton color="dark-gray" title="Search" name="Search">
+                      <SearchIcon />
+                    </IconButton>
+                  </div>
+                  <div onclick={ () => clearSearchTerm() } class="dtc">
+                    <IconButton color="dark-gray" title="Clear Search" name="Clear Search">
+                      <ClearSearchIcon />
+                    </IconButton>
+                  </div>
+                  <div class="dtc relative v-top">
+                    <Help id="searchInfo" />
+                    <p id="searchInfo" class="alert-box info info-right tl lh-copy b" role="alert">
+                        &#x2022; Recharge logs can be searched on customer_id, charge_id,
+                        or subscription_id
+                        <br />
+                        &#x2022; Order logs can be searched on the shopify_order_id or the
+                        order_number (e.g. 44444).
+                        <br />
+                        &#x2022; For a single day enter 2024-03-16 or Sat Mar 16 2024
+                        <br />
+                        &#x2022; For a single hour enter 2024-03-16 14:00 or Sat Mar 16 2024 14:22:00
+                        <br />
+                        &#x2022; For a single minute enter 2024-03-16 14:00:00 or Sat Mar 16 2024 14:22:00:00
+                        <br />
+                        &#x2022; Combine ids and dates using "and", e.g. "2024-03-16 and 145686394"
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {false && (
+          <div class="w-60 v-bottom tr flex">
             <div class="w-50">
               <input
                 class="mh1 pa2 ba bg-transparent hover-bg-near-white w-90 input-reset br2"
@@ -551,6 +584,7 @@ function* CurrentLogs() {
               />
             </div>
           </div>
+          )}
         </div>
         <div class="w-100 flex-container mt3 mb2 bb b--black-30 v-mid">
           <div class="w-100 w-50-ns tl">

@@ -151,7 +151,7 @@ async function* VerifySubscriptions({ customers }) {
             <div class="w-100 pv4 ph5 br3 dark-blue ba b--navy bw1" id={ `${entry.customer.last_name}-${idx}` }>
               <div class="cf" />
               <div class="f3 b navy">
-                { entry.customer.first_name } {entry.customer.last_name } &lt;{ entry.customer.email }&gt; { " " }
+                { entry.customer.first_name } {entry.customer.last_name } &lt;{ entry.customer.email }&gt; {entry.customer.recharge_id} { " " }
               </div>
               <div class="pt3 mb5">
                 <div class="fl">

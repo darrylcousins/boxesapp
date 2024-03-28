@@ -40,15 +40,11 @@ const run = async () => {
 
   try {
     console.log('this ran');
-    //const entries = [ new ObjectId("65f883926eab03f1aa51cc0a"), new ObjectId("65f9d4f46eab03f1aa546034")];
-    const entries = ["dsds"];
-    const res = await _mongodb.collection("updates_pending").find({ "_id": { "$in": entries } }).toArray();
-    console.log(res);
 
   } catch(e) {
     console.error(e);
   } finally {
-    //dbClient.close();
+    //dbClient.close(); only needed if using getMongo()
     process.emit('SIGINT'); // will close mongo connection
   };
 };

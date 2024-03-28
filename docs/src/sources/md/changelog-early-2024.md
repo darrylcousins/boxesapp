@@ -18,7 +18,7 @@ confidently say that the past 8 weeks I have been working ~25 hours a week of
 boxesapp. What was something of a hobby project has increasingly felt like
 work.
 
-So then, the change log (with comments) cool:
+So then, the change log:
 
 ## Box Edits
 
@@ -34,7 +34,9 @@ user.
 
 The new work is proving far more successful in tracking the completion of an
 update and provides realtime feedback to the user by way of an open socket
-receiving messages on the progress.
+receiving messages on the progress. Once all updates are completed (by way of
+reading webhooks from Recharge) the `updates_pending` entry is removed and the
+socket is closed, indicating to the front-end that the customer can continue.
 
 ## Reconcile Boxes
 
@@ -90,7 +92,7 @@ feature adds the new subscription to an existing address object.
 * added the ability to included more information if required in the listing
 * added the selection of date ranges
 * added a timestamp search to drill down to a particular moment in time (helps with debugging problems)
-* searchable of customer and subscription ids.
+* searchable on customer and subscription ids.
 
 ## Errors
 
@@ -195,3 +197,28 @@ I found that the Box Produce page collected boxes without taking into account
 the box settings of cutoff time and order limits. To avoid complicated code I
 had simply used an arbitary cutoff of 2 days. This has been rectified and now
 accounts for the appropiate filters used on the Container Box page.
+
+## Reports
+
+A curious problem turned up when I started merging customer addresses so that I
+have multiple boxes come in per order. That caused a bit of grief because prior
+to that I could rely on only a single box per charge. I solved my problems but
+then found that the [Recharge](recharge) `order/processed` webhook muddles the
+line item properties, meaning that I was unable to use the
+`box_subscription_id` property to confidently group the boxes. I approached
+[Recharge](recharge) and they rightly queried what my app was doing. So I
+started putting together reports that used exra logging (`env.DEBUG = 1`) to
+capture everything that was going on. I now have [reports](/reports) for every
+action that happens.
+
+Creating these reports turned out to be a valuable exercise, I was able then to
+analyze activity in the app in a detail that I had only until now gathered in
+my small brain. It pointed to ways to eliminate api calls and other means of
+opitimization.
+
+Then I went on to automate the creation of reports which uses live data,
+webhooks, emails, and requests. Finally a testing program on live data.
+
+[shopify]: https://shopify.com
+[recharge]: https://rechargepayments.com
+[boxesapp]: https://boxesapp.nz

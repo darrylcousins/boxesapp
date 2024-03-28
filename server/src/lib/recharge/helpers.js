@@ -2,7 +2,6 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import "dotenv/config";
-import fs from "fs/promises";
 import { sortObjectByKeys, delay } from "../helpers.js";
 import { makeShopQuery } from "../shopify/helpers.js";
 import { getNZDeliveryDay } from "../dates.js";

@@ -13,7 +13,7 @@ import Button from "../lib/button";
 import IconButton from "../lib/icon-button";
 import { SearchIcon, ClearSearchIcon, SyncIcon } from "../lib/icon";
 import Pagination from "../lib/pagination";
-import { Fetch } from "../lib/fetch";
+import { Fetch, PostFetch } from "../lib/fetch";
 import PushMenu from "../lib/push-menu";
 import { toastEvent } from "../lib/events";
 import Toaster from "../lib/toaster";
@@ -74,12 +74,11 @@ async function* Customers() {
    */
   let fetchCustomer = null;
   /**
-   * The loaded charge from api - when a single charge is loaded cf all charges
-   * for a customer
+   * Used to pass to Customer if we only want a single charge displayed
    *
-   * @member {object|string} fetchCharge
+   * @member {object|string} customerCharge
    */
-  let fetchCharge = null;
+  let customerCharge = null;
   /**
    * The loaded customers from api
    *
@@ -146,7 +145,7 @@ async function* Customers() {
     fetchError = null;
     loading = false;
     fetchCustomer = null;
-    fetchCharge = null;
+    customerCharge = null;
     // also reload pending and verify?
     await this.refresh();
     if (document.getElementById("searchTerm")) {
@@ -231,47 +230,12 @@ async function* Customers() {
    * @function fetchCustomerCharge
    */
   const fetchCustomerCharge = async (customer, charge_id) => {
-    // slow things down a bit
-    fetchError = null;
-    loadingLabel = `charge (${charge_id}) for ${customer.first_name} ${customer.last_name}`;
-    loading = true;
-    setTimeout(() => {
-      this.refresh();
-      doFetchCustomerCharge(customer, charge_id);
-    }, 300);
+    console.log(charge_id);
+    customerCharge = charge_id;
+    await fetchRechargeCustomer(customer.recharge_id);
   };
 
-  const doFetchCustomerCharge = async (customer, charge_id) => {
-    let uri = `/api/recharge-customer-charge/${charge_id}`;
-    uri = `${uri}?customer_id=${customer.recharge_id}`; // recharge id
-    window.scrollTo({top: 0, left: 0, behavior: "smooth" });
-    await Fetch(encodeURI(uri))
-      .then((result) => {
-        const { error, json } = result;
-        if (error !== null) {
-          fetchError = error;
-          loading = false;
-          loadingLabel = null;
-          this.refresh();
-          return null;
-        };
-        fetchCharge = json.charge;
-        fetchCharge.groups = json.subscriptions,
-        fetchCharge.errors = json.errors,
-        fetchCustomer = json.customer;
-        // XXX animate her
-        loading = false;
-        this.refresh();
-      })
-      .catch((err) => {
-        fetchError = err;
-        loading = false;
-        this.refresh();
-        return null;
-      });
-  };
-
-  /**
+    /**
    * Fetch recharge customer
    *
    * @param {string} id The recharge customer id
@@ -540,13 +504,13 @@ async function* Customers() {
             </p>
           </div>
         )}
-        { fetchCharge && (
-            <Customer customer={ fetchCustomer } charge={ fetchCharge } admin={ true } /> 
+        { false && (
+            <Customer customer={ fetchCustomer } charge={ customerCharge } admin={ true } /> 
         )}
-        { fetchCustomer && !fetchCharge && (
-            <Customer customer={ fetchCustomer } admin={ true } /> 
+        { fetchCustomer && (
+            <Customer customer={ fetchCustomer } charge_id={customerCharge} admin={ true } /> 
         )}
-        { !fetchCustomer && !fetchCharge && (
+        { !fetchCustomer && (
           <Fragment>
             { updatesPending && updatesPending.length > 0 && <PendingUpdates pendingUpdates={ updatesPending } /> }
             { faultySubscriptions && faultySubscriptions.length > 0 && <VerifySubscriptions customers={ faultySubscriptions } /> }

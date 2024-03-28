@@ -21,6 +21,8 @@ import AddBoxModal from "./add-box-modal";
 import { getSessionId } from "../socket";
 import { 
   animateFadeForAction,
+  animationOptions,
+  animateFade,
   delay,
   sleepUntil,
   displayMessages,
@@ -42,7 +44,7 @@ import {
  *
  * If charge is provided then do not load all customer charges
  */
-async function *Customer({ customer, charge, admin }) {
+async function *Customer({ customer, charge_id, admin }) {
 
   /**
    * Hang on to the shopify_id of the customer
@@ -188,7 +190,7 @@ async function *Customer({ customer, charge, admin }) {
    *
    */
   const getChargeGroups = async (customer_id) => {
-    let uri = `/api/recharge-customer-charges/${customer_id}`;
+    let uri = `/api/recharge-customer-charges/${shopify_customer_id}`;
     if (loadingSession) uri = `${uri}?session_id=${loadingSession}`;
     console.log("getting charge groups", uri);
     return Fetch(encodeURI(uri))
@@ -211,7 +213,7 @@ async function *Customer({ customer, charge, admin }) {
           price_mismatch = json.errors.price_mismatch;
           count_mismatch = json.errors.count_mismatch;
           orphans = json.errors.orphans;
-          // also need to disable events on the effected subscriptions!
+          // events are disabled for brokenSubscriptions
           brokenSubscriptions = [...date_mismatch, ...orphans, ...price_mismatch, ...count_mismatch].map(el => el.box_subscription_id);
         };
         if (Object.hasOwnProperty.call(json, "result")) {
@@ -219,7 +221,7 @@ async function *Customer({ customer, charge, admin }) {
           originalChargeGroups = cloneDeep(json.result);
         };
         loading = false;
-        this.refresh();
+        // this.refresh(); refresh driven by socket.closed
         return true;
       })
       .catch((err) => {
@@ -251,7 +253,7 @@ async function *Customer({ customer, charge, admin }) {
         cancelledGroups = json;
         loading = false;
         loadingLabel = loadingLabelDefault;
-        this.refresh();
+        // this.refresh(); refresh driven by socket.closed
       })
       .catch((err) => {
         fetchError = err;
@@ -259,6 +261,38 @@ async function *Customer({ customer, charge, admin }) {
         this.refresh();
       });
   };
+
+  /**
+   *
+   * @function getCustomerCharge
+   * Get a single charge - used by admin to speed up loading if only a single
+   * charge needs to be viewed
+   *
+   */
+  const getCustomerCharge = async (customer_id, charge_id) => {
+    let uri = `/api/recharge-customer-charge/${customer_id}?charge_id=${charge_id}`;
+    if (loadingSession) uri = `${uri}&session_id=${loadingSession}`;
+    console.log("getting charge ofr customer", uri);
+    return Fetch(encodeURI(uri))
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          loadingLabel = null;
+          this.refresh();
+          return null;
+        };
+        return json;
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+        return null;
+      });
+  };
+
 
   /**
    *
@@ -299,15 +333,13 @@ async function *Customer({ customer, charge, admin }) {
    * @listen listing.reload event from addSubscription modal
    */
   const addingSubscription = (ev) => {
-    if (ev.detail.src === "/api/recharge-add-box") {
+    if (ev.detail.src === "/api/recharge-create-subscription") {
       let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
       // get the messages from ev?
       for (const id of subscription_ids) {
         const div = document.querySelector(`#subscription-${id}`);
         div.classList.add("disableevents");
       };
-      const messages = document.getElementById(`saveMessages-${customer.id}`);
-      if (messages) messages.classList.remove("closed");
       const display = document.getElementById(`displayMessages-${customer.id}`);
       if (display && Object.hasOwn(ev.detail.json, "messages")) {
         displayMessages(display, ev.detail.json.messages);
@@ -323,7 +355,7 @@ async function *Customer({ customer, charge, admin }) {
    * @function removeSubscription
    * @listen subscription.deleted event
    */
-  const removeSubscription = (ev) => {
+  const removeSubscription = async (ev) => {
     const { subscription, subscription_id } = ev.detail
     const deleted = cancelledGroups.find(el => el.box.id === subscription_id);
     const idx = cancelledGroups.indexOf(deleted);
@@ -333,8 +365,12 @@ async function *Customer({ customer, charge, admin }) {
       const div = document.querySelector(`#subscription-${id}`);
       div.classList.remove("disableevents");
     };
-    const div = document.querySelector(`#customer-${rechargeCustomer.id}`);
-    animateFadeForAction(div, async () => await this.refresh(), 800);
+    await sleepUntil(() => document.getElementById(`customer-${rechargeCustomer.id}`), 500)
+      .then((res) => {
+        animateFadeForAction(res, async () => await this.refresh(), 400);
+      }).catch((e) => {
+        // no need for action
+      });
   };
 
   this.addEventListener("subscription.deleted", removeSubscription);
@@ -345,6 +381,7 @@ async function *Customer({ customer, charge, admin }) {
    * @listen subscription.deleted event
    */
   const reactivateSubscription = async (ev) => {
+    console.log("reactivate", ev.detail);
     const { subscription, subscription_id } = ev.detail
     const cancelled = cancelledGroups.find(el => el.box.id === subscription_id);
     const idx = cancelledGroups.indexOf(cancelled);
@@ -374,17 +411,21 @@ async function *Customer({ customer, charge, admin }) {
    * @listen subscription.cancelled event
    */
   const cancelSubscription = async (ev) => {
+    console.log("cancelled", ev.detail);
     const { subscription, subscription_id } = ev.detail
+    console.log("customer subscription and id", subscription, subscription_id);
     const charge = chargeGroups.find(el => el.attributes.subscription_id === subscription_id);
     const idx = chargeGroups.indexOf(charge);
+    console.log("customer charge and idx", charge, idx);
     chargeGroups.splice(idx, 1);
     originalChargeGroups = cloneDeep(chargeGroups); // save for cancel event
     cancelledGroups.push(subscription);
     let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
+    /*
     for (const id of subscription_ids) {
       const div = document.querySelector(`#subscription-${id}`);
       div.classList.remove("disableevents");
-    };
+    }*/;
     await sleepUntil(() => document.getElementById(`customer-${rechargeCustomer.id}`), 500)
       .then((res) => {
         animateFadeForAction(res, async () => await this.refresh(), 400);
@@ -406,12 +447,8 @@ async function *Customer({ customer, charge, admin }) {
 
     setTimeout(async () => {
       const socketMessages = document.getElementById(`addBoxMessages-${customer.id}`);
-      const saveMessages = document.getElementById(`saveMessages-${customer.id}`);
       if (socketMessages) {
         socketMessages.classList.add("closed"); // uses css transitions
-      };
-      if (saveMessages) {
-        saveMessages.classList.add("closed"); // uses css transitions
       };
       loading = true;
       chargeGroups = [];
@@ -431,6 +468,7 @@ async function *Customer({ customer, charge, admin }) {
    * @listen subscription.editing event
    */
   const disableEvents = async (ev) => {
+    ev.stopPropagation();
     const { subscription_id } = ev.detail;
     const mydiv = document.querySelector(`#subscription-${subscription_id}`);
     if (mydiv) {
@@ -452,6 +490,7 @@ async function *Customer({ customer, charge, admin }) {
    * @listen subscription.editing event
    */
   const enableEvents = async (ev) => {
+    ev.stopPropagation();
     const { subscription_id } = ev.detail;
     let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
     subscription_ids = subscription_ids.filter(el => el !== subscription_id);
@@ -474,11 +513,15 @@ async function *Customer({ customer, charge, admin }) {
     const div = document.querySelector(`#customer-${rechargeCustomer.id}`);
     //animateFadeForAction(div, async () => await this.refresh(), 300);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       loading = false;
       chargeGroups = cloneDeep(originalChargeGroups);
-      const div = document.querySelector(`#customer-${rechargeCustomer.id}`);
-      animateFadeForAction(div, async () => await this.refresh(), 300);
+      await sleepUntil(() => document.getElementById(`customer-${rechargeCustomer.id}`), 500)
+        .then((res) => {
+          animateFadeForAction(res, async () => await this.refresh(), 400);
+        }).catch((e) => {
+          // no need for action
+        });
     }, 400);
   };
 
@@ -490,10 +533,34 @@ async function *Customer({ customer, charge, admin }) {
    */
   const init = async (data) => {
 
+    chargeGroups = [];
+    cancelledGroups = [];
+    originalChargeGroups = [];
+    this.refresh();
+
     if (Object.hasOwn(data, "session_id")) {
       loadingSession = data.session_id;
       loading = true;
       await this.refresh();
+    };
+
+    if (Object.hasOwn(data, "charge_id")) {
+      await getCustomerCharge(rechargeCustomer.id, data.charge_id).then(json => {
+        if (json) {
+          if (json.errors) {
+            date_mismatch = json.errors.date_mismatch;
+            count_mismatch = json.errors.count_mismatch;
+            price_mismatch = json.errors.price_mismatch;
+            orphans = json.errors.orphans;
+          };
+          chargeGroups = json.subscriptions;
+          console.log("loaded charge", chargeGroups);
+          originalChargeGroups = cloneDeep(json.charge.groups);
+          loading = false;
+          this.refresh();
+        };
+      });
+      return;
     };
 
     if (!Object.hasOwnProperty.call(customer, "external_customer_id")) {
@@ -506,41 +573,23 @@ async function *Customer({ customer, charge, admin }) {
             customer.first_name = rechargeCustomer.first_name;
             customer.last_name = rechargeCustomer.last_name;
           };
-          if (!charge) {
-            makeLoadingLabelDefault(customer); 
-            loadingLabel = loadingLabelDefault;
+          makeLoadingLabelDefault(customer); 
+          loadingLabel = loadingLabelDefault;
+          this.refresh();
+          getChargeGroups(res.id).then(async (result) => {
+            loadingLabel = loadingLabelDefault.replace("current", "cancelled");;
             this.refresh();
-            getChargeGroups(res.id).then(async (result) => {
-              loadingLabel = loadingLabelDefault.replace("current", "cancelled");;
-              this.refresh();
-              await getCancelledGroups(res.id);
-            });
-          };
+            await getCancelledGroups(res.id);
+          });
         };
       });
     } else {
       rechargeCustomer = customer;
-      if (!charge) {
-        await getChargeGroups(customer.id).then(async (result) => {
-          loadingLabel = loadingLabelDefault.replace("current", "cancelled");;
-          this.refresh();
-          await getCancelledGroups(customer.id);
-        });
-      };
-    };
-    if (charge) { // passed in as props from customers.jsx
-      chargeGroups = charge.groups;
-      originalChargeGroups = cloneDeep(charge.groups);
-      if (charge.errors) {
-        errors = true;
-        date_mismatch = charge.errors.date_mismatch;
-        count_mismatch = charge.errors.count_mismatch;
-        price_mismatch = charge.errors.price_mismatch;
-        orphans = charge.errors.orphans;
-        // also need to disable events on the effected subscriptions!
-        brokenSubscriptions = [...date_mismatch, ...orphans, ...price_mismatch, ...count_mismatch].map(el => el.box_subscription_id);
-      };
-      loading = false;
+      await getChargeGroups(customer.id).then(async (result) => {
+        loadingLabel = loadingLabelDefault.replace("current", "cancelled");;
+        // this.refresh(); refresh driven by socket.closed
+        await getCancelledGroups(customer.id);
+      });
     };
   };
 
@@ -612,17 +661,20 @@ async function *Customer({ customer, charge, admin }) {
 
   const loadingSocketClosed = async (ev) => {
     //ev.stopImmediatePropagation(); // caused Subscription to miss out?
+
     if (loadingSession === ev.detail.session_id) {
-      await sleepUntil(() => document.getElementById(`loadMessages-${shopify_customer_id}`), 800)
-        .then((res) => {
-          console.log(res);
-          animateFadeForAction(res, () => res.classList.add("dn"), 400);
-          loadingSession = null;
-          this.refresh();
-        }).catch((e) => {
-          console.log("error", e);
-          // no need for action
-        });
+      console.log("am I here really?");
+      // shouldn't need to sleep now because not refreshing on load customer and charges
+      const loader = document.getElementById(`loadMessages-${shopify_customer_id}`);
+      setTimeout(async () => {
+        loader.classList.add("closed");
+        loadingSession = null;
+        await delay(1900); // wait for loader to close
+        await this.refresh();
+        // and now animate opacity of the subscriptions
+        await delay(300); // wait for refresh to complete
+        animateFade(`subscriptions-${shopify_customer_id}`, 1);
+      }, 800);
     };
   };
 
@@ -631,15 +683,18 @@ async function *Customer({ customer, charge, admin }) {
   const shopAdminUrl = `https://${ localStorage.getItem("shop") }/admin/customers`;
   const rechargeAdminUrl = `https://${ localStorage.getItem("recharge") }.admin.rechargeapps.com/merchant/customers`;
 
-  //await init();
-  if (charge) {
-    await init({});
+  if (charge_id) {
+    // always passed a recharge customer in this case
+    rechargeCustomer = customer;
+    await getSessionId(init, { charge_id }, `loadMessages-${shopify_customer_id}`, this);
   } else {
+    chargeGroups = [];
     await getSessionId(init, {}, `loadMessages-${shopify_customer_id}`, this);
   };
 
-  for await ({ customer, charge } of this) { // eslint-disable-line no-unused-vars
+  for await ({ customer, charge_id } of this) { // eslint-disable-line no-unused-vars
 
+    /*
     if (rechargeCustomer && (rechargeCustomer.has_payment_method_in_dunning || !rechargeCustomer.has_valid_payment_method)) {
       yield (
         <Fragment>
@@ -655,126 +710,134 @@ async function *Customer({ customer, charge, admin }) {
           </div>
         </Fragment>
       );
-    } else if (!rechargeCustomer) {
+    if (!rechargeCustomer) {
       yield (
         <Fragment>
           { loading && <BarLoader /> }
         </Fragment>
       );
     } else if (rechargeCustomer) {
-      yield (
-        <div id="customer-wrapper" class="pr3 pl3 w-100">
-          { loading && <BarLoader /> }
-          { fetchError && <Error msg={fetchError} /> }
-          <div id={ `loadMessages-${shopify_customer_id}` } class="tl socketMessages"></div>
-          <div id={ `customer-${rechargeCustomer.id}` }>
-            <Fragment>
-              { loading && (
-                <div class="alert-box dark-blue pv2 ph4 ma2 br3 ba b--dark-blue bg-washed-blue">
-                  <p>
-                    <i class="b">Hold tight.</i> { loadingLabel } ...
-                  </p>
-                </div>
-              )}
-              { !admin && !loading && (
-                <div class="w-100 tr">
-                  <AddBoxModal
-                    subscription={ null }
-                    customer={ rechargeCustomer }
-                    admin={ admin }
-                    type="created"
-                    socketMessageId={ `addBoxMessages-${rechargeCustomer.id}` }/>
-                </div>
-              )}
-              { admin && !loading && (
-                <Fragment>
-                  <div class="w-100 flex-container mt0 pa0">
+      */
+    yield (
+      <div id="customer-wrapper" class="pr3 pl3 w-100">
+        { loading && <BarLoader /> }
+        { fetchError && <Error msg={fetchError} /> }
+        { loadingSession && (
+          <div id={ `loadMessages-${shopify_customer_id}` } class="tl socketMessages collapsible"></div>
+        )}
+        <div id={ `customer-${shopify_customer_id}` }>
+          <Fragment>
+            { loading && (
+              <div class="alert-box dark-blue pv2 ph4 ma2 br3 ba b--dark-blue bg-washed-blue">
+                <p>
+                  <i class="b">Hold tight.</i> { loadingLabel } ...
+                </p>
+              </div>
+            )}
+            { rechargeCustomer && (
+              <Fragment>
+                { !admin && !loading && (
+                  <div class="w-100 tr">
                     <AddBoxModal
                       subscription={ null }
                       customer={ rechargeCustomer }
                       admin={ admin }
                       type="created"
                       socketMessageId={ `addBoxMessages-${rechargeCustomer.id}` }/>
-                    <button
-                      class="b purple dib bg-white bg-animate hover-white hover-bg-purple w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0"
-                      title="Verify"
-                      type="button"
-                      onclick={ async () => await verifyCustomerSubscriptions({ customer: rechargeCustomer }) }
-                      >
-                        <span class="v-mid di">Verify customer subscriptions</span>
-                    </button>
-                    <a
-                      class="b link tc dark-green dib bg-white bg-animate hover-white hover-bg-dark-green w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0"
-                      title="Shopify"
-                      type="button"
-                      target="_blank"
-                      href={ `${shopAdminUrl}/${rechargeCustomer.external_customer_id.ecommerce}` }
-                      >
-                        <span class="v-mid di">View customer in Shopify</span>
-                    </a>
-                    <a
-                      class="b link tc green dib bg-white bg-animate hover-white hover-bg-green w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0"
-                      title="Recharge"
-                      type="button"
-                      target="_blank"
-                      href={ `${rechargeAdminUrl}/${rechargeCustomer.id}` }
-                      >
-                        <span class="v-mid di">View customer in Recharge</span>
-                    </a>
-                    <button
-                      class="b dark-gray dib bg-white bg-animate hover-white hover-bg-gray w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0 br2 br--right"
-                      title="New Customer"
-                      type="button"
-                      onclick={ getNewCustomer }
-                      >
-                        <span class="v-mid di">Load another customer</span>
-                    </button>
                   </div>
-                  <div id={ `saveMessages-${rechargeCustomer.id}` } class="tl saveMessages closed">
-                    <div class="alert-box relative dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
-                      <p id={ `displayMessages-${rechargeCustomer.id}` }  class="fg-streamside-blue"></p>
+                )}
+                { admin && !loading && (
+                  <Fragment>
+                    <div class="w-100 flex-container mt0 pa0">
+                      <AddBoxModal
+                        subscription={ null }
+                        customer={ rechargeCustomer }
+                        admin={ admin }
+                        type="created"
+                        socketMessageId={ `addBoxMessages-${rechargeCustomer.id}` }/>
+                      <button
+                        class="b purple dib bg-white bg-animate hover-white hover-bg-purple w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0"
+                        title="Verify"
+                        type="button"
+                        onclick={ async () => await verifyCustomerSubscriptions({ customer: rechargeCustomer }) }
+                        >
+                          <span class="v-mid di">Verify customer subscriptions</span>
+                      </button>
+                      <a
+                        class="b link tc dark-green dib bg-white bg-animate hover-white hover-bg-dark-green w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0"
+                        title="Shopify"
+                        type="button"
+                        target="_blank"
+                        href={ `${shopAdminUrl}/${rechargeCustomer.external_customer_id.ecommerce}` }
+                        >
+                          <span class="v-mid di">View customer in Shopify</span>
+                      </a>
+                      <a
+                        class="b link tc green dib bg-white bg-animate hover-white hover-bg-green w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0"
+                        title="Recharge"
+                        type="button"
+                        target="_blank"
+                        href={ `${rechargeAdminUrl}/${rechargeCustomer.id}` }
+                        >
+                          <span class="v-mid di">View customer in Recharge</span>
+                      </a>
+                      <button
+                        class="b dark-gray dib bg-white bg-animate hover-white hover-bg-gray w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0 br2 br--right"
+                        title="New Customer"
+                        type="button"
+                        onclick={ getNewCustomer }
+                        >
+                          <span class="v-mid di">Load another customer</span>
+                      </button>
                     </div>
-                  </div>
-                  <div id={ `addBoxMessages-${rechargeCustomer.id}` } class="tl socketMessages"></div>
-                  <div class="cf" />
-                </Fragment>
-              )}
-              { errors && (
-                <div class="alert-box relative dark-blue ph5 ma1 br3 ba b--dark-blue">
-                  { admin ? (
-                    <p>There are errors in this customer's subscriptions that will need action.</p>
-                  ) : (
-                    <p class="lh-copy b">
-                      Ooops! There are errors in your subscription. Please contact the <a
-                        class="b link hover-animate underline"
-                        href={ `mailto:${localStorage.getItem("admin_email")}` }>shop administrator</a>
-                    </p>
-                  )}
-                  { date_mismatch && date_mismatch.length > 0 && (
-                    <DTable items={ date_mismatch } title="Date mismatches" show_title={ true } />
-                  )}
-                  { count_mismatch && count_mismatch.length > 0 && (
-                    <DTable items={ count_mismatch } title="Count mismatches" show_title={ true } />
-                  )}
+                    <div id={ `saveMessages-${rechargeCustomer.id}` } class="tl w-100 saveMessages closed">
+                      <div class="alert-box relative dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+                        <p id={ `displayMessages-${rechargeCustomer.id}` }  class="fg-streamside-blue"></p>
+                      </div>
+                    </div>
+                    <div id={ `addBoxMessages-${rechargeCustomer.id}` } class="tl socketMessages"></div>
                     <div class="cf" />
-                  { orphans && orphans.length > 0 && (
-                    <DTable items={ orphans } title="Orphaned items" show_title={ true } />
-                  )}
-                  <div class="cf" />
-                  { price_mismatch && price_mismatch.length > 0 && (
-                    <DTable items={ price_mismatch } title="Price mismatches" show_title={ true } />
-                  )}
-                </div>
-              )}
-              { messages.length > 0 && (
-                <div class="alert-box dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
-                    <p class="tc">{ messages }</p>
-                </div>
-              )}
+                  </Fragment>
+                )}
+                { errors && (
+                  <div class="alert-box relative dark-blue ph5 ma1 br3 ba b--dark-blue">
+                    { admin ? (
+                      <p>There are errors in this customer's subscriptions that will need action.</p>
+                    ) : (
+                      <p class="lh-copy b">
+                        Ooops! There are errors in your subscription. Please contact the <a
+                          class="b link hover-animate underline"
+                          href={ `mailto:${localStorage.getItem("admin_email")}` }>shop administrator</a>
+                      </p>
+                    )}
+                    { date_mismatch && date_mismatch.length > 0 && (
+                      <DTable items={ date_mismatch } title="Date mismatches" show_title={ true } />
+                    )}
+                    { count_mismatch && count_mismatch.length > 0 && (
+                      <DTable items={ count_mismatch } title="Count mismatches" show_title={ true } />
+                    )}
+                      <div class="cf" />
+                    { orphans && orphans.length > 0 && (
+                      <DTable items={ orphans } title="Orphaned items" show_title={ true } />
+                    )}
+                    <div class="cf" />
+                    { price_mismatch && price_mismatch.length > 0 && (
+                      <DTable items={ price_mismatch } title="Price mismatches" show_title={ true } />
+                    )}
+                  </div>
+                )}
+                { messages.length > 0 && (
+                  <div class="alert-box dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+                      <p class="tc">{ messages }</p>
+                  </div>
+                )}
+              </Fragment>
+            )}
+            <div id={ `subscriptions-${shopify_customer_id}` } style="opacity: 0.1">
               { chargeGroups && chargeGroups.length > 0 ? (
                 <Fragment>
                   <h4 class="tc mv4 w-100 navy">
-                    { charge ? `Subscriptions for charge #${charge.id}. Scheduled at ${charge.scheduled_at}` : "Active Subscriptions" }
+                    { charge_id ? `Subscriptions for charge #${charge_id}` : "Active Subscriptions" }
                   </h4>
                   { chargeGroups.map((group, idx) => (
                     <div id={`subscription-${group.attributes.subscription_id}`} class="subscription">
@@ -816,11 +879,11 @@ async function *Customer({ customer, charge, admin }) {
                   </div>
                 )
               )}
-            </Fragment>
-          </div>
+            </div>
+          </Fragment>
         </div>
-      )
-    };
+      </div>
+    )
   };
 };
 

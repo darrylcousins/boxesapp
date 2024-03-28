@@ -1,46 +1,34 @@
 [
   {
-    "_id": "65fb8aca0d2d4358a998fbfe",
-    "timestamp": "2024-03-21T01:18:02.045Z",
+    "_id": "65fd3892718fe032270d9b69",
+    "timestamp": "2024-03-22T07:51:46.322Z",
     "level": "notice",
-    "message": "Boxesapp api reqest subscription paused.",
+    "message": "Subscription paused email sent.",
     "meta": {
       "recharge": {
-        "Add on Items": "",
-        "Delivery Date": "Tue Apr 02 2024",
-        "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
-        "Removed Items": "",
-        "Swapped Items": "",
-        "box_subscription_id": "453939632",
-        "charge_id": 1035636463,
         "customer_id": 84185810,
-        "email": "jon.doe@mail.me",
-        "label": "paused",
-        "new_charge_date": "Sat Apr 06 2024",
-        "new_delivery": "Tue Apr 09 2024",
-        "old_charge_date": "Sat Mar 30 2024",
-        "old_delivery": "Tue Apr 02 2024",
-        "shopify_customer_id": "3895947395222",
+        "charge_id": 1035636389,
         "subscription_id": 453939632,
-        "title": "The Medium Vege Box - Tuesday"
+        "subject": "Subscription Paused The Medium Vege Box - Tuesday",
+        "email": "jon.doe@mail.me",
+        "type": "paused"
       }
     }
   },
   {
-    "_id": "65fb8aca0d2d4358a998fbff",
-    "timestamp": "2024-03-21T01:18:02.058Z",
+    "_id": "65fd388d718fe032270d9b68",
+    "timestamp": "2024-03-22T07:51:41.717Z",
     "level": "notice",
-    "message": "Insert updates_pending entry",
+    "message": "Deleting updates pending entry charge/updated",
     "meta": {
       "recharge": {
-        "customer_id": 84185810,
+        "_id": {},
         "address_id": 151085761,
+        "customer_id": 84185810,
         "subscription_id": 453939632,
         "action": "paused",
         "charge_id": null,
-        "session_id": "rzsx4dr6k",
-        "scheduled_at": "2024-04-06",
-        "deliver_at": "Tue Apr 09 2024",
+        "deliver_at": "Tue Apr 02 2024",
         "rc_subscription_ids": [
           {
             "shopify_product_id": 7517242917014,
@@ -48,95 +36,78 @@
             "quantity": 1,
             "title": "The Medium Vege Box",
             "price": 3500,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": false
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166843162774,
+            "subscription_id": 466816205,
+            "quantity": 1,
+            "title": "Mesclun Mix",
+            "price": 400,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 466816215,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "price": 450,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": true
           }
         ],
-        "title": "The Medium Vege Box",
-        "timestamp": "2024-03-21T01:18:02.051Z"
-      }
-    }
-  },
-  {
-    "_id": "65fb8acaeed202b5ebf27f8d",
-    "timestamp": "2024-03-21T01:18:02.960Z",
-    "level": "notice",
-    "message": "API call to Recharge",
-    "meta": {
-      "recharge": {
-        "path": "subscriptions/453939632",
-        "method": "PUT",
-        "title": "Updating delivery date The Medium Vege Box",
-        "body": {
-          "properties": [
-            {
-              "name": "Delivery Date",
-              "value": "Tue Apr 09 2024"
-            },
-            {
-              "name": "Including",
-              "value": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg"
-            },
-            {
-              "name": "Add on Items",
-              "value": null
-            },
-            {
-              "name": "Swapped Items",
-              "value": null
-            },
-            {
-              "name": "Removed Items",
-              "value": null
-            },
-            {
-              "name": "box_subscription_id",
-              "value": "453939632"
-            }
-          ]
-        },
-        "session_id": "rzsx4dr6k",
-        "status": "200 OK"
-      }
-    }
-  },
-  {
-    "_id": "65fb8acc0d2d4358a998fc00",
-    "timestamp": "2024-03-21T01:18:04.001Z",
-    "level": "notice",
-    "message": "Webhook received subscription/updated.",
-    "meta": {
-      "recharge": {
-        "subscription_id": 453939632,
-        "address_id": 151085761,
-        "customer_id": 84185810,
         "scheduled_at": "2024-03-30",
-        "deliver_at": "Tue Apr 09 2024",
-        "quantity": 1,
-        "title": "The Medium Vege Box",
-        "box_subscription_id": 453939632,
-        "properties": {
-          "Delivery Date": "Tue Apr 09 2024",
-          "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
-          "Add on Items": "",
-          "Swapped Items": "",
-          "Removed Items": "",
-          "box_subscription_id": "453939632"
-        }
+        "session_id": "na5nxaksp",
+        "timestamp": "2024-03-22T07:49:10.713Z",
+        "title": "The Medium Vege Box"
       }
     }
   },
   {
-    "_id": "65fb8ad60d2d4358a998fc01",
-    "timestamp": "2024-03-21T01:18:14.750Z",
+    "_id": "65fd388d718fe032270d9b67",
+    "timestamp": "2024-03-22T07:51:41.702Z",
+    "level": "notice",
+    "message": "Charge updated (paused) for subscription.",
+    "meta": {
+      "recharge": {
+        "Add on Items": "Apple Braeburn 1kg",
+        "Box Subscription": "453939632",
+        "Delivery Date": "Tue Apr 02 2024",
+        "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix (2),Onions Brown 4x,Potato Agria 1kg",
+        "Removed Items": "Carrots 1kg",
+        "Swapped Items": "Cabbage Green",
+        "address_id": 151085761,
+        "box_subscription_ids": [
+          453939632
+        ],
+        "boxes": [
+          "The Medium Vege Box"
+        ],
+        "charge_id": 1040089762,
+        "charge_processed_at": null,
+        "charge_status": "queued",
+        "customer_id": 84185810,
+        "email": "jon.doe@mail.me",
+        "scheduled_at": "2024-03-30",
+        "subscription_id": 453939632,
+        "topic": "charge/updated",
+        "update_label": "paused"
+      }
+    }
+  },
+  {
+    "_id": "65fd388d718fe032270d9b66",
+    "timestamp": "2024-03-22T07:51:41.697Z",
     "level": "notice",
     "message": "Webhook received charge/updated.",
     "meta": {
       "recharge": {
-        "charge_id": 1035636463,
+        "charge_id": 1040089762,
         "address_id": 151085761,
         "customer_id": 84185810,
-        "scheduled_at": "2024-04-06",
+        "scheduled_at": "2024-03-30",
         "status": "queued",
         "deliver_at": "Tue Apr 02 2024",
         "box_titles": [
@@ -154,10 +125,34 @@
             "box_subscription_id": 453939632,
             "properties": {
               "Delivery Date": "Tue Apr 02 2024",
-              "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
-              "Add on Items": "",
-              "Swapped Items": "",
-              "Removed Items": "",
+              "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix (2),Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "Apple Braeburn 1kg",
+              "Swapped Items": "Cabbage Green",
+              "Removed Items": "Carrots 1kg",
+              "box_subscription_id": "453939632"
+            }
+          },
+          {
+            "shopify_product_id": "6166843162774",
+            "subscription_id": 466816205,
+            "quantity": 1,
+            "title": "Mesclun Mix",
+            "box_subscription_id": 453939632,
+            "properties": {
+              "Delivery Date": "Tue Apr 02 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453939632"
+            }
+          },
+          {
+            "shopify_product_id": "6166841393302",
+            "subscription_id": 466816215,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "box_subscription_id": 453939632,
+            "properties": {
+              "Delivery Date": "Tue Apr 02 2024",
+              "Add on product to": "The Medium Vege Box",
               "box_subscription_id": "453939632"
             }
           }
@@ -166,79 +161,91 @@
     }
   },
   {
-    "_id": "65fb8ad70d2d4358a998fc02",
-    "timestamp": "2024-03-21T01:18:15.527Z",
+    "_id": "65fd3820718fe032270d9b65",
+    "timestamp": "2024-03-22T07:49:52.084Z",
     "level": "notice",
     "message": "Webhook received charge/updated.",
     "meta": {
       "recharge": {
-        "charge_id": 1034178180,
+        "charge_id": 1035636389,
         "address_id": 151085761,
         "customer_id": 84185810,
-        "scheduled_at": "2024-03-21",
+        "scheduled_at": "2024-03-23",
         "status": "queued",
-        "deliver_at": "Sun Mar 24 2024",
+        "deliver_at": "Tue Mar 26 2024",
         "box_titles": [
-          "The Small Vege Box",
+          "The Medium Vege Box",
           "The Small Vege Box"
         ],
         "box_subscription_ids": [
-          461615843,
-          461618275
+          453883324,
+          462301399
         ],
         "rc_subscription_ids": [
           {
-            "shopify_product_id": "6163982876822",
-            "subscription_id": 461615843,
+            "shopify_product_id": "7517242917014",
+            "subscription_id": 453883324,
             "quantity": 1,
-            "title": "The Small Vege Box",
-            "box_subscription_id": 461615843,
+            "title": "The Medium Vege Box",
+            "box_subscription_id": 453883324,
             "properties": {
-              "Delivery Date": "Sun Mar 24 2024",
-              "Including": "Beetroot 1kg (2),Chard Red,Curly Kale,Mesclun Mix,Potato Agria 1kg",
-              "Add on Items": "",
-              "Swapped Items": "Carrots 1kg,Daikon Radish ea",
-              "Removed Items": "Coriander Bunch,Onions Brown 4x",
-              "box_subscription_id": "461615843"
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Carrots 1kg,Chard Red,Coriander Bunch (2),Curly Kale,Mesclun Mix,Onions Brown 4x",
+              "Add on Items": "Beetroot 1kg,Cabbage Green",
+              "Swapped Items": "Daikon Radish ea",
+              "Removed Items": "Potato Agria 1kg",
+              "box_subscription_id": "453883324"
             }
           },
           {
             "shopify_product_id": "6163982876822",
-            "subscription_id": 461618275,
+            "subscription_id": 462301399,
             "quantity": 1,
             "title": "The Small Vege Box",
-            "box_subscription_id": 461618275,
+            "box_subscription_id": 462301399,
             "properties": {
-              "Delivery Date": "Sun Mar 24 2024",
-              "Including": "Beetroot 1kg (2),Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Potato Agria 1kg",
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Beetroot 1kg,Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
               "Add on Items": "",
-              "Swapped Items": "Carrots 1kg",
-              "Removed Items": "Onions Brown 4x",
-              "box_subscription_id": "461618275"
+              "Swapped Items": "",
+              "Removed Items": "",
+              "box_subscription_id": "462301399"
+            }
+          },
+          {
+            "shopify_product_id": "6166842736790",
+            "subscription_id": 464692714,
+            "quantity": 1,
+            "title": "Coriander Bunch",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
             }
           },
           {
             "shopify_product_id": "6621185769622",
-            "subscription_id": 464306100,
+            "subscription_id": 464692718,
             "quantity": 1,
             "title": "Beetroot 1kg",
-            "box_subscription_id": 461618275,
+            "box_subscription_id": 453883324,
             "properties": {
-              "Delivery Date": "Sun Mar 24 2024",
-              "Add on product to": "The Small Vege Box",
-              "box_subscription_id": "461618275"
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
             }
           },
           {
-            "shopify_product_id": "6621185769622",
-            "subscription_id": 464325417,
+            "shopify_product_id": "6166842245270",
+            "subscription_id": 464692722,
             "quantity": 1,
-            "title": "Beetroot 1kg",
-            "box_subscription_id": 461615843,
+            "title": "Cabbage Green",
+            "box_subscription_id": 453883324,
             "properties": {
-              "Delivery Date": "Sun Mar 24 2024",
-              "Add on product to": "The Small Vege Box",
-              "box_subscription_id": "461615843"
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
             }
           }
         ]
@@ -246,8 +253,912 @@
     }
   },
   {
-    "_id": "65fb8ad80d2d4358a998fc03",
-    "timestamp": "2024-03-21T01:18:16.028Z",
+    "_id": "65fd3819718fe032270d9b64",
+    "timestamp": "2024-03-22T07:49:45.124Z",
+    "level": "notice",
+    "message": "Webhook received charge/updated.",
+    "meta": {
+      "recharge": {
+        "charge_id": 1035636389,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-23",
+        "status": "queued",
+        "deliver_at": "Tue Mar 26 2024",
+        "box_titles": [
+          "The Medium Vege Box",
+          "The Small Vege Box"
+        ],
+        "box_subscription_ids": [
+          453883324,
+          462301399
+        ],
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": "7517242917014",
+            "subscription_id": 453883324,
+            "quantity": 1,
+            "title": "The Medium Vege Box",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Carrots 1kg,Chard Red,Coriander Bunch (2),Curly Kale,Mesclun Mix,Onions Brown 4x",
+              "Add on Items": "Beetroot 1kg,Cabbage Green",
+              "Swapped Items": "Daikon Radish ea",
+              "Removed Items": "Potato Agria 1kg",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 462301399,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 462301399,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Beetroot 1kg,Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "",
+              "Swapped Items": "",
+              "Removed Items": "",
+              "box_subscription_id": "462301399"
+            }
+          },
+          {
+            "shopify_product_id": "6166842736790",
+            "subscription_id": 464692714,
+            "quantity": 1,
+            "title": "Coriander Bunch",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6621185769622",
+            "subscription_id": 464692718,
+            "quantity": 1,
+            "title": "Beetroot 1kg",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6166842245270",
+            "subscription_id": 464692722,
+            "quantity": 1,
+            "title": "Cabbage Green",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": "65fd3818718fe032270d9b63",
+    "timestamp": "2024-03-22T07:49:44.877Z",
+    "level": "notice",
+    "message": "Webhook received charge/updated.",
+    "meta": {
+      "recharge": {
+        "charge_id": 1035636389,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-23",
+        "status": "queued",
+        "deliver_at": "Tue Mar 26 2024",
+        "box_titles": [
+          "The Medium Vege Box",
+          "The Small Vege Box"
+        ],
+        "box_subscription_ids": [
+          453883324,
+          462301399
+        ],
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": "7517242917014",
+            "subscription_id": 453883324,
+            "quantity": 1,
+            "title": "The Medium Vege Box",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Carrots 1kg,Chard Red,Coriander Bunch (2),Curly Kale,Mesclun Mix,Onions Brown 4x",
+              "Add on Items": "Beetroot 1kg,Cabbage Green",
+              "Swapped Items": "Daikon Radish ea",
+              "Removed Items": "Potato Agria 1kg",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 462301399,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 462301399,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Beetroot 1kg,Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "",
+              "Swapped Items": "",
+              "Removed Items": "",
+              "box_subscription_id": "462301399"
+            }
+          },
+          {
+            "shopify_product_id": "6166842736790",
+            "subscription_id": 464692714,
+            "quantity": 1,
+            "title": "Coriander Bunch",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6621185769622",
+            "subscription_id": 464692718,
+            "quantity": 1,
+            "title": "Beetroot 1kg",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6166842245270",
+            "subscription_id": 464692722,
+            "quantity": 1,
+            "title": "Cabbage Green",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": "65fd380e718fe032270d9b62",
+    "timestamp": "2024-03-22T07:49:34.596Z",
+    "level": "notice",
+    "message": "Webhook received charge/updated.",
+    "meta": {
+      "recharge": {
+        "charge_id": 1035636389,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-23",
+        "status": "queued",
+        "deliver_at": "Tue Mar 26 2024",
+        "box_titles": [
+          "The Medium Vege Box",
+          "The Small Vege Box"
+        ],
+        "box_subscription_ids": [
+          453883324,
+          462301399
+        ],
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": "7517242917014",
+            "subscription_id": 453883324,
+            "quantity": 1,
+            "title": "The Medium Vege Box",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Carrots 1kg,Chard Red,Coriander Bunch (2),Curly Kale,Mesclun Mix,Onions Brown 4x",
+              "Add on Items": "Beetroot 1kg,Cabbage Green",
+              "Swapped Items": "Daikon Radish ea",
+              "Removed Items": "Potato Agria 1kg",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 462301399,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 462301399,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Beetroot 1kg,Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "",
+              "Swapped Items": "",
+              "Removed Items": "",
+              "box_subscription_id": "462301399"
+            }
+          },
+          {
+            "shopify_product_id": "6166842736790",
+            "subscription_id": 464692714,
+            "quantity": 1,
+            "title": "Coriander Bunch",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6621185769622",
+            "subscription_id": 464692718,
+            "quantity": 1,
+            "title": "Beetroot 1kg",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6166842245270",
+            "subscription_id": 464692722,
+            "quantity": 1,
+            "title": "Cabbage Green",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": "65fd380a718fe032270d9b61",
+    "timestamp": "2024-03-22T07:49:30.076Z",
+    "level": "notice",
+    "message": "Updated Apple Braeburn 1kg - updated pending entry",
+    "meta": {
+      "recharge": {
+        "_id": {},
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "subscription_id": 453939632,
+        "action": "paused",
+        "charge_id": null,
+        "deliver_at": "Tue Apr 02 2024",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 7517242917014,
+            "subscription_id": 453939632,
+            "quantity": 1,
+            "title": "The Medium Vege Box",
+            "price": 3500,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166843162774,
+            "subscription_id": 466816205,
+            "quantity": 1,
+            "title": "Mesclun Mix",
+            "price": 400,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 466816215,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "price": 450,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": true
+          }
+        ],
+        "scheduled_at": "2024-03-30",
+        "session_id": "na5nxaksp",
+        "timestamp": "2024-03-22T07:49:10.713Z",
+        "title": "The Medium Vege Box"
+      }
+    }
+  },
+  {
+    "_id": "65fd380a718fe032270d9b60",
+    "timestamp": "2024-03-22T07:49:30.067Z",
+    "level": "notice",
+    "message": "Webhook received subscription/updated.",
+    "meta": {
+      "recharge": {
+        "subscription_id": 466816215,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-30",
+        "deliver_at": "Tue Apr 02 2024",
+        "quantity": 1,
+        "title": "Apple Braeburn 1kg",
+        "box_subscription_id": 453939632,
+        "properties": {
+          "Delivery Date": "Tue Apr 02 2024",
+          "Add on product to": "The Medium Vege Box",
+          "box_subscription_id": "453939632"
+        }
+      }
+    }
+  },
+  {
+    "_id": "65fd3808718fe032270d9b5f",
+    "timestamp": "2024-03-22T07:49:28.961Z",
+    "level": "notice",
+    "message": "Webhook received charge/updated.",
+    "meta": {
+      "recharge": {
+        "charge_id": 1035636389,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-23",
+        "status": "queued",
+        "deliver_at": "Tue Mar 26 2024",
+        "box_titles": [
+          "The Medium Vege Box",
+          "The Small Vege Box"
+        ],
+        "box_subscription_ids": [
+          453883324,
+          462301399
+        ],
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": "7517242917014",
+            "subscription_id": 453883324,
+            "quantity": 1,
+            "title": "The Medium Vege Box",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Carrots 1kg,Chard Red,Coriander Bunch (2),Curly Kale,Mesclun Mix,Onions Brown 4x",
+              "Add on Items": "Beetroot 1kg,Cabbage Green",
+              "Swapped Items": "Daikon Radish ea",
+              "Removed Items": "Potato Agria 1kg",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 462301399,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 462301399,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Beetroot 1kg,Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "",
+              "Swapped Items": "",
+              "Removed Items": "",
+              "box_subscription_id": "462301399"
+            }
+          },
+          {
+            "shopify_product_id": "6166842736790",
+            "subscription_id": 464692714,
+            "quantity": 1,
+            "title": "Coriander Bunch",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6621185769622",
+            "subscription_id": 464692718,
+            "quantity": 1,
+            "title": "Beetroot 1kg",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6166842245270",
+            "subscription_id": 464692722,
+            "quantity": 1,
+            "title": "Cabbage Green",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": "65fd3808718fe032270d9b5e",
+    "timestamp": "2024-03-22T07:49:28.506Z",
+    "level": "notice",
+    "message": "Charge updated, pending updates",
+    "meta": {
+      "recharge": {
+        "topic": "charge/updated",
+        "box": [],
+        "box_subscription_id": [],
+        "charge_id": 1035636389,
+        "customer_id": 84185810,
+        "email": "jon.doe@mail.me",
+        "address_id": 151085761,
+        "charge_status": "queued",
+        "charge_processed_at": null,
+        "scheduled_at": "2024-03-23",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 466816215,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg"
+          }
+        ],
+        "pending_subscription_ids": [
+          {
+            "shopify_product_id": 7517242917014,
+            "subscription_id": 453939632,
+            "quantity": 1,
+            "title": "The Medium Vege Box",
+            "price": 3500,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166843162774,
+            "subscription_id": 466816205,
+            "quantity": 1,
+            "title": "Mesclun Mix",
+            "price": 400,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 466816215,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "price": 450,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": false
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": "65fd3808718fe032270d9b5d",
+    "timestamp": "2024-03-22T07:49:28.486Z",
+    "level": "notice",
+    "message": "Webhook received charge/updated.",
+    "meta": {
+      "recharge": {
+        "charge_id": 1035636389,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-23",
+        "status": "queued",
+        "deliver_at": "Tue Mar 26 2024",
+        "box_titles": [
+          "The Medium Vege Box",
+          "The Small Vege Box"
+        ],
+        "box_subscription_ids": [
+          453883324,
+          462301399
+        ],
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": "7517242917014",
+            "subscription_id": 453883324,
+            "quantity": 1,
+            "title": "The Medium Vege Box",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Carrots 1kg,Chard Red,Coriander Bunch (2),Curly Kale,Mesclun Mix,Onions Brown 4x",
+              "Add on Items": "Beetroot 1kg,Cabbage Green",
+              "Swapped Items": "Daikon Radish ea",
+              "Removed Items": "Potato Agria 1kg",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 462301399,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 462301399,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Beetroot 1kg,Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "",
+              "Swapped Items": "",
+              "Removed Items": "",
+              "box_subscription_id": "462301399"
+            }
+          },
+          {
+            "shopify_product_id": "6166842736790",
+            "subscription_id": 464692714,
+            "quantity": 1,
+            "title": "Coriander Bunch",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6621185769622",
+            "subscription_id": 464692718,
+            "quantity": 1,
+            "title": "Beetroot 1kg",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6166842245270",
+            "subscription_id": 464692722,
+            "quantity": 1,
+            "title": "Cabbage Green",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6166841393302",
+            "subscription_id": 466816215,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "box_subscription_id": 453939632,
+            "properties": {
+              "Delivery Date": "Tue Apr 02 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453939632"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": "65fd3807718fe032270d9b5c",
+    "timestamp": "2024-03-22T07:49:27.928Z",
+    "level": "notice",
+    "message": "Updated Mesclun Mix - updated pending entry",
+    "meta": {
+      "recharge": {
+        "_id": {},
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "subscription_id": 453939632,
+        "action": "paused",
+        "charge_id": null,
+        "deliver_at": "Tue Apr 02 2024",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 7517242917014,
+            "subscription_id": 453939632,
+            "quantity": 1,
+            "title": "The Medium Vege Box",
+            "price": 3500,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166843162774,
+            "subscription_id": 466816205,
+            "quantity": 1,
+            "title": "Mesclun Mix",
+            "price": 400,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 466816215,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "price": 450,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": false
+          }
+        ],
+        "scheduled_at": "2024-03-30",
+        "session_id": "na5nxaksp",
+        "timestamp": "2024-03-22T07:49:10.713Z",
+        "title": "The Medium Vege Box"
+      }
+    }
+  },
+  {
+    "_id": "65fd3807718fe032270d9b5b",
+    "timestamp": "2024-03-22T07:49:27.905Z",
+    "level": "notice",
+    "message": "Webhook received subscription/updated.",
+    "meta": {
+      "recharge": {
+        "subscription_id": 466816205,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-30",
+        "deliver_at": "Tue Apr 02 2024",
+        "quantity": 1,
+        "title": "Mesclun Mix",
+        "box_subscription_id": 453939632,
+        "properties": {
+          "Delivery Date": "Tue Apr 02 2024",
+          "Add on product to": "The Medium Vege Box",
+          "box_subscription_id": "453939632"
+        }
+      }
+    }
+  },
+  {
+    "_id": "65fd3807718fe032270d9b5a",
+    "timestamp": "2024-03-22T07:49:27.672Z",
+    "level": "notice",
+    "message": "Charge updated, pending updates",
+    "meta": {
+      "recharge": {
+        "topic": "charge/updated",
+        "box": [],
+        "box_subscription_id": [],
+        "charge_id": 1035636389,
+        "customer_id": 84185810,
+        "email": "jon.doe@mail.me",
+        "address_id": 151085761,
+        "charge_status": "queued",
+        "charge_processed_at": null,
+        "scheduled_at": "2024-03-23",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 6166843162774,
+            "subscription_id": 466816205,
+            "quantity": 1,
+            "title": "Mesclun Mix"
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 466816215,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg"
+          }
+        ],
+        "pending_subscription_ids": [
+          {
+            "shopify_product_id": 7517242917014,
+            "subscription_id": 453939632,
+            "quantity": 1,
+            "title": "The Medium Vege Box",
+            "price": 3500,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166843162774,
+            "subscription_id": 466816205,
+            "quantity": 1,
+            "title": "Mesclun Mix",
+            "price": 400,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 466816215,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "price": 450,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": false
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": "65fd3807718fe032270d9b59",
+    "timestamp": "2024-03-22T07:49:27.654Z",
+    "level": "notice",
+    "message": "Webhook received charge/updated.",
+    "meta": {
+      "recharge": {
+        "charge_id": 1035636389,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-23",
+        "status": "queued",
+        "deliver_at": "Tue Mar 26 2024",
+        "box_titles": [
+          "The Medium Vege Box",
+          "The Small Vege Box"
+        ],
+        "box_subscription_ids": [
+          453883324,
+          462301399
+        ],
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": "7517242917014",
+            "subscription_id": 453883324,
+            "quantity": 1,
+            "title": "The Medium Vege Box",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Carrots 1kg,Chard Red,Coriander Bunch (2),Curly Kale,Mesclun Mix,Onions Brown 4x",
+              "Add on Items": "Beetroot 1kg,Cabbage Green",
+              "Swapped Items": "Daikon Radish ea",
+              "Removed Items": "Potato Agria 1kg",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 462301399,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 462301399,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Including": "Beetroot 1kg,Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "",
+              "Swapped Items": "",
+              "Removed Items": "",
+              "box_subscription_id": "462301399"
+            }
+          },
+          {
+            "shopify_product_id": "6166842736790",
+            "subscription_id": 464692714,
+            "quantity": 1,
+            "title": "Coriander Bunch",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6621185769622",
+            "subscription_id": 464692718,
+            "quantity": 1,
+            "title": "Beetroot 1kg",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6166842245270",
+            "subscription_id": 464692722,
+            "quantity": 1,
+            "title": "Cabbage Green",
+            "box_subscription_id": 453883324,
+            "properties": {
+              "Delivery Date": "Tue Mar 26 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453883324"
+            }
+          },
+          {
+            "shopify_product_id": "6166843162774",
+            "subscription_id": 466816205,
+            "quantity": 1,
+            "title": "Mesclun Mix",
+            "box_subscription_id": 453939632,
+            "properties": {
+              "Delivery Date": "Tue Apr 02 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453939632"
+            }
+          },
+          {
+            "shopify_product_id": "6166841393302",
+            "subscription_id": 466816215,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "box_subscription_id": 453939632,
+            "properties": {
+              "Delivery Date": "Tue Apr 02 2024",
+              "Add on product to": "The Medium Vege Box",
+              "box_subscription_id": "453939632"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": "65fd3806718fe032270d9b58",
+    "timestamp": "2024-03-22T07:49:26.919Z",
+    "level": "notice",
+    "message": "Updated The Medium Vege Box - updated pending entry",
+    "meta": {
+      "recharge": {
+        "_id": {},
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "subscription_id": 453939632,
+        "action": "paused",
+        "charge_id": null,
+        "deliver_at": "Tue Apr 02 2024",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 7517242917014,
+            "subscription_id": 453939632,
+            "quantity": 1,
+            "title": "The Medium Vege Box",
+            "price": 3500,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166843162774,
+            "subscription_id": 466816205,
+            "quantity": 1,
+            "title": "Mesclun Mix",
+            "price": 400,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 466816215,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "price": 450,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": false
+          }
+        ],
+        "scheduled_at": "2024-03-30",
+        "session_id": "na5nxaksp",
+        "timestamp": "2024-03-22T07:49:10.713Z",
+        "title": "The Medium Vege Box"
+      }
+    }
+  },
+  {
+    "_id": "65fd3806718fe032270d9b57",
+    "timestamp": "2024-03-22T07:49:26.905Z",
     "level": "notice",
     "message": "Webhook received subscription/updated.",
     "meta": {
@@ -255,35 +1166,35 @@
         "subscription_id": 453939632,
         "address_id": 151085761,
         "customer_id": 84185810,
-        "scheduled_at": "2024-04-06",
-        "deliver_at": "Tue Apr 09 2024",
+        "scheduled_at": "2024-03-30",
+        "deliver_at": "Tue Apr 02 2024",
         "quantity": 1,
         "title": "The Medium Vege Box",
         "box_subscription_id": 453939632,
         "properties": {
-          "Delivery Date": "Tue Apr 09 2024",
-          "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
-          "Add on Items": "",
-          "Swapped Items": "",
-          "Removed Items": "",
+          "Delivery Date": "Tue Apr 02 2024",
+          "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix (2),Onions Brown 4x,Potato Agria 1kg",
+          "Add on Items": "Apple Braeburn 1kg",
+          "Swapped Items": "Cabbage Green",
+          "Removed Items": "Carrots 1kg",
           "box_subscription_id": "453939632"
         }
       }
     }
   },
   {
-    "_id": "65fb8af80d2d4358a998fc04",
-    "timestamp": "2024-03-21T01:18:48.699Z",
+    "_id": "65fd3805718fe032270d9b56",
+    "timestamp": "2024-03-22T07:49:25.803Z",
     "level": "notice",
-    "message": "Webhook received charge/updated.",
+    "message": "Webhook received charge/created.",
     "meta": {
       "recharge": {
-        "charge_id": 1035636463,
+        "charge_id": 1040089762,
         "address_id": 151085761,
         "customer_id": 84185810,
-        "scheduled_at": "2024-04-06",
+        "scheduled_at": "2024-03-30",
         "status": "queued",
-        "deliver_at": "Tue Apr 09 2024",
+        "deliver_at": "Tue Apr 02 2024",
         "box_titles": [
           "The Medium Vege Box"
         ],
@@ -298,11 +1209,11 @@
             "title": "The Medium Vege Box",
             "box_subscription_id": 453939632,
             "properties": {
-              "Delivery Date": "Tue Apr 09 2024",
-              "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
-              "Add on Items": "",
-              "Swapped Items": "",
-              "Removed Items": "",
+              "Delivery Date": "Tue Apr 02 2024",
+              "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix (2),Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "Apple Braeburn 1kg",
+              "Swapped Items": "Cabbage Green",
+              "Removed Items": "Carrots 1kg",
               "box_subscription_id": "453939632"
             }
           }
@@ -311,51 +1222,197 @@
     }
   },
   {
-    "_id": "65fb8af80d2d4358a998fc05",
-    "timestamp": "2024-03-21T01:18:48.705Z",
+    "_id": "65fd37fa718fe032270d9b55",
+    "timestamp": "2024-03-22T07:49:14.165Z",
     "level": "notice",
-    "message": "Charge updated (paused) for subscription.",
+    "message": "Webhook received subscription/updated.",
     "meta": {
       "recharge": {
-        "Add on Items": "",
-        "Box Subscription": "453939632",
-        "Delivery Date": "Tue Apr 09 2024",
-        "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
-        "Removed Items": "",
-        "Swapped Items": "",
+        "subscription_id": 466816215,
         "address_id": 151085761,
-        "box_subscription_ids": [
-          453939632
-        ],
-        "boxes": [
-          "The Medium Vege Box"
-        ],
-        "charge_id": 1035636463,
-        "charge_processed_at": null,
-        "charge_status": "queued",
         "customer_id": 84185810,
-        "email": "jon.doe@mail.me",
-        "scheduled_at": "2024-04-06",
-        "subscription_id": 453939632,
-        "topic": "charge/updated",
-        "update_label": "paused"
+        "scheduled_at": "2024-03-23",
+        "deliver_at": "Tue Apr 02 2024",
+        "quantity": 1,
+        "title": "Apple Braeburn 1kg",
+        "box_subscription_id": 453939632,
+        "properties": {
+          "Delivery Date": "Tue Apr 02 2024",
+          "Add on product to": "The Medium Vege Box",
+          "box_subscription_id": "453939632"
+        }
       }
     }
   },
   {
-    "_id": "65fb8af80d2d4358a998fc06",
-    "timestamp": "2024-03-21T01:18:48.729Z",
+    "_id": "65fd37f9718fe032270d9b54",
+    "timestamp": "2024-03-22T07:49:13.949Z",
     "level": "notice",
-    "message": "Deleting updates_pending entry charge/updated",
+    "message": "Webhook received subscription/updated.",
     "meta": {
       "recharge": {
-        "_id": {},
+        "subscription_id": 453939632,
         "address_id": 151085761,
         "customer_id": 84185810,
+        "scheduled_at": "2024-03-23",
+        "deliver_at": "Tue Apr 02 2024",
+        "quantity": 1,
+        "title": "The Medium Vege Box",
+        "box_subscription_id": 453939632,
+        "properties": {
+          "Delivery Date": "Tue Apr 02 2024",
+          "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix (2),Onions Brown 4x,Potato Agria 1kg",
+          "Add on Items": "Apple Braeburn 1kg",
+          "Swapped Items": "Cabbage Green",
+          "Removed Items": "Carrots 1kg",
+          "box_subscription_id": "453939632"
+        }
+      }
+    }
+  },
+  {
+    "_id": "65fd37f9718fe032270d9b53",
+    "timestamp": "2024-03-22T07:49:13.548Z",
+    "level": "notice",
+    "message": "Webhook received subscription/updated.",
+    "meta": {
+      "recharge": {
+        "subscription_id": 466816205,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-03-23",
+        "deliver_at": "Tue Apr 02 2024",
+        "quantity": 1,
+        "title": "Mesclun Mix",
+        "box_subscription_id": 453939632,
+        "properties": {
+          "Delivery Date": "Tue Apr 02 2024",
+          "Add on product to": "The Medium Vege Box",
+          "box_subscription_id": "453939632"
+        }
+      }
+    }
+  },
+  {
+    "_id": "65fd37f9eed202b5ebf28109",
+    "timestamp": "2024-03-22T07:49:13.390Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions/466816215",
+        "method": "PUT",
+        "title": "Updating delivery date Apple Braeburn 1kg",
+        "body": {
+          "properties": [
+            {
+              "name": "Delivery Date",
+              "value": "Tue Apr 02 2024"
+            },
+            {
+              "name": "Add on product to",
+              "value": "The Medium Vege Box"
+            },
+            {
+              "name": "box_subscription_id",
+              "value": "453939632"
+            }
+          ]
+        },
+        "session_id": "na5nxaksp",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "65fd37f8eed202b5ebf28108",
+    "timestamp": "2024-03-22T07:49:12.822Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions/466816205",
+        "method": "PUT",
+        "title": "Updating delivery date Mesclun Mix",
+        "body": {
+          "properties": [
+            {
+              "name": "Delivery Date",
+              "value": "Tue Apr 02 2024"
+            },
+            {
+              "name": "Add on product to",
+              "value": "The Medium Vege Box"
+            },
+            {
+              "name": "box_subscription_id",
+              "value": "453939632"
+            }
+          ]
+        },
+        "session_id": "na5nxaksp",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "65fd37f8eed202b5ebf28107",
+    "timestamp": "2024-03-22T07:49:12.271Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions/453939632",
+        "method": "PUT",
+        "title": "Updating delivery date The Medium Vege Box",
+        "body": {
+          "properties": [
+            {
+              "name": "Delivery Date",
+              "value": "Tue Apr 02 2024"
+            },
+            {
+              "name": "Including",
+              "value": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix (2),Onions Brown 4x,Potato Agria 1kg"
+            },
+            {
+              "name": "Add on Items",
+              "value": "Apple Braeburn 1kg"
+            },
+            {
+              "name": "Swapped Items",
+              "value": "Cabbage Green"
+            },
+            {
+              "name": "Removed Items",
+              "value": "Carrots 1kg"
+            },
+            {
+              "name": "box_subscription_id",
+              "value": "453939632"
+            }
+          ]
+        },
+        "session_id": "na5nxaksp",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "65fd37f6718fe032270d9b52",
+    "timestamp": "2024-03-22T07:49:10.718Z",
+    "level": "notice",
+    "message": "Insert updates_pending entry",
+    "meta": {
+      "recharge": {
+        "customer_id": 84185810,
+        "address_id": 151085761,
         "subscription_id": 453939632,
         "action": "paused",
         "charge_id": null,
-        "deliver_at": "Tue Apr 09 2024",
+        "session_id": "na5nxaksp",
+        "scheduled_at": "2024-03-30",
+        "deliver_at": "Tue Apr 02 2024",
         "rc_subscription_ids": [
           {
             "shopify_product_id": 7517242917014,
@@ -363,30 +1420,57 @@
             "quantity": 1,
             "title": "The Medium Vege Box",
             "price": 3500,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": true
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6166843162774,
+            "subscription_id": 466816205,
+            "quantity": 1,
+            "title": "Mesclun Mix",
+            "price": 400,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 466816215,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "price": 450,
+            "delivery_at": "Tue Mar 26 2024",
+            "updated": false
           }
         ],
-        "scheduled_at": "2024-04-06",
-        "session_id": "rzsx4dr6k",
-        "timestamp": "2024-03-21T01:18:02.051Z",
-        "title": "The Medium Vege Box"
+        "title": "The Medium Vege Box",
+        "timestamp": "2024-03-22T07:49:10.713Z"
       }
     }
   },
   {
-    "_id": "65fb8afc0d2d4358a998fc08",
-    "timestamp": "2024-03-21T01:18:52.870Z",
+    "_id": "65fd37f6718fe032270d9b51",
+    "timestamp": "2024-03-22T07:49:10.704Z",
     "level": "notice",
-    "message": "Subscription paused email sent.",
+    "message": "Boxesapp api reqest subscription paused.",
     "meta": {
       "recharge": {
+        "Add on Items": "Apple Braeburn 1kg",
+        "Delivery Date": "Tue Mar 26 2024",
+        "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix (2),Onions Brown 4x,Potato Agria 1kg",
+        "Removed Items": "Carrots 1kg",
+        "Swapped Items": "Cabbage Green",
+        "box_subscription_id": "453939632",
+        "charge_id": 1035636389,
         "customer_id": 84185810,
-        "charge_id": 1035636463,
-        "subscription_id": 453939632,
-        "subject": "Subscription Paused The Medium Vege Box - Tuesday",
         "email": "jon.doe@mail.me",
-        "type": "paused"
+        "label": "paused",
+        "new_charge_date": "Sat Mar 30 2024",
+        "new_delivery": "Tue Apr 02 2024",
+        "old_charge_date": "Sat Mar 23 2024",
+        "old_delivery": "Tue Mar 26 2024",
+        "shopify_customer_id": "3895947395222",
+        "subscription_id": 453939632,
+        "title": "The Medium Vege Box - Tuesday"
       }
     }
   }

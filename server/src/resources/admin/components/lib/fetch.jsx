@@ -22,7 +22,7 @@ import { hasOwnProp } from "../helpers";
  */
 const Fetch = async (src) => {
   const proxy = localStorage.getItem("proxy-path");
-  //console.log("Fetching", `${proxy}${src}`);
+  console.log("GET", `${proxy}${src}`);
   let error = null;
   //console.log(src);
   return fetch(`${proxy}${src}`)
@@ -99,7 +99,7 @@ const PostFetch = async ({ src, data, headers }) => {
     method: "POST",
     body: formdata,
   };
-  //console.log(src);
+  console.log("POST", src);
 
   // add headers if set in arguments - i.e. using none if sending files
   if (headers) opts.headers = headers;

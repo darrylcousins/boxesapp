@@ -1,6 +1,8 @@
 # Thoughts
 
-### This should new be archived given the updates made in [early 2024](changelog-early-2024).
+> This should now be archived and a new 'thoughts' document written after the
+> updates made in [early 2024](changelog-early-2024) makes much of this
+> obselete because many of the 'thoughts' have new been completed.
 
 ## Preamble
 

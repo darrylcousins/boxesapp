@@ -76,13 +76,17 @@ export default async (req, res, next) => {
       email: data.customer.email,
       box: `${data.product_title} - ${data.variant_title}`,
       scheduled_at: data.scheduled_at,
-      delivered: data.deliver_date,
+      delivered: data.delivery_date,
       plan: data.plan.name,
     }
   };
   let errMessage;
   try {
     try {
+
+      meta.recharge = sortObjectByKeys(meta.recharge);
+      _logger.notice(`Boxesapp api request subscription ${type}.`, { meta });
+
       // use a passed flag if the customer has no active subscriptions
       const query = [
         ["customer_id", data.customer.id ],
@@ -92,8 +96,6 @@ export default async (req, res, next) => {
           ["is_active", true ],
         );
       };
-      console.log(data.customer);
-      console.log(query);
       const { addresses } = await makeRechargeQuery({
         path: `addresses`,
         query,
@@ -170,11 +172,6 @@ export default async (req, res, next) => {
     };
 
     io.emit("message", "Awaiting creation of the new charge");
-
-    meta.recharge.subscription_id = subscription.id;
-    meta.recharge.address_id = address_id;
-    meta.recharge = sortObjectByKeys(meta.recharge);
-    _logger.notice(`Boxesapp api request subscription ${type}.`, { meta });
 
     const mailOpts = {
       type,

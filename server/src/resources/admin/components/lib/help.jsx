@@ -25,7 +25,7 @@ const Help = ({ id, size, title}) => {
   let styleSize = size === "small" ? "1.25em" : "1.35em";
   return (
     <div style="font-weight: 400">
-      <div class="dib pointer pa1 pt2 tr" style="overflow: visible;"
+      <div class="dib pointer ph4 pb0 pt2 tr" style="overflow: visible;"
         title={ title ? title : "Info" }
         onmouseover={ showHelp }
         onmouseout={ hideHelp }>

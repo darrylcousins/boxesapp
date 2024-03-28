@@ -1,327 +1,264 @@
 [
   {
-    "_id": "65fbdec0c4e6fa0edaaea792",
-    "timestamp": "2024-03-21T07:16:16.902Z",
+    "_id": "65fd16cca3092b4bcf9d8fab",
+    "timestamp": "2024-03-22T05:27:40.738Z",
     "level": "notice",
-    "message": "Boxesapp api request subscription reconciled.",
+    "message": "Subscription reconciled email sent.",
     "meta": {
       "recharge": {
-        "Add on Items": "Curly Kale",
-        "Delivery Date": "Tue Apr 02 2024",
-        "Including": "Beetroot 1kg (2),Cabbage Green,Carrots 1kg,Cavolo Nero Shoots,Chard Red,Daikon Radish ea,Onions Brown 4x,Pak Choi (2),Silverbeet",
+        "customer_id": 84185810,
+        "charge_id": 1036937721,
+        "subscription_id": 459859712,
+        "subject": "Subscription Reconciled The Small Vege Box - Thursday",
+        "email": "jon.doe@mail.me",
+        "type": "reconciled"
+      }
+    }
+  },
+  {
+    "_id": "65fd16caa3092b4bcf9d8faa",
+    "timestamp": "2024-03-22T05:27:38.676Z",
+    "level": "notice",
+    "message": "Deleting updates pending entry charge/updated",
+    "meta": {
+      "recharge": {
+        "_id": {},
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "subscription_id": 459859712,
+        "action": "reconciled",
+        "charge_id": 1036937721,
+        "deliver_at": "Thu Mar 28 2024",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 6163982876822,
+            "subscription_id": 459859712,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "price": 2500,
+            "delivery_at": "Thu Mar 28 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166842245270,
+            "subscription_id": 460824562,
+            "quantity": 0,
+            "title": "Cabbage Green",
+            "price": 450,
+            "delivery_at": "Thu Mar 28 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166841852054,
+            "subscription_id": 460824585,
+            "quantity": 1,
+            "title": "Bellbird Ciabatta",
+            "price": 750,
+            "delivery_at": "Thu Mar 28 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6621185933462,
+            "subscription_id": 460824607,
+            "quantity": 1,
+            "title": "Carrots 1kg",
+            "price": 500,
+            "delivery_at": "Thu Mar 28 2024",
+            "updated": true
+          }
+        ],
+        "scheduled_at": "2024-03-25",
+        "session_id": "71n4rbsn3",
+        "timestamp": "2024-03-22T05:26:54.593Z",
+        "title": "The Small Vege Box"
+      }
+    }
+  },
+  {
+    "_id": "65fd16caa3092b4bcf9d8fa9",
+    "timestamp": "2024-03-22T05:27:38.666Z",
+    "level": "notice",
+    "message": "Charge updated (reconciled) for subscription.",
+    "meta": {
+      "recharge": {
+        "Add on Items": "Bellbird Ciabatta",
+        "Box Subscription": "459859712",
+        "Delivery Date": "Thu Mar 28 2024",
+        "Including": "Cabbage Green,Carrots 1kg (2),Chard Red,Coriander Bunch,Curly Kale,Onions Brown 4x,Potato Agria 1kg",
         "Removed Items": "",
         "Swapped Items": "",
         "address_id": 151085761,
-        "box_subscription_id": "453939632",
-        "change_messages": [
-          "The included items have been changed this week",
-          "Included extra item Curly Kale included as an addon for this box.",
-          "Extra swapped item Pak Choi included as an extra include for this box.",
-          "Add on item Cabbage Green already included so removed as an add on.",
-          "Add on item Beetroot 1kg included as an extra for this box.",
-          "Removed item Mesclun Mix not included in the box.",
-          "New available this week: Bellbird Waitaha Sourdough, Mushrooms (spray free), Yams 500g",
-          "New available this week: Bellbird Waitaha Sourdough, Mushrooms (spray free), Yams 500g"
+        "box_subscription_ids": [
+          459859712
         ],
-        "charge_id": 1039356318,
+        "boxes": [
+          "The Small Vege Box"
+        ],
+        "charge_id": 1036937721,
+        "charge_processed_at": null,
+        "charge_status": "queued",
         "customer_id": 84185810,
         "email": "jon.doe@mail.me",
-        "label": "reconciled",
-        "next_charge_date": "Sat Mar 30 2024",
-        "next_delivery": "Tue Apr 02 2024",
-        "rc_subscription_ids": [
-          {
-            "shopify_product_id": 7517242917014,
-            "subscription_id": 453939632,
-            "quantity": 1,
-            "title": "The Medium Vege Box",
-            "price": 3500,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": false
-          },
-          {
-            "shopify_product_id": 6621185769622,
-            "subscription_id": 466799776,
-            "quantity": 1,
-            "title": "Beetroot 1kg",
-            "price": 500,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": false
-          },
-          {
-            "shopify_product_id": 6166842245270,
-            "subscription_id": 466799782,
-            "quantity": 0,
-            "title": "Cabbage Green",
-            "price": 450,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": false
-          },
-          {
-            "shopify_product_id": 6166842867862,
-            "subscription_id": 466799783,
-            "quantity": 1,
-            "title": "Curly Kale",
-            "price": 400,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": true
-          },
-          {
-            "shopify_product_id": 6166843523222,
-            "subscription_id": 466799810,
-            "quantity": 1,
-            "title": "Pak Choi",
-            "price": 400,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": false
-          }
-        ],
-        "scheduled_at": "2024-03-30",
-        "subscription_id": 453939632,
-        "title": "The Medium Vege Box - Tuesday"
+        "scheduled_at": "2024-03-25",
+        "subscription_id": 459859712,
+        "topic": "charge/updated",
+        "update_label": "reconciled"
       }
     }
   },
   {
-    "_id": "65fbdec0c4e6fa0edaaea793",
-    "timestamp": "2024-03-21T07:16:16.908Z",
+    "_id": "65fd16caa3092b4bcf9d8fa8",
+    "timestamp": "2024-03-22T05:27:38.657Z",
     "level": "notice",
-    "message": "Insert updates_pending entry",
+    "message": "Webhook received charge/updated.",
     "meta": {
       "recharge": {
-        "customer_id": 84185810,
-        "address_id": 151085761,
-        "subscription_id": 453939632,
-        "action": "reconciled",
-        "charge_id": 1039356318,
-        "session_id": "h8wdx2go5",
-        "scheduled_at": "2024-03-30",
-        "deliver_at": "Tue Apr 02 2024",
-        "rc_subscription_ids": [
-          {
-            "shopify_product_id": 7517242917014,
-            "subscription_id": 453939632,
-            "quantity": 1,
-            "title": "The Medium Vege Box",
-            "price": 3500,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": false
-          },
-          {
-            "shopify_product_id": 6621185769622,
-            "subscription_id": 466799776,
-            "quantity": 1,
-            "title": "Beetroot 1kg",
-            "price": 500,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": false
-          },
-          {
-            "shopify_product_id": 6166842245270,
-            "subscription_id": 466799782,
-            "quantity": 0,
-            "title": "Cabbage Green",
-            "price": 450,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": false
-          },
-          {
-            "shopify_product_id": 6166842867862,
-            "subscription_id": 466799783,
-            "quantity": 1,
-            "title": "Curly Kale",
-            "price": 400,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": true
-          },
-          {
-            "shopify_product_id": 6166843523222,
-            "subscription_id": 466799810,
-            "quantity": 1,
-            "title": "Pak Choi",
-            "price": 400,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": false
-          }
-        ],
-        "title": "The Medium Vege Box",
-        "timestamp": "2024-03-21T07:16:16.901Z"
-      }
-    }
-  },
-  {
-    "_id": "65fbdec2eed202b5ebf2806d",
-    "timestamp": "2024-03-21T07:16:18.454Z",
-    "level": "notice",
-    "message": "API call to Recharge",
-    "meta": {
-      "recharge": {
-        "path": "subscriptions/466799782",
-        "method": "DELETE",
-        "title": "Deleting Cabbage Green",
-        "session_id": "h8wdx2go5",
-        "status": "204 NO CONTENT"
-      }
-    }
-  },
-  {
-    "_id": "65fbdec3c4e6fa0edaaea794",
-    "timestamp": "2024-03-21T07:16:19.271Z",
-    "level": "notice",
-    "message": "Webhook received subscription/deleted.",
-    "meta": {
-      "recharge": {
-        "subscription_id": 466799782,
+        "charge_id": 1036937721,
         "address_id": 151085761,
         "customer_id": 84185810,
-        "scheduled_at": "2024-03-30",
-        "deliver_at": "Tue Apr 02 2024",
-        "quantity": 1,
-        "title": "Cabbage Green",
-        "box_subscription_id": 453939632,
-        "properties": {
-          "Delivery Date": "Tue Apr 02 2024",
-          "Add on product to": "The Medium Vege Box",
-          "box_subscription_id": "453939632"
-        }
-      }
-    }
-  },
-  {
-    "_id": "65fbdec6eed202b5ebf2806e",
-    "timestamp": "2024-03-21T07:16:22.388Z",
-    "level": "notice",
-    "message": "API call to Recharge",
-    "meta": {
-      "recharge": {
-        "path": "subscriptions/466799810",
-        "method": "PUT",
-        "title": "Updating Pak Choi",
-        "body": {
-          "properties": [
-            {
-              "name": "Delivery Date",
-              "value": "Tue Apr 02 2024"
-            },
-            {
-              "name": "Add on product to",
-              "value": "The Medium Vege Box"
-            },
-            {
-              "name": "box_subscription_id",
-              "value": "453939632"
+        "scheduled_at": "2024-03-25",
+        "status": "queued",
+        "deliver_at": "Thu Mar 28 2024",
+        "box_titles": [
+          "The Small Vege Box",
+          "The Small Vege Box"
+        ],
+        "box_subscription_ids": [
+          459859712,
+          460261564
+        ],
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 459859712,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 459859712,
+            "properties": {
+              "Delivery Date": "Thu Mar 28 2024",
+              "Including": "Cabbage Green,Carrots 1kg (2),Chard Red,Coriander Bunch,Curly Kale,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "Bellbird Ciabatta",
+              "Swapped Items": "",
+              "Removed Items": "",
+              "box_subscription_id": "459859712"
             }
-          ],
-          "quantity": 1,
-          "price": "4.00"
-        },
-        "session_id": "h8wdx2go5",
-        "status": "200 OK"
+          },
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 460261564,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 460261564,
+            "properties": {
+              "Including": "Chard Red,Coriander Bunch (2),Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "Beetroot 1kg",
+              "Delivery Date": "Thu Mar 28 2024",
+              "Removed Items": "None",
+              "Swapped Items": "None",
+              "box_subscription_id": "460261564"
+            }
+          },
+          {
+            "shopify_product_id": "6166842736790",
+            "subscription_id": 460262013,
+            "quantity": 1,
+            "title": "Coriander Bunch",
+            "box_subscription_id": 460261564,
+            "properties": {
+              "Delivery Date": "Thu Mar 28 2024",
+              "Add on product to": "The Small Vege Box",
+              "box_subscription_id": "460261564"
+            }
+          },
+          {
+            "shopify_product_id": "6621185769622",
+            "subscription_id": 460262017,
+            "quantity": 1,
+            "title": "Beetroot 1kg",
+            "box_subscription_id": 460261564,
+            "properties": {
+              "Delivery Date": "Thu Mar 28 2024",
+              "Add on product to": "The Small Vege Box",
+              "box_subscription_id": "460261564"
+            }
+          },
+          {
+            "shopify_product_id": "6166841852054",
+            "subscription_id": 460824585,
+            "quantity": 1,
+            "title": "Bellbird Ciabatta",
+            "box_subscription_id": 459859712,
+            "properties": {
+              "Delivery Date": "Thu Mar 28 2024",
+              "Add on product to": "The Small Vege Box",
+              "box_subscription_id": "459859712"
+            }
+          },
+          {
+            "shopify_product_id": "6621185933462",
+            "subscription_id": 460824607,
+            "quantity": 1,
+            "title": "Carrots 1kg",
+            "box_subscription_id": 459859712,
+            "properties": {
+              "Delivery Date": "Thu Mar 28 2024",
+              "Add on product to": "The Small Vege Box",
+              "box_subscription_id": "459859712"
+            }
+          }
+        ]
       }
     }
   },
   {
-    "_id": "65fbdec7c4e6fa0edaaea795",
-    "timestamp": "2024-03-21T07:16:23.396Z",
+    "_id": "65fd16a7a3092b4bcf9d8fa7",
+    "timestamp": "2024-03-22T05:27:03.451Z",
     "level": "notice",
     "message": "Webhook received subscription/updated.",
     "meta": {
       "recharge": {
-        "subscription_id": 466799810,
+        "subscription_id": 459859712,
         "address_id": 151085761,
         "customer_id": 84185810,
-        "scheduled_at": "2024-03-30",
-        "deliver_at": "Tue Apr 02 2024",
+        "scheduled_at": "2024-03-25",
+        "deliver_at": "Thu Mar 28 2024",
         "quantity": 1,
-        "title": "Pak Choi",
-        "box_subscription_id": 453939632,
+        "title": "The Small Vege Box",
+        "box_subscription_id": 459859712,
         "properties": {
-          "Delivery Date": "Tue Apr 02 2024",
-          "Add on product to": "The Medium Vege Box",
-          "box_subscription_id": "453939632"
+          "Delivery Date": "Thu Mar 28 2024",
+          "Including": "Cabbage Green,Carrots 1kg (2),Chard Red,Coriander Bunch,Curly Kale,Onions Brown 4x,Potato Agria 1kg",
+          "Add on Items": "Bellbird Ciabatta",
+          "Swapped Items": "",
+          "Removed Items": "",
+          "box_subscription_id": "459859712"
         }
       }
     }
   },
   {
-    "_id": "65fbdec9eed202b5ebf2806f",
-    "timestamp": "2024-03-21T07:16:25.918Z",
+    "_id": "65fd16a6eed202b5ebf280c5",
+    "timestamp": "2024-03-22T05:27:02.679Z",
     "level": "notice",
     "message": "API call to Recharge",
     "meta": {
       "recharge": {
-        "path": "subscriptions/466799776",
+        "path": "subscriptions/459859712",
         "method": "PUT",
-        "title": "Updating Beetroot 1kg",
+        "title": "Updating The Small Vege Box",
         "body": {
           "properties": [
             {
               "name": "Delivery Date",
-              "value": "Tue Apr 02 2024"
-            },
-            {
-              "name": "Add on product to",
-              "value": "The Medium Vege Box"
-            },
-            {
-              "name": "box_subscription_id",
-              "value": "453939632"
-            }
-          ],
-          "quantity": 1,
-          "price": "5.00"
-        },
-        "session_id": "h8wdx2go5",
-        "status": "200 OK"
-      }
-    }
-  },
-  {
-    "_id": "65fbdecac4e6fa0edaaea796",
-    "timestamp": "2024-03-21T07:16:26.693Z",
-    "level": "notice",
-    "message": "Webhook received subscription/updated.",
-    "meta": {
-      "recharge": {
-        "subscription_id": 466799776,
-        "address_id": 151085761,
-        "customer_id": 84185810,
-        "scheduled_at": "2024-03-30",
-        "deliver_at": "Tue Apr 02 2024",
-        "quantity": 1,
-        "title": "Beetroot 1kg",
-        "box_subscription_id": 453939632,
-        "properties": {
-          "Delivery Date": "Tue Apr 02 2024",
-          "Add on product to": "The Medium Vege Box",
-          "box_subscription_id": "453939632"
-        }
-      }
-    }
-  },
-  {
-    "_id": "65fbdecdeed202b5ebf28070",
-    "timestamp": "2024-03-21T07:16:29.479Z",
-    "level": "notice",
-    "message": "API call to Recharge",
-    "meta": {
-      "recharge": {
-        "path": "subscriptions/453939632",
-        "method": "PUT",
-        "title": "Updating The Medium Vege Box",
-        "body": {
-          "properties": [
-            {
-              "name": "Delivery Date",
-              "value": "Tue Apr 02 2024"
+              "value": "Thu Mar 28 2024"
             },
             {
               "name": "Including",
-              "value": "Beetroot 1kg (2),Cabbage Green,Carrots 1kg,Cavolo Nero Shoots,Chard Red,Daikon Radish ea,Onions Brown 4x,Pak Choi (2),Silverbeet"
+              "value": "Cabbage Green,Carrots 1kg (2),Chard Red,Coriander Bunch,Curly Kale,Onions Brown 4x,Potato Agria 1kg"
             },
             {
               "name": "Add on Items",
-              "value": "Curly Kale"
+              "value": "Bellbird Ciabatta"
             },
             {
               "name": "Swapped Items",
@@ -333,286 +270,260 @@
             },
             {
               "name": "box_subscription_id",
-              "value": "453939632"
+              "value": "459859712"
             }
           ],
           "quantity": 1,
-          "price": "35.00"
+          "price": "25.00"
         },
-        "session_id": "h8wdx2go5",
+        "session_id": "71n4rbsn3",
         "finish": true,
         "status": "200 OK"
       }
     }
   },
   {
-    "_id": "65fbdecec4e6fa0edaaea797",
-    "timestamp": "2024-03-21T07:16:30.298Z",
+    "_id": "65fd16a3a3092b4bcf9d8fa6",
+    "timestamp": "2024-03-22T05:26:59.878Z",
     "level": "notice",
     "message": "Webhook received subscription/updated.",
     "meta": {
       "recharge": {
-        "subscription_id": 453939632,
+        "subscription_id": 460824607,
         "address_id": 151085761,
         "customer_id": 84185810,
-        "scheduled_at": "2024-03-30",
-        "deliver_at": "Tue Apr 02 2024",
+        "scheduled_at": "2024-03-25",
+        "deliver_at": "Thu Mar 28 2024",
         "quantity": 1,
-        "title": "The Medium Vege Box",
-        "box_subscription_id": 453939632,
+        "title": "Carrots 1kg",
+        "box_subscription_id": 459859712,
         "properties": {
-          "Delivery Date": "Tue Apr 02 2024",
-          "Including": "Beetroot 1kg (2),Cabbage Green,Carrots 1kg,Cavolo Nero Shoots,Chard Red,Daikon Radish ea,Onions Brown 4x,Pak Choi (2),Silverbeet",
-          "Add on Items": "Curly Kale",
-          "Swapped Items": "",
-          "Removed Items": "",
-          "box_subscription_id": "453939632"
+          "Delivery Date": "Thu Mar 28 2024",
+          "Add on product to": "The Small Vege Box",
+          "box_subscription_id": "459859712"
         }
       }
     }
   },
   {
-    "_id": "65fbdef8c4e6fa0edaaea798",
-    "timestamp": "2024-03-21T07:17:12.573Z",
+    "_id": "65fd16a3eed202b5ebf280c4",
+    "timestamp": "2024-03-22T05:26:59.178Z",
     "level": "notice",
-    "message": "Webhook received charge/updated.",
+    "message": "API call to Recharge",
     "meta": {
       "recharge": {
-        "charge_id": 1039356318,
-        "address_id": 151085761,
-        "customer_id": 84185810,
-        "scheduled_at": "2024-03-30",
-        "status": "queued",
-        "deliver_at": "Tue Apr 02 2024",
-        "box_titles": [
-          "The Medium Vege Box"
-        ],
-        "box_subscription_ids": [
-          453939632
-        ],
-        "rc_subscription_ids": [
-          {
-            "shopify_product_id": "7517242917014",
-            "subscription_id": 453939632,
-            "quantity": 1,
-            "title": "The Medium Vege Box",
-            "box_subscription_id": 453939632,
-            "properties": {
-              "Delivery Date": "Tue Apr 02 2024",
-              "Including": "Beetroot 1kg (2),Cabbage Green,Carrots 1kg,Cavolo Nero Shoots,Chard Red,Daikon Radish ea,Onions Brown 4x,Pak Choi (2),Silverbeet",
-              "Add on Items": "Curly Kale",
-              "Swapped Items": "",
-              "Removed Items": "",
-              "box_subscription_id": "453939632"
+        "path": "subscriptions/460824607",
+        "method": "PUT",
+        "title": "Updating Carrots 1kg",
+        "body": {
+          "properties": [
+            {
+              "name": "Delivery Date",
+              "value": "Thu Mar 28 2024"
+            },
+            {
+              "name": "Add on product to",
+              "value": "The Small Vege Box"
+            },
+            {
+              "name": "box_subscription_id",
+              "value": "459859712"
             }
-          },
-          {
-            "shopify_product_id": "6621185769622",
-            "subscription_id": 466799776,
-            "quantity": 1,
-            "title": "Beetroot 1kg",
-            "box_subscription_id": 453939632,
-            "properties": {
-              "Delivery Date": "Tue Apr 02 2024",
-              "Add on product to": "The Medium Vege Box",
-              "box_subscription_id": "453939632"
-            }
-          },
-          {
-            "shopify_product_id": "6166842867862",
-            "subscription_id": 466799783,
-            "quantity": 1,
-            "title": "Curly Kale",
-            "box_subscription_id": 453939632,
-            "properties": {
-              "Delivery Date": "Tue Apr 02 2024",
-              "Add on product to": "The Medium Vege Box",
-              "box_subscription_id": "453939632"
-            }
-          },
-          {
-            "shopify_product_id": "6166843523222",
-            "subscription_id": 466799810,
-            "quantity": 1,
-            "title": "Pak Choi",
-            "box_subscription_id": 453939632,
-            "properties": {
-              "Delivery Date": "Tue Apr 02 2024",
-              "Add on product to": "The Medium Vege Box",
-              "box_subscription_id": "453939632"
-            }
-          }
-        ]
+          ],
+          "quantity": 1,
+          "price": "5.00"
+        },
+        "session_id": "71n4rbsn3",
+        "status": "200 OK"
       }
     }
   },
   {
-    "_id": "65fbdef8c4e6fa0edaaea799",
-    "timestamp": "2024-03-21T07:17:12.579Z",
+    "_id": "65fd16a0a3092b4bcf9d8fa5",
+    "timestamp": "2024-03-22T05:26:56.819Z",
     "level": "notice",
-    "message": "Charge updated (reconciled) for subscription.",
+    "message": "Deleted Cabbage Green - updated pending entry.",
     "meta": {
       "recharge": {
-        "Add on Items": "Curly Kale",
-        "Box Subscription": "453939632",
-        "Delivery Date": "Tue Apr 02 2024",
-        "Including": "Beetroot 1kg (2),Cabbage Green,Carrots 1kg,Cavolo Nero Shoots,Chard Red,Daikon Radish ea,Onions Brown 4x,Pak Choi (2),Silverbeet",
-        "Removed Items": "",
-        "Swapped Items": "",
+        "Add on product to": "The Small Vege Box",
+        "Delivery Date": "Thu Mar 28 2024",
         "address_id": 151085761,
-        "box_subscription_ids": [
-          453939632
-        ],
-        "boxes": [
-          "The Medium Vege Box"
-        ],
-        "charge_id": 1039356318,
-        "charge_processed_at": null,
-        "charge_status": "queued",
         "customer_id": 84185810,
-        "email": "jon.doe@mail.me",
-        "scheduled_at": "2024-03-30",
-        "subscription_id": 453939632,
-        "topic": "charge/updated",
-        "update_label": "reconciled"
+        "item_subscription_id": 460824562,
+        "quantity": 1,
+        "scheduled_at": "2024-03-25",
+        "shopify_product_id": 6166842245270,
+        "subscription_id": 459859712,
+        "title": "Cabbage Green",
+        "topic": "subscription/deleted",
+        "update_label": "reconciled",
+        "updates_pending": "UPDATED ON DELETED",
+        "variant_title": null
       }
     }
   },
   {
-    "_id": "65fbdef8c4e6fa0edaaea79a",
-    "timestamp": "2024-03-21T07:17:12.639Z",
+    "_id": "65fd16a0a3092b4bcf9d8fa4",
+    "timestamp": "2024-03-22T05:26:56.810Z",
     "level": "notice",
-    "message": "Deleting updates_pending entry charge/updated",
+    "message": "Webhook received subscription/deleted.",
     "meta": {
       "recharge": {
-        "_id": {},
+        "subscription_id": 460824562,
         "address_id": 151085761,
         "customer_id": 84185810,
-        "subscription_id": 453939632,
+        "scheduled_at": "2024-03-25",
+        "deliver_at": "Thu Mar 28 2024",
+        "quantity": 1,
+        "title": "Cabbage Green",
+        "box_subscription_id": 459859712,
+        "properties": {
+          "Delivery Date": "Thu Mar 28 2024",
+          "Add on product to": "The Small Vege Box",
+          "box_subscription_id": "459859712"
+        }
+      }
+    }
+  },
+  {
+    "_id": "65fd169feed202b5ebf280c3",
+    "timestamp": "2024-03-22T05:26:55.638Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions/460824562",
+        "method": "DELETE",
+        "title": "Deleting Cabbage Green",
+        "session_id": "71n4rbsn3",
+        "status": "204 NO CONTENT"
+      }
+    }
+  },
+  {
+    "_id": "65fd169ea3092b4bcf9d8fa3",
+    "timestamp": "2024-03-22T05:26:54.611Z",
+    "level": "notice",
+    "message": "Insert updates_pending entry",
+    "meta": {
+      "recharge": {
+        "customer_id": 84185810,
+        "address_id": 151085761,
+        "subscription_id": 459859712,
         "action": "reconciled",
-        "charge_id": 1039356318,
-        "deliver_at": "Tue Apr 02 2024",
+        "charge_id": 1036937721,
+        "session_id": "71n4rbsn3",
+        "scheduled_at": "2024-03-25",
+        "deliver_at": "Thu Mar 28 2024",
         "rc_subscription_ids": [
           {
-            "shopify_product_id": 7517242917014,
-            "subscription_id": 453939632,
+            "shopify_product_id": 6163982876822,
+            "subscription_id": 459859712,
             "quantity": 1,
-            "title": "The Medium Vege Box",
-            "price": 3500,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": true
-          },
-          {
-            "shopify_product_id": 6621185769622,
-            "subscription_id": 466799776,
-            "quantity": 1,
-            "title": "Beetroot 1kg",
-            "price": 500,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": true
+            "title": "The Small Vege Box",
+            "price": 2500,
+            "delivery_at": "Thu Mar 28 2024",
+            "updated": false
           },
           {
             "shopify_product_id": 6166842245270,
-            "subscription_id": 466799782,
+            "subscription_id": 460824562,
             "quantity": 0,
             "title": "Cabbage Green",
             "price": 450,
-            "delivery_at": "Tue Apr 02 2024",
+            "delivery_at": "Thu Mar 28 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6166841852054,
+            "subscription_id": 460824585,
+            "quantity": 1,
+            "title": "Bellbird Ciabatta",
+            "price": 750,
+            "delivery_at": "Thu Mar 28 2024",
             "updated": true
           },
           {
-            "shopify_product_id": 6166842867862,
-            "subscription_id": 466799783,
+            "shopify_product_id": 6621185933462,
+            "subscription_id": 460824607,
             "quantity": 1,
-            "title": "Curly Kale",
-            "price": 400,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": true
-          },
-          {
-            "shopify_product_id": 6166843523222,
-            "subscription_id": 466799810,
-            "quantity": 1,
-            "title": "Pak Choi",
-            "price": 400,
-            "delivery_at": "Tue Apr 02 2024",
-            "updated": true
+            "title": "Carrots 1kg",
+            "price": 500,
+            "delivery_at": "Thu Mar 28 2024",
+            "updated": false
           }
         ],
-        "scheduled_at": "2024-03-30",
-        "session_id": "h8wdx2go5",
-        "timestamp": "2024-03-21T07:16:16.901Z",
-        "title": "The Medium Vege Box"
+        "title": "The Small Vege Box",
+        "timestamp": "2024-03-22T05:26:54.593Z"
       }
     }
   },
   {
-    "_id": "65fbdefaeed202b5ebf28071",
-    "timestamp": "2024-03-21T07:17:14.319Z",
+    "_id": "65fd169ea3092b4bcf9d8fa2",
+    "timestamp": "2024-03-22T05:26:54.594Z",
     "level": "notice",
-    "message": "API call to Recharge",
+    "message": "Boxesapp api request subscription reconciled.",
     "meta": {
       "recharge": {
-        "path": "charges/1039356318",
-        "title": "Get Charge (1039356318)",
-        "method": "GET",
-        "status": "200 OK"
-      }
-    }
-  },
-  {
-    "_id": "65fbdefbeed202b5ebf28073",
-    "timestamp": "2024-03-21T07:17:15.162Z",
-    "level": "notice",
-    "message": "API call to Recharge",
-    "meta": {
-      "recharge": {
-        "path": "subscriptions",
-        "query": {
-          "ids": [
-            "453939632"
-          ]
-        },
-        "title": "Collecting subscriptions for verify script",
-        "method": "GET",
-        "status": "200 OK"
-      }
-    }
-  },
-  {
-    "_id": "65fbdefceed202b5ebf28075",
-    "timestamp": "2024-03-21T07:17:16.463Z",
-    "level": "notice",
-    "message": "API call to Recharge",
-    "meta": {
-      "recharge": {
-        "path": "charges",
-        "query": {
-          "customer_id": 84185810,
-          "address_id": null,
-          "purchase_item_id": 453939632,
-          "status": "success",
-          "limit": 1
-        },
-        "title": "Get last order",
-        "method": "GET",
-        "status": "200 OK"
-      }
-    }
-  },
-  {
-    "_id": "65fbdefdc4e6fa0edaaea79b",
-    "timestamp": "2024-03-21T07:17:17.361Z",
-    "level": "notice",
-    "message": "Subscription reconciled email sent.",
-    "meta": {
-      "recharge": {
+        "Add on Items": "Bellbird Ciabatta",
+        "Delivery Date": "Thu Mar 28 2024",
+        "Including": "Cabbage Green,Carrots 1kg (2),Chard Red,Coriander Bunch,Curly Kale,Onions Brown 4x,Potato Agria 1kg",
+        "Removed Items": "",
+        "Swapped Items": "",
+        "address_id": 151085761,
+        "box_subscription_id": "459859712",
+        "change_messages": [
+          "The included items have been changed this week",
+          "Add on item Carrots 1kg included as an extra for this box.",
+          "Add on item Cabbage Green already included so removed as an add on."
+        ],
+        "charge_id": 1036937721,
         "customer_id": 84185810,
-        "charge_id": 1039356318,
-        "subscription_id": 453939632,
-        "subject": "Subscription Reconciled The Medium Vege Box - Tuesday",
         "email": "jon.doe@mail.me",
-        "type": "reconciled"
+        "label": "reconciled",
+        "next_charge_date": "Mon Mar 25 2024",
+        "next_delivery": "Thu Mar 28 2024",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 6163982876822,
+            "subscription_id": 459859712,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "price": 2500,
+            "delivery_at": "Thu Mar 28 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6166842245270,
+            "subscription_id": 460824562,
+            "quantity": 0,
+            "title": "Cabbage Green",
+            "price": 450,
+            "delivery_at": "Thu Mar 28 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6166841852054,
+            "subscription_id": 460824585,
+            "quantity": 1,
+            "title": "Bellbird Ciabatta",
+            "price": 750,
+            "delivery_at": "Thu Mar 28 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6621185933462,
+            "subscription_id": 460824607,
+            "quantity": 1,
+            "title": "Carrots 1kg",
+            "price": 500,
+            "delivery_at": "Thu Mar 28 2024",
+            "updated": false
+          }
+        ],
+        "scheduled_at": "2024-03-25",
+        "subscription_id": 459859712,
+        "title": "The Small Vege Box - Thursday"
       }
     }
   }

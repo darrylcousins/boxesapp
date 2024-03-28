@@ -1,308 +1,230 @@
-import dotenv from "dotenv";
-import fs from "fs/promises";
-import path from "path";
-import { MongoClient, ObjectId } from "mongodb";
-import { Shopify } from "../src/lib/shopify/index.js";
-import { getMongo, getMongoConnection } from "../src/lib/mongo/mongo.js";
-import { winstonLogger } from "../config/winston.js";
-
-global._filename = (_meta) => _meta.url.split("/").pop();
-dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });
-global._logger = console;
-global._mongodb;
-_logger.notice = (e) => console.log(e);
-
 /**
- * Simple template for node script
+ * Build a query to recharge
+ *
+ * Run the script using `node recharge-query.js`
+ *
+ * @author Darryl Cousins <darryljcousins@gmail.com>
+ * @module recharge-query
+ *
+ * Only used on development site and writes reports to the docs
+ * Targets a specific customer of the development site
+ * Relies on limiting activity by the customer in order to gather activity targeted data
+ * Once this has been done once it may never be used again unless fundamental changes are made
+ * An example might be if recharge adds frequency and last order to charge line
+ *   items which would allow boxes to eliminate a couple of api calls
  */
+import { exec } from "child_process";
+import fs from "fs/promises";
+import colors from "colors";
+import inquirer from "inquirer";
+import ora from "ora";
+import { writeFileSync } from "fs";
+import "isomorphic-fetch";
+
+import path from "path";
+import dotenv from "dotenv";    
+
+import { getMongoConnection } from "../src/lib/mongo/mongo.js";
+import buildReport from "./lib-build-report.js";
+
+const _filename = (_meta) => _meta.url.split("/").pop();
+global._mongodb = await getMongoConnection(); // if mongo connection required
+
+// necessary path resolution for running as cron job
+dotenv.config({ path: path.resolve(_filename(import.meta), "../.env") });
+
+const obfuscate = (content) => {
+  return content.toString()
+    .replaceAll("cousinsd@proton", "jon.doe@mail") // email
+    .replaceAll("Darryl", "Jon").replaceAll("Cousins", "Doe") // name
+    .replaceAll("Taumutu", "Aroha").replaceAll("275247293", "273333333"); //address, telephone
+};
+
+const reportMap = [
+  { "title": "Order created", "folder": "shopify-order-created" },
+  { "title": "Charge upcoming", "folder": "recharge-charge-upcoming" },
+  { "title": "Order processed", "folder": "recharge-order-processed" },
+  { "title": "Reconcile subscription", "folder": "user-subscription-reconciled" },
+  { "title": "Update subscription", "folder": "user-subscription-updated" },
+  { "title": "Change subscription", "folder": "user-subscription-changed" },
+  { "title": "Pause subscription", "folder": "user-subscription-paused" },
+  { "title": "Reschedule subscription", "folder": "user-subscription-rescheduled" },
+  { "title": "Cancel subscription", "folder": "user-subscription-cancelled" },
+  { "title": "Reactivate subscription", "folder": "user-subscription-reactivated" },
+  { "title": "Delete subscription", "folder": "user-subscription-deleted" },
+  { "title": "Create subscription", "folder": "user-subscription-created" },
+  { "title": "Broken pause Subscription", "folder": "broken-pause-subscription" },
+];
+const reports = reportMap.map(el => el.title);
+const projectBase = path.resolve(_filename(import.meta), "../", "../");
+// the folder that holds the saved webhooks as json files
+const webhookFolder = path.join(projectBase, "server", "debug");
+const mailFolder = path.join(projectBase, "server", "debug");
 
 const run = async () => {
+  console.log('\nBuild reports'.brightMagenta);
+  console.log(`${projectBase}`.brightMagenta);
+  console.log("Ctrl-C to exit".brightBlue);
+  console.log(`${'-'.padEnd(70, '-')}`);
 
-  // this one closes the connection on SIGINT
-  global._mongodb = await getMongoConnection(); // if mongo connection required
-
-
-  try {
-    // can log messages if required
-    console.log("");
-
-    // Step one: collect files from debug at a timestamp delta - utc time
-
-    let folder = "./debug";
-    let dateString = "2024-03-21T08:03:07Z";
-
-    const d = new Date(Date.parse(dateString));
-    d.setMinutes(d.getMinutes() - 2);
-    // NOTE try to land about the middle, we go 4 minutes either side
-
-    const startTime = new Date(d);
-    let start = startTime.toISOString().replace("T", "-").replace("Z", "");
-    console.log("start", startTime.toISOString().replace("T", " ").replace("Z", ""))
-
-    d.setMinutes(d.getMinutes() + 2);
-    const endTime = new Date(d);
-    let end = endTime.toISOString().replace("T", "-").replace("Z", "");
-    console.log("end", endTime.toISOString().replace("T", " ").replace("Z", ""))
-
-    // list files in debug, sort by timestamp and filter somehow
-    const collectFiles = [];
-    const allHooks = [];
-
-    const getDate = (f) => {
-      const split = f.split("-");
-      const day = split.slice(2, 5).join("-");
-      const time = split[5];
-      return new Date(Date.parse(`${day}T${time}Z`));
-    };
-
-    const sort = (a, b) => {
-      const timeA = getDate(a).getTime();
-      const timeB = getDate(b).getTime();
-      if (timeA < timeB) return -1;
-      if (timeA > timeB) return 1;
-      return 0;
-    };
-
-    let recharge_subscription_ids = [];
-    let recharge_charge_ids = [];
-    let recharge_order_ids = [];
-    let shopify_order_ids = [];
-    let next_charge_scheduled_at = []; // should only be one of these
-    const customer_email = "cousins@proton.me";
-    const customer_id = 84185810;
-    const regexEmail = new RegExp(/cousinsd@proton.me/); // email is common between shopify and recharge
-    const regexCustomer = new RegExp(/84185810/); // email is common between shopify and recharge
-    await fs.readdir(folder)
-      .then(async files => {
-        for (const f of files.sort(sort)) {
-          const fileDate = getDate(f);
-          if (startTime.getTime() < fileDate.getTime() &&  fileDate.getTime() < endTime.getTime()) {
-            await fs.readFile(path.join(folder, f))
-              .then(content => {
-                if (regexEmail.test(content) || regexCustomer.test(content)) {
-
-                  const parts = f.split(".");
-                  const subparts = parts[1].split("-")
-                  const key = subparts[0];
-                  const partner = parts[0];
-                  const webhook = subparts[1];
-                  const day = subparts.slice(2, 5).join("/");
-                  const milliseconds = parts[2].split("-")[0];
-                  const objId = parts[2].split("-")[1];
-
-                  const json = JSON.parse(content, null, 2);
-                  const obj = json[key];
-
-                  collectFiles.push(f);
-                  allHooks.push(webhook);
-
-                  if (partner === "shopify") {
-                    if (key === "order") shopify_order_ids.push(obj.id);
-                  };
-                  if (partner === "recharge") {
-                    if (Object.hasOwn(obj, "external_order_id")) {
-                      shopify_order_ids.push(obj.external_order_id.ecommerce);
-                    };
-                    if (key === "order") {
-                      recharge_order_ids.push(obj.id);
-                      recharge_charge_ids.push(obj.charge.id);
-                    };
-                    if (key === "subscription") {
-                      recharge_subscription_ids.push(obj.id);
-                      next_charge_scheduled_at.push(obj.next_charge_scheduled_at);
-                    };
-                    if (key === "charge") recharge_charge_ids.push(obj.id);
-                    if (Object.hasOwn(obj, "line_items")) {
-                      for (const item of obj.line_items) {
-                        if (item.properties.some(el => el.name === "box_subscription_id")) {
-                          recharge_subscription_ids.push(item.purchase_item_id);
-                        };
-                      };
-                    };
-                  };
-                  console.log("");
-                };
-              });
-          };
-        };
-      });
-    recharge_subscription_ids = Array.from(new Set(recharge_subscription_ids));
-    console.log("rc subscription ids", recharge_subscription_ids);
-    recharge_charge_ids = Array.from(new Set(recharge_charge_ids));
-    console.log("rc charge ids", recharge_charge_ids);
-    recharge_order_ids = Array.from(new Set(recharge_order_ids));
-    console.log("rc order ids", recharge_order_ids);
-    next_charge_scheduled_at = Array.from(new Set(next_charge_scheduled_at));
-    console.log("next charge scheduled at", next_charge_scheduled_at);
-    shopify_order_ids = shopify_order_ids.map(el => parseInt(el)).filter(el => el);
-    shopify_order_ids = Array.from(new Set(shopify_order_ids));
-    console.log("shopify order ids", shopify_order_ids);
- 
-    // Step two: collect mongo logs at a timestamp delta - utc time
-
-    // query should include our customer_id meta.recharge.customer_id
-    // query should include path/subscription_id meta.recharge.path
-    // query should include path/charge_id ?? meta.recharge.path
-    // query should include charges with query meta.recharage.query includes curstomer_id
-    // query should include subscriptions with query subscription_ids
-    // query should include the shopify api call Get Order - ecommerve id in path orders/id.json
-
-    const query = {};
-
-    query.timestamp = {"$gte": startTime, "$lt": endTime };
-    const res = await _mongodb.collection("logs").find(query).sort({timestamp: 1}).toArray();
-    console.log("here", res.length);
-    /*
-    for (const log of res) {
-      console.log(log);
-    };
-    */
-    query["$or"] = [];
-    query["$or"].push({
-      "meta.recharge.customer_id": { "$eq": customer_id, "$exists": true },
-    });
-    query["$or"].push({
-      "meta.order.customer_id": { "$eq": customer_id, "$exists": true },
-    });
-    query["$or"].push({
-      "meta.recharge.query.customer_id": { "$eq": customer_id, "$exists": true },
-    });
-    for (const id of recharge_subscription_ids) {
-      query["$or"].push({
-        "meta.recharge.path": { "$regex": `.*${id}$` , "$exists": true },
-      });
-      query["$or"].push({
-        "$and": [
-          { "meta.recharge.query.ids": { "$exists": true } },
-          { "meta.recharge.query.ids": { "$elemMatch": { "$eq": id.toString() } } },
-        ],
-      });
-    };
-    // a catch all for creating subscriptions
-    // if catching unwanted then try "meta.recharge.body.next_charge_scheduled_at
-    /*
-    query["$or"].push({
-      "meta.recharge.method": { "$eq": "POST", "$exists": true },
-    });
-    */
-    for (const d of next_charge_scheduled_at) {
-      query["$or"].push({
-        "meta.recharge.body.next_charge_scheduled_at": { "$eq": d , "$exists": true },
-      });
-    };
-    for (const id of recharge_charge_ids) {
-      query["$or"].push({
-        "meta.recharge.path": { "$regex": `.*${id}$` , "$exists": true },
-      });
-      query["$or"].push({
-        "meta.recharge.charge_id": { "$eq": id, "$exists": true },
-      });
-    };
-    if (allHooks.includes("upcoming")) { // in this case we don't have a shopify_order_id
-      query["$or"].push({
-        "meta.shopify.path": { "$exists": true },
-      });
-    };
-    for (const id of shopify_order_ids) {
-      query["$or"].push({
-        "meta.shopify.path": { "$regex": `.*${id}$` , "$exists": true },
-      });
-      query["$or"].push({
-        "meta.shopify.order_id": { "$eq": id , "$exists": true },
-      });
-    };
-    const result = await _mongodb.collection("logs").find(query).sort({timestamp: 1}).toArray();
-
-    // put together json depiction:
-    // list the files and group by type
-    const fileListing = [];
-    for (const f of collectFiles) {
-      const parts = f.split(".");
-      const fileDate = getDate(f);
-      const subparts = parts[1].split("-")
-      const key = subparts[0];
-      const partner = parts[0];
-      const webhook = subparts[1];
-      const day = subparts.slice(2, 5).join("/");
-      const milliseconds = parts[2].split("-")[0];
-      const objId = parts[2].split("-")[1];
-      const time = `${subparts[5]}.${milliseconds}`;
-      fileListing.push({
-        partner, key, objId, webhook, day, time, filename: f, fileDate
-      });
-    };
-
-    // get time delta between 1st and last log
-    const firstLog = new Date(result[0].timestamp)
-    const lastLog = new Date(result[result.length - 1].timestamp);
-
-    const finalListing = {
-      timedelta: (lastLog - firstLog)/1000,
-      files: fileListing,
-    };
-
-    // now save the files into a directory
-    let report = "reports"; // catch all, up to me to move it into docs
-    /*
-    if (allHooks.includes("upcoming")) report = "upcoming";
-    if (allHooks.includes("processed")) report = "processed";
-    */
-
-    const reportFolder= new URL(`./${report}/`, import.meta.url);
-    try {
-      await fs.mkdir(reportFolder);
-    } catch (err) {
-      // file exists
-    };
-    // remove all existing files in that folder
-    try {
-      await fs.access(reportFolder);
-      try {
-        await fs.writeFile(path.join(reportFolder.pathname, "log.json"), 
-          JSON.stringify(result, null, 2).replaceAll("cousinsd@proton", "jon.doe@mail"), { 
-          encoding: "utf8", 
-          flag: "w", 
-          mode: 0o666 
-        });
-        await fs.writeFile(path.join(reportFolder.pathname, "report.json"), 
-          JSON.stringify(finalListing, null, 2), { 
-          encoding: "utf8", 
-          flag: "w", 
-          mode: 0o666 
-        });
-        for (const f of collectFiles) {
-          await fs.readFile(path.join(folder, f))
-            .then(async content => {
-              const newContent = content.toString()
-                .replaceAll("cousinsd@proton", "jon.doe@mail")
-                .replaceAll("Darryl", "Jon").replaceAll("Cousins", "Doe")
-                .replaceAll("Taumutu", "Aroha").replaceAll("275247293", "273333333");
-              await fs.writeFile(path.join(reportFolder.pathname, f), 
-                newContent, { 
-                encoding: "utf8", 
-                flag: "w", 
-                mode: 0o666 
-              });
-            });
-        };
-      } catch(err) {
-        console.error(err);
+  await inquirer
+    .prompt([
+      {
+        type: 'list',
+        name: 'report',
+        message: 'Which report to build?',
+        choices: reports,
+      },
+      {
+        type: 'text',
+        name: 'datetime',
+        message: 'Date/time start, UTC/ISO format',
+        default: "2024-03-27T04:10:30.000Z",
+      },
+      {
+        type: 'number',
+        name: 'windback',
+        message: 'Minutes to reverse',
+        default: 5,
+      }
+    ]).then(async result => {
+      const folderName = reportMap.find(el => el.title === result.report).folder;
+      const reportFolder = path.join(projectBase, "docs/src/sources/json/reports", folderName);
+      const mailFolderPublic = path.join(projectBase, "docs/public/mail");
+      const mailFolderDist = path.join(projectBase, "docs/dist/mail");
+      const ts = Date.parse(result.datetime);
+      if (isNaN(ts)) {
+        console.log("Cannot parse the date/time entered - exiting".red);
+        process.exit(1);
       };
-    } catch (err) {
-      console.error(err);
-    };
-
-    console.log("");
-  } catch(e) {
-    console.error(e);
-  } finally {
-    process.emit('SIGINT'); // will close mongo connection
-  };
+      try {
+        await fs.mkdir(reportFolder);
+      } catch (err) {
+        // folder exists
+      };
+      try {
+        await fs.access(reportFolder);
+        console.log(`Found ${reportFolder}`.brightGreen);
+        console.log(`${"Continuing will".brightGreen} ${"delete".red} ${"all files in".brightGreen} ${folderName.red}${"!".brightGreen}`);
+        await inquirer
+          .prompt([
+          {
+            type: 'confirm',
+            name: 'continue',
+            message: 'Are you sure you want to continue?',
+            default: true,
+          },
+        ]).then(async res => {
+          if (res.continue) {
+            // NOTE Removing all files in the target report directory
+            await fs.readdir(reportFolder)
+              .then(async files => {
+                for (const f of files) {
+                  const fPath = path.join(reportFolder, f);
+                  try {
+                    await fs.unlink(fPath);
+                  } catch(err) {
+                    console.log(`Failed to delete file ${f} - exiting`.red);
+                    process.emit('SIGINT');
+                  };
+                };
+              })
+              .catch(err => {
+                console.log(`Failed to delete directory ${folderName} - exiting`.red);
+                process.emit('SIGINT');
+              })
+            // NOTE Get all the data to save from external method
+            console.log("Directory has been emptied - recovering data".green);
+            try {
+              let type = "webhook";
+              if (folderName.startsWith("user")) type = "user";
+              if (folderName.startsWith("broken")) type = "broken";
+              const { report, logs, files, mail } = await buildReport({
+                mailFolder,
+                webhookFolder,
+                dateString: result.datetime,
+                deltaMinutes: result.windback,
+                type,
+              });
+              if (report && logs.length > 0 && files.length > 0) {
+                console.log("Data recovered, writing to report folder".green);
+                try {
+                  await fs.writeFile(path.join(reportFolder, "log.json"), 
+                    obfuscate(JSON.stringify(logs, null, 2)), {
+                      encoding: "utf8", 
+                      flag: "w", 
+                      mode: 0o666 
+                    });
+                  await fs.writeFile(path.join(reportFolder, "report.json"), 
+                    JSON.stringify(report, null, 2), { 
+                      encoding: "utf8", 
+                      flag: "w", 
+                      mode: 0o666 
+                  });
+                  for (const f of files) {
+                    await fs.readFile(path.join(webhookFolder, f))
+                      .then(async content => {
+                        await fs.writeFile(path.join(reportFolder, f), 
+                          obfuscate(content.toString()), { 
+                            encoding: "utf8", 
+                            flag: "w", 
+                            mode: 0o666 
+                          });
+                        });
+                  };
+                  for (const f of mail) {
+                    await fs.readFile(path.join(mailFolder, f))
+                      .then(async content => {
+                        await fs.writeFile(path.join(mailFolderPublic, `${folderName}.html`),  // renaming file
+                          obfuscate(content.toString()), { 
+                            encoding: "utf8", 
+                            flag: "w", 
+                            mode: 0o666 
+                          });
+                        await fs.writeFile(path.join(mailFolderDist, `${folderName}.html`),  // renaming file
+                          obfuscate(content.toString()), { 
+                            encoding: "utf8", 
+                            flag: "w", 
+                            mode: 0o666 
+                          });
+                        });
+                  };
+                } catch(err) {
+                  console.error(err);
+                  console.log(`Error in writing files to report folder - exiting`.red);
+                  process.emit('SIGINT');
+                };
+              } else {
+                console.log(`Insufficient data recovered to build report - exiting`.red);
+                process.emit('SIGINT');
+              };
+            } catch(err) {
+              console.error(err);
+              console.log(`Error recovering data - exiting`.red);
+              process.emit('SIGINT');
+            };
+            try {
+              // write files here
+            } catch(err) {
+              console.error(err);
+            };
+          } else {
+            console.log("Exiting".brightBlue);
+            process.emit('SIGINT');
+          };
+        });
+      } catch (err) {
+        console.log(err);
+        console.log(`Cannot access ${folderName} - exiting`.red);
+        process.emit('SIGINT');
+      };
+    })
 };
 
-const main = async () => {
+try {
   await run();
+} catch(e) {
+  console.log(e.message.red);
+} finally {
   process.emit('SIGINT'); // will close mongo connection
 };
-
-main().catch(console.error);

@@ -28,35 +28,6 @@ export default async (req, res, next) => {
   // the box subscription id
   const subscription_id = parseInt(req.query.subscription_id);
 
-  /*
-  // check mongo for updates - the webhook/subscription-cancelled will update
-  // all of these, once updated we can remove the updates_pending entry and continue
-  const search = {
-    //charge_id: parseInt(charge.id), now trying to avoid this because of updating charge and new charges created.
-    customer_id: parseInt(req.params.customer_id),
-    address_id: parseInt(req.params.address_id),
-    subscription_id: parseInt(subscription_id),
-  };
-  const findPending = await _mongodb.collection("updates_pending").findOne(search);
-
-  let completed = false;
-  if (findPending) {
-    const pendingIds = findPending.rc_subscription_ids.map(el => el.subscription_id).sort();
-    const check = compareArrays(ids, pendingIds);
-    const updated = findPending.rc_subscription_ids.every(el => el.updated === true);
-    completed = check && updated;
-    if (completed) {
-      // safely remove the entry
-      console.log("WTF this doesn't need to be here? Deleting updates pending entry.");
-      await _mongodb.collection("updates_pending").deleteOne(search);
-    };
-  };
-
-  if (!completed) {
-    return res.status(200).json({ message: "Updates pending ..." });
-  };
-  */
-
   const query = [
     ["customer_id", req.params.customer_id ],
     ["address_id", req.params.address_id ],

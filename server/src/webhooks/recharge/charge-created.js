@@ -70,63 +70,6 @@ export default async function chargeCreated(topic, shop, body) {
 
   // Only process charges that have been successful i.e. were created an charged via shopify
   if ( charge.status !== "success") {
-    /*
-    // NOTE this is a hack until I can move it into order/processed
-    // Every line_item should share the same delivery date, if not then an error
-    if (box_subscription_ids.length > 0) {
-
-      meta = getMetaForCharge(charge, "charge/created");
-      let lineItemDates;
-      try {
-        // first figure what the delivery day should be for this charge date
-        const currentChargeDate = new Date(Date.parse(charge.scheduled_at));
-        currentChargeDate.setDate(currentChargeDate.getDate() + 3);
-        deliveryDate = currentChargeDate.toDateString();
-
-        // then check if all line_items share the same delivery day, if not then
-        // maybe another workflow is happening - I'm thinking pausing or
-        // rescheduling a box
-        lineItemDates = charge.line_items.map(el => {
-          if (el.properties.find(prop => prop.name === "Delivery Date")) {
-            return el.properties.find(prop => prop.name === "Delivery Date").value;
-          };
-          return null
-        }).filter(el => el !== null);
-        lineItemDates = Array.from(new Set(lineItemDates));
-        if (lineItemDates.length !== 1) {
-          // log this as an error
-          meta.recharge = sortObjectByKeys(meta.recharge);
-          meta.recharge.dates = lineItemDates;
-          _logger.notice(`Charge created but not all dates equal, exiting.`, { meta });
-          return false; // back out for now
-        };
-          
-        // for now assume the the scheduled_at date is correct?
-        for (const line_item of charge.line_items) {
-          const dateItem = line_item.properties.find(el => el.name === "Delivery Date");
-          if (dateItem) {
-            if (dateItem.value !== deliveryDate) {
-              const boxId = line_item.properties.find(el => el.name === "box_subscription_id").value;
-              dateItem.value = deliveryDate; // always the same for every item on the order
-              await updateSubscription({
-                id: line_item.purchase_item_id,
-                body: { properties: line_item.properties },
-                title: `Updating delivery date for ${line_item.title} in charge/created`,
-              });
-            };
-          };
-        };
-
-      } catch(err) {
-        _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-        return false;
-      };
-      meta.recharge = sortObjectByKeys(meta.recharge);
-      meta.recharge.deliver_at = lineItemDates;
-      _logger.notice(`Charge created and updated delivery dates.`, { meta });
-      return true;
-    };
-    */
     return false;
   };
 
@@ -209,8 +152,6 @@ export default async function chargeCreated(topic, shop, body) {
     const nextChargeDate = new Date(Date.parse(deliveryDate));
     nextChargeDate.setDate(nextChargeDate.getDate() - 3);
     // Put to the required yyyy-mm-dd format
-    // Could use .split("T")[0] instead of substring
-    //nextChargeScheduledAt = nextChargeDate.toISOString().split('T')[0];
     nextChargeScheduledAt = formatDate(nextChargeDate);
 
     // used to compile the email

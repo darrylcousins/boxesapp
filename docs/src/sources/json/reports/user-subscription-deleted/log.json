@@ -1,0 +1,159 @@
+[
+  {
+    "_id": "65fe1c641cb14b33025cb90d",
+    "timestamp": "2024-03-23T00:03:48.968Z",
+    "level": "notice",
+    "message": "Subscription deleted email sent.",
+    "meta": {
+      "recharge": {
+        "customer_id": 84185810,
+        "charge_id": null,
+        "subscription_id": 467439746,
+        "subject": "Subscription Deleted The Medium Vege Box - Thursday",
+        "email": "jon.doe@mail.me",
+        "type": "deleted"
+      }
+    }
+  },
+  {
+    "_id": "65fe1c5e1cb14b33025cb90c",
+    "timestamp": "2024-03-23T00:03:42.797Z",
+    "level": "notice",
+    "message": "Webhook received subscription/deleted.",
+    "meta": {
+      "recharge": {
+        "subscription_id": 467439742,
+        "address_id": 153854233,
+        "customer_id": 84185810,
+        "scheduled_at": null,
+        "deliver_at": "Thu Apr 11 2024",
+        "quantity": 1,
+        "title": "Beetroot 1kg",
+        "box_subscription_id": 467439746,
+        "properties": {
+          "Delivery Date": "Thu Apr 11 2024",
+          "Add on product to": "The Medium Vege Box",
+          "box_subscription_id": "467439746"
+        }
+      }
+    }
+  },
+  {
+    "_id": "65fe1c5deed202b5ebf282b9",
+    "timestamp": "2024-03-23T00:03:41.943Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "method": "DELETE",
+        "path": "subscriptions/467439742",
+        "body": {
+          "send_email": false
+        },
+        "title": "Delete 467439742",
+        "session_id": "n2iwhyna1",
+        "status": "204 NO CONTENT"
+      }
+    }
+  },
+  {
+    "_id": "65fe1c5d1cb14b33025cb90a",
+    "timestamp": "2024-03-23T00:03:41.161Z",
+    "level": "notice",
+    "message": "Webhook received subscription/deleted.",
+    "meta": {
+      "recharge": {
+        "subscription_id": 467439754,
+        "address_id": 153854233,
+        "customer_id": 84185810,
+        "scheduled_at": null,
+        "deliver_at": "Thu Apr 11 2024",
+        "quantity": 1,
+        "title": "Bellbird Ciabatta",
+        "box_subscription_id": 467439746,
+        "properties": {
+          "Delivery Date": "Thu Apr 11 2024",
+          "Add on product to": "The Medium Vege Box",
+          "box_subscription_id": "467439746"
+        }
+      }
+    }
+  },
+  {
+    "_id": "65fe1c5ceed202b5ebf282b8",
+    "timestamp": "2024-03-23T00:03:40.530Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "method": "DELETE",
+        "path": "subscriptions/467439754",
+        "body": {
+          "send_email": false
+        },
+        "title": "Delete 467439754",
+        "session_id": "n2iwhyna1",
+        "status": "204 NO CONTENT"
+      }
+    }
+  },
+  {
+    "_id": "65fe1c5c1cb14b33025cb909",
+    "timestamp": "2024-03-23T00:03:40.135Z",
+    "level": "notice",
+    "message": "Webhook received subscription/deleted.",
+    "meta": {
+      "recharge": {
+        "subscription_id": 467439746,
+        "address_id": 153854233,
+        "customer_id": 84185810,
+        "scheduled_at": null,
+        "deliver_at": "Thu Apr 11 2024",
+        "quantity": 1,
+        "title": "The Medium Vege Box",
+        "box_subscription_id": 467439746,
+        "properties": {
+          "Delivery Date": "Thu Apr 11 2024",
+          "Including": "Carrots 1kg,Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Potato Agria 1kg",
+          "Add on Items": "Beetroot 1kg,Bellbird Ciabatta",
+          "Swapped Items": "Cabbage Green",
+          "Removed Items": "Onions Brown 4x",
+          "box_subscription_id": "467439746"
+        }
+      }
+    }
+  },
+  {
+    "_id": "65fe1c5beed202b5ebf282b7",
+    "timestamp": "2024-03-23T00:03:39.539Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "method": "DELETE",
+        "path": "subscriptions/467439746",
+        "body": {
+          "send_email": false
+        },
+        "title": "Delete 467439746",
+        "session_id": "n2iwhyna1",
+        "status": "204 NO CONTENT"
+      }
+    }
+  },
+  {
+    "_id": "65fe1c5d1cb14b33025cb90b",
+    "timestamp": "2024-03-23T00:03:39.234Z",
+    "level": "notice",
+    "message": "Boxesapp api request subscription deleted.",
+    "meta": {
+      "recharge": {
+        "address_id": 153854233,
+        "charge_id": "cancelled",
+        "customer_id": 84185810,
+        "label": "deleted",
+        "subscription_id": 467439746
+      }
+    }
+  }
+]

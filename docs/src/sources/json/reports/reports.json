@@ -11,6 +11,7 @@
     { "title": "Pause subscription", "folder": "user-subscription-paused" },
     { "title": "Reschedule subscription", "folder": "user-subscription-rescheduled" },
     { "title": "Cancel subscription", "folder": "user-subscription-cancelled" },
+    { "title": "Reactivate subscription", "folder": "user-subscription-reactivated" },
     { "title": "Delete subscription", "folder": "user-subscription-deleted" },
     { "title": "Create subscription", "folder": "user-subscription-created" }
   ]

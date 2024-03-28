@@ -77,6 +77,14 @@ export default async (opts) => {
         if (opts.meta) {
           const description = `${opts.title.charAt(0).toUpperCase()}${opts.title.substring(1).toLowerCase()}`;
           getLogger().notice(`${description} email sent.`, { meta: { recharge: opts.meta } });
+          if (parseInt(process.env.DEBUG) === 1) {
+            const s = new Date().toISOString().replace("T", "-").replace("Z", "");
+            try {
+              fs.writeFileSync(`debug/mail.${opts.subject}.${opts.meta.customer_id}.${s}.html`, htmlOutput.html);
+            } catch(err) {
+              getLogger().error({message: err.message, level: err.level, stack: err.stack, meta: err});
+            };
+          };
         };
       });
 

@@ -15,6 +15,7 @@ import {
   delay,
   animationOptions,
   animateFadeForAction,
+  sleepUntil,
 } from "../helpers.jsx";
 import CollapseWrapper from "../lib/collapse-animator.jsx";
 import { DoubleArrowDownIcon } from "../lib/icon.jsx";
@@ -28,7 +29,7 @@ import { DoubleArrowUpIcon } from "../lib/icon.jsx";
  * @example
  * { <Credits /> }
  */
-async function *Reports({ mode }) {
+async function *Reports({ mode, pathname, params }) {
   let staticUrl = ""; // see vite.config.js for running dev on port
 
   /**
@@ -41,6 +42,11 @@ async function *Reports({ mode }) {
    * @member {boolean} notfound
    */
   let notfound = false;
+  /**
+   * Collapsed mail
+   * @member {boolean} mailCollapsed
+   */
+  let mailCollapsed = true;
   /**
    * Collapsed preamble
    * @member {boolean} preambleCollapsed
@@ -71,6 +77,11 @@ async function *Reports({ mode }) {
    * @member {object} reportText
    */
   let reportHtml = null;
+  /**
+   * The html mail file, stripped down to body tag innerHtml
+   * @member {object} reportText
+   */
+  let mailHtml = null;
   /**
    * The parsed markdown text for log notes
    * @member {object} logNotesHtml
@@ -195,40 +206,39 @@ async function *Reports({ mode }) {
   };
 
   const handleClick = async (ev, obj) => {
+    if (ev) {
+      ev.preventDefault();
+      ev.target.blur();
+    };
 
-    ev.preventDefault();
-    ev.target.blur();
-
-    // first get the report.json file
-    loading = true;
-    await this.refresh();
     notfound = false;
     reportTitle = obj.title;
     reportDir = `/reports/${obj.folder}`;
     preambleCollapsed = true;
     webhookCollapsed = true;
     logNotesCollapsed = true;
+    mailCollapsed = true;
     const reportPath = `${reportDir}/report.json`;
     const logPath = `${reportDir}/log.json`;
     report = await pullJson(reportPath);
     if (report === null) {
       reportHtml = null;
       logNotesHtml = null;
+      mailHtml = null;
       notfound = true;
       loading = false;
-      animateFadeForAction("log-content", () => this.refresh());
+      await this.refresh();
     };
+    mailHtml = `/mail/${obj.folder}.html`;
     reportHtml = await pullMarkdown(`${reportDir}.md`);
     logNotesHtml = await pullMarkdown(`/reports/log-notes.md`);
     log = await pullJson(logPath);
+    logsCollapsed = [];
     for (const idx in log) {
       logsCollapsed.push(parseInt(idx)); // make all initially collapsed
     };
     loading = false;
-    animateFadeForAction("log-content", () => this.refresh());
-    //this.refresh()
-    // second get the log.json file
-    // all files are under /reports/key e.g. upcoming or similar
+    await this.refresh();
     return false;
   };
 
@@ -244,9 +254,12 @@ async function *Reports({ mode }) {
     return word.charAt(0).toUpperCase() + word.substring(1).toLowerCase();
   };
 
-  const toggleCollapse = (key) => {
+  const toggleCollapse = (ev, key) => {
+    ev.stopPropagation();
     if (key === "preamble") {
       preambleCollapsed = !preambleCollapsed;
+    } else if (key === "mail") {
+      mailCollapsed = !mailCollapsed;
     } else if (key === "webhook") {
       webhookCollapsed = !webhookCollapsed;
     } else if (key === "notes") {
@@ -272,16 +285,35 @@ async function *Reports({ mode }) {
     this.refresh();
   };
 
-  const Content = ({ html, component, preamble }) => {
+  const Content = ({ html, component, src, preamble }) => {
+    let content;
     if (html) {
-    return (
-      <div class={ `markdown-body pb4 ${mode}-mode` }>
-        <Raw value={ html } />
-      </div>
-    );
+      content = (
+        <div class={ `markdown-body pb4 ${mode}-mode` }>
+          <Raw value={ html } />
+        </div>
+      );
+    } else if (src) {
+      content = (
+        <iframe src={ src } width="100%" height="600">
+        </iframe>
+      );
     } else if (component) {
-      return component;
+      content = component;
     };
+    if (content) {
+      if (preamble) {
+        return (
+          <Fragment>
+            { preamble }
+            { content }
+          </Fragment>
+        );
+      } else {
+        return content;
+      };
+    };
+    return null;
   };
 
   const ContentWrapped = CollapseWrapper(Content);
@@ -346,11 +378,18 @@ async function *Reports({ mode }) {
     reports = await pullJson("/reports/reports.json");
     loading = false;
     this.refresh()
+    if (params.get("report")) {
+      const obj = [ ...reports.webhook, ...reports.user ].find(el => el.folder === params.get("report"));
+      await delay(2000);
+      console.log(obj);
+      if (obj) handleClick(null, obj);
+    };
+
   };
 
   await init();
 
-  for await ({ mode } of this) {
+  for await ({ mode, pathname, params } of this) {
     if (!reports) {
       yield (
         <Fragment>
@@ -363,7 +402,7 @@ async function *Reports({ mode }) {
         <Fragment>
           <h1>Reports</h1>
           { loading ? <BarLoader /> : <div class="bar-placeholder"></div> }
-          { ["webhook", "user"].map((el, idx) => (
+          { Object.keys(reports).map((el, idx) => (
             <Fragment>
               <h4 class={ idx === 0 && "mt0" }>{ capitalize(el) } initiated activity:</h4>
             { reports[el].map(el => (
@@ -387,7 +426,7 @@ async function *Reports({ mode }) {
             { reportHtml && (
               <div class={ `bb ${mode}-mode mb2` }>
                 <div title="Toggle preamble"
-                  onclick={ (e) => toggleCollapse("preamble") } 
+                  onclick={ (e) => toggleCollapse(e, "preamble") } 
                   class="dim bg-animate pointer w-100 dib mb0 pt1 flex">
                   <div class="w-50 fl">
                       <h2 class="mt0 bb-0">
@@ -406,10 +445,38 @@ async function *Reports({ mode }) {
                 />
               </div>
             )}
+            { mailHtml && (
+              <div class={ `bb ${mode}-mode mb2` }>
+                <div title="Toggle mail"
+                  onclick={ (e) => toggleCollapse(e, "mail") } 
+                  class="dim bg-animate pointer w-100 dib mb0 pt1 flex">
+                  <div class="w-50 fl">
+                      <h2 class="mt0 bb-0">
+                        { mailCollapsed ? (<DoubleArrowDownIcon />) : (<DoubleArrowUpIcon />)}
+                        User email:
+                      </h2>
+                  </div>
+                  <div class="w-50 tr fl pt3 b">
+                    { mailCollapsed ? (<DoubleArrowDownIcon />) : (<DoubleArrowUpIcon />)}
+                  </div>
+                </div>
+                <ContentWrapped
+                  id="mail-content"
+                  collapsed={ mailCollapsed }
+                  src={ mailHtml }
+                  preamble={ 
+                    <p class="lh-copy">
+                      This email is indicative only and may not represent the
+                      email that relates directly to this log report.
+                    </p>
+                  }
+                />
+              </div>
+            )}
             { report && (
               <div class={ `bb ${mode}-mode mb2` }>
                 <div title="Toggle webhooks"
-                  onclick={ (e) => toggleCollapse("webhook") } 
+                  onclick={ (e) => toggleCollapse(e, "webhook") } 
                   class="dim bg-animate pointer w-100 dib mb0 pt1 flex">
                   <div class="w-50 fl">
                     <h2 class="mt0 bb-0">
@@ -441,6 +508,7 @@ async function *Reports({ mode }) {
               <div class="w-100">
                 <h2 class="mt0 bb-0">Logs <span class="smaller">({ log.length }): {" "}
                   <a class="smaller ml5 normal" href={ `${reportDir}/log.json` }>{ `${reportDir}/log.json` }</a></span>
+                  <span class="smaller ml5">Latest first</span>
                 </h2>
                 <div class="w-100">
                   <div class="w-30 v-top mb2 tr fl">
@@ -491,7 +559,7 @@ async function *Reports({ mode }) {
                 </div>
                 <div class="cf" />
                 <div title="Toggle notes"
-                  onclick={ (e) => toggleCollapse("notes") } 
+                  onclick={ (e) => toggleCollapse(e, "notes") } 
                   class="dim bg-animate pointer w-100 dib mb0 pt1 flex">
                   <div class="w-50 fl">
                       <h4 class="mt0 mb0 bb-0">
@@ -522,19 +590,27 @@ async function *Reports({ mode }) {
                   <Fragment>
                     <div class={ `w-100 ${ idx > 0 ? "bt" : "" } pt2 b--gray` }>
                       <div title="Toggle collapse"
-                          onclick={ (e) => toggleCollapse(idx) } 
+                          onclick={ (e) => toggleCollapse(e, idx) } 
                           class="dim bg-animate pointer dib pt1 dt--fixed">
-                        <div class="tl w-30 fl">
+                        <div class="tl w-30 fl"
+                          onclick={ (e) => toggleCollapse(e, idx) } 
+                        >
                           { logsCollapsed.indexOf(idx) > -1 ? (<DoubleArrowDownIcon />) : (<DoubleArrowUpIcon />)}
                           { dateString(el) } { " " }
                         </div>
-                        <div class="b tr pa0 pr2 ma0 mt1 w-10 fl">
+                        <div class="b tr pa0 pr2 ma0 mt1 w-10 fl"
+                          onclick={ (e) => toggleCollapse(e, idx) } 
+                        >
                           <code class="listing">{ getMetaObject(el) }</code>
                         </div>
-                        <div class="tl pa0 pr1 ma0 mt1 w-10 fl">
+                        <div class="tl pa0 pr1 ma0 mt1 w-10 fl"
+                          onclick={ (e) => toggleCollapse(e, idx) } 
+                        >
                           <Label message={ el.message } />
                         </div>
-                        <div class="b tl pa0 ma0 mt1 truncate w-50 fl">
+                        <div class="b tl pa0 ma0 mt1 truncate w-50 fl"
+                          onclick={ (e) => toggleCollapse(e, idx) } 
+                        >
                           { getLogMessage(el) }
                         </div>
                       </div>

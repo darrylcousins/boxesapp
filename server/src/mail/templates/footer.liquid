@@ -1,14 +1,12 @@
-{% if attributes and attributes.customer %}
-  <mj-section padding="0px 0px">
-    <mj-column width="100%">
-        <mj-button
-          background-color="#162842"
-          href="https://{{env.SHOP}}/account">
-          View or edit your subscription
-        </mj-button>
-    </mj-column>
-  </mj-section>
-{% endif %}
+<mj-section padding="0px 0px" full-width="true">
+  <mj-column width="100%">
+      <mj-button
+        background-color="#162842"
+        href="https://{{env.SHOP}}/account">
+        View or edit your subscription
+      </mj-button>
+  </mj-column>
+</mj-section>
 <mj-section padding="10px 0px" full-width="true">
   <mj-column width="100%">
     <mj-text align="right">

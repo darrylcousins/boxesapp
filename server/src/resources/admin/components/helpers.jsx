@@ -346,10 +346,12 @@ export const animationOptions = {
 
 /**
  * Animate a fade and execute an action on end
+ * Can I collapse it after animate?
  *
  * @function animateFadeForAction
  */
-export const animateFadeForAction = (id, action, duration) => {
+export const animateFadeForAction = (id, action, duration, collapse) => {
+  if (typeof collapse === "undefined") collapse = false;
   let target;
   if (typeof id === "string") {
     target = document.getElementById(id);
@@ -359,21 +361,25 @@ export const animateFadeForAction = (id, action, duration) => {
   const options = { ...animationOptions };
   if (duration) options.duration = duration;
   const animate = target.animate(
-    {
-      opacity: 0.1,
-    },
+    { opacity: 0.1 },
     options
   );
   animate.addEventListener("finish", async () => {
+    if (collapse) {
+      // need to set style height for collapse to work correctly
+      //target.classList.add("hide"); // and hide, though this may bite me if I forget
+      target.style.height = transitionElementHeight(target); // doesn't seem to nicely collapse?
+      collapseElement(target); // doesn't seem to nicely collapse?
+      await delay(600); // 
+    } else {
+      target.animate(
+        { opacity: 1 },
+        options
+      );
+    };
     if (action) {
       await action();
-    }
-    target.animate(
-      {
-        opacity: 1,
-      },
-      options
-    );
+    };
   });
 };
 
@@ -406,6 +412,7 @@ export const collapseElement = (element) => {
   if (!element) return;
   const elementHeight = element.scrollHeight;
   var elementTransition = element.style.transition;
+  elementTransition = "height .6s";
   element.style.transition = "";
   requestAnimationFrame(() => {
     element.style.height = elementHeight + "px";
@@ -436,6 +443,7 @@ export const transitionElementHeight = (element, start) => {
     //if (el.classList.contains("bb") || el.classList.contains("bt")) calculatedHeight += 1;
   });
   element.style.height = calculatedHeight + "px";
+  return element.style.height;
 };
 
 /*

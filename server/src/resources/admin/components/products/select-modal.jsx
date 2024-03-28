@@ -120,59 +120,44 @@ function* SelectModal({ modalNote, modalType, modalSelectList, hideModal, multip
           </div>
           { modalSelectList ? (
             <Fragment>
-              { modalSelectList.length === 100 ? (
+              { modalSelectList.map(product => (
                 <div class="flex justify-between">
-                  <label class="pointer items-center" style="font-size: 1em">
-                    { modalSelectList[0].shopify_title } { modalSelectList[0].quantity > 1 && `(${modalSelectList[0].quantity})` }
-                  </label>
-                  { modalType === "add" && (
-                    <div>
-                      <div>
-                        <span>{ toPrice(product.shopify_price) }</span>
-                      </div>
-                    </div>
+                  { product ? (
+                    <Fragment>
+                      <label class="pointer items-center" style="font-size: 1em; margin-bottom: 0px;">
+                        <input 
+                          onclick={ handleClick }
+                          checked={ selectedProductId === product.shopify_product_id || selectedProductIds.includes(parseInt(product.shopify_product_id)) }
+                          class="mr2"
+                          type="radio"
+                          id={ product.shopify_product_id }
+                          value={ product.shopify_product_id }
+                          name={ product.shopify_title } />
+                          <div class="ma1 mr3 dib">
+                            <Image
+                              src={ getImageUrl(product.shopify_product_id) }
+                              size="2em"
+                              title={ product.shopify_title }
+                              shopify_product_id={ product.shopify_product_id }
+                              id={`image-${product.shopify_product_id}`}
+                              crank-key={`image-${product.shopify_product_id}`}
+                            />
+                          </div>
+                          { product.shopify_title } { product.quantity > 1 && `(${product.quantity})` }
+                      </label>
+                      { modalType === "add" && (
+                        <div>
+                          <div>
+                            <span>{ toPrice(product.shopify_price) }</span>
+                          </div>
+                        </div>
+                      )}
+                    </Fragment>
+                  ) : (
+                    <div>&nbsp;</div>
                   )}
                 </div>
-              ) : (
-                modalSelectList.map(product => (
-                  <div class="flex justify-between">
-                    { product ? (
-                      <Fragment>
-                        <label class="pointer items-center" style="font-size: 1em; margin-bottom: 0px;">
-                          <input 
-                            onclick={ handleClick }
-                            checked={ selectedProductId === product.shopify_product_id || selectedProductIds.includes(parseInt(product.shopify_product_id)) }
-                            class="mr2"
-                            type="radio"
-                            id={ product.shopify_product_id }
-                            value={ product.shopify_product_id }
-                            name={ product.shopify_title } />
-                            <div class="ma1 mr3 dib">
-                              <Image
-                                src={ getImageUrl(product.shopify_product_id) }
-                                size="2em"
-                                title={ product.shopify_title }
-                                shopify_product_id={ product.shopify_product_id }
-                                id={`image-${product.shopify_product_id}`}
-                                crank-key={`image-${product.shopify_product_id}`}
-                              />
-                            </div>
-                            { product.shopify_title } { product.quantity > 1 && `(${product.quantity})` }
-                        </label>
-                        { modalType === "add" && (
-                          <div>
-                            <div>
-                              <span>{ toPrice(product.shopify_price) }</span>
-                            </div>
-                          </div>
-                        )}
-                      </Fragment>
-                    ) : (
-                      <div>&nbsp;</div>
-                    )}
-                  </div>
-                ))
-              )}
+              ))}
               { selectedProduct && selectedProduct.quantity > 1 && (
                 <div class="w-100">
                   <p class="bold">

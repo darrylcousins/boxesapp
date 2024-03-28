@@ -389,11 +389,6 @@ function FormModalWrapper(Component, options) {
                     closeModal={closeModal}
                   />
                 )}
-                { false && Object.hasOwnProperty.call(props, "socketMessageId") && (
-                  <div id={ props.socketMessageId } class="tl socketMessages">
-                    Removed this to close the modal first and send messages to parent component
-                  </div>
-                )}
               </ModalTemplate>
             </Portal>
           )}

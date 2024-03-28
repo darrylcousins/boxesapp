@@ -38,9 +38,6 @@ export default async function subscriptionDeleted(topic, shop, body, { io, socke
       meta.recharge.updates_pending = `UPDATED ON ${topic.toUpperCase()}`;
       meta.recharge = sortObjectByKeys(meta.recharge);
 
-      if (parseInt(process.env.DEBUG) === 1) {
-        _logger.notice(`Deleted ${meta.recharge.title} - updated pending entry.`, { meta });
-      };
       if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
         const socket_id = sockets[entry.session_id];
         io = io.to(socket_id);

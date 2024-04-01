@@ -203,7 +203,7 @@ export default async (req, res, next) => {
     };
 
     const rc_subscription_ids = [{
-      delivery_at: data.properties["Delivery Date"],
+      deliver_at: data.properties["Delivery Date"],
       price: data.price,
       quantity: 1,
       shopify_product_id: parseInt(data.product_id),

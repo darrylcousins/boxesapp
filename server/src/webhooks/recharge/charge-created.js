@@ -1,13 +1,20 @@
 /*
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
+import { ObjectId } from "mongodb";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import { formatDate, sortObjectByKeys, matchNumberedString, delay } from "../../lib/helpers.js";
 import { upsertPending } from "../../api/recharge/lib.js";
 import { updateSubscription, updateChargeDate, getSubscription } from "../../lib/recharge/helpers.js";
 import subscriptionCreatedMail from "../../mail/subscription-created.js";
-import { getBoxesForCharge, getMetaForCharge, writeFileForCharge  } from "./helpers.js";
-import fs from "fs";
+import {
+  getBoxesForCharge,
+  getMetaForCharge,
+  getMetaForSubscription,
+  writeFileForCharge,
+  writeFileForSubscription,
+  updatePendingEntry,
+} from "./helpers.js";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
@@ -22,7 +29,7 @@ import fs from "fs";
  * NOTE Returns false if no action is taken and true if some update occured
  *
  */
-export default async function chargeCreated(topic, shop, body) {
+export default async function chargeCreated(topic, shop, body, { io, sockets }) {
 
   const mytopic = "CHARGE_CREATED";
   if (topic !== mytopic) {
@@ -70,6 +77,99 @@ export default async function chargeCreated(topic, shop, body) {
 
   // Only process charges that have been successful i.e. were created an charged via shopify
   if ( charge.status !== "success") {
+    if ( charge.status === "queued") {
+
+      /* NOTE special case where when a subscription is paused or rescheduled a
+       * new charge is created with all the line items correctly configured and
+       * therefore 'after' the subscriptions are updated we no longer receive
+       * a charge/upcoming webhook and the pending entry is never deleted
+       * So here we attempt to do so in one algorithm. The idea being that if
+       * we get through all the line_items and they are updated we can delete
+       * the entry and emit finished
+       * NOTE May need to add a delay because the front-end will then fetch the
+       * box subscription which may not have yet been updated?
+       */
+      // start with the line_items using updatePendingEntry
+      const meta = { recharge: { // base construct for meta
+        customer_id: charge.customer.id,
+        address_id: charge.address_id,
+        scheduled_at: charge.scheduled_at,
+      }};
+      const actions = {};
+      for (const boxId of box_subscription_ids) {
+        actions[boxId] = null;
+        const query = { ...meta.recharge, subscription_id: boxId };
+        const entry = await _mongodb.collection("updates_pending").findOne(query);
+        if (entry) actions[boxId] = entry.action;
+      };
+      // ensure the box subscription is the last to be processed
+      for(var x in charge.line_items) charge.line_items[x].properties.some(el => el.name === "Including") 
+        ? charge.line_items.push(charge.line_items.splice(x,1)[0]) : 0;
+      for (const line_item of charge.line_items) {
+        if (line_item.properties.some(el => el.name === "box_subscription_id")) {
+          // build meta from line_item
+          meta.recharge.scheduled_at = charge.scheduled_at;
+          meta.recharge.title = line_item.title;
+          meta.recharge.variant_title = line_item.variant_title;
+          meta.recharge.quantity = line_item.quantity;
+          meta.recharge.item_subscription_id = line_item.purchase_item_id;
+          meta.recharge.shopify_product_id = parseInt(line_item.external_product_id.ecommerce);
+          meta.recharge.subscription_id = parseInt(line_item.properties.find(el => el.name === "box_subscription_id").value);
+          meta.recharge["Delivery Date"] = line_item.properties.find(el => el.name === "Delivery Date").value;
+          const action = (Object.hasOwn(actions, meta.recharge.subscription_id)) ? actions[meta.recharge.subscription_id] : "updated";
+          if (action) {
+            const { updated, entry } = await updatePendingEntry(meta, action);
+            console.log(action, updated);
+            if (updated) {
+
+              // sure that box is last
+
+              if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
+                const socket_id = sockets[entry.session_id];
+                io = io.to(socket_id);
+                const variant_title = meta.recharge.variant_title ? ` (${meta.recharge.variant_title})` : "";
+                io.emit("completed", `Subscription ${topicLower}: ${meta.recharge.title}${variant_title}`);
+              };
+
+              // check that all have been updated
+              const allUpdated = entry.rc_subscription_ids.every(el => {
+                // check that all subscriptions have updated or have been created
+                return el.updated === true && Number.isInteger(el.subscription_id);
+              });
+              if (allUpdated) {
+                delay(10000);
+                await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
+                if (parseInt(process.env.DEBUG) === 1) {
+                  _logger.notice(`Deleting pending entry subscription/updated (${meta.recharge.title})`, { meta: { recharge: entry }});
+                };
+                if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
+                  io.emit("completed", `Removing updates entry ${topicLower}.`);
+                  io.emit("completed", `Updates completed.`);
+                  const message = entry.action === "created" ? "created.complete" : "finished";
+                  io.emit(message, {
+                    action: entry.action,
+                    session_id: entry.session_id,
+                    subscription_id: entry.subscription_id,
+                    address_id: entry.address_id,
+                    customer_id: entry.customer_id,
+                    scheduled_at: entry.scheduled_at,
+                    charge_id: entry.charge_id,
+                  });
+                };
+              } else {
+                if (parseInt(process.env.DEBUG) === 1) {
+                  _logger.notice(`Updated ${meta.recharge.title} - entry still pending.`, { meta: { recharge: entry } });
+                };
+              };
+            } else {
+              if (parseInt(process.env.DEBUG) === 1) {
+                _logger.notice(`Updated ${meta.recharge.title} - unable to update pending.`, { meta: { recharge: entry } });
+              };
+            };
+          };
+        };
+      };
+    };
     return false;
   };
 

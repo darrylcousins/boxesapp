@@ -61,7 +61,7 @@ export default async (req, res, next) => {
     const grouped = await reconcileGetGrouped({ charge });
     const result = grouped[subscription_id];
     delete result.charge; // charge.line_items duplicated in result.includes
-    result.subscription_id = subscription_id;
+    result.subscription_id = parseInt(subscription_id);
 
     let lastOrder;
     try {

@@ -161,6 +161,7 @@ export default async (req, res, next) => {
       scheduled_at: nextChargeDate,
     });
 
+    /* NOTE turns out I can do all this in one call!
     // first activated the subscription, curious to see what charge date it gives, still don't know
     for (const update of updates) {
       const opts = {
@@ -193,13 +194,18 @@ export default async (req, res, next) => {
     };
 
     delay(10000);
+    */
 
     // then update properties [Delivery Date]
     for (const update of updates) {
       const opts = {
         id: update.id,
-        title: update.title,
-        body: { properties: update.properties },
+        title: `Reactivating ${update.title}`,
+        body: {
+          status: "active",
+          properties: update.properties,
+          next_charge_scheduled_at: nextChargeDate,
+        },
         io,
         session_id,
       };

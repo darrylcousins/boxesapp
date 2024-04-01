@@ -190,7 +190,7 @@ function* CurrentBoxes({ timestamp }) {
       try {
         console.log(ev.detail);
         console.log("selectedDate", selectedDate)
-        if (Object.hasOwn(ev.detail, "src")) {
+        if (Object.hasOwnProperty.call(ev.detail, "src")) {
           console.log("src", ev.detail.src);
           if (ev.detail.src === "/api/duplicate-boxes") {
             selectedDate = ev.detail.json.delivered;

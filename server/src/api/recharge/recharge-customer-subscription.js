@@ -26,7 +26,8 @@ export default async (req, res, next) => {
   let charge_id = req.params.charge_id;
   const { action, customer, subscription_id, address_id, scheduled_at, lastOrder } = req.body;
 
-  console.log(req.body);
+  console.log("get curstomer subscription", subscription_id, action);
+  //console.log(req.body);
   let io;
   let session_id;
   let socket;
@@ -99,17 +100,52 @@ export default async (req, res, next) => {
       };
 
       const charges = result.charges.filter(el => el.line_items.length > 0);
+
       let subscription;
 
       let errors;
       if (action !== "cancelled") {
+
         const { data, errors: dataErrors } = await gatherVerifiedData({ charges, customer, io });
         subscription = data.find(el => el.attributes.subscription_id === parseInt(subscription_id));
         if (dataErrors) errors = dataErrors;
+
       } else {
 
+        console.log("unfiltered", result.charges.length);
+        console.log("filtered", charges.length);
+
+        // also need to get the subscriptions because that is where cancel data is
+        const cancelQuery = [
+          ["customer_id", customer.id ],
+          ["address_id", address_id ],
+          ["status", "cancelled" ],
+        ];
+        // unsure why no charges are found?
+        if (charges.length > 0) {
+          cancelQuery.push(
+            ["ids", result.charges[0].line_items.map(el => el.purchase_item_id)],
+          );
+        };
+
+        const { subscriptions } = await makeRechargeQuery({
+          path: `subscriptions`,
+          query,
+          title: "Cancelled subscriptions",
+          io,
+        });
+
+        const finalSubscriptions = [];
+        for (const el of subscriptions) {
+          el.purchase_item_id = el.id // needed for grouping
+          const box_subscription_id = el.properties.find(el => el.name === "box_subscription_id");
+          if (box_subscription_id && parseInt(box_subscription_id.value) === subscription_id) {
+            finalSubscriptions.push(el);
+          };
+        };
+
         const charge = {};
-        charge.line_items = charges[0].line_items;
+        charge.line_items = finalSubscriptions;
         charge.customer = { id: parseInt(customer.id) };
         charge.address_id = parseInt(address_id);
         charge.scheduled_at = null;
@@ -117,7 +153,7 @@ export default async (req, res, next) => {
         const grouped = await reconcileGetGrouped({ charge });
         subscription = grouped[subscription_id];
         delete subscription.charge; // charge.line_items duplicated in result.includes
-        subscription.subscription_id = subscription_id;
+        subscription.subscription_id = parseInt(subscription_id);
 
         if (lastOrder) {
           subscription.lastOrder = lastOrder;
@@ -138,6 +174,7 @@ export default async (req, res, next) => {
       };
 
       if (subscription) {
+        subscription.completed_action = action;
         // emitting finish to stop loading routine
         if (io) io.emit("finished", { session_id, subscription_id });
         return res.status(200).json({ subscription, errors, action });

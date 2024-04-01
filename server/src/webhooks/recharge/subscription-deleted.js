@@ -42,7 +42,7 @@ export default async function subscriptionDeleted(topic, shop, body, { io, socke
         const socket_id = sockets[entry.session_id];
         io = io.to(socket_id);
         const variant_title = meta.recharge.variant_title ? ` (${meta.recharge.variant_title})` : "";
-        io.emit("completed", `Subscription ${topic}: ${meta.recharge.title}${variant_title}`);
+        io.emit("completed", `Subscription ${topicLower} ${meta.recharge.title}${variant_title}`);
       };
 
     };

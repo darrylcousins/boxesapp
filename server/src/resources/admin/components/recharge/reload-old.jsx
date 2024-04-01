@@ -1,3 +1,31 @@
+  /*
+   * @function getCancelledSubscription
+   * Retreive a cancelled subscription after cancelling
+   */
+  const getCancelledSubscription = async () => {
+    let uri = `/api/recharge-cancelled-subscription`;
+    uri = `${uri}/${subscription.attributes.customer.id}/${subscription.attributes.address_id}`;
+    uri = `${uri}?ids=${ subscription.includes.map(el => el.subscription_id).join(",") }`;
+    uri = `${uri}&subscription_id=${subscription.attributes.subscription_id}`;
+    return Fetch(encodeURI(uri))
+      .then((result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          this.refresh();
+          return null;
+        };
+        return json;
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+        return null;
+      });
+  };
+
   /**
    * @function getActivatedSubscription
    * Reload this particular charge from the server as a 'subsciption' object

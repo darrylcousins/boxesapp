@@ -39,7 +39,7 @@ export default async function subscriptionUpdated(topic, shop, body, { io, socke
         const socket_id = sockets[entry.session_id];
         io = io.to(socket_id);
         const variant_title = meta.recharge.variant_title ? ` (${meta.recharge.variant_title})` : "";
-        io.emit("completed", `Subscription ${topic}: ${meta.recharge.title}${variant_title}`);
+        io.emit("completed", `Subscription ${entry.action}: ${meta.recharge.title}${variant_title}`);
       };
 
       // schedule_only comes from changeBoxModal and indicates that only the
@@ -54,11 +54,11 @@ export default async function subscriptionUpdated(topic, shop, body, { io, socke
         if (allUpdated) {
           await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
           if (parseInt(process.env.DEBUG) === 1) {
-            _logger.notice(`Deleting pending entry subscription/updated (${meta.recharge.title})`, { meta: { recharge: entry }});
+            _logger.notice(`Deleting pending entry ${topicLower} (${meta.recharge.title})`, { meta: { recharge: entry }});
           };
           if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
             io.emit("completed", `Updates completed, removing updates entry.`);
-            io.emit("updates.completed", {
+            io.emit("finished", {
               action: entry.action,
               session_id: entry.session_id,
               subscription_id: entry.subscription_id,
@@ -68,15 +68,7 @@ export default async function subscriptionUpdated(topic, shop, body, { io, socke
               charge_id: entry.charge_id,
             });
           };
-        } else {
-          if (parseInt(process.env.DEBUG) === 1) {
-            _logger.notice(`Updated ${meta.recharge.title} - entry still pending.`, { meta: { recharge: entry } });
-          };
         };
-      };
-    } else {
-      if (parseInt(process.env.DEBUG) === 1) {
-        _logger.notice(`Updated ${meta.recharge.title} - unable to update pending.`, { meta: { recharge: entry } });
       };
     };
 

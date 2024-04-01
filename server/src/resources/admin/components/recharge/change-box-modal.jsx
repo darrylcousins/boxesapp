@@ -788,7 +788,7 @@ async function* ChangeBox(props) {
                       data-id={box.id}
                       name="title"
                       onclick={ onClick }
-                      classes={ box.title === boxAttributes.title ? "disable b" : "b" }
+                      classes={ `${ box.title === boxAttributes.title ? "disable b" : "b" }` }
                       selected={ box.title === boxAttributes.title }>
                         { box.title }{ `${ box.title === boxAttributes.title ? " ✓" : "" }` }
                     </Button>
@@ -836,32 +836,36 @@ async function* ChangeBox(props) {
           </div>
           { currentBoxes && currentVariant && currentPlan && (
             <Fragment>
-              <div class="alert-box w-95 tl ba br3 pa3 mh2 mb2 dark-blue bg-washed-blue" role="alert">
-                <p class="lh-copy mb1">
-                  This is a subscription. By continuing, you agree that the
-                  subscription will automatically renew at the price and frequency
-                  listed on this page until it ends or you cancel. All
-                  cancellations are subject to the cancellation policy that you will 
-                  find at {" "}
-                  <a class="link b navy" target="_blank" 
-                    href={ `https://${localStorage.getItem("shop")}` }
-                  >{ localStorage.getItem("shop_title") }</a>
-                  .
-                </p>
-                <p class="tr mr5 mb1">
-                  <label class="lh-copy pr3 b v-mid navy" htmlFor="checkedPolicy" for="checkedPolicy">
-                    Please confirm
-                  </label>
-                  <input
-                    type="checkbox"
-                    name="checkedPolicy"
-                    id="checkedPolicy"
-                    class="v-mid"
-                    checked={ checkedPolicy }
-                    onchange={ togglePolicy }
-                  />
-                </p>
-              </div>
+              { selectedBox || !subscription ? (
+                <div class="alert-box w-95 tl ba br3 pa3 mh2 mb2 dark-blue bg-washed-blue" role="alert">
+                  <p class="lh-copy mb1">
+                    This is a subscription. By continuing, you agree that the
+                    subscription will automatically renew at the price and frequency
+                    listed on this page until it ends or you cancel. All
+                    cancellations are subject to the cancellation policy that you will 
+                    find at {" "}
+                    <a class="link b navy" target="_blank" 
+                      href={ `https://${localStorage.getItem("shop")}` }
+                    >{ localStorage.getItem("shop_title") }</a>
+                    .
+                  </p>
+                  <p class="tr mr5 mb1">
+                    <label class="lh-copy pr3 b v-mid navy" htmlFor="checkedPolicy" for="checkedPolicy">
+                      Please confirm
+                    </label>
+                    <input
+                      type="checkbox"
+                      name="checkedPolicy"
+                      id="checkedPolicy"
+                      class="v-mid"
+                      checked={ checkedPolicy }
+                      onchange={ togglePolicy }
+                    />
+                  </p>
+                </div>
+              ) : (
+                ""
+              )}
               <div class="cf tr mr2 mb2">
                 { selectedBox || !subscription ? (
                   <Button type={ checkedPolicy ? "primary" : "secondary" } 
@@ -937,11 +941,14 @@ async function* ChangeBox(props) {
         if (error) fetchError = error;
 
         currentBoxes = [ ...boxes ];
-        currentBox = Object.hasOwn(boxAttributes, "product_id") ? currentBoxes.find(el => el.id === boxAttributes.product_id) : null;
+        currentBox = Object.hasOwnProperty.call(boxAttributes, "product_id") 
+          ? currentBoxes.find(el => el.id === boxAttributes.product_id) : null;
         currentVariants = currentBox ? sortVariants(currentBox.variants) : [];
-        currentVariant = Object.hasOwn(boxAttributes, "variant_id") ? currentVariants.find(el => el.id === boxAttributes.variant_id) : null;
+        currentVariant = Object.hasOwnProperty.call(boxAttributes, "variant_id")
+          ? currentVariants.find(el => el.id === boxAttributes.variant_id) : null;
         currentPlans = currentBox ? currentBox.plans : [];
-        currentPlan = Object.hasOwn(boxAttributes, "frequency") ? currentBox.plans.find(el => el.name === boxAttributes.frequency) : null;
+        currentPlan = Object.hasOwnProperty.call(boxAttributes, "frequency")
+          ? currentBox.plans.find(el => el.name === boxAttributes.frequency) : null;
         loading = false;
         const wrapper = document.getElementById(`change-box-modal`);
         if (wrapper) {

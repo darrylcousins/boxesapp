@@ -38,7 +38,7 @@ export default async function chargeDeleted(topic, shop, body, { io, sockets }) 
         const socket_id = sockets[entry.session_id];
         io = io.to(socket_id);
         io.emit("completed", `Charge deleted ${charge.id}`);
-        io.emit("updates.completed", {
+        io.emit("finished", {
           action: entry.action,
           session_id: entry.session_id,
           subscription_id: entry.subscription_id,
@@ -51,7 +51,7 @@ export default async function chargeDeleted(topic, shop, body, { io, sockets }) 
 
       await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
       if (parseInt(process.env.DEBUG) === 1) {
-        _logger.notice("Deleting updates pending entry charge/deleted", { meta: { recharge: entry }});
+        _logger.notice(`Deleting updates pending entry ${topicLower} (${updates_pending.action})`, { meta: { recharge: entry }});
       };
     };
 

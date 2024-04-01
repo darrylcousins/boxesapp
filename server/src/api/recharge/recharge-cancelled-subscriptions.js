@@ -87,7 +87,7 @@ export default async (req, res, next) => {
       };
 
       result.push({
-        subscription_id,
+        subscription_id: parseInt(subscription_id),
         box: group.box,
         included: group.included,
         lastOrder

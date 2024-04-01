@@ -232,7 +232,12 @@ async function* UnSkipCharge(props) {
       })
     );
     const nextDeliveryDate = document.getElementById("nextdeliverydate").value;
-    const messages = [`Updating delivery date from ${subscription.attributes.nextDeliveryDate} to ${nextDeliveryDate}`];
+    const nextChargeDate = document.getElementById("nextchargedate").value;
+    const messages = [
+      `Updating box subscription ${subscription.box.shopify_title} ${subscription.attributes.variant}`,
+      `Updating delivery date from ${subscription.attributes.nextDeliveryDate} to ${nextDeliveryDate}`,
+      `Updating charge date from ${subscription.attributes.nextChargeDate} to ${nextChargeDate}`,
+    ];
     await doSave();
     this.dispatchEvent(
       new CustomEvent("subscription.messages", {

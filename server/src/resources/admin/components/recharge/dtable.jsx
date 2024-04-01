@@ -98,10 +98,10 @@ const DTable = ({ items, title, show_title }) => {
                     <dd style={ dd }>{ thing.box_title }</dd>
                   </Fragment>
                 )}
-                { thing.delivery_at && (
+                { thing.deliver_at && (
                   <Fragment>
                     <dt style={ dt }>Next delivery</dt>
-                    <dd style={ dd }>{ thing.delivery_at }</dd>
+                    <dd style={ dd }>{ thing.deliver_at }</dd>
                   </Fragment>
                 )}
                 { thing.cancelled_at && (

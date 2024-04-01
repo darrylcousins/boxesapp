@@ -74,6 +74,7 @@ export default async (req, res, next) => {
       customer_id: customer.id,
       address_id,
       subscription_id,
+      //scheduled_at: null, // any subscription updates will not have a scheduled_at
       scheduled_at,
       deliver_at: meta.recharge["Delivery Date"],
       rc_subscription_ids: subscription_ids,
@@ -103,23 +104,24 @@ export default async (req, res, next) => {
 
     res.status(200).json({ success: true, action: "cancelled", subscription_id });
 
-    for (const update of includes) {
-      const body = {
-        cancellation_reason_comments: "BoxesApp cancel subscription",
-        cancellation_reason: cancellation_reason,
+    try {
+      for (const update of includes) {
+        await makeRechargeQuery({
+          method: "POST",
+          path: `subscriptions/${update.subscription_id}/cancel`,
+          body: JSON.stringify({
+            cancellation_reason_comments: "BoxesApp cancel subscription",
+            cancellation_reason: cancellation_reason,
+            send_email: (update.subscription_id === subscription_id),
+          }),
+          title: `Cancel ${update.title}`,
+          io,
+          session_id,
+        });
       };
-      if (update.subscription_id !== subscription_id) body.send_email = false;
-
-      const opts = {
-        method: "POST",
-        path: `subscriptions/${update.subscription_id}/cancel`,
-        body: JSON.stringify(body),
-        title: `Cancel ${update.title}`,
-        io,
-        session_id,
-      };
-
-      await makeRechargeQuery(opts);
+    } catch(err) {
+      res.status(200).json({ error: err.message });
+      _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
     };
 
 

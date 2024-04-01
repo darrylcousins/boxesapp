@@ -66,7 +66,15 @@ export default async (req, res, next) => {
   const { now, navigator, admin, type } = data;
 
   // return early
-  res.status(200).json({});
+  res.status(200).json({
+    success: true,
+    action: "changed",
+    subscription_id: parseInt(data.subscription_id),
+    scheduled_at: data.scheduled_at,
+    nextchargedate: data.scheduled_at,
+    nextdeliverydate: data.delivery_date,
+  });
+
 
   try {
 

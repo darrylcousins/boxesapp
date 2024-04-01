@@ -40,6 +40,7 @@ export default async (req, res, next) => {
   let updated;
   const subscription_ids = rc_subscription_ids.map(el => {
     updated = update_shopify_ids.indexOf(el.shopify_product_id) === -1;
+    el.deliver_at = nextdeliverydate;
     return { ...el, updated };
   });
 
@@ -142,6 +143,8 @@ export default async (req, res, next) => {
       nextdeliverydate,
     });
 
+    /*
+     * NOTE so I don't need to make 2 calls, doh
     for (const update of updates) {
       const opts = {
         id: update.id,
@@ -155,6 +158,7 @@ export default async (req, res, next) => {
     };
 
     await delay(10000); // wait 10 seconds to avoid making call to same route
+    */
 
     // the order of these matters, doing charge date first gave me odd results,
     // but then so did doing this update first for which I would not receive
@@ -162,8 +166,11 @@ export default async (req, res, next) => {
     for (const update of updates) {
       const opts = {
         id: update.id,
-        title: `Updating delivery date ${update.title}`,
-        body: { properties: update.properties },
+        title: `Updating charge and delivery date ${update.title}`,
+        body: { 
+          next_charge_scheduled_at: next_scheduled_at,
+          properties: update.properties
+        },
         io,
         session_id,
       };

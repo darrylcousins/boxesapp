@@ -27,6 +27,7 @@ import LogsModal from "../log/logs-modal";
 import CancelSubscriptionModal from "./cancel-modal";
 import { getSessionId } from "../socket";
 import {
+  completedActions,
   animateFadeForAction,
   animateFade,
   animationOptions,
@@ -55,7 +56,7 @@ import {
  * import {renderer} from '@b9g/crank/dom';
  * renderer.render(<Subscription subscription={subscription} />, document.querySelector('#app'))
  */
-async function *Subscription({ subscription, customer, idx, admin, newSubscription, brokenSubscriptions }) {
+async function *Subscription({ subscription, customer, idx, admin, brokenSubscriptions, completedAction }) {
 
   console.log(subscription);
   /*
@@ -77,12 +78,6 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
   */
 
   let CollapsibleProducts = CollapseWrapper(EditProducts);
-  /**
-   * After subscription cancelled simply display it here
-   *
-   * @member {array} CancelledSubscription
-   */
-  let CancelledSubscription = false;
   /**
    * Simple hold on to the original list as copies of the objects in the list
    * These are { quantity, subscription_id, shopify_product_id }
@@ -127,12 +122,6 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
    * @member {boolean} collapsed
    */
   let collapsed = true;
-  /**
-   * Success after saving changes
-   *
-   * @member {boolean} success
-   */
-  let success = false;
   /**
    * True while loading data from api
    * Starts false until search term submitted
@@ -263,8 +252,15 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
       })
     );
     await this.refresh();
-    document.getElementById(`products-${subscription.attributes.subscription_id}-${idx}`).classList.add("disableevents");
-    document.getElementById(`buttons-${subscription.attributes.subscription_id}-${idx}`).classList.add("disableevents");
+    delay(1000);
+    try {
+      document.getElementById(`products-${subscription.attributes.subscription_id}-${idx}`).classList.add("disableevents");
+      document.getElementById(`buttons-${subscription.attributes.subscription_id}-${idx}`).classList.add("disableevents");
+      document.getElementById(`saveMessages-${subscription.attributes.subscription_id }`).classList.remove("dn");
+    } catch(e) {
+      // should never fail
+      console.warn(e);
+    };
     await doChanges({ key });
   };
 
@@ -420,6 +416,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
 
     const callback = async (data) => {
       // data now contains the session_id and provides a connected socket
+      loadingSession = data.session_id;
       await PostFetch({ src, data, headers })
         .then((result) => {
           const { error, json } = result;
@@ -760,73 +757,6 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
   };
 
   /*
-   * @function getSubscription
-   * Fetch the charge as a "subscription" object
-   * This is used to reload the subscription on updates.completed after some action was performed
-   * It simply replace all the properties with the returned properties
-   */
-  const getSubscription = async (data) => {
-    let src = `/api/recharge-customer-subscription`;
-    if (Object.hasOwn(data, "session_id")) {
-      src = `${src}?session_id=${data.session_id}`;
-    };
-    const headers = { "Content-Type": "application/json" };
-    // need to use the event data because with change event the schedule will have changed
-    const body = {
-      address_id: data.address_id,
-      subscription_id: data.subscription_id,
-      scheduled_at: data.scheduled_at,
-      customer, // a recharge customer object
-      lastOrder: subscription.attributes.lastOrder, // avoids 2 api calls to get the lastOrder
-      action: data.action,
-    };
-    return await PostFetch({ src, data: body, headers })
-      .then((result) => {
-        const { error, json } = result;
-        if (error !== null) {
-          fetchError = error;
-          loading = false;
-          this.refresh();
-        } else {
-          return json;
-        };
-      })
-      .catch((err) => {
-        fetchError = err;
-        loading = false;
-        this.refresh();
-      });
-  };
-
-  /*
-   * @function getCancelledSubscription
-   * Retreive a cancelled subscription after cancelling
-   */
-  const getCancelledSubscription = async () => {
-    let uri = `/api/recharge-cancelled-subscription`;
-    uri = `${uri}/${subscription.attributes.customer.id}/${subscription.attributes.address_id}`;
-    uri = `${uri}?ids=${ subscription.includes.map(el => el.subscription_id).join(",") }`;
-    uri = `${uri}&subscription_id=${subscription.attributes.subscription_id}`;
-    return Fetch(encodeURI(uri))
-      .then((result) => {
-        const { error, json } = result;
-        if (error !== null) {
-          fetchError = error;
-          loading = false;
-          this.refresh();
-          return null;
-        };
-        return json;
-      })
-      .catch((err) => {
-        fetchError = err;
-        loading = false;
-        this.refresh();
-        return null;
-      });
-  };
-
-  /*
    * @function listingReload
    * @listens listing.reload
    *
@@ -843,6 +773,8 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
     // start the timer
     timer = new Date();
 
+    loadingSession = ev.detail.session_id;
+
     // not using any of this result!!
     // could use subscription_id to verify the component?
     // could use action to add to the messaging, 'reschedule pause' etc?
@@ -850,6 +782,7 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
     const subscription_id = result.subscription_id;
     // update attributes nextChargeDate, nextDeliveryDate, scheduled_at
     // details on updating charge date
+    // simply makes a "pretend" update to the viewed subscription
     if (Object.hasOwnProperty.call(result, "scheduled_at")) {
       // update dates from skip and unskip
       subscription.attributes.scheduled_at = result.scheduled_at;
@@ -862,12 +795,25 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
 
     editsPending = true;
 
+    // tell Customer to disable other subscriptions
+    this.dispatchEvent(new CustomEvent("customer.disableevents", {
+      bubbles: true,
+      detail: { subscription_id },
+    }));
+
     // forces reload of component?
     CollapsibleProducts = CollapseWrapper(EditProducts);
     await this.refresh();
 
-    document.getElementById(`products-${subscription.attributes.subscription_id}-${idx}`).classList.add("disableevents");
-    document.getElementById(`buttons-${subscription.attributes.subscription_id}-${idx}`).classList.add("disableevents");
+    delay(2000);
+    try {
+      document.getElementById(`products-${subscription_id}-${idx}`).classList.add("disableevents");
+      document.getElementById(`buttons-${subscription_id}-${idx}`).classList.add("disableevents");
+      document.getElementById(`saveMessages-${subscription_id}`).classList.remove("dn");
+    } catch(e) {
+      // should never fail
+      console.warn(e);
+    };
 
     return;
   };
@@ -1044,59 +990,34 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
   window.document.addEventListener("keyup", hideExplainer);
 
   /*
-   * @function socketClosed
-   * The socket has closed, tidy up
-   * @listens subscription.reload
+   * @function reloadSubscription
+   * Reload this particular charge from the server as a 'subsciption' object
+   * @listens socket.closed
    */
-  const socketClosed = async (ev) => {
-    console.log("socket closed", ev.detail)
-    //const { charge_id, session_id, subscription_id, action } = ev.detail;
-    if (ev.detail.subscription_id !== subscription.attributes.subscription_id) {
-      return true;
-    };
+  const reloadSubscription = async (ev) => {
+    if (ev.detail.session_id !== loadingSession) return;
+    console.log(ev.detail.session_id);
+    console.log(loadingSession);
+    console.log(ev.detail.subscription_id);
+    console.log(subscription.attributes.subscription_id);
     ev.stopPropagation();
-
-    if (loadingSession !== ev.detail.session_id) {
-      return;
-    };
-
     const socketMessages = document.getElementById(messageDivId);
-    const saveMessages = document.getElementById(`saveMessages-${subscription.attributes.subscription_id }`);
+    const saveMessages = document.getElementById(`saveMessages-${ev.detail.subscription_id }`);
 
     // keep things nicely paced and slow
     socketMessages.classList.add("closed"); // has 2s transition
-    console.log("closed socketMessages");
-    await delay(3000);
+    await delay(1000);
     socketMessages.innerHTML = "";
     saveMessages.classList.add("closed");
-    console.log("closed saveMessages");
-    await delay(3000);
+    await delay(1000);
+    saveMessages.classList.add("dn");
+    window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "smooth",
+    });
+    await delay(500);
     loadingSession = null;
-
-  };
-
-  // subscription.loaded - listens for event when the subscription has been reloaded
-  window.addEventListener("socket.closed", socketClosed);
-
-  /*
-   * @function reloadSubscription
-   * Reload this particular charge from the server as a 'subsciption' object
-   * @listens updates.completed
-   */
-  const reloadSubscription = async (ev) => {
-
-    console.log("reloadSubscription", ev.detail)
-    console.log(ev.detail.subscription_id !== subscription.attributes.subscription_id);
-    console.log(ev.detail.subscription_id, subscription.attributes.subscription_id);
-
-    if (ev.detail.subscription_id !== subscription.attributes.subscription_id) {
-      return;
-    };
-
-    console.log("reloadSubscription", ev.detail)
-
-    ev.stopPropagation();
-
     if (timer) {
       const timeTaken = findTimeTaken(timer);
       timer = null;
@@ -1106,335 +1027,270 @@ async function *Subscription({ subscription, customer, idx, admin, newSubscripti
         borderColour: "black"
       }));
     };
-
-    loadingSession = ev.detail.session_id;
-    const result = await getSubscription(ev.detail);
-    console.log(result);
-
-    // wait until loadingSession is nulled by socket.closed event
-    await sleepUntil(() => !loadingSession, 6000)
-      .then(res => console.log(res))
-      .catch(e => console.log(e));
-
-    // contains the verified subscription (json.subscription)
-    // and verification errors
-    for (const [key, value] of Object.entries(result.subscription)) {
-      subscription[key] = value;
-    };
-    // errors need to dispatch event to Customer so it can update brokenSubscriptions
-    console.log("errors", result.errors);
-    console.log("action", result.action);
-    console.log("down to here");
-
-    // Customer component will need to shuffle the subscription into the correct list
-    if (["cancelled", "reactivated"].includes(result.action)) {
-      this.dispatchEvent(new CustomEvent(`subscription.${result.action}`, {
-        bubbles: true,
-        detail: {
-          subscription_id: subscription.attributes.subscription_id,
-          subscription: result.subscription,
-      }}));
-      return; // Customer will put the cancelled onto the page
-    };
-    // forces reload of component to make it again editable
-    CollapsibleProducts = CollapseWrapper(EditProducts);
-    // reset unskippable vale
-    unskippable = isUnSkippable();
-    editsPending = Boolean(subscription.attributes.pending); // could just go with false
-    // reset ids_orig
-    rc_subscription_ids_orig = subscription.attributes.rc_subscription_ids.map(el => { return {...el}; });
-
-    delay(3000);
-    await sleepUntil(() => document.getElementById(`subscription-${subscription.attributes.subscription_id}`), 500)
-      .then((res) => {
-        animateFadeForAction(res, async () => await this.refresh(), 400);
-        document.getElementById(`products-${subscription.attributes.subscription_id}-${idx}`).classList.remove("disableevents");
-        document.getElementById(`buttons-${subscription.attributes.subscription_id}-${idx}`).classList.remove("disableevents");
-        delay(3000);
-        if (result.errors) {
-          // handle errors only
-          this.dispatchEvent(new CustomEvent("subscription.broken", {
-            detail: {
-              subscription_id: subscription.attributes.subscription_id,
-              errors: result.errors, // an object with date_mismatch, orphans etc
-          }}));
-        };
-        /* restore buttons
-        this.dispatchEvent( new CustomEvent("customer.enableevents", {
-          detail: { subscription_id: subscription.attributes.subscription_id,},
-        }));*/
-
-      }).catch((e) => {
-        // no need for action
-      });
+    // get Customer to reload everything
+    this.dispatchEvent(new CustomEvent(`subscription.updates.completed`, {
+      bubbles: true,
+      detail: ev.detail,
+    }));
+    return;
   };
 
-
-  // updates.completed when webhooks are received that verify that all updates have been completed
-  window.addEventListener("updates.completed", reloadSubscription);
+  // socket.closed when webhooks are received that verify that all updates have been completed
+  window.addEventListener("socket.closed", reloadSubscription);
 
   const userActions = ["reconciled", "updated", "changed", "paused", "rescheduled", "cancelled", "reactivated", "deleted", "created"];
-  const testUserAction = (action) => {
-    console.log(action, subscription.attributes.subscription_id);
-    window.dispatchEvent(
-      new CustomEvent("socket.closed", {
-        bubbles: true,
-        detail: {
-          action,
-          subscription_id: subscription.attributes.subscription_id
-        },
-      })
-    );
-  };
 
-  for await ({ subscription, idx, admin, newSubscription, brokenSubscriptions } of this) { // eslint-disable-line no-unused-vars
+  for await ({ subscription, idx, admin, brokenSubscriptions, completedAction } of this) { // eslint-disable-line no-unused-vars
 
     yield (
-      CancelledSubscription ? (
-        <Cancelled subscription={ CancelledSubscription } idx={ idx } admin={ admin } />
-      ) : (
-        <div 
-          id={ `subscription-${subscription.attributes.subscription_id}` }
-          class={ brokenSubscriptions.includes(subscription.attributes.subscription_id) ? "disableevents" : "" }>
-          <h4 class="tl mb0 w-100 fg-streamside-maroon">
-            { newSubscription && (
-              <span class="b pv2 ph3 white bg-dark-blue ba b--navy br2 mr3" style="font-size: smaller">New</span>
-            )}
-            {subscription.attributes.title} - {subscription.attributes.variant}
-          </h4>
-          { admin && false && (
-            userActions.map(el => (
-              <button onclick={ (ev) => testUserAction(el) }>{ el }</button>
-            ))
+      <div 
+        id={ `subscription-${subscription.attributes.subscription_id}` }
+        class={ brokenSubscriptions.includes(subscription.attributes.subscription_id) ? "disableevents" : "" }>
+        <h4 class="tl mb0 w-100 fg-streamside-maroon">
+          {subscription.attributes.title} - {subscription.attributes.variant}
+          { completedAction && (
+            <span id={ `action-${subscription.attributes.subscription_id}` }
+              class={ `b pv1 ph3 sans-serif white bg-${
+                completedActions[completedAction]
+              } ba b--${
+                completedActions[completedAction]
+              } br3 ml3 mb1 v-base` } style="font-size: smaller">{ completedAction }</span>
           )}
-          { (!subscription.attributes.hasNextBox && !editsPending) && (
-            <div class="pv2 orange">Box items not yet loaded for <span class="b">
-                { subscription.attributes.nextDeliveryDate }
-            </span></div>
-          )}
-          <div class="flex-container-reverse w-100 pt2 relative" id={ `title-${idx}` }>
-            { admin && (
-              <div class="dt">
-                <AttributeColumn data={ idData() } />
-              </div>
-            )}
+        </h4>
+        { admin && false && (
+          userActions.map(el => (
+            <button onclick={ (ev) => testUserAction(el) }>{ el }</button>
+          ))
+        )}
+        { (!subscription.attributes.hasNextBox && !editsPending) && (
+          <div class="pv2 orange">Box items not yet loaded for <span class="b">
+              { subscription.attributes.nextDeliveryDate }
+          </span></div>
+        )}
+        <div class="flex-container-reverse w-100 pt2 relative" id={ `title-${idx}` }>
+          { admin && (
             <div class="dt">
-              <div class="">
-                <AttributeColumn data={ chargeData() } />
-              </div>
+              <AttributeColumn data={ idData() } />
             </div>
-            <div class="dt tr nowrap">
-              <AddressColumn data={ addressData() } />
+          )}
+          <div class="dt">
+            <div class="">
+              <AttributeColumn data={ chargeData() } />
             </div>
           </div>
-          { subscription.messages.length === 0 && (
-            <div id={`skip_cancel-${subscription.attributes.subscription_id}`} class="cf w-100 pv2">
-              <div id={ `buttons-${subscription.attributes.subscription_id}-${idx}` }
-                  class="w-100 tr">
-                { ( !editsPending ) && collapsed && (
-                  <Fragment>
-                    { admin && (
-                      <LogsModal customer_id={ subscription.attributes.customer.id }
-                        subscription_id={ subscription.attributes.subscription_id }
-                        admin={ admin }
-                        box_title={ `${subscription.attributes.title} - ${subscription.attributes.variant}` } />
-                    )}
-                    <EditBoxModal
-                      subscription={ subscription }
-                      customer={ customer }
-                      admin={ admin }
-                      type="changed"
-                      socketMessageId={ `${messageDivId}` } />
-                    <SkipChargeModal subscription={ subscription }
-                      admin={ admin }
-                      socketMessageId={ `${messageDivId}` } />
-                    { unskippable && (
-                      <UnSkipChargeModal subscription={ subscription }
-                        admin={ admin }
-                        socketMessageId={ `${messageDivId}` } />
-                    )}
-                    <CancelSubscriptionModal subscription={ subscription }
-                      admin={ admin }
-                      socketMessageId={ `${messageDivId}` } />
-                  </Fragment>
-                )}
-                <Button type="success-reverse"
-                  onclick={toggleCollapse}
-                  title={ collapsed ? (subscription.attributes.hasNextBox && !editsPending ? "Edit products" : "Show products") : "Hide products" }
-                >
-                  <span class="b">
-                    { collapsed ? (subscription.attributes.hasNextBox && !editsPending ? "Edit products" : "Show products") : "Hide products" }
-                  </span>
-                </Button>
-              </div>
-            </div>
-          )}
-          { !subscription.attributes.hasNextBox && !collapsed && (
-            <div class="alert-box dark-blue pa2 ma2 mt3 br3 ba b--dark-blue bg-washed-blue">
-              <p class="">You will be able to edit your box products when the next box has been loaded.</p>
-            </div>
-          )}
-          { (editsPending || subscription.attributes.pending) && (
-            <Fragment>
-              <div id={ `saveMessages-${subscription.attributes.subscription_id }` } class="tl w-100 saveMessages">
-                <div class="alert-box relative dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
-                  { ( !subscription.attributes.pending) && (
-                    <div class="i fr cf mr3 pt2 pb1 ph1 pointer bb"
-                      onclick={ toggleExplainer }
-                    >
-                      Why can it take so long to update my subscription?
-                    </div>
-                  )}
-                  <p class="pa3 ma0">
-                    { ( subscription.attributes.pending) ? (
-                      <div>Your subscription has updates pending.</div>
-                    ) : (
-                      <div>Your updates have been queued for saving.</div>
-                    )}
-                    { ( subscription.attributes.pending) ? (
-                      <div>Please return to this page later to edit your subscription.</div>
-                    ) : (
-                      <div>
-                        This can take several minutes. You may close the window and come back to it later. { " " }
-                      </div>
-                    )}
-                    <div>Check your emails for confirmation of the updates you have requested.</div>
-                  </p>
-                  <div id={ `displayMessages-${subscription.attributes.subscription_id }` } class="fg-streamside-blue">
-                    { " " }
-                  </div>
-                  { (!subscription.attributes.pending) && (
-                    <ProgressLoader />
-                  )}
-                </div>
-              </div>
-            </Fragment>
-          )}
-          <div id={ messageDivId } class="tl w-100 socketMessages"></div>
-          { subscription.messages.length > 0 && subscription.attributes.hasNextBox && !editsPending && (
-            <div class="alert-box dark-blue pv2 ma2 br3 ba b--dark-blue bg-washed-blue">
-                <Fragment>
-                  <p class="pa3">Before continuing the subscription needs to be reconciled with the upcoming box:</p>
-                  <ul class="ma0">
-                    { subscription.messages.map(el => <li>{el}</li>) }
-                  </ul>
-                  { subscription.attributes.nowAvailableAsAddOns.length > 0 && (
-                    <p class="pl5">New available this week: { subscription.attributes.nowAvailableAsAddOns.join(", ") }</p>
-                  )}
-                  <div class="tr mv2 mr3">
-                    <Button type="primary-reverse"
-                      title="Continue"
-                      onclick={(ev) => saveChanges("updates", ev)}>
-                      <span class="b">
-                        Apply changes to continue
-                      </span>
-                    </Button>
-                    { false && (
-                      <div class="dib pr2" id="testChanges">
-                        <Button
-                          onclick={ (ev) => testChanges("updates", ev) }
-                          hover="dim"
-                          border="navy"
-                          type="primary">
-                          Test
-                        </Button>
-                      </div>
-                    )}
-                    <Button type="success-reverse"
-                      onclick={toggleCollapse}
-                      title={ collapsed ? "Show products" : "Hide products" }
-                    >
-                      <span class="b">
-                        { collapsed ? "Show products" : "Hide products" }
-                      </span>
-                    </Button>
-                  </div>
-                </Fragment>
-            </div>
-          )}
-          { loading && <div id={ `loader-${idx}` }><BarLoader /></div> }
-          { fetchError && <Error msg={fetchError} /> }
-          <div id={`saveBar-${subscription.attributes.subscription_id}`} class="save_bar white mv1 br2">
-            <div class="flex-container w-100 pa2">
-              <div class="w-100 pl4" style="line-height: 2em">
-                <span class="bold v-mid">
-                  Unsaved changes
+          <div class="dt tr nowrap">
+            <AddressColumn data={ addressData() } />
+          </div>
+        </div>
+        { subscription.messages.length === 0 && (
+          <div id={`skip_cancel-${subscription.attributes.subscription_id}`} class="cf w-100 pv2">
+            <div id={ `buttons-${subscription.attributes.subscription_id}-${idx}` }
+                class="w-100 flex-container-reverse">
+              <Button type="success-reverse"
+                onclick={toggleCollapse}
+                title={ collapsed ? (subscription.attributes.hasNextBox && !editsPending ? "Edit products" : "Show products") : "Hide products" }
+              >
+                <span class="b">
+                  { collapsed ? (subscription.attributes.hasNextBox && !editsPending ? "Edit products" : "Show products") : "Hide products" }
                 </span>
-              </div>
-              <div class="w-100 tr">
-                <div class="dib pr2 nowrap">
-                  <Button
-                    onclick={ cancelEdits }
-                    type="transparent/dark">
-                    Cancel
-                  </Button>
-                </div>
-                <div class="dib pr2" id="saveEdits">
-                  <Button
-                    onclick={ (ev) => saveChanges("includes", ev) }
-                    hover="dim"
-                    border="navy"
-                    type="primary">
-                    Save
-                  </Button>
-                </div>
-                { false && (
-                  <div class="dib pr2" id="testChanges">
-                    <Button
-                      onclick={ (ev) => testChanges("includes", ev) }
-                      hover="dim"
-                      border="navy"
-                      type="primary">
-                      Test
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div class="mb2 bb b--black-80">
-            <div id={ `products-${subscription.attributes.subscription_id}-${idx}` }>
-              { subscription.attributes.title !== "" && (
-                <CollapsibleProducts
-                  collapsed={ collapsed }
-                  rc_subscription_ids={ subscription.attributes.rc_subscription_ids }
-                  properties={ subscription.properties }
-                  box={ subscription.box }
-                  nextChargeDate={ subscription.attributes.nextChargeDate }
-                  isEditable={ subscription.messages.length === 0 && subscription.attributes.hasNextBox && !editsPending }
-                  key={ idx }
-                  id={ `subscription-${subscription.attributes.subscription_id}-${idx}` }
-                />
+              </Button>
+              { ( !editsPending ) && collapsed && (
+                <Fragment>
+                  <CancelSubscriptionModal subscription={ subscription }
+                    admin={ admin }
+                    socketMessageId={ `${messageDivId}` } />
+                  <SkipChargeModal subscription={ subscription }
+                    admin={ admin }
+                    socketMessageId={ `${messageDivId}` } />
+                  <EditBoxModal
+                    subscription={ subscription }
+                    customer={ customer }
+                    admin={ admin }
+                    type="changed"
+                    socketMessageId={ `${messageDivId}` } />
+                  { unskippable && (
+                    <UnSkipChargeModal subscription={ subscription }
+                      admin={ admin }
+                      socketMessageId={ `${messageDivId}` } />
+                  )}
+                  { admin && (
+                    <LogsModal customer_id={ subscription.attributes.customer.id }
+                      subscription_id={ subscription.attributes.subscription_id }
+                      admin={ admin }
+                      box_title={ `${subscription.attributes.title} - ${subscription.attributes.variant}` } />
+                  )}
+                </Fragment>
               )}
             </div>
           </div>
-          { isExplainerOpen && (
-            <Portal root={modalWindow}>
-              <ModalTemplate closeModal={ toggleExplainer } loading={ false } error={ false }>
-                <h4 class="ml4 fw4 tl fg-streamside-maroon">Why can it take so long to update my subscription?</h4>
-                <p class="pa4">
-                  <img src={ `${ host }/logos/boxes.png` } width="50" />
-                  In order to ensure the integrity of your box
-                  subscripton we must be sure that all updates have completed
-                  before you are able to continue editing your box. The boxes
-                  are a linking between two web services: 1. the store and 2.
-                  the subscription service. When an update is requested a
-                  number of calls are made between the services to complete the
-                  update. We have recorded eelays of up to 3 minutes for the
-                  order to be finalised and updated on our subscriptions
-                  service.
+        )}
+        { !subscription.attributes.hasNextBox && !collapsed && (
+          <div class="alert-box dark-blue pa2 ma1 mt3 br3 ba b--dark-blue bg-washed-blue">
+            <p class="">You will be able to edit your box products when the next box has been loaded.</p>
+          </div>
+        )}
+        { (editsPending || subscription.attributes.pending) && (
+          <Fragment>
+            <div id={ `saveMessages-${subscription.attributes.subscription_id }` }
+              class="tl w-100 saveMessages dn">
+              <div class="alert-box relative dark-blue pa2 ma1 br3 ba b--dark-blue bg-washed-blue">
+                { ( !subscription.attributes.pending) && (
+                  <div class="i fr cf mr3 pt2 pb1 ph1 pointer bb"
+                    onclick={ toggleExplainer }
+                  >
+                    Why can it take so long to update my subscription?
+                  </div>
+                )}
+                <p class="pa3 ma0">
+                  { ( subscription.attributes.pending) ? (
+                    <div>Your subscription has updates pending.</div>
+                  ) : (
+                    <div>Your updates have been queued for saving.</div>
+                  )}
+                  { ( subscription.attributes.pending) ? (
+                    <div>Please return to this page later to edit your subscription.</div>
+                  ) : (
+                    <div>
+                      This can take several minutes. You may close the window and come back to it later. { " " }
+                    </div>
+                  )}
+                  <div>Check your emails for confirmation of the updates you have requested.</div>
                 </p>
-                <p class="pb4 ph4 pt0">
-                  You are welcome to close this window at any time, your
-                  updates will continue to be processed. Please check your
-                  emails for notification of the completion of the requested
-                  changes.
-                </p>
-              </ModalTemplate>
-            </Portal>
-          )}
+                <div id={ `displayMessages-${subscription.attributes.subscription_id }` } class="fg-streamside-blue">
+                  { " " }
+                </div>
+                { (!subscription.attributes.pending) && (
+                  <ProgressLoader />
+                )}
+              </div>
+            </div>
+          </Fragment>
+        )}
+        <div id={ messageDivId } class="tl w-100 socketMessages"></div>
+        { subscription.messages.length > 0 && subscription.attributes.hasNextBox && !editsPending && (
+          <div class="alert-box dark-blue pv2 ma1 br3 ba b--dark-blue bg-washed-blue">
+              <Fragment>
+                <p class="pa3">Before continuing the subscription needs to be reconciled with the upcoming box:</p>
+                <ul class="ma0">
+                  { subscription.messages.map(el => <li>{el}</li>) }
+                </ul>
+                { subscription.attributes.nowAvailableAsAddOns.length > 0 && (
+                  <p class="pl5">New available this week: { subscription.attributes.nowAvailableAsAddOns.join(", ") }</p>
+                )}
+                <div class="tr mv2 mr3">
+                  <Button type="primary-reverse"
+                    title="Continue"
+                    onclick={(ev) => saveChanges("updates", ev)}>
+                    <span class="b">
+                      Apply changes to continue
+                    </span>
+                  </Button>
+                  { false && (
+                    <div class="dib pr2" id="testChanges">
+                      <Button
+                        onclick={ (ev) => testChanges("updates", ev) }
+                        hover="dim"
+                        type="alt-primary">
+                        Test
+                      </Button>
+                    </div>
+                  )}
+                  <Button type="success-reverse"
+                    onclick={toggleCollapse}
+                    title={ collapsed ? "Show products" : "Hide products" }
+                  >
+                    <span class="b">
+                      { collapsed ? "Show products" : "Hide products" }
+                    </span>
+                  </Button>
+                </div>
+              </Fragment>
+          </div>
+        )}
+        { loading && <div id={ `loader-${idx}` }><BarLoader /></div> }
+        { fetchError && <Error msg={fetchError} /> }
+        <div id={`saveBar-${subscription.attributes.subscription_id}`} class="save_bar white mv1 br2">
+          <div class="flex-container w-100 pa2">
+            <div class="w-100 pl4" style="line-height: 2em">
+              <span class="bold v-mid">
+                Unsaved changes
+              </span>
+            </div>
+            <div class="w-100 tr">
+              <div class="dib pr2 nowrap">
+                <Button
+                  onclick={ cancelEdits }
+                  classes="b"
+                  type="transparent/dark">
+                  Cancel
+                </Button>
+              </div>
+              <div class="dib pr2" id="saveEdits">
+                <Button
+                  onclick={ (ev) => saveChanges("includes", ev) }
+                  hover="dim"
+                  classes="b"
+                  border="white"
+                  type="alt-primary">
+                  Save
+                </Button>
+              </div>
+              { false && (
+                <div class="dib pr2" id="testChanges">
+                  <Button
+                    onclick={ (ev) => testChanges("includes", ev) }
+                    hover="dim"
+                    border="navy"
+                    type="primary">
+                    Test
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      )
+        <div class="mb2 bb b--black-80">
+          <div id={ `products-${subscription.attributes.subscription_id}-${idx}` }>
+            { subscription.attributes.title !== "" && (
+              <CollapsibleProducts
+                collapsed={ collapsed }
+                rc_subscription_ids={ subscription.attributes.rc_subscription_ids }
+                properties={ subscription.properties }
+                box={ subscription.box }
+                nextChargeDate={ subscription.attributes.nextChargeDate }
+                isEditable={ subscription.messages.length === 0 && subscription.attributes.hasNextBox && !editsPending }
+                key={ idx }
+                id={ `subscription-${subscription.attributes.subscription_id}-${idx}` }
+              />
+            )}
+          </div>
+        </div>
+        { isExplainerOpen && (
+          <Portal root={modalWindow}>
+            <ModalTemplate closeModal={ toggleExplainer } loading={ false } error={ false }>
+              <h4 class="ml4 fw4 tl fg-streamside-maroon">Why can it take so long to update my subscription?</h4>
+              <p class="pa4">
+                <img src={ `${ host }/logos/boxes.png` } width="50" />
+                In order to ensure the integrity of your box
+                subscripton we must be sure that all updates have completed
+                before you are able to continue editing your box. The boxes
+                are a linking between two web services: 1. the store and 2.
+                the subscription service. When an update is requested a
+                number of calls are made between the services to complete the
+                update. We have recorded eelays of up to 3 minutes for the
+                order to be finalised and updated on our subscriptions
+                service.
+              </p>
+              <p class="pb4 ph4 pt0">
+                You are welcome to close this window at any time, your
+                updates will continue to be processed. Please check your
+                emails for notification of the completion of the requested
+                changes.
+              </p>
+            </ModalTemplate>
+          </Portal>
+        )}
+      </div>
     )
   };
 };

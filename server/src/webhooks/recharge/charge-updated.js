@@ -2,8 +2,17 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { ObjectId } from "mongodb";
-import { sortObjectByKeys } from "../../lib/helpers.js";
-import { findChangeMessages, getBoxesForCharge, getMetaForCharge, writeFileForCharge, getMetaForBox } from "./helpers.js";
+import { sortObjectByKeys, delay } from "../../lib/helpers.js";
+import {
+  findChangeMessages,
+  getBoxesForCharge,
+  getMetaForCharge,
+  getMetaForBox,
+  getMetaForSubscription,
+  writeFileForCharge,
+  writeFileForSubscription,
+  updatePendingEntry,
+} from "./helpers.js";
 
 /* https://developer.rechargepayments.com/2021-11/webhooks_explained
  * 
@@ -38,6 +47,83 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
   // and a simple list of box subscription ids already updated with box_subscription_id
   const { box_subscriptions_possible, box_subscription_ids } = getBoxesForCharge(charge);
 
+  try {
+    /* NOTE Special here for cancelled and reactivated???
+     * I found that after I started updating dates, status, and properties all
+     * in one then the charge will be fully formed and complete before the
+      * subscription/updated webhooks come through
+     */
+    const meta = { recharge: { // base construct for meta
+      customer_id: charge.customer.id,
+      address_id: charge.address_id,
+    }};
+    const actions = {};
+    for (const boxId of box_subscription_ids) {
+      actions[boxId] = null;
+      const query = { ...meta.recharge, subscription_id: boxId };
+      const entry = await _mongodb.collection("updates_pending").findOne(query);
+      if (entry) actions[boxId] = entry.action;
+    };
+    // ensure the box subscription is the last to be processed
+    for(var x in charge.line_items) charge.line_items[x].properties.some(el => el.name === "Including") 
+      ? charge.line_items.push(charge.line_items.splice(x,1)[0]) : 0;
+    for (const line_item of charge.line_items) {
+      if (line_item.properties.some(el => el.name === "box_subscription_id")) {
+        // build meta from line_item
+        meta.recharge.scheduled_at = charge.scheduled_at;
+        meta.recharge.title = line_item.title;
+        meta.recharge.variant_title = line_item.variant_title;
+        meta.recharge.quantity = line_item.quantity;
+        meta.recharge.item_subscription_id = line_item.purchase_item_id;
+        meta.recharge.shopify_product_id = parseInt(line_item.external_product_id.ecommerce);
+        meta.recharge.subscription_id = parseInt(line_item.properties.find(el => el.name === "box_subscription_id").value);
+        meta.recharge["Delivery Date"] = line_item.properties.find(el => el.name === "Delivery Date").value;
+        const action = (Object.hasOwn(actions, meta.recharge.subscription_id)) ? actions[meta.recharge.subscription_id] : "updated";
+        if (action) {
+          const { updated, entry } = await updatePendingEntry(meta, action);
+          console.log(action, updated);
+          if (updated) {
+
+            if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
+              const socket_id = sockets[entry.session_id];
+              io = io.to(socket_id);
+              const variant_title = meta.recharge.variant_title ? ` (${meta.recharge.variant_title})` : "";
+              io.emit("completed", `Subscription ${action}: ${meta.recharge.title}${variant_title}`);
+            };
+
+            // check that all have been updated
+            const allUpdated = entry.rc_subscription_ids.every(el => {
+              // check that all subscriptions have updated or have been created
+              return el.updated === true && Number.isInteger(el.subscription_id);
+            });
+            if (allUpdated) {
+              delay(30000); // wait to allow the subscriptions ot update
+              await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
+              if (parseInt(process.env.DEBUG) === 1) {
+                _logger.notice(`Deleting updates pending entry ${topicLower} (${action})`, { meta: { recharge: entry }});
+              };
+              if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
+                io.emit("completed", `Removing updates entry ${topicLower} (${action}).`);
+                io.emit("completed", `Updates completed.`);
+                io.emit("finished", {
+                  action: entry.action,
+                  session_id: entry.session_id,
+                  subscription_id: entry.subscription_id,
+                  address_id: entry.address_id,
+                  customer_id: entry.customer_id,
+                  scheduled_at: entry.scheduled_at,
+                  charge_id: entry.charge_id,
+                });
+              };
+              return false;
+            };
+          };
+        };
+      };
+    };
+  } catch(err) {
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+  };
   /*
    * Primarily for user editing of box, must prevent further edits until all
    * changes to subscriptions and charges have updated - hence using
@@ -59,7 +145,6 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
        * updated provided the updates_pending label indicates that only the
        * delivery schedule has changed.
        */
-
       const updates_pending = await _mongodb.collection("updates_pending").findOne(query);
       if (updates_pending) {
 
@@ -93,18 +178,8 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
             // and in subscription/updated if only delivery schedule changed
             await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(updates_pending._id) });
             if (parseInt(process.env.DEBUG) === 1) {
-              _logger.notice("Deleting updates pending entry charge/updated", { meta: { recharge: updates_pending }});
+              _logger.notice(`Deleting updates pending entry ${topicLower} (${updates_pending.action})`, { meta: { recharge: updates_pending }});
             };
-          } else { // countMatch wrong
-            if (parseInt(process.env.DEBUG) === 1) {
-              meta.recharge.pending_subscription_ids = rc_ids_removed;
-              _logger.notice("Charge updated, pending updates (not count match)", { meta });
-            };
-          };
-        } else { // not all updated
-          if (parseInt(process.env.DEBUG) === 1) {
-            meta.recharge.pending_subscription_ids = updates_pending.rc_subscription_ids;
-            _logger.notice("Charge updated, pending updates (not all updated)", { meta });
           };
         };
 
@@ -113,8 +188,10 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
           const socket_id = sockets[updates_pending.session_id];
           io = io.to(socket_id);
           if (allUpdated && countMatch) {
-            io.emit("completed", `Updates completed, removing updates entry. subscription: ${updates_pending.subscription_id}`);
-            io.emit("updates.completed", {
+            io.emit("completed", `Removing updates entry ${topicLower}.`);
+            io.emit("completed", `Updates completed.`);
+            const message = updates_pending.action === "created" ? "created.complete" : "finished";
+            io.emit(message, {
               action: updates_pending.action,
               session_id: updates_pending.session_id,
               subscription_id: updates_pending.subscription_id,

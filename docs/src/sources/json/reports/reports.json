@@ -14,5 +14,8 @@
     { "title": "Reactivate subscription", "folder": "user-subscription-reactivated" },
     { "title": "Delete subscription", "folder": "user-subscription-deleted" },
     { "title": "Create subscription", "folder": "user-subscription-created" }
+  ],
+  "broken": [
+    { "title": "Broken pause", "folder": "broken-pause-subscription" }
   ]
 }

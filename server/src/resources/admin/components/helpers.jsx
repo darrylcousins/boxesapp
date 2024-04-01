@@ -15,6 +15,29 @@ export const LABELKEYS = [
   'Swapped Items', 
 ];
 
+export const userActions = [
+  "reconciled",
+  "updated",
+  "changed",
+  "paused",
+  "rescheduled",
+  "cancelled",
+  "reactivated",
+  "created",
+  "deleted",
+];
+
+export const completedActions = {
+  "reconciled": "navy",
+  "updated": "navy",
+  "changed": "dark-blue",
+  "paused": "dark-blue",
+  "rescheduled": "dark-blue",
+  "cancelled": "purple",
+  "reactivated": "navy",
+  "created": "dark-green",
+  "deleted": null,
+};
 /**
  * Helper method to animate display of messages
  *
@@ -412,11 +435,13 @@ export const collapseElement = (element) => {
   if (!element) return;
   const elementHeight = element.scrollHeight;
   var elementTransition = element.style.transition;
+  /* add class collapsible 
   elementTransition = "height .6s";
   element.style.transition = "";
+  */
   requestAnimationFrame(() => {
     element.style.height = elementHeight + "px";
-    element.style.transition = elementTransition;
+    //element.style.transition = elementTransition;
     requestAnimationFrame(() => {
       element.style.height = 0 + "px";
     });

@@ -81,7 +81,7 @@ export const updatePendingEntry = async (meta, topic) => {
     "rc_subscription_ids.$[i].updated": true
   }};
 
-  let subscription_id = meta.recharge.item_subscription_id;
+  let subscription_id =  meta.recharge.item_subscription_id;
 
   if (topic === "created") {
     // set the new subscription id
@@ -98,14 +98,14 @@ export const updatePendingEntry = async (meta, topic) => {
     ]
   };
 
+  /*
   if (parseInt(process.env.DEBUG) === 1 && topic === "updated") {
     _logger.notice(`Update pending query (${meta.recharge.title})`, { meta: { recharge: { query, update, options } }});
   };
+  */
 
   const res =  await _mongodb.collection("updates_pending").updateOne(query, update, options);
   //console.log("query", query);
-
-  let result = {};
 
   const capitalize = (word) => {
     return word.charAt(0).toUpperCase() + word.substring(1).toLowerCase();
@@ -115,12 +115,11 @@ export const updatePendingEntry = async (meta, topic) => {
     delete query.rc_subscription_ids; // has been mutated so remove from query
     const entry = await _mongodb.collection("updates_pending").findOne(query);
 
-    result = { entry, updated: true };
     if (parseInt(process.env.DEBUG) === 1) {
       _logger.notice(`${capitalize(topic)} ${meta.recharge.title} - updated pending entry`, { meta: { recharge: entry } });
     };
+    return { entry, updated: true };
   } else {
-
     // need to mutate the rc_subscription_ids for logger formatting
     // but still hopeful to get the entry itself so as to find the session_id
     query.rc_subscription_ids = [{ 
@@ -129,9 +128,8 @@ export const updatePendingEntry = async (meta, topic) => {
       quantity: meta.recharge.quantity,
       title: meta.recharge.title,
     }];
-    result = { entry: query, updated: false };
+    return { entry: query, updated: false };
   };
-  return result;
 };
 
 /*

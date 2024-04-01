@@ -84,6 +84,7 @@ export default async (req, res, next) => {
               { name: "Add on product to", value: subscription.box.shopify_title },
               { name: "box_subscription_id", value: subscription.attributes.subscription_id.toString() },
             ];
+            const next_charge_scheduled_at = formatDate(nextChargeDate);
 
             for (const product of subscription.attributes.rc_subscription_ids) {
               if (io) io.emit("message", `Updating ${product.title} (${product.subscription_id})`);
@@ -96,27 +97,18 @@ export default async (req, res, next) => {
                 if (!Object.hasOwnProperty.call(update, "boxes")) update.boxes = [];
                 update.boxes.push(product);
               };
-              title = `Updating delivery date ${product.title}`;
+              title = `Updating charge and delivery date ${product.title}`;
               opts = {
                 id: product.subscription_id,
                 title,
-                body: { properties },
+                body: {
+                  properties,
+                  next_charge_scheduled_at,
+                },
                 io,
                 session_id,
               };
               await updateSubscription(opts);
-
-              await delay(1000); // delay a second before making next call
-
-              title = `Updating charge date ${product.title}`;
-              opts = {
-                id: product.subscription_id,
-                title,
-                date: formatDate(nextChargeDate),
-                io,
-                session_id,
-              };
-              await updateChargeDate(opts);
 
               await delay(1000); // delay a second before making next call
 

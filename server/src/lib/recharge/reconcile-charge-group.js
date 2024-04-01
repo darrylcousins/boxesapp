@@ -81,10 +81,10 @@ export const reconcileGetGrouped = async ({ charge }) => {
       if (Object.hasOwnProperty.call(line_item, "cancelled_at")) {
         rc_subscription_id.cancelled_at = line_item.cancelled_at;
       };
-      // would like to get delivery_at in here too
+      // would like to get deliver_at in here too
       const deliveryProp = line_item.properties.find(el => el.name === "Delivery Date");
       if (deliveryProp) {
-        rc_subscription_id.delivery_at = deliveryProp.value;
+        rc_subscription_id.deliver_at = deliveryProp.value;
       };
       grouped[box_subscription_id].rc_subscription_ids.push(rc_subscription_id);
       grouped[box_subscription_id].charge = charge;

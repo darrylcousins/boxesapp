@@ -193,7 +193,7 @@ function FormModalWrapper(Component, options) {
                 this.dispatchEvent(
                   new CustomEvent("listing.reload", {
                     bubbles: true,
-                    detail: { src, json },
+                    detail: { src, json, session_id: data.session_id },
                   })
                 );
                 closeModal(); // when using session pass control straight back to parent component

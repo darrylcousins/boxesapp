@@ -88,13 +88,15 @@ export const getSessionId = async (callback, data, divId, component) => {
     const start = `[error]`.padEnd(9);
     await appendMessage(`${start} ${data}`, "red", divId);
   });
-  socket.on('updates.completed', async (data) => {
+  socket.on('created.complete', async (data) => {
     // some care needed here to make sure we send to the correct component
     if (data.session_id === session_id) {
       console.log('closing connection for id', session_id);
       const start = `[success]`.padEnd(9);
-      const message = "Update completed, reloading subscription ...";
+      const message = "Subscription created.";
       await appendMessage(`${start} ${message}`, "dark-green", divId);
+      const msg = "Finished, closing connection";
+      await appendMessage(`${start} ${msg}`, "dark-green", divId);
 
       // pick up socket.closed with Subscription and subscription.created with Customer
       //let event = data.action !== "created" ? "socket.closed" : "subscription.created";
@@ -105,7 +107,7 @@ export const getSessionId = async (callback, data, divId, component) => {
       // * webhook recharge/subscription-updated
       // We send "updates.completed" which is captured by Subscription
       window.dispatchEvent(
-        new CustomEvent("updates.completed", {
+        new CustomEvent("created.complete", {
           bubbles: true,
           detail: { ...data },
         })
@@ -115,6 +117,7 @@ export const getSessionId = async (callback, data, divId, component) => {
   socket.on('finished', async (data) => { // usually progress from bull job
     const start = `[success]`.padEnd(9);
     const message = "Finished, closing connection";
+    console.log(message);
     await appendMessage(`${start} ${message}`, "dark-green", divId);
     socket.disconnect();
     window.dispatchEvent(

@@ -466,7 +466,7 @@ function* BulkPauseSubscriptions() {
                     <ul class="list mv2">
                     { item.boxes.map(box => (
                       <li>
-                        { `${box.subscription_id} ${box.title} - ${new Date(box.delivery_at).toLocaleString("en", {weekday: "long"})}` }
+                        { `${box.subscription_id} ${box.title} - ${new Date(box.deliver_at).toLocaleString("en", {weekday: "long"})}` }
                       </li>
                     ))}
                     </ul>

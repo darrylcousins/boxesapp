@@ -27,6 +27,8 @@ import {
   sleepUntil,
   displayMessages,
   pluralize,
+  collapseElement,
+  transitionElementHeight,
 } from "../helpers";
 
 /**
@@ -52,7 +54,7 @@ async function *Customer({ customer, charge_id, admin }) {
    * @member {boolean} loading
    */
   let shopify_customer_id;
-  if (Object.hasOwn(customer, "shopify_id")) {
+  if (Object.hasOwnProperty.call(customer, "shopify_id")) {
     shopify_customer_id = customer.shopify_id; // coming from simple customer object in admin/customers.jsx
   } else {
     shopify_customer_id = customer.id; // customer portal in shopify
@@ -68,9 +70,9 @@ async function *Customer({ customer, charge_id, admin }) {
    *
    * @member {string} loadingLabel, current or cancelled
    */
-  let loadingLabelDefault = `Loading current subscriptions`;
+  let loadingLabelDefault = `Loading subscriptions`;
   const makeLoadingLabelDefault = (customer) => {
-    loadingLabelDefault = `Loading current subscriptions for ${customer.first_name} ${customer.last_name}`;
+    loadingLabelDefault = `Loading subscriptions for ${customer.first_name} ${customer.last_name}`;
   };
   let loadingLabel = loadingLabelDefault;
   /**
@@ -97,6 +99,12 @@ async function *Customer({ customer, charge_id, admin }) {
    * @member {boolean} fetchError
    */
   let fetchError = false;
+  /**
+   * timer
+   *
+   * @member {object} Keeping a track of how long updated take
+   */
+  let timer = null;
   /**
    * recharge customer fetched from api
    *
@@ -146,11 +154,11 @@ async function *Customer({ customer, charge_id, admin }) {
    */
   let price_mismatch = [];
   /**
-   * Created a new subscription - lets flag it as new
+   * Flagging the changed or created subscription
    *
-   * @member {object} newSubscriptionID
+   * @member {object} updatedAction
    */
-  let newSubscriptionID = null;
+  let completedAction = {id: null, action: null};
   /**
    * Broken box ids turning up in verify subscriptions
    * Passed to Subscription which will add class disableevents
@@ -173,14 +181,12 @@ async function *Customer({ customer, charge_id, admin }) {
    * Sort groups by next_scheduled_at
    *
    */
-  const sortChargeGroups = () => {
-    chargeGroups.sort((a, b) => {
-      let dateA = new Date(Date.parse(a.attributes.nextChargeDate));
-      let dateB = new Date(Date.parse(b.attributes.nextChargeDate));
-      if (dateA < dateB) return -1;
-      if (dateA > dateB) return 1;
-      return 0;
-    });
+  const chargeGroupSort = (a, b) => {
+    let dateA = new Date(Date.parse(a.attributes.nextChargeDate));
+    let dateB = new Date(Date.parse(b.attributes.nextChargeDate));
+    if (dateA < dateB) return -1;
+    if (dateA > dateB) return 1;
+    return 0;
   };
 
   /**
@@ -189,7 +195,7 @@ async function *Customer({ customer, charge_id, admin }) {
    * Get charges for customer
    *
    */
-  const getChargeGroups = async (customer_id) => {
+  const getChargeGroups = async (customer_id, detail) => {
     let uri = `/api/recharge-customer-charges/${shopify_customer_id}`;
     if (loadingSession) uri = `${uri}?session_id=${loadingSession}`;
     console.log("getting charge groups", uri);
@@ -219,6 +225,17 @@ async function *Customer({ customer, charge_id, admin }) {
         if (Object.hasOwnProperty.call(json, "result")) {
           chargeGroups = json.result;
           originalChargeGroups = cloneDeep(json.result);
+          if (detail && !["cancelled", "deleted"].includes(detail.action)) {
+            completedAction = { id: detail.subscription_id, action: detail.action };
+            setTimeout(() => {
+              const div = document.getElementById(`action-${detail.subscription_id}`);
+              if (div) {
+                animateFadeForAction(div, () => div.classList.add("dn"), 400);
+                completedAction = { id: null, action: null };
+                this.refresh();
+              };
+            }, 10000);
+          };
         };
         loading = false;
         // this.refresh(); refresh driven by socket.closed
@@ -238,7 +255,7 @@ async function *Customer({ customer, charge_id, admin }) {
    * Get cancelled subscriptions for customer grouped as for charges
    *
    */
-  const getCancelledGroups = async (customer_id) => {
+  const getCancelledGroups = async (customer_id, detail) => {
     let uri = `/api/recharge-cancelled-subscriptions/${customer_id}`;
     if (loadingSession) uri = `${uri}?session_id=${loadingSession}`;
     return Fetch(encodeURI(uri))
@@ -251,9 +268,19 @@ async function *Customer({ customer, charge_id, admin }) {
           return null;
         };
         cancelledGroups = json;
+        if (detail && detail.action === "cancelled") {
+          completedAction = { id: detail.subscription_id, action: detail.action };
+          setTimeout(() => {
+            const div = document.getElementById(`action-${detail.subscription_id}`);
+            if (div) {
+              animateFadeForAction(div, () => div.classList.add("dn"), 400);
+              completedAction = { id: null, action: null };
+              this.refresh();
+            };
+          }, 10000);
+        };
         loading = false;
         loadingLabel = loadingLabelDefault;
-        // this.refresh(); refresh driven by socket.closed
       })
       .catch((err) => {
         fetchError = err;
@@ -332,18 +359,23 @@ async function *Customer({ customer, charge_id, admin }) {
    * @function addingSubscription
    * @listen listing.reload event from addSubscription modal
    */
-  const addingSubscription = (ev) => {
+  const addingSubscription = async (ev) => {
     if (ev.detail.src === "/api/recharge-create-subscription") {
       let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
-      // get the messages from ev?
+      // start the timer
+      timer = new Date();
+      loadingSession = ev.detail.session_id;
       for (const id of subscription_ids) {
         const div = document.querySelector(`#subscription-${id}`);
         div.classList.add("disableevents");
       };
-      const display = document.getElementById(`displayMessages-${customer.id}`);
-      if (display && Object.hasOwn(ev.detail.json, "messages")) {
-        displayMessages(display, ev.detail.json.messages);
-      };
+      await sleepUntil(() => document.getElementById(`displayMessages-${customer.id}`), 3000)
+        .then((res) => {
+          displayMessages(res, ev.detail.json.messages);
+        }).catch((e) => {
+          // no need for action
+          console.log("found no div", e);
+        });
     };
   };
 
@@ -352,15 +384,17 @@ async function *Customer({ customer, charge_id, admin }) {
 
   /**
    * Update charge groups and remove the deleted subscription
-   * @function removeSubscription
+   * @function deleteSubscription
    * @listen subscription.deleted event
    */
-  const removeSubscription = async (ev) => {
-    const { subscription, subscription_id } = ev.detail
+  const deleteSubscription = async (subscription_id) => {
+    console.log("deleted", subscription_id);
     const deleted = cancelledGroups.find(el => el.box.id === subscription_id);
     const idx = cancelledGroups.indexOf(deleted);
     cancelledGroups.splice(idx, 1);
+    console.log("found deleted", deleted, idx);
     let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
+    console.log("remaining", cancelledGroups);
     for (const id of subscription_ids) {
       const div = document.querySelector(`#subscription-${id}`);
       div.classList.remove("disableevents");
@@ -372,95 +406,6 @@ async function *Customer({ customer, charge_id, admin }) {
         // no need for action
       });
   };
-
-  this.addEventListener("subscription.deleted", removeSubscription);
-
-  /**
-   * Move the reactivated subscription to chargeGroups
-   * @function reactivateSubscription
-   * @listen subscription.deleted event
-   */
-  const reactivateSubscription = async (ev) => {
-    console.log("reactivate", ev.detail);
-    const { subscription, subscription_id } = ev.detail
-    const cancelled = cancelledGroups.find(el => el.box.id === subscription_id);
-    const idx = cancelledGroups.indexOf(cancelled);
-    if (idx !== -1) { // oddly getting here twice???
-      cancelledGroups.splice(idx, 1);
-      chargeGroups.push(subscription);
-      originalChargeGroups = cloneDeep(chargeGroups); // save for cancel event
-      let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
-      for (const id of subscription_ids) {
-        const div = document.querySelector(`#subscription-${id}`);
-        div.classList.remove("disableevents");
-      };
-      await sleepUntil(() => document.getElementById(`customer-${rechargeCustomer.id}`), 500)
-        .then((res) => {
-          animateFadeForAction(res, async () => await this.refresh(), 400);
-        }).catch((e) => {
-          // no need for action
-        });
-    };
-  };
-
-  this.addEventListener("subscription.reactivated", reactivateSubscription);
-
-  /**
-   * Move the cancelled subscription to cancelledGroups
-   * @function cancelSubscription
-   * @listen subscription.cancelled event
-   */
-  const cancelSubscription = async (ev) => {
-    console.log("cancelled", ev.detail);
-    const { subscription, subscription_id } = ev.detail
-    console.log("customer subscription and id", subscription, subscription_id);
-    const charge = chargeGroups.find(el => el.attributes.subscription_id === subscription_id);
-    const idx = chargeGroups.indexOf(charge);
-    console.log("customer charge and idx", charge, idx);
-    chargeGroups.splice(idx, 1);
-    originalChargeGroups = cloneDeep(chargeGroups); // save for cancel event
-    cancelledGroups.push(subscription);
-    let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
-    /*
-    for (const id of subscription_ids) {
-      const div = document.querySelector(`#subscription-${id}`);
-      div.classList.remove("disableevents");
-    }*/;
-    await sleepUntil(() => document.getElementById(`customer-${rechargeCustomer.id}`), 500)
-      .then((res) => {
-        animateFadeForAction(res, async () => await this.refresh(), 400);
-      }).catch((e) => {
-        // no need for action
-      });
-  };
-
-  this.addEventListener("subscription.cancelled", cancelSubscription);
-
-  /**
-   * Load the new subscription after it was created
-   * @function createSubscription
-   * @listen subscription.created event
-   */
-  const createSubscription = async (ev) => {
-    const { subscription_id } = ev.detail
-    newSubscriptionID = subscription_id;
-
-    setTimeout(async () => {
-      const socketMessages = document.getElementById(`addBoxMessages-${customer.id}`);
-      if (socketMessages) {
-        socketMessages.classList.add("closed"); // uses css transitions
-      };
-      loading = true;
-      chargeGroups = [];
-      this.refresh();
-      await getChargeGroups(customer.id).then(async (result) => {
-        this.refresh();
-      });
-    }, 1000);
-
-  };
-
-  window.addEventListener("subscription.created", createSubscription);
 
   /**
    * Disable all events on subscription objects not including the current
@@ -469,10 +414,13 @@ async function *Customer({ customer, charge_id, admin }) {
    */
   const disableEvents = async (ev) => {
     ev.stopPropagation();
-    const { subscription_id } = ev.detail;
-    const mydiv = document.querySelector(`#subscription-${subscription_id}`);
-    if (mydiv) {
-      mydiv.classList.remove("disableevents");
+    let subscription_id;
+    if (Object.hasOwnProperty.call(ev.detail, "subscription_id")) {
+      subscription_id = ev.detail.subscription_id;
+      const mydiv = document.querySelector(`#subscription-${subscription_id}`);
+      if (mydiv) {
+        mydiv.classList.remove("disableevents");
+      };
     };
     let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
     subscription_ids = subscription_ids.filter(el => el !== subscription_id);
@@ -491,7 +439,14 @@ async function *Customer({ customer, charge_id, admin }) {
    */
   const enableEvents = async (ev) => {
     ev.stopPropagation();
-    const { subscription_id } = ev.detail;
+    let subscription_id;
+    if (Object.hasOwnProperty.call(ev.detail, "subscription_id")) {
+      subscription_id = ev.detail.subscription_id;
+      const mydiv = document.querySelector(`#subscription-${subscription_id}`);
+      if (mydiv) {
+        mydiv.classList.remove("enableevents");
+      };
+    };
     let subscription_ids = [ ...chargeGroups.map(el => el.attributes.subscription_id), ...cancelledGroups.map(el => el.box.id) ];
     subscription_ids = subscription_ids.filter(el => el !== subscription_id);
     for (const id of subscription_ids) {
@@ -502,12 +457,106 @@ async function *Customer({ customer, charge_id, admin }) {
 
   this.addEventListener("customer.enableevents", enableEvents);
 
+  const loadingSocketClosed = async (ev) => {
+    console.log(ev.detail);
+    console.log(loadingSession);
+    if (loadingSession !== ev.detail.session_id) return;
+    ev.stopPropagation(); // caused Subscription to miss out?
+
+    const loader = document.getElementById(`loadMessages-${shopify_customer_id}`);
+    console.log("loadingSocketClosesd", ev.detail, "lodader?", Boolean(loader));
+    console.log("loading socket closed", completedAction);
+    // shouldn't need to sleep now because not refreshing on load customer and charges
+    setTimeout(async () => {
+      if (loader) loader.classList.add("closed");
+      loadingSession = null;
+      await delay(1900); // wait for loader to close
+      await this.refresh();
+      await delay(800); // wait for refresh to complete
+
+      // if updated I've lost these somewhere so I'm doing this here though it
+      // *just* works for the other actions - which (as a clue) are all modal driven
+      if (completedAction.action === "updated") {
+        const idx = chargeGroups.indexOf(chargeGroups.find(el => el.attributes.subscription_id === completedAction.id));
+        console.log(idx);
+        console.log("closing and enabling the subscription divs");
+        const saveMessages = document.getElementById(`saveMessages-${completedAction.id }`);
+        if (saveMessages) saveMessages.classList.add("dn");
+        document.getElementById(`products-${completedAction.id}-${idx}`).classList.remove("disableevents");
+        document.getElementById(`buttons-${completedAction.id}-${idx}`).classList.remove("disableevents");
+      };
+      await delay(300); // wait for refresh to complete
+      await sleepUntil(() => document.getElementById(`customer-${customer.id}`), 500)
+        .then(async (res) => {
+          res.style.height = "auto";
+          animateFade(`subscriptions-${customer.id}`, 1);
+        });
+    }, 800);
+  };
+
+  window.addEventListener("socket.closed", loadingSocketClosed);
+
+  /**
+   * Load the new subscription after it was created
+   * @function updatesComplete
+   * @listen window updates.completed event
+   * @listen subscription.updates.completed event
+   */
+  const updatesComplete = async (ev) => {
+
+    console.log("customer", ev.detail);
+    //if (ev.detail.action !== "created") return;
+
+    ev.stopPropagation(); // caused Subscription to miss out?
+    loadingSession = ev.detail.session_id;
+    const userActions = ["reconciled", "updated", "changed", "paused", "rescheduled", "cancelled", "reactivated", "deleted", "created"];
+
+    if (ev.detail.action === "deleted") {
+      // remove from cancelledGroups
+      deleteSubscription(ev.detail.subscription_id);
+      return;
+    };
+
+    this.dispatchEvent(toastEvent({
+      notice: `Subscription ${ev.detail.action}, reloading subscriptions.`,
+      bgColour: "black",
+      borderColour: "black"
+    }));
+    setTimeout(async () => {
+      const socketMessages = document.getElementById(`addBoxMessages-${customer.id}`);
+      if (socketMessages) socketMessages.classList.remove("closed");
+      await sleepUntil(() => document.getElementById(`customer-${customer.id}`), 500)
+        .then(async (res) => {
+          console.log(res);
+          // maybe collapse it?
+          const h = transitionElementHeight(res); // this sets the style height property
+          console.log(h);
+          collapseElement(res);
+          delay(3000);
+          if (charge_id) {
+            await getSessionId(init, {charge_id, reload: true, detail: ev.detail}, `loadMessages-${customer.id}`, this);
+          } else {
+            await getSessionId(init, {reload: true, detail: ev.detail}, `loadMessages-${customer.id}`, this);
+          };
+        }).catch((e) => {
+          console.log("failed here");
+          console.log(e);
+          // no need for action
+        });
+    }, ["cancelled", "reactivated"].includes(ev.detail.action) ? 2500 : 500); // wait longer for moving between lists
+
+  };
+
+  window.addEventListener("created.complete", updatesComplete);
+  this.addEventListener("subscription.updates.completed", updatesComplete);
+
   /**
    * For reloading and cancelling changes
    * Simple reverts all changes to originalChargeGroups
    *
    */
   const reloadCharge = (ev) => {
+    console.log("custeomer.reload", ev);
     chargeGroups = []
     loading = true;
     const div = document.querySelector(`#customer-${rechargeCustomer.id}`);
@@ -518,6 +567,7 @@ async function *Customer({ customer, charge_id, admin }) {
       chargeGroups = cloneDeep(originalChargeGroups);
       await sleepUntil(() => document.getElementById(`customer-${rechargeCustomer.id}`), 500)
         .then((res) => {
+          console.log("wtf", res);
           animateFadeForAction(res, async () => await this.refresh(), 400);
         }).catch((e) => {
           // no need for action
@@ -525,6 +575,7 @@ async function *Customer({ customer, charge_id, admin }) {
     }, 400);
   };
 
+  this.addEventListener("customer.reload", reloadCharge);
   /**
    *
    * Initiate and retrieve data
@@ -536,15 +587,31 @@ async function *Customer({ customer, charge_id, admin }) {
     chargeGroups = [];
     cancelledGroups = [];
     originalChargeGroups = [];
-    this.refresh();
 
-    if (Object.hasOwn(data, "session_id")) {
-      loadingSession = data.session_id;
-      loading = true;
-      await this.refresh();
+    if (Object.hasOwnProperty.call(data, "reload")) { // if reloading
+      loadingLabel = "Reloading and verifying changes ...";
     };
 
-    if (Object.hasOwn(data, "charge_id")) {
+    if (Object.hasOwnProperty.call(data, "session_id")) {
+      loadingSession = data.session_id;
+      loading = true;
+    };
+    await this.refresh();
+
+    /* Not required now that I'm emptying the charge lists
+    if (Object.hasOwnProperty.call(data, "reload")) { // if reloading need to enable after loading
+      delay(200); // let refresh complete
+      this.dispatchEvent(
+        new CustomEvent("customer.disableevents", {
+          bubbles: true,
+          detail: {},
+        })
+      );
+      delay(200); // let disable complete
+    };
+    */
+
+    if (Object.hasOwnProperty.call(data, "charge_id")) {
       await getCustomerCharge(rechargeCustomer.id, data.charge_id).then(json => {
         if (json) {
           if (json.errors) {
@@ -585,12 +652,25 @@ async function *Customer({ customer, charge_id, admin }) {
       });
     } else {
       rechargeCustomer = customer;
-      await getChargeGroups(customer.id).then(async (result) => {
-        loadingLabel = loadingLabelDefault.replace("current", "cancelled");;
-        // this.refresh(); refresh driven by socket.closed
-        await getCancelledGroups(customer.id);
+      let detail = {};
+      console.log(data);
+      if (Object.hasOwnProperty.call(data, "detail")) {
+        detail = data.detail;
+      };
+      await getChargeGroups(customer.id, detail).then(async (result) => {
+        await getCancelledGroups(customer.id, detail);
       });
     };
+    /* No longer needed after emptying charge lists
+    if (Object.hasOwnProperty.call(data, "reload")) { // if reloading need to enable after loading
+      this.dispatchEvent(
+        new CustomEvent("customer.enableevents", {
+          bubbles: true,
+          detail: {},
+        })
+      );
+    };
+    */
   };
 
   /**
@@ -659,27 +739,6 @@ async function *Customer({ customer, charge_id, admin }) {
       });
   };
 
-  const loadingSocketClosed = async (ev) => {
-    //ev.stopImmediatePropagation(); // caused Subscription to miss out?
-
-    if (loadingSession === ev.detail.session_id) {
-      console.log("am I here really?");
-      // shouldn't need to sleep now because not refreshing on load customer and charges
-      const loader = document.getElementById(`loadMessages-${shopify_customer_id}`);
-      setTimeout(async () => {
-        loader.classList.add("closed");
-        loadingSession = null;
-        await delay(1900); // wait for loader to close
-        await this.refresh();
-        // and now animate opacity of the subscriptions
-        await delay(300); // wait for refresh to complete
-        animateFade(`subscriptions-${shopify_customer_id}`, 1);
-      }, 800);
-    };
-  };
-
-  window.addEventListener("socket.closed", loadingSocketClosed);
-
   const shopAdminUrl = `https://${ localStorage.getItem("shop") }/admin/customers`;
   const rechargeAdminUrl = `https://${ localStorage.getItem("recharge") }.admin.rechargeapps.com/merchant/customers`;
 
@@ -689,7 +748,7 @@ async function *Customer({ customer, charge_id, admin }) {
     await getSessionId(init, { charge_id }, `loadMessages-${shopify_customer_id}`, this);
   } else {
     chargeGroups = [];
-    await getSessionId(init, {}, `loadMessages-${shopify_customer_id}`, this);
+    await getSessionId(init, {  }, `loadMessages-${shopify_customer_id}`, this);
   };
 
   for await ({ customer, charge_id } of this) { // eslint-disable-line no-unused-vars
@@ -722,18 +781,18 @@ async function *Customer({ customer, charge_id, admin }) {
       <div id="customer-wrapper" class="pr3 pl3 w-100">
         { loading && <BarLoader /> }
         { fetchError && <Error msg={fetchError} /> }
+        { loading && (
+          <div class="alert-box dark-blue pv2 ph4 ma2 br3 ba b--dark-blue bg-washed-blue">
+            <p>
+              <i class="b">Hold tight.</i> { loadingLabel } ...
+            </p>
+          </div>
+        )}
         { loadingSession && (
           <div id={ `loadMessages-${shopify_customer_id}` } class="tl socketMessages collapsible"></div>
         )}
-        <div id={ `customer-${shopify_customer_id}` }>
+        <div id={ `customer-${shopify_customer_id}` } class="collapsible">
           <Fragment>
-            { loading && (
-              <div class="alert-box dark-blue pv2 ph4 ma2 br3 ba b--dark-blue bg-washed-blue">
-                <p>
-                  <i class="b">Hold tight.</i> { loadingLabel } ...
-                </p>
-              </div>
-            )}
             { rechargeCustomer && (
               <Fragment>
                 { !admin && !loading && (
@@ -748,7 +807,7 @@ async function *Customer({ customer, charge_id, admin }) {
                 )}
                 { admin && !loading && (
                   <Fragment>
-                    <div class="w-100 flex-container mt0 pa0">
+                    <div class="w-100 flex-container mt0 pa0 pr1">
                       <AddBoxModal
                         subscription={ null }
                         customer={ rechargeCustomer }
@@ -756,7 +815,7 @@ async function *Customer({ customer, charge_id, admin }) {
                         type="created"
                         socketMessageId={ `addBoxMessages-${rechargeCustomer.id}` }/>
                       <button
-                        class="b purple dib bg-white bg-animate hover-white hover-bg-purple w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0"
+                        class="w-100 b purple dib bg-white bg-animate hover-white hover-bg-purple w-20 pv2 outline-0 ml1 mv1 pointer b--navy ba"
                         title="Verify"
                         type="button"
                         onclick={ async () => await verifyCustomerSubscriptions({ customer: rechargeCustomer }) }
@@ -764,7 +823,7 @@ async function *Customer({ customer, charge_id, admin }) {
                           <span class="v-mid di">Verify customer subscriptions</span>
                       </button>
                       <a
-                        class="b link tc dark-green dib bg-white bg-animate hover-white hover-bg-dark-green w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0"
+                        class="w-100 b link tc dark-green dib bg-white bg-animate hover-white hover-bg-dark-green w-20 pv2 outline-0 ml1 mv1 pointer b--navy ba"
                         title="Shopify"
                         type="button"
                         target="_blank"
@@ -773,7 +832,7 @@ async function *Customer({ customer, charge_id, admin }) {
                           <span class="v-mid di">View customer in Shopify</span>
                       </a>
                       <a
-                        class="b link tc green dib bg-white bg-animate hover-white hover-bg-green w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0"
+                        class="w-100 b link tc green dib bg-white bg-animate hover-white hover-bg-green w-20 pv2 outline-0 ml1 mv1 pointer b--navy ba"
                         title="Recharge"
                         type="button"
                         target="_blank"
@@ -782,7 +841,7 @@ async function *Customer({ customer, charge_id, admin }) {
                           <span class="v-mid di">View customer in Recharge</span>
                       </a>
                       <button
-                        class="b dark-gray dib bg-white bg-animate hover-white hover-bg-gray w-20 pv2 outline-0 mv1 pointer b--navy bt bb br bl-0 br2 br--right"
+                        class="w-100 b dark-gray dib bg-white bg-animate hover-white hover-bg-gray w-20 pv2 outline-0 ml1 mv1 pointer b--navy ba br2 br--right"
                         title="New Customer"
                         type="button"
                         onclick={ getNewCustomer }
@@ -844,7 +903,7 @@ async function *Customer({ customer, charge_id, admin }) {
                       <Subscription
                         subscription={ group } idx={ idx }
                         brokenSubscriptions={ brokenSubscriptions }
-                        newSubscription={ group.attributes.subscription_id === newSubscriptionID }
+                        completedAction={ group.attributes.subscription_id === completedAction.id ? completedAction.action : null }
                         customer={ rechargeCustomer }
                         admin={ admin }
                         crank-key={ `${group.attributes.nextChargeDate.replace(/ /g, "_")}-${idx}` }
@@ -853,7 +912,7 @@ async function *Customer({ customer, charge_id, admin }) {
                   ))}
                 </Fragment>
               ) : (
-                !loading && !charge && cancelledGroups && cancelledGroups.length === 0 && (
+                !loading && !charge_id && cancelledGroups && cancelledGroups.length === 0 && (
                   <div class="alert-box dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
                       <p class="tc">No cancelled subscriptions found.</p>
                   </div>
@@ -867,7 +926,11 @@ async function *Customer({ customer, charge_id, admin }) {
                     </h4>
                     { cancelledGroups.map((group, idx) => (
                       <div id={`subscription-${group.subscription_id}`} class="subscription">
-                        <Cancelled subscription={ group } customer={ rechargeCustomer } idx={ idx } />
+                        <Cancelled
+                          subscription={ group }
+                          customer={ rechargeCustomer } idx={ idx }
+                          completedAction={ group.subscription_id === completedAction.id ? completedAction.action : null }
+                        />
                       </div>
                     ))}
                   </Fragment>

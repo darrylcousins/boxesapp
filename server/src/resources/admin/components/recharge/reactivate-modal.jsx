@@ -131,7 +131,10 @@ async function* ReactivateSubscription(props) {
       })
     );
     const title = `${subscription.box.product_title} - ${subscription.box.variant_title}`;
-    const messages = [`Reactivating your subscription ${title}`];
+    const messages = [
+      `Reactivating your subscription ${title}`,
+      `Delivery date ${subscription.box.properties.find(el => el.name === "Delivery Date").value}`,
+    ];
     this.dispatchEvent(
       new CustomEvent("subscription.messages", {
         bubbles: true,

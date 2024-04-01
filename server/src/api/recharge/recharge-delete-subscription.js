@@ -37,6 +37,8 @@ export default async (req, res, next) => {
 
   try {
 
+    res.status(200).json({ success: true, action: "deleted", subscription_id: box.id });
+
     try {
 
       meta.recharge = sortObjectByKeys(meta.recharge);
@@ -74,14 +76,13 @@ export default async (req, res, next) => {
       throw err;
     };
 
-    res.status(200).json({ success: true, action: "deleted", subscription_id: box.id });
-
-    for (const id of includes.map(el => `${el.id}`)) {
+    console.log(includes);
+    for (const item of includes) {
       const opts = {
         method: "DELETE",
-        path: `subscriptions/${id}`,
+        path: `subscriptions/${item.id}`,
         body: JSON.stringify({ send_email: false }),
-        title: `Delete ${id}`,
+        title: `Delete ${item.product_title}`,
         io,
         session_id,
       };

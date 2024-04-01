@@ -17,10 +17,12 @@ import ReactivateSubscriptionModal from "./reactivate-modal";
 import DeleteSubscriptionModal from "./delete-modal";
 import Subscription from "./subscription";
 import {
+  completedActions,
   formatCount,
   findTimeTaken,
   displayMessages,
   sleepUntil,
+  delay,
   toPrice,
   animateFadeForAction,
   animateFade
@@ -30,7 +32,7 @@ import {
  * Render a cancelled subscription
  *
  */
-async function* Cancelled({ subscription, customer, idx, admin }) {
+async function* Cancelled({ subscription, customer, idx, admin, completedAction }) {
 
   console.log(subscription);
   /**
@@ -53,6 +55,12 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
    */
   let timer = null;
   /**
+   * loadingSession
+   *
+   * @member {object} Keeping a track of the session_id
+   */
+  let loadingSession = null;
+  /**
    * A save has been done so don't allow edits
    *
    * @member {object|string} editsPending
@@ -71,9 +79,11 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
    * @function makeTitle
    */
   const collectMessages = async (ev) => {
-    await sleepUntil(() => document.getElementById(`displayMessages-${subscription.subscription_id}`));
-    const display = document.getElementById(`displayMessages-${subscription.subscription_id}`);
-    displayMessages(display, ev.detail.messages);
+    await sleepUntil(() => document.getElementById(`displayMessages-${subscription.subscription_id}`))
+     .then(res => {
+        displayMessages(res, ev.detail.messages);
+     })
+     .catch(e => console.log(e));
 
   };
 
@@ -98,57 +108,15 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
     return result;
   };
 
-  /*
-   * @function getSubscription
-   * Fetch the charge as a "subscription" object
-   * This is used to reload the subscription on updates.completed after some action was performed
-   * It simply replace all the properties with the returned properties
-   */
-  const getSubscription = async (data) => {
-    let src = `/api/recharge-customer-subscription`;
-    if (Object.hasOwn(data, "session_id")) {
-      src = `${src}?session_id=${data.session_id}`;
-    };
-    const headers = { "Content-Type": "application/json" };
-    // need to use the event data because with change event the schedule will have changed
-    const body = {
-      address_id: data.address_id,
-      subscription_id: data.subscription_id,
-      scheduled_at: data.scheduled_at,
-      customer, // a recharge customer object
-      lastOrder: subscription.attributes.lastOrder, // avoids 2 api calls to get the lastOrder
-      action: data.action,
-    };
-    return await PostFetch({ src, data: body, headers })
-      .then((result) => {
-        const { error, json } = result;
-        if (error !== null) {
-          fetchError = error;
-          loading = false;
-          this.refresh();
-        } else {
-          return json;
-        };
-      })
-      .catch((err) => {
-        fetchError = err;
-        loading = false;
-        this.refresh();
-      });
-  };
-
-  // updates.completed when webhooks are received that verify that all updates have been completed
-  window.addEventListener("updates.completed", reloadSubscription);
-
   /**
-   * @function reloadCharge
-   * Reload this particular charge from the server as a 'subsciption' object
+   * @function listingReload
    * @listens listing.reload
    */
   const listingReload = async (ev) => {
     const result = ev.detail.json; // success, action, subscription_id
     // start the timer
     timer = new Date();
+    loadingSession = ev.detail.session_id;
     ev.stopPropagation();
     editsPending = true; // on deletes no need to start timer for reload
     await this.refresh();
@@ -159,16 +127,83 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
 
   this.addEventListener("toastEvent", Toaster);
 
-  for await ({ subscription } of this) { // eslint-disable-line no-unused-vars
+  /*
+   * @function reloadSubscription
+   * Reload this particular charge from the server as a 'subsciption' object
+   * @listens socket.closed
+   */
+  const reloadSubscription = async (ev) => {
+    /*
+    if (ev.detail.subscription_id !== parseInt(subscription.subscription_id)) {
+      return;
+    };
+    */
+    if (ev.detail.session_id !== loadingSession) return;
+    ev.stopPropagation();
+    if (timer) {
+      const timeTaken = findTimeTaken(timer);
+      timer = null;
+      this.dispatchEvent(toastEvent({
+        notice: `Updates (${ev.detail.action}) completed after ${timeTaken} minutes` ,
+        bgColour: "black",
+        borderColour: "black"
+      }));
+    };
+    const socketMessages = document.getElementById(messageDivId);
+    const saveMessages = document.getElementById(`saveMessages-${subscription.subscription_id }`);
+
+    // keep things nicely paced and slow
+    socketMessages.classList.add("closed"); // has 2s transition
+    await delay(2000);
+    socketMessages.innerHTML = "";
+    saveMessages.classList.add("closed");
+    await delay(2000);
+    saveMessages.classList.add("dn");
+    window.scrollTo({ // scroll up to make the customer reload tidy
+        top: 0,
+        left: 0,
+        behavior: "smooth",
+    });
+    await delay(500);
+    loadingSession = null;
+    if (timer) {
+      const timeTaken = findTimeTaken(timer);
+      timer = null;
+      this.dispatchEvent(toastEvent({
+        notice: `Updates (${ev.detail.action}) completed after ${timeTaken} minutes` ,
+        bgColour: "black",
+        borderColour: "black"
+      }));
+    };
+    // get Customer to reload everything
+    this.dispatchEvent(new CustomEvent(`subscription.updates.completed`, {
+      bubbles: true,
+      detail: ev.detail,
+    }));
+    return;
+  };
+
+  // socket.closed when webhooks are received that verify that all updates have been completed
+  window.addEventListener("socket.closed", reloadSubscription);
+
+  for await ({ subscription, customer, admin, idx, completedAction } of this) { // eslint-disable-line no-unused-vars
 
     yield (
       <Fragment>
         <div 
-          id={ `subscription-${subscription.box.id}` }
+          id={ `subscription-${subscription.subscription_id}-${idx}` }
           class="mb2 pb2 bb b--black-80">
-          <h3 class="tl mb2 w-100 fg-streamside-maroon">
+          <h4 class="tl mb2 w-100 fg-streamside-maroon">
             {subscription.box.product_title} - {subscription.box.variant_title}
-          </h3>
+            { completedAction && (
+              <span id={ `action-${subscription.subscription_id}` }
+                class={ `b pv1 ph3 sans-serif white bg-${
+                  completedActions[completedAction]
+                } ba b--${
+                  completedActions[completedAction]
+                } br3 ml3 mb1 v-base` } style="font-size: smaller">{ completedAction }</span>
+            )}
+          </h4>
           <div class="flex-container w-100">
             <div class="w-50-ns w-100">
               <div class="dt">
@@ -192,7 +227,7 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
                   Subscription ID:
                 </div>
                 <div class="dtc pv1">
-                  <span>{ subscription.box.id }</span>
+                  <span>{ subscription.subscription_id }</span>
                 </div>
               </div>
               { (Boolean(subscription.lastOrder) && Object.hasOwnProperty.call(subscription.lastOrder, "order_number")) && (
@@ -228,7 +263,7 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
             </div>
           </div>
           { !editsPending && (
-            <div id={`reactivate-${subscription.box.id}`} class="w-100 pv2 tr">
+            <div id={`reactivate-${subscription.subscription_id}-${idx}`} class="w-100 pv2 tr">
               <DeleteSubscriptionModal subscription={ subscription } customer={ customer }
                 admin={ admin }
                 socketMessageId={ `${messageDivId}` } />
@@ -239,8 +274,8 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
           )}
           { (editsPending ) && (
             <Fragment>
-              <div id={ `saveMessages-${subscription.box.id }` } class="tl w-100 saveMessages">
-                <div class="alert-box dark-blue pa2 ma2 br3 ba b--dark-blue bg-washed-blue">
+              <div id={ `saveMessages-${subscription.subscription_id }` } class="tl w-100 saveMessages">
+                <div class="alert-box dark-blue pa2 ma1 br3 ba b--dark-blue bg-washed-blue">
                   <p class="pa3 ma0">
                     <div>Your updates have been queued for saving.</div>
                     <div>
@@ -248,7 +283,7 @@ async function* Cancelled({ subscription, customer, idx, admin }) {
                     </div>
                     <div>Check your emails for confirmation of the updates you have requested.</div>
                   </p>
-                  <div id={ `displayMessages-${subscription.box.id }` } class="fg-streamside-blue">
+                  <div id={ `displayMessages-${subscription.subscription_id }` } class="fg-streamside-blue">
                   </div>
                   <ProgressLoader />
                 </div>

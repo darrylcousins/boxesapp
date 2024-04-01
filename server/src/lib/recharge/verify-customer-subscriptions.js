@@ -133,7 +133,7 @@ export const verifyGrouped = async ({
             subscription_id: group.box.id,
             title: group.box.product_title,
             next_charge_scheduled_at: new Date(group.charge.scheduled_at).toDateString(),
-            delivery_at: properties["Delivery Date"],
+            deliver_at: properties["Delivery Date"],
             updated_at: tempDate ? tempDate.toISOString().replace(/T/, ' ').replace(/\..+/, '') : "Unknown",
             cancelled_at: group.box.cancelled_at,
             order_day_of_week: group.box.order_day_of_week,
@@ -210,7 +210,7 @@ export const verifyGrouped = async ({
               box_title: group.box.product_title,
               title: extra.title,
               next_charge_scheduled_at,
-              delivery_at: extra.delivery_at,
+              deliver_at: extra.deliver_at,
               updated_at,
               cancelled_at: null, // data unavailable??? see rc_subscription_ids
             };
@@ -292,7 +292,7 @@ export const verifyGrouped = async ({
             subscription_id: el.subscription_id,
             title: el.title,
             next_charge_scheduled_at: new Date(el.next_charge_scheduled_at).toDateString(),
-            delivery_at: el.delivery_at,
+            deliver_at: el.deliver_at,
             updated_at,
             cancelled_at: null, // data unavailable??? see rc_subscription_ids
           });
@@ -360,7 +360,7 @@ export const formatOrphanedSubscriptions = async ({ subscriptions, orphans }) =>
           box_subscription_id: boxId,
           title,
           next_charge_scheduled_at: new Date(next_charge_scheduled_at).toDateString(),
-          delivery_at: deliveryDate,
+          deliver_at: deliveryDate,
           updated_at: tempDate.toISOString().replace(/T/, ' ').replace(/\..+/, ''),
           box_subscription_id: boxId,
           cancelled_at,

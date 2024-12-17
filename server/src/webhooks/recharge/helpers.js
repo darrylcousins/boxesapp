@@ -5,6 +5,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import fs from "fs";
+import { ObjectId } from "mongodb";
 import { matchNumberedString } from "../../lib/helpers.js";
 
 /*
@@ -36,7 +37,7 @@ export const findChangeMessages = async (query) => {
  * @prop topic - one of "created, updated, deleted"
  * some variations to algorithm depending on the topic
  */
-export const updatePendingEntry = async (meta, topic) => {
+export const updatePendingEntry = async (meta, topic, io, sockets) => {
   /* the values stored in the pending table are how the subscription should
    * end up, i.e. a new quantity, or delivery/charge date 
    */
@@ -69,7 +70,6 @@ export const updatePendingEntry = async (meta, topic) => {
     rc_subscription_ids:
       { $elemMatch: { $and: match } }
   };
-  //console.log("match", match);
 
   // deleted and cancelled subscriptions have this set to null already so match will be found
   if (topic !== "deleted" && topic !== "cancelled") query.scheduled_at = meta.recharge.scheduled_at;
@@ -98,22 +98,49 @@ export const updatePendingEntry = async (meta, topic) => {
     ]
   };
 
-  /*
-  if (parseInt(process.env.DEBUG) === 1 && topic === "updated") {
-    _logger.notice(`Update pending query (${meta.recharge.title})`, { meta: { recharge: { query, update, options } }});
-  };
-  */
-
   const res =  await _mongodb.collection("updates_pending").updateOne(query, update, options);
-  //console.log("query", query);
 
   const capitalize = (word) => {
     return word.charAt(0).toUpperCase() + word.substring(1).toLowerCase();
   };
 
+  if (parseInt(process.env.DEBUG) === 1) {
+    _logger.notice(`Testing pending entry (${capitalize(topic)}) (${meta.recharge.title})`, { meta: { recharge: { query, result: res, update } }});
+  };
+
   if (res.matchedCount > 0) {
     delete query.rc_subscription_ids; // has been mutated so remove from query
     const entry = await _mongodb.collection("updates_pending").findOne(query);
+
+    // schedule_only comes from changeBoxModal and indicates that only the
+    // check that all have been updated
+    let allUpdated;
+    if (entry) { // no entry once on order processed?
+      allUpdated = entry.rc_subscription_ids.every(el => {
+        // check that all subscriptions have updated or have been created
+        return el.updated === true && Number.isInteger(el.subscription_id);
+      });
+    } else {
+      _logger.error({message: "Pending entry updated but not found (updatePendingEntry)", meta: query});
+    };
+    if (allUpdated) {
+      await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
+      if (parseInt(process.env.DEBUG) === 1) {
+        _logger.notice(`Deleting pending entry (${topic}) (${meta.recharge.title})`, { meta: { recharge: entry }});
+      };
+      if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
+        io.emit("completed", `Updates completed, removing updates entry.`);
+        io.emit("finished", {
+          action: entry.action,
+          session_id: entry.session_id,
+          subscription_id: entry.subscription_id,
+          address_id: entry.address_id,
+          customer_id: entry.customer_id,
+          scheduled_at: entry.scheduled_at,
+          charge_id: entry.charge_id,
+        });
+      };
+    };
 
     if (parseInt(process.env.DEBUG) === 1) {
       _logger.notice(`${capitalize(topic)} ${meta.recharge.title} - updated pending entry`, { meta: { recharge: entry } });
@@ -335,10 +362,17 @@ export const writeFileForOrder = (order, topic, key) => {
 };
 
 /*
- * @function writeFileForOrder
+ * @function writeFileForProduct
  */
 export const writeFileForProduct = (product, topic) => {
   writeFile({ product }, "product", topic, "shopify");
+};
+
+/*
+ * @function writeFileForAsyncBatch
+ */
+export const writeFileForAsyncBatch = (async_batch, topic) => {
+  writeFile({ async_batch }, "async_batch", topic, "recharge");
 };
 
 /*

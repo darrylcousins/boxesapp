@@ -35,7 +35,6 @@ export default async (req, res, next) => {
   };
   try {
     const box = await _mongodb.collection("boxes").findOne(query);
-    if (!box) console.log(box);
 
     let order;
     let boxLists;

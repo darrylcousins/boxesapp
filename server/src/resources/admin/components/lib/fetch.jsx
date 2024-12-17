@@ -48,7 +48,6 @@ const Fetch = async (src) => {
       // jun 2023
       if (Object.hasOwnProperty.call(json, "error")) {
         error = json.error;
-        console.log(src, error);
       };
       return { error, json };
     })
@@ -105,7 +104,6 @@ const PostFetch = async ({ src, data, headers }) => {
   if (headers) opts.headers = headers;
 
   const proxy = localStorage.getItem("proxy-path");
-  //console.log("Postfetching", `${proxy}${src}`);
   return fetch(`${proxy}${src}`, opts)
     .then(async (response) => {
       let json;

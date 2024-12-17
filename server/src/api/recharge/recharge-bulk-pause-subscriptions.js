@@ -4,7 +4,7 @@
  */
 
 import subscriptionActionMail from "../../mail/subscription-action.js";
-import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
+import { makeRechargeQuery, updateSubscription } from "../../lib/recharge/helpers.js";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import { formatDate, delay } from "../../lib/helpers.js";
 
@@ -129,7 +129,6 @@ export default async (req, res, next) => {
             await subscriptionActionMail(mailOpts);
             if (io) io.emit("message", `Customer email sent (${subscription.attributes.customer.email})`);
           };
-          console.log(update);
           updatedSubscriptions.push(update);
         };
       } catch(err) {

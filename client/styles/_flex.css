@@ -1,0 +1,21 @@
+/* specific class to make customer subscription page mobile friendly */
+.flex-container, .flex-container-reverse {
+}
+.flex-container {
+  flex-direction: row;
+}
+.flex-container-reverse {
+  flex-direction: row-reverse;
+}
+
+/* Responsive layout - makes a one column layout instead of a two-column layout
+Using reverse works best for my content */
+@media (max-width: 450px) {
+  .flex-container {
+    flex-direction: column;
+  }
+  .flex-container-reverse {
+    flex-direction: column-reverse;
+  }
+}
+

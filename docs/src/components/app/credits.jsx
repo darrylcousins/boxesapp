@@ -58,12 +58,12 @@ function *Credits({ mode }) {
     };
   };
 
-  const pullContent = () => {
+  const pullContent = async () => {
     const headers = {
       "Accept": "text/markdown",
     };
     if (staticUrl.length < 2) headers["Cache-Control"] = "no-cache";
-    fetch(`${staticUrl}/credits.md`, {headers})
+    await fetch(`${staticUrl}/credits.md`, {headers})
       .then((res) => {
         if (!res.ok) {
           throw new Error(`${res.status} (${res.statusText})`);
@@ -75,9 +75,9 @@ function *Credits({ mode }) {
         html = `
         <h1>${err.message}</h1>
         `;
-      }).finally(() => {
+      }).finally(async () => {
         loading = false;
-        this.refresh();
+        await this.refresh();
       });
   };
 

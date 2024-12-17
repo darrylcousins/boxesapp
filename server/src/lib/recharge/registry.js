@@ -4,7 +4,7 @@
  */
 import "dotenv/config";
 import crypto from "crypto";
-import { logWebhook } from "./helpers.js";
+import logWebhook from "./log-webhook.js";
 import { Recharge } from "./index.js";
 import { getIOSocket } from "../../api/recharge/lib.js";
 
@@ -110,7 +110,7 @@ export default class Registry {
             try {
               // will return true if handled and action taken, false it not
               await webhookHandler(webhookTopic, domain, reqBody,
-                { sockets: req.app.get("sockets"), io: req.app.get("io") }
+                { sockets: req.app.get("sockets"), io: req.app.get("io"), req }
               );
             } catch(error) {
               return reject(error);
@@ -135,6 +135,13 @@ export default class Registry {
    */
   async addHandler({topic, path, handler}) {
     const existing = await this.Store.getItem({topic, service: "recharge"});
+    // async_batch is a special case
+    let tidyTopic;
+    if (topic === "ASYNC_BATCH_PROCESSED") {
+      tidyTopic = "async_batch/processed";
+    } else {
+      tidyTopic = topic.toLowerCase().replace(/_/g, '/');
+    };
     if (existing) {
       // double check by calling to api
       const options = {
@@ -146,7 +153,7 @@ export default class Registry {
           const res = result.json();
           return res;
         });
-      if (webhook.id === existing.webhook_id && webhook.topic === existing.topic.toLowerCase().replace(/_/g, '/')) {
+      if (webhook.id === existing.webhook_id && webhook.topic === tidyTopic) {
         this.Handlers[topic] = handler;
         return; // webhook exists and match stored data
       } else {
@@ -155,7 +162,6 @@ export default class Registry {
         // if it has then update the local store
       };
     } else {
-      const tidyTopic = topic.toLowerCase().replace(/_/g, '/');
       // create the webhook and update local store
       const body = {
         "address": `${Recharge.Context.HOST_NAME}/${path}`,

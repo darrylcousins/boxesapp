@@ -79,9 +79,8 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
         meta.recharge.subscription_id = parseInt(line_item.properties.find(el => el.name === "box_subscription_id").value);
         meta.recharge["Delivery Date"] = line_item.properties.find(el => el.name === "Delivery Date").value;
         const action = (Object.hasOwn(actions, meta.recharge.subscription_id)) ? actions[meta.recharge.subscription_id] : "updated";
-        if (action) {
-          const { updated, entry } = await updatePendingEntry(meta, action);
-          console.log(action, updated);
+        if (false) { // NOTE wait and see if subscriptions do it all
+          const { updated, entry } = await updatePendingEntry(meta, action, io, sockets);
           if (updated) {
 
             if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
@@ -97,7 +96,7 @@ export default async function chargeUpdated(topic, shop, body, { io, sockets }) 
               return el.updated === true && Number.isInteger(el.subscription_id);
             });
             if (allUpdated) {
-              delay(30000); // wait to allow the subscriptions ot update
+              delay(40000); // wait to allow the subscriptions ot update
               await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
               if (parseInt(process.env.DEBUG) === 1) {
                 _logger.notice(`Deleting updates pending entry ${topicLower} (${action})`, { meta: { recharge: entry }});

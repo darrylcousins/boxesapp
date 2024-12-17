@@ -77,9 +77,10 @@ export const findTimeTaken = (d) => {
   const millis = now.getTime() - d.getTime();
   const minutes = Math.floor(millis / 60000);
   const seconds = ((millis % 60000) / 1000).toFixed(0);
+  if (seconds < 60) return `${seconds} seconds`;
   return seconds == 60 ?
-      (minutes+1) + ":00" :
-      minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+      `${minutes+1}:00` :
+      `${minutes}:${seconds < 10 ? "0" : ""}${seconds} minutes`;
 };
 
 /*
@@ -401,7 +402,11 @@ export const animateFadeForAction = (id, action, duration, collapse) => {
       );
     };
     if (action) {
-      await action();
+      try {
+        await action();
+      } catch(e) {
+        console.warn(e);
+      };
     };
   });
 };

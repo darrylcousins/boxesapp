@@ -28,27 +28,43 @@ export const getIOSocket = (req, quiet) => {
 /*
  * @function makeIntervalForFinish
  *
- * A function to return io and socket
+ * Creates an interval to poll for completion of the update
  */
 export const makeIntervalForFinish = ({req, io, session_id, entry_id, counter, admin, mailOpts }) => {
-  // XXX more testing here because this will crash the server when it fails
-  // Fixed by nesting try/catch statements, still unsure which works
   try {
     let entry;
     let timer;
     let count = 0;
 
-    /* consider making this a separate routine because it is duplicated in
-     * charge-update and change-box
-     */
     setTimeout(() => {
       try {
         let timeTaken;
 
-        const findTime = (counter) => {
+        const findTime = async (counter) => {
           const now = new Date();
           const millis = now.getTime() - counter.getTime();
           const minutes = Math.floor(millis / 60000);
+          const timed = 5;
+          if (minutes > timed && timer) {
+            // NOTE ok, this is too long, give up
+            // I decided not to send the mail but log it as an error
+            const pending = await _mongodb.collection("updates_pending").findOne({ "_id": entry_id });
+            await _mongodb.collection("updates_pending").deleteOne({ "_id": entry_id });
+            clearInterval(timer);
+            if (pending) {
+              const message = pending.action === "created" ? "created.complete" : "finished";
+              io.emit(message, {
+                action: pending.action,
+                session_id: pending.session_id,
+                subscription_id: pending.subscription_id,
+                address_id: pending.address_id,
+                customer_id: pending.customer_id,
+                scheduled_at: pending.scheduled_at,
+                charge_id: pending.charge_id,
+              });
+            };
+            _logger.error({message: `Update timed out at ${timed} minutes`, level: "error", stack: null, meta: pending });
+          };
           const seconds = ((millis % 60000) / 1000).toFixed(0);
           return seconds == 60 ?
               (minutes+1) + ":00" :
@@ -56,12 +72,9 @@ export const makeIntervalForFinish = ({req, io, session_id, entry_id, counter, a
         };
 
         timer = setInterval(async () => {
-          /* stopped the auto explainer and just provided a link for the curious
-          count === 5 && !admin ? io.emit("explainer") : io.emit("message", "Working ...");
-          */
           io.emit("progress", "Working ...");
           if (count % 10 === 0) {
-            io.emit("message", `Update times of over 3 minutes are possible. ${counter && findTime(counter)}`);
+            io.emit("message", `Update times of over 3 minutes are possible. ${counter && await findTime(counter)}`);
             io.emit("message", "You may close this window and come back later.");
             io.emit("message", "A confirmation email will be sent on completion of the updates.");
           };
@@ -72,7 +85,7 @@ export const makeIntervalForFinish = ({req, io, session_id, entry_id, counter, a
             try {
               // compile data for email to customer the updates have been completed
               if (counter) {
-                timeTaken = findTime(counter);
+                timeTaken = await findTime(counter);
               };
               mailOpts.counter = timeTaken;
 
@@ -93,7 +106,7 @@ export const makeIntervalForFinish = ({req, io, session_id, entry_id, counter, a
                 if (result.length > 0) {
                   mailOpts.attributes.charge_id = parseInt(result[0].meta.recharge.charge_id);
                 } else {
-                  console.log("entry not found", query);
+                  console.log("entry not found");
                 };
               };
 
@@ -105,7 +118,7 @@ export const makeIntervalForFinish = ({req, io, session_id, entry_id, counter, a
 
           };
           count++;
-        }, 5000);
+        }, 2000);
       } catch(err) {
         _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
       };

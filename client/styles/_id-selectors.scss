@@ -7,4 +7,9 @@
 #delivery-date {
   margin: 0px;
   padding: 5px 10px;
+  width: 100%;
+}
+#delivery-date > div {
+  display: inline-block;
+  width: 50%;
 }

@@ -4,7 +4,8 @@
  */
 
 import subscriptionActionMail from "../../mail/subscription-action.js";
-import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
+import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import updateSubscriptions from "../../lib/recharge/update-subscriptions.js";
 import { sortObjectByKeys, formatDate, delay } from "../../lib/helpers.js";
 import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
 import fs from "fs";
@@ -143,46 +144,23 @@ export default async (req, res, next) => {
       nextdeliverydate,
     });
 
-    /*
-     * NOTE so I don't need to make 2 calls, doh
+    const body = [];
     for (const update of updates) {
-      const opts = {
-        id: update.id,
-        title: `Updating charge date ${update.title}`,
-        date: next_scheduled_at,
-        io,
-        session_id,
-      };
-      // this will update an existing charge with the matching scheduled_at or create a new charge
-      await updateChargeDate(opts);
+      body.push({ 
+        subscription_id: update.id,
+        next_charge_scheduled_at: next_scheduled_at,
+        properties: update.properties,
+        title: update.title,
+      });
     };
-
-    await delay(10000); // wait 10 seconds to avoid making call to same route
-    */
-
-    // the order of these matters, doing charge date first gave me odd results,
-    // but then so did doing this update first for which I would not receive
-    // and updated charge webhook
-    for (const update of updates) {
-      const opts = {
-        id: update.id,
-        title: `Updating charge and delivery date ${update.title}`,
-        body: { 
-          next_charge_scheduled_at: next_scheduled_at,
-          properties: update.properties
-        },
-        io,
-        session_id,
-      };
-      await updateSubscription(opts);
-    };
+    await updateSubscriptions({ address_id, updates: body, req, io, session_id });
 
     attributes.nextChargeDate = nextchargedate;
     attributes.nextDeliveryDate = nextdeliverydate;
     if (io) io.emit("message", "Updates completed - awaiting creation of new charge");
 
   } catch(err) {
-    res.status(200).json({ error: err.message });
+    if (io) io.emit("error", err.message);
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 };

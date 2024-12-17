@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { makeRechargeQuery, updateSubscription,  updateChargeDate } from "../../lib/recharge/helpers.js";
+import { makeRechargeQuery, updateSubscription } from "../../lib/recharge/helpers.js";
 import { formatDate, sortObjectByKeys, delay } from "../../lib/helpers.js";
 import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
 
@@ -160,43 +160,7 @@ export default async (req, res, next) => {
       customer_id,
       scheduled_at: nextChargeDate,
     });
-
-    /* NOTE turns out I can do all this in one call!
-    // first activated the subscription, curious to see what charge date it gives, still don't know
-    for (const update of updates) {
-      const opts = {
-        method: "POST",
-        title: update.title,
-        path: `subscriptions/${update.id}/activate`,
-        title: `Reactivate ${update.title}`,
-        io,
-        session_id,
-      };
-      await makeRechargeQuery(opts)
-    };
-
-    await delay(10000); // wait 10 seconds to avoid making call to same route
-
-    // make sure that the box is first for final update
-    for(var x in updates) updates[x].properties.some(el => el.name === "Including") ? updates.unshift(updates.splice(x,1)[0]) : 0;
-
-    // finally the charge date
-    for (const update of updates) {
-      const opts = {
-        id: update.id,
-        title: update.title,
-        date: nextChargeDate,
-        io,
-        session_id,
-      };
-      // this will update an existing charge with the matching scheduled_at or create a new charge
-      await updateChargeDate(opts);
-    };
-
-    delay(10000);
-    */
-
-    // then update properties [Delivery Date]
+    
     for (const update of updates) {
       const opts = {
         id: update.id,

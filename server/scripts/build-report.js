@@ -53,7 +53,9 @@ const reportMap = [
   { "title": "Reactivate subscription", "folder": "user-subscription-reactivated" },
   { "title": "Delete subscription", "folder": "user-subscription-deleted" },
   { "title": "Create subscription", "folder": "user-subscription-created" },
-  { "title": "Broken pause Subscription", "folder": "broken-pause-subscription" },
+  { "title": "Broken create Subscription", "folder": "broken-create-subscription" },
+  { "title": "Broken update Subscription", "folder": "broken-update-subscription" },
+  { "title": "Not Broken create Subscription", "folder": "notbroken-create-subscription" },
 ];
 const reports = reportMap.map(el => el.title);
 const projectBase = path.resolve(_filename(import.meta), "../", "../");
@@ -79,13 +81,13 @@ const run = async () => {
         type: 'text',
         name: 'datetime',
         message: 'Date/time start, UTC/ISO format',
-        default: "2024-03-27T04:10:30.000Z",
+        default: "2024-04-13T15:18:30.000Z",
       },
       {
         type: 'number',
         name: 'windback',
         message: 'Minutes to reverse',
-        default: 5,
+        default: 2,
       }
     ]).then(async result => {
       const folderName = reportMap.find(el => el.title === result.report).folder;

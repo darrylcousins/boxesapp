@@ -68,14 +68,12 @@ export default async (opts) => {
 </mjml>
 `, options);
 
-        /*
         await sendmail({
           to: `${opts.to}`,
           bcc: `${process.env.BCC_EMAIL}`,
           subject: `${process.env.EMAIL_SUBJECT} ${opts.subject}`.trim(),
           html: htmlOutput.html
         });
-        */
         if (opts.meta) {
           const description = `${opts.title.charAt(0).toUpperCase()}${opts.title.substring(1).toLowerCase()}`;
           getLogger().notice(`${description} email sent.`, { meta: { recharge: opts.meta } });

@@ -73,6 +73,8 @@ interval frequency can be selected. Included a checkbox that the customer
 agrees that this is a subscription. Hoping for a subscription policy document
 to link to.
 
+Fixed related problem with the change box not determining the new box price.
+
 ## Subscriber Addresses
 
 Each time a new subscription is created by way of a new order through Shopify

@@ -24,6 +24,7 @@ export default async (req, res, next) => {
   };
   const response = Object();
   const product_id = parseInt(req.params.product_id);
+  // called varant name in the call from change-box-modal
   const weekday = req.params.weekday; // as lowercase named day of week
 
   // the dates are filtered using filter settings including order limits and cutoff hours
@@ -36,6 +37,8 @@ export default async (req, res, next) => {
       active: true,
       shopify_product_id: product_id
     }).toArray();
+
+    // need shopify price in here
 
     result.forEach(el => {
       //el.selling_plans = selling_plans;

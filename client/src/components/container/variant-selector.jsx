@@ -6,7 +6,6 @@
  */
 import { createElement, Fragment } from "@b9g/crank";
 import { selectVariantEvent } from "../lib/events";
-import { getSetting } from "../../helpers";
 
 /**
  * Variant selector component

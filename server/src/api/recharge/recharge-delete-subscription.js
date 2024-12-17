@@ -4,7 +4,7 @@
  */
 
 import subscriptionActionMail from "../../mail/subscription-action.js";
-import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import updateSubscriptions from "../../lib/recharge/update-subscriptions.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
 import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
 
@@ -76,18 +76,14 @@ export default async (req, res, next) => {
       throw err;
     };
 
-    console.log(includes);
+    const body = [];
     for (const item of includes) {
-      const opts = {
-        method: "DELETE",
-        path: `subscriptions/${item.id}`,
-        body: JSON.stringify({ send_email: false }),
-        title: `Delete ${item.product_title}`,
-        io,
-        session_id,
-      };
-      const result = await makeRechargeQuery(opts);
+      body.push({
+        subscription_id: item.id,
+        quantity: 0
+      });
     };
+    await updateSubscriptions({ updates: body, address_id: box.address_id, req, io, session_id });
 
     // close session almost immediately
     setTimeout(() => {

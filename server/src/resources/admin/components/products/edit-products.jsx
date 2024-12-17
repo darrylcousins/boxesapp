@@ -6,6 +6,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { createElement, Fragment } from "@b9g/crank";
+import cloneDeep from "lodash.clonedeep";
 import Error from "../lib/error";
 import Image from "../lib/image";
 import Help from "../lib/help";
@@ -20,6 +21,7 @@ import {
   matchNumberedString,
   sortObjectByKey,
   toPrice,
+  delay,
   LABELKEYS,
   transitionElementHeight,
   getImageUrl,
@@ -43,6 +45,7 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
   // if undefined or null show the details. i.e. for admin to see ids
   const showDetails = !hideDetails;
 
+  const orig_properties = cloneDeep(properties);;
   /**
    * True while loading data from api // box price
    *
@@ -110,11 +113,6 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
   };
 
   /**
-   * For messaging user
-   *
-   */
-
-  /**
    * Clear selectModalOptions
    *
    * @function clearSelectModalOptions
@@ -125,6 +123,27 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
       selectModalOptions[key] = null;
     };
   };
+
+  /**
+   * Cancel changes
+   * Damn this gave some grief - hence all the cloneDeep all over the place to
+   * avoid having child objects with updated data not coming through
+   *
+   * @function clearSelectModalOptions
+   */
+  const cancelChanges = async (ev, me) => {
+    if (ev.detail.subscription_id === parseInt(properties.box_subscription_id)) {
+      ev.stopPropagation();
+      properties = cloneDeep(orig_properties);
+      boxProperties = cloneDeep(orig_properties);
+      boxLists = cloneDeep(boxProperties);
+      sortedListNames = cloneDeep(sortedListNames);
+      delay(500);
+      init();
+    };
+  };
+
+  window.addEventListener("product.cancel.changes", (ev) => cancelChanges(ev, this) );
 
   /**
    * Hide the selection modal and cancel the transaction
@@ -270,8 +289,8 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
    * @param {object} props.id Choosen id for the element
    * @param {object} props.idx The list index
    */
-  const QuantityInput = ({ el, id, idx }) => {
-    const inputId = `${Math.random()}`.split(".")[1];
+  function *QuantityInput({ el, id, idx }) {
+    /*
     return (
       <input
         class="input-reset br1 ba b--silver dib"
@@ -287,6 +306,61 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
         style="font-size: 1.2rem; width: 3.5em; border-color: silver; padding: 2px 3px; margin: 0"
       />
     );
+    */
+    const disabled = { "cursor": "not-allowed", "opacity": "0.3" };
+    const button = {
+      "cursor": "pointer",
+      "font-weight": "bold",
+      "display": "inline-flex",
+      "justify-content": "center",
+      "align-items": "center",
+      "background": "transparent",
+      "color": "inherit",
+      "padding-right": "10px",
+      "padding-left": "10px",
+      //"margin-right": "10px",
+      "border": "1px solid",
+      "border-radius": "3px",
+      "font-size": "larger",
+    };
+    const buttonRight = {
+      "margin-left": "10px",
+    };
+    const buttonLeft = {
+    };
+    const buttonPlus = { ...button, ...buttonRight };
+    const idPlus = `${Math.random()}`.split(".")[1];
+    const idMinus = `${Math.random()}`.split(".")[1];
+    for ({ el } of this) {
+      yield (
+        <div style={ {
+          "display": "inline-flex",
+          "justify-content": "right",
+          "align-items": "right",
+          //"padding-right": "10px",
+          //"padding-left": "10px",
+        } }>
+          <div style={ el.quantity === 1 ? { ...button, ...disabled, ...buttonLeft } : { ...button } }
+            id={ idMinus }
+            data-id={id}
+            data-idx={idx}
+            data-quantity={el.quantity}
+            data-action="minus"
+          >
+            -
+          </div>
+          <div style={buttonPlus}
+            id={ idPlus }
+            data-id={id}
+            data-idx={idx}
+            data-quantity={el.quantity}
+            data-action="plus"
+          >
+            +
+          </div>
+        </div>
+      );
+    };
   };
 
   /**
@@ -506,7 +580,11 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
     // make available and then remove if already an addon or swap
     let orphanedItems = []; // XXX for adding or editing an order?
     // XXX There is another algorithm webhooks/recharge/charge-upcoming to be used here instead
-    const possibleAddons = [ ...box.addOnProducts ];
+    const possibleAddons = cloneDeep(box.addOnProducts);
+    delete boxLists["Delivery Date"];
+    delete boxLists["Likes"];
+    delete boxLists["Dislikes"];
+    delete boxLists["box_subscription_id"];
     Object.entries(boxLists).forEach(([name, str]) => {
       if (str === null || str.toLowerCase() === "none" || str.trim() === "") {
         boxLists[name] = [];
@@ -533,11 +611,11 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
           };
           return { ...product, quantity: el.count };
         });
-        boxLists[name] = products.filter(el => Boolean(el)); // remove those that returned null
+        boxLists[name] = cloneDeep(products.filter(el => Boolean(el))); // remove those that returned null
       };
     });
     // filtered from addOnProducts, renamed here to possibleAddons quantity helps later
-    boxLists["possibleAddons"] = possibleAddons.map(el => ({ ...el, quantity: 1 }))
+    boxLists["possibleAddons"] = cloneDeep(possibleAddons.map(el => ({ ...el, quantity: 1 })));
 
     orphanedItems = orphanedItems.filter(el => el.title !== "");
 
@@ -599,6 +677,62 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
   };
   this.addEventListener("change", handleChange);
 
+  /**
+   * Handle click on selected input elements
+   *
+   * @function handleChange
+   * @param {object} ev The firing event
+   * @listens change
+   */
+  const handleClick = (ev) => {
+    const target = ev.target;
+    let action;
+    if (target.hasAttribute("data-action")) action = target.getAttribute("data-action");
+    if (action) {
+      const { value } = ev.target;
+      let quantity = parseInt(target.dataset.quantity, 10);
+      if (target.dataset.action === "plus") {
+        quantity++;
+      } else if (target.dataset.action === "minus") {
+        quantity--;
+      };
+      if (quantity === 0) {
+        this.dispatchEvent(toastEvent({
+          notice: "Delete an item by using the x",
+          bgColour: "black",
+          borderColour: "black"
+        }));
+        return;
+      };
+      const key = ev.target.getAttribute("data-id");
+      const idx = ev.target.getAttribute("data-idx");
+      boxLists[key][idx].quantity = quantity;
+      ev.target.blur();
+      const count = (["Including", "Swapped Items"].includes(key)) ? quantity - 1 : quantity;
+
+      updatePricedItems({
+        product: boxLists[key][idx],
+        count,
+      });
+
+      animateFadeForAction(document.querySelector("#pricedItems"), () => this.refresh());
+      const notice = `Updated ${boxLists[key][idx].shopify_title} to ${quantity}`;
+      this.dispatchEvent(toastEvent({
+        notice,
+        bgColour: "black",
+        borderColour: "black"
+      }));
+
+      this.dispatchEvent(productsChangeEvent({
+        type: { "count": key },
+        product: boxLists[key][idx],
+        properties: boxLists,
+        total_price: totalPrice(),
+      }));
+    };
+  };
+  this.addEventListener("mouseup", handleClick);
+
   const Title = ({ name, idx }) => {
     return (
       <div class="w-100 bold pt1 dt bg-streamside-blue white" style="height: 2em">
@@ -625,30 +759,31 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
   };
 
   function *Body({properties, name, idx}) {
-    const value = properties[name];
 
     const isRemovable = (product, listName) => {
       if (listName !== "Including") return true;
 
       // do we have a similarly priced item to swap from possible addons?
       const res = isSwappable(boxLists["possibleAddons"], product);
+
       return res;
     };
 
     for ({ properties, name, idx } of this) { // eslint-disable-line no-unused-vars
+
       yield (
         <div class={`w-100 h-100`}>
-          {(value && value.length > 0) ? (
+          {(properties[name] && properties[name].length > 0) ? (
             <ul class="list pl0 mv0">
-              { (typeof value === "string") ? (
-                value.split(",").map(() => (
+              { (typeof properties[name] === "string") ? (
+                properties[name].split(",").map(() => (
                   <li class="pl1 pt1r">
                     <div class="skeleton mr1" style="height: 2em" />
                   </li>
                 ))
               ) : (
-                Array.isArray(value) && (
-                  value.map((product, idx, arr) => (
+                Array.isArray(properties[name]) && (
+                  properties[name].map((product, idx, arr) => (
                     <li class={ `pv1 bt b--silver ${idx === arr.length - 1 && name !== "Including" && "bb"}` }>
                       <div class="dt w-100 pl2 pt1 pb1">
                         <div class="dtc w-80">
@@ -662,10 +797,11 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
                           )}
                         </div>
                         { !isEditable || (name === "Including" && boxLists["Swapped Items"] && boxLists["Swapped Items"].length >= 2) ? (
-                          <div class="dtc w-10">&nbsp;</div>
+                          <div class="dtc w-10" data-type="not-editable" title="Not swappable">&nbsp;</div>
                         ) : (
                           isRemovable(product, name) ? (
                             <div class="dtc w-10 tr pr1 hover-dark-red pointer"
+                              data-type="removable"
                               onclick={() => removeProduct({shopify_product_id: product.shopify_product_id, from_list_name: name})}
                               role="button"
                               title={`Remove ${product.shopify_title} from ${name}`}>
@@ -674,7 +810,7 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
                               </span>
                             </div>
                           ) : (
-                            <div class="dtc w-10">
+                            <div class="dtc w-10" data-type="not-removable">
                               <div class="relative w-100 tr">
                                 <Help id={ `info-${product.shopify_product_id}` } size="small" />
                                 <p id={ `info-${product.shopify_product_id}` } class="alert-box info info-left tr" role="alert">
@@ -705,7 +841,7 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
    */
   const init = async () => {
     if (properties) {
-      boxProperties = properties;
+      boxProperties = cloneDeep(orig_properties);
     };
     const propertyKeys = Object.keys(boxProperties);
     for (const key of LABELKEYS) {
@@ -714,10 +850,6 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
       };
     };
     boxLists = { ...boxProperties };
-    delete boxLists["Delivery Date"];
-    delete boxLists["Likes"];
-    delete boxLists["Dislikes"];
-    delete boxLists["box_subscription_id"];
 
     if (boxLists["Including"].trim() === "") {
       boxLists["Including"] = box.includedProducts.map(el => el.shopify_title).join(",");
@@ -725,13 +857,9 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
 
     pricedItems = collectCounts(); // at this point only the count
     const orphanedItems = await updateBoxLists();
-    if (orphanedItems.length > 0) {
-      //console.warn(JSON.stringify(orphanedItems, null, 2));
-    };
     await collectPrices(); // updates pricedItems to included prices
     loading = false;
     this.refresh();
-    //await getBoxPrice(); // refresh called from getBoxPrice
   };
 
   const getListData = () => {
@@ -794,7 +922,7 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
 
   try {
 
-    for (const { box, properties, nextChargeDate, isEditable, key } of this) { // eslint-disable-line no-unused-vars
+    for (const { properties, nextChargeDate, isEditable, key } of this) { // eslint-disable-line no-unused-vars
 
       yield (
         <Fragment>
@@ -836,68 +964,78 @@ function *EditProducts({ box, rc_subscription_ids, hideDetails, properties, next
                 }
               </div>
               <div id="pricedItems" class="mr2 w-100">
-                <div class="ml2 mb0 mt1 pt1 flex bt">
-                  <div class="w-20 ma0">
-                    { false && (
-                      <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle }>
-                        <span class="image-loader"></span>
-                      </div>
-                    )}
-                    { loading && (
-                      <div class="ba skeleton ma0 w-100 h-100" style={ lineImageStyle }>{ " " }</div>
-                    )}
-                    { !loading && (
-                      <Image
-                        src={ getImageUrl(box.shopify_product_id) }
-                        title={ box.shopify_title }
-                        id={`image-${key}-${box.shopify_product_id}`}
-                        crank-key={`image-${key}-${box.shopify_product_id}`}
-                      />
-                    )}
+                <div class="ml2 mb0 mt1 pv1 flex-container bt">
+
+                  <div class="w-100">
+                    <div class="ma0 dib">
+                      { loading ? (
+                        <div class="ba skeleton ma0 w-100 h-100" style={ lineImageStyle }>{ " " }</div>
+                      ) : (
+                        <Image
+                          src={ getImageUrl(box.shopify_product_id) }
+                          title={ box.shopify_title }
+                          id={`image-${key}-${box.shopify_product_id}`}
+                          crank-key={`image-${key}-${box.shopify_product_id}`}
+                        />
+                      )}
+                    </div>
+                    <div class="dib bold ml2" style={ lineHeightStyle }>
+                      { box.shopify_title }
+                    </div>
                   </div>
-                  <div class="w-60 bold" style={ lineHeightStyle }>
-                    { box.shopify_title }
-                  </div>
-                  <div class="pricing w-20 tr" style={ lineHeightStyle }>
+
+                  <div class="dib b pricing w-100 tr" style={ lineHeightStyle }>
                     { loading ? (
                       <div class="skeleton mr1" />
                     ) : (
                       <span>{ toPrice(box.shopify_price ? box.shopify_price * 100 : null) }</span>
                     )}
                   </div>
+
                 </div>
+
                 { pricedItems.map((el, idx) => (
-                  <div class="ml2 mb1 flex">
-                    <div class="w-20 ma0">
-                      { loading && (
-                        <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle }>
-                          <span class="image-loader"></span>
+                  <div class="ml2 mb0 mt1 pv1 flex-container bt">
+                    <div class="w-100">
+                      <div class="dib ma0">
+                        { loading ? (
+                          <div class="skeleton mr1 w-100 h-100" style={ lineImageStyle }>
+                            <span class="image-loader"></span>
+                          </div>
+                        ) : (
+                          <Image
+                            title={ el.name }
+                            id={`image-${key}-${el.shopify_product_id}`}
+                            crank-key={`image-${key}-${el.shopify_product_id}`}
+                            src={ getImageUrl(el.shopify_product_id) }
+                          />
+                        )}
+                      </div>
+                      <div class="dib bold ml2 w-60" style={ { ...lineHeightStyle, ...{"text-overflow": "ellipsis"}}}>
+                        { el.name }
+                      </div>
+                      { (true || isEditable) && (el.count > 1) && (
+                        <div class="pricing dib tr w-10" style={ lineHeightStyle }>
+                          <span>{ toPrice(el.price) }</span>
                         </div>
                       )}
-                      { !loading && (
-                        <Image
-                          title={ el.name }
-                          id={`image-${key}-${el.shopify_product_id}`}
-                          crank-key={`image-${key}-${el.shopify_product_id}`}
-                          src={ getImageUrl(el.shopify_product_id) }
-                        />
-                      )}
                     </div>
-                    <div class="w-50 bold" style={{
-                      "text-overflow": "ellipsis",
-                      "white-space": "nowrap",
-                      "overflow": "hidden",
-                      ...lineHeightStyle
-                    }}>
-                      { el.name }
-                    </div>
-                    <div class="pricing w-10 tr" style={ lineHeightStyle }>
-                      <span>{ toPrice(el.price) }</span>
-                    </div>
-                    <div class="w-10 tc" style={ lineHeightStyle }>({ el.count })</div>
-                    <div class="pricing w-10 tr" style={ lineHeightStyle }>
-                      <span>{ toPrice(el.count * el.price) }</span>
-                    </div>
+
+                    { (true || isEditable) && (
+                      <div class="dib b pricing w-100 tr" style={ lineHeightStyle }>
+                        { el.count > 1 && (
+                          <div class="dib tc ml2 w-10" style={ lineHeightStyle }>
+                            ({ el.count })
+                          </div>
+                        )}
+                        { loading ? (
+                          <div class="skeleton mr1" />
+                        ) : (
+                          <span>{ toPrice(el.count * el.price) }</span>
+                        )}
+                      </div>
+                    )}
+
                   </div>
                 ))}
                 <div class="ml2 mb1 pt1 flex bt">

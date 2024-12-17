@@ -32,44 +32,16 @@ export default async function subscriptionUpdated(topic, shop, body, { io, socke
 
     // find the updates_pending document and set the update as completed i.e. updated: true
     const topic = "updated";
-    const { updated, entry } = await updatePendingEntry(meta, topic);
+    const { updated, entry } = await updatePendingEntry(meta, topic, io, sockets);
     if (updated) {
 
-      if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
+      if (entry && sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
         const socket_id = sockets[entry.session_id];
         io = io.to(socket_id);
         const variant_title = meta.recharge.variant_title ? ` (${meta.recharge.variant_title})` : "";
         io.emit("completed", `Subscription ${entry.action}: ${meta.recharge.title}${variant_title}`);
       };
 
-      // schedule_only comes from changeBoxModal and indicates that only the
-      // schedule was changed and therefore no change to the charge and the
-      // updates_pending entry would never be removed otherwise
-      if (entry.action === "changed" && entry.schedule_only === true) {
-        // check that all have been updated
-        const allUpdated = entry.rc_subscription_ids.every(el => {
-          // check that all subscriptions have updated or have been created
-          return el.updated === true && Number.isInteger(el.subscription_id);
-        });
-        if (allUpdated) {
-          await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
-          if (parseInt(process.env.DEBUG) === 1) {
-            _logger.notice(`Deleting pending entry ${topicLower} (${meta.recharge.title})`, { meta: { recharge: entry }});
-          };
-          if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
-            io.emit("completed", `Updates completed, removing updates entry.`);
-            io.emit("finished", {
-              action: entry.action,
-              session_id: entry.session_id,
-              subscription_id: entry.subscription_id,
-              address_id: entry.address_id,
-              customer_id: entry.customer_id,
-              scheduled_at: entry.scheduled_at,
-              charge_id: entry.charge_id,
-            });
-          };
-        };
-      };
     };
 
   } catch(err) {

@@ -127,7 +127,6 @@ export const verifyGrouped = async ({
           // we can push the whole group because we have already grouped by scheduled_at
           tempDate = new Date(group.box.updated_at);
           tempDate.setMinutes(tempDate.getMinutes() - tempDate.getTimezoneOffset());
-          //const d = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
           date_mismatch.push({
             message: dayDiff !== 3 ? "Incorrect delivery day" : "Incorrect order day",
             subscription_id: group.box.id,
@@ -183,6 +182,20 @@ export const verifyGrouped = async ({
               listed_quantity: item.quantity,
               next_charge_scheduled_at: new Date(group.charge.scheduled_at).toDateString(),
             });
+          };
+          // include the extras if the box is date out of sync
+          if (dayDiff !== 3 || dayOfWeek !== group.box.order_day_of_week) {
+            if (rc.subscription_id !== group.box.id) {
+              date_mismatch.push({
+                message: dayDiff !== 3 ? "Incorrect delivery day on parent box" : "Incorrect order day on parent box",
+                subscription_id: rc.subscription_id,
+                box_subscription_id: group.box.id,
+                box_title: group.box.product_title,
+                title: rc.title,
+                next_charge_scheduled_at: new Date(group.charge.scheduled_at).toDateString(),
+                deliver_at: properties["Delivery Date"],
+              });
+            };
           };
         };
 
@@ -285,7 +298,6 @@ export const verifyGrouped = async ({
           try {
             updated_at = tempDate.toISOString().replace(/T/, ' ').replace(/\..+/, '');
           } catch(err) {
-            console.log(el); // dunno why this fails still hoping to pick it up
             _logger.error({message: "Missing updated_at", level: err.level, stack: err.stack, meta: el })
           };
           orphans.push({
@@ -388,7 +400,7 @@ export const formatOrphanedSubscriptions = async ({ subscriptions, orphans }) =>
  * It is used for now when loading customer subscriptions into web interface:
  * api/recharge/customer-charge and customer-charges
  */
-export const gatherVerifiedData = async ({ charges, customer, io }) => {
+export const gatherVerifiedData = async ({ charges, customer, price_table, io }) => {
   let errors = false;
   let data = [];
   try {
@@ -401,7 +413,7 @@ export const gatherVerifiedData = async ({ charges, customer, io }) => {
     let price_mismatch = [];
     let date_mismatch = [];
     let count_mismatch = [];
-    let price_table = [];
+    if (!price_table) price_table = [];
     let collected_rc_subscription_ids = [];
     let subscription_ids = [];
     let subscriptions = [];
@@ -416,7 +428,13 @@ export const gatherVerifiedData = async ({ charges, customer, io }) => {
           if (!Object.hasOwn(group.box, "updated_at")) {
             // so only a line_item
             subscription_ids.push(id); // to collect actual subscriptions
+          } else {
+            // a subscription
+            group.subscription = group.box;
           };
+        };
+        if (Object.hasOwn(group.box, "lastOrder") && !Object.hasOwn(group.charge, "lastOrder")) {
+          group.charge.lastOrder = group.box.lastOrder;
         };
       };
     };
@@ -473,10 +491,11 @@ export const gatherVerifiedData = async ({ charges, customer, io }) => {
     } else {
       errors = { orphans, date_mismatch, price_mismatch, count_mismatch };
       // now insert into faulty_subscriptions table
+      const customer_id = Object.hasOwn(customer, "recharge_id") ? customer.recharge_id : customer.id;
       await _mongodb.collection("faulty_subscriptions").updateOne(
-        { customer_id: customer.recharge_id },
+        { customer_id },
         { "$set" : {
-          customer_id: customer.recharge_id,
+          customer_id,
           orphans,
           date_mismatch,
           price_mismatch,

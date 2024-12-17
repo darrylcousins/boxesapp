@@ -22,8 +22,7 @@ import { getIOSocket } from "./lib.js";
  */
 export default async (req, res, next) => {
 
-  const { customer_id, subscription_id } = req.params;
-  const { charge_id } = req.query;
+  const { customer_id, scheduled_at, address_id } = req.params;
 
   let io;
   let session_id;
@@ -37,47 +36,47 @@ export default async (req, res, next) => {
   };
 
   try {
-    let result = {};
-    try {
-      result = await makeRechargeQuery({
-        path: `charges/${charge_id}`,
-        title: `Get Charge (${charge_id})`,
-        io,
-      });
-
-    } catch(err) {
-      if (err.message.includes("404") && !customer_id) { // from admin
-        // no need to log it
-        const message = `Failed to find charge with id ${charge_id}, perhaps you need to synchronize the customer?`;
-        return res.status(200).json({ error: message });
-      } else {
-        _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-      };
+    const { customer } = await makeRechargeQuery({
+      path: `customers/${customer_id}`,
+      title: `Get customer (${customer_id})`,
+      io,
+    });
+    const { address } = await makeRechargeQuery({
+      path: `addresses/${address_id}`,
+      title: `Get address (${address_id})`,
+      io,
+    });
+    const { subscriptions } = await makeRechargeQuery({
+      path: `subscriptions`,
+      title: `Get subscriptions for ${scheduled_at}`,
+      query: [
+        ["customer_id", customer_id],
+        ["status", "active"],
+        ["limit", 100],
+        ["address_id", address_id],
+      ],
+      io,
+      session_id,
+    });
+    for (const subscription of subscriptions) {
+      console.log(subscription.next_charge_scheduled_at, scheduled_at);
+      subscription.purchase_item_id = subscription.id;
+      subscription.title = subscription.product_title;
+    };
+    const charge = {
+      shipping_address: address,
+      customer: customer,
+      address_id,
+      scheduled_at,
+      line_items: subscriptions.filter(el => el.next_charge_scheduled_at === scheduled_at),
     };
 
-    if (result.charge) {
-      // need to fetch recharge customer
-      //const customer = await _mongodb.collection("customers").findOne({recharge_id: parseInt(customer_id)});
-      const { customer } = await makeRechargeQuery({
-        path: `customers/${customer_id}`,
-        title: `Get Customer (${customer_id})`,
-        io,
-      });
+    const { data, errors } = await gatherVerifiedData({ charges: [ charge ], customer, io });
 
-      const { data, errors } = await gatherVerifiedData({ charges: [ result.charge ], customer, io });
+    // emitting finish to stop loading routine
+    if (io) io.emit("finished", { session_id });
 
-      // emitting finish to stop loading routine
-      if (io) io.emit("finished", { session_id });
-
-      if (subscription_id) {
-        const subscription = data.find(el => el.attributes.subscription_id === parseInt(subscription_id));
-        return res.status(200).json({ subscription, errors, customer });
-      } else {
-        return res.status(200).json({ charge: result.charge, subscriptions: data, errors, customer });
-      };
-    } else {
-      return res.status(200).json({ error: "Not found" });
-    };
+    return res.status(200).json({ charge, subscriptions: data, errors, customer });
 
   } catch(err) {
     res.status(200).json({ error: err.message });

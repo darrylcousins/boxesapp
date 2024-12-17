@@ -29,13 +29,7 @@ function* IncludedProducts({id, includedProducts, dates}) {
             { includedProducts.map(el => (
               <a
                 href={`/products/${el.shopify_handle}`}
-                class="pill"
-                style={{
-                  "color": getSetting("Colour", "included-products-fg"),
-                  "background-color": getSetting("Colour", "included-products-bg"),
-                  "border-color": getSetting("Colour", "included-products-bg")
-                }}
-              >
+                class="pill">
                   { el.shopify_title }
               </a>
             ))}

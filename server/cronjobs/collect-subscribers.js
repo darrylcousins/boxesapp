@@ -82,7 +82,7 @@ const main = async () => {
 
           if (res.charges) {
             for (const c of res.charges) {
-              charge_list.push([c.id, c.scheduled_at]);
+              charge_list.push([c.id, c.scheduled_at, c.address_id]);
             };
           };
         } catch(err) {

@@ -1,0 +1,384 @@
+[
+  {
+    "_id": "660b61ff4258e8696b0fdedf",
+    "timestamp": "2024-04-02T01:40:15.564Z",
+    "level": "notice",
+    "message": "Webhook received charge/updated.",
+    "meta": {
+      "recharge": {
+        "charge_id": 1042665731,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-04-02",
+        "status": "queued",
+        "deliver_at": "Fri Apr 05 2024",
+        "box_titles": [
+          "The Small Vege Box",
+          "The Small Vege Box"
+        ],
+        "box_subscription_ids": [
+          461601294,
+          461602767
+        ],
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 461601294,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 461601294,
+            "properties": {
+              "Including": "Chard Red,Coriander Bunch (2),Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "None",
+              "Delivery Date": "Fri Apr 05 2024",
+              "Removed Items": "None",
+              "Swapped Items": "None",
+              "box_subscription_id": "461601294"
+            }
+          },
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 461602767,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 461602767,
+            "properties": {
+              "Including": "Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "Cabbage Green",
+              "Delivery Date": "Fri Apr 05 2024",
+              "Removed Items": "Chard Red",
+              "Swapped Items": "Daikon Radish ea",
+              "box_subscription_id": "461602767"
+            }
+          },
+          {
+            "shopify_product_id": "6166842245270",
+            "subscription_id": 462663818,
+            "quantity": 1,
+            "title": "Cabbage Green",
+            "box_subscription_id": 461602767,
+            "properties": {
+              "Delivery Date": "Fri Apr 05 2024",
+              "Add on product to": "The Small Vege Box",
+              "box_subscription_id": "461602767"
+            }
+          },
+          {
+            "shopify_product_id": "6166842736790",
+            "subscription_id": 463315277,
+            "quantity": 1,
+            "title": "Coriander Bunch",
+            "box_subscription_id": 461601294,
+            "properties": {
+              "Delivery Date": "Fri Apr 05 2024",
+              "Add on product to": "The Small Vege Box",
+              "box_subscription_id": "461601294"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": "660b61fa4258e8696b0fdede",
+    "timestamp": "2024-04-02T01:40:10.149Z",
+    "level": "notice",
+    "message": "Webhook received subscription/updated.",
+    "meta": {
+      "recharge": {
+        "subscription_id": 471065028,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-04-09",
+        "deliver_at": "Fri Apr 12 2024",
+        "quantity": 1,
+        "title": "Custom Vege Box",
+        "box_subscription_id": 471065028,
+        "properties": {
+          "Delivery Date": "Fri Apr 12 2024",
+          "Including": "None",
+          "Add on Items": "None",
+          "Swapped Items": "None",
+          "Removed Items": "None",
+          "box_subscription_id": "471065028"
+        }
+      }
+    }
+  },
+  {
+    "_id": "660b61f94258e8696b0fdedd",
+    "timestamp": "2024-04-02T01:40:09.843Z",
+    "level": "notice",
+    "message": "Webhook received charge/updated.",
+    "meta": {
+      "recharge": {
+        "charge_id": 1042665731,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-04-02",
+        "status": "queued",
+        "deliver_at": "Fri Apr 05 2024",
+        "box_titles": [
+          "The Small Vege Box",
+          "The Small Vege Box"
+        ],
+        "box_subscription_ids": [
+          461601294,
+          461602767
+        ],
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 461601294,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 461601294,
+            "properties": {
+              "Including": "Chard Red,Coriander Bunch (2),Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "None",
+              "Delivery Date": "Fri Apr 05 2024",
+              "Removed Items": "None",
+              "Swapped Items": "None",
+              "box_subscription_id": "461601294"
+            }
+          },
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 461602767,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 461602767,
+            "properties": {
+              "Including": "Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "Cabbage Green",
+              "Delivery Date": "Fri Apr 05 2024",
+              "Removed Items": "Chard Red",
+              "Swapped Items": "Daikon Radish ea",
+              "box_subscription_id": "461602767"
+            }
+          },
+          {
+            "shopify_product_id": "6166842245270",
+            "subscription_id": 462663818,
+            "quantity": 1,
+            "title": "Cabbage Green",
+            "box_subscription_id": 461602767,
+            "properties": {
+              "Delivery Date": "Fri Apr 05 2024",
+              "Add on product to": "The Small Vege Box",
+              "box_subscription_id": "461602767"
+            }
+          },
+          {
+            "shopify_product_id": "6166842736790",
+            "subscription_id": 463315277,
+            "quantity": 1,
+            "title": "Coriander Bunch",
+            "box_subscription_id": 461601294,
+            "properties": {
+              "Delivery Date": "Fri Apr 05 2024",
+              "Add on product to": "The Small Vege Box",
+              "box_subscription_id": "461601294"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": "660b61f94258e8696b0fdedc",
+    "timestamp": "2024-04-02T01:40:09.561Z",
+    "level": "notice",
+    "message": "Webhook received subscription/created.",
+    "meta": {
+      "recharge": {
+        "subscription_id": 471065028,
+        "address_id": 151085761,
+        "customer_id": 84185810,
+        "scheduled_at": "2024-04-09",
+        "deliver_at": "Fri Apr 12 2024",
+        "quantity": 1,
+        "title": "Custom Vege Box",
+        "box_subscription_id": null,
+        "properties": {
+          "Delivery Date": "Fri Apr 12 2024",
+          "Including": "None",
+          "Add on Items": "None",
+          "Swapped Items": "None",
+          "Removed Items": "None",
+          "box_subscription_id": "null"
+        }
+      }
+    }
+  },
+  {
+    "_id": "660b61f9eed202b5ebf2a25a",
+    "timestamp": "2024-04-02T01:40:09.305Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions/471065028",
+        "method": "PUT",
+        "title": "Updating box subscription id Custom Vege Box",
+        "body": {
+          "properties": [
+            {
+              "name": "Delivery Date",
+              "value": "Fri Apr 12 2024"
+            },
+            {
+              "name": "Including",
+              "value": "None"
+            },
+            {
+              "name": "Add on Items",
+              "value": "None"
+            },
+            {
+              "name": "Swapped Items",
+              "value": "None"
+            },
+            {
+              "name": "Removed Items",
+              "value": "None"
+            },
+            {
+              "name": "box_subscription_id",
+              "value": "471065028"
+            }
+          ]
+        },
+        "session_id": "epq2avfb6",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "660b61f84258e8696b0fdedb",
+    "timestamp": "2024-04-02T01:40:08.796Z",
+    "level": "notice",
+    "message": "Insert updates_pending entry",
+    "meta": {
+      "recharge": {
+        "customer_id": 84185810,
+        "address_id": 151085761,
+        "subscription_id": 471065028,
+        "action": "created",
+        "charge_id": null,
+        "session_id": "epq2avfb6",
+        "scheduled_at": "2024-04-09",
+        "deliver_at": "Fri Apr 12 2024",
+        "rc_subscription_ids": [
+          {
+            "deliver_at": "Fri Apr 12 2024",
+            "price": "2.00",
+            "quantity": 1,
+            "shopify_product_id": 7542485909654,
+            "subscription_id": 471065028,
+            "title": "Custom Vege Box",
+            "updated": true
+          }
+        ],
+        "title": "Custom Vege Box",
+        "timestamp": "2024-04-02T01:40:08.792Z"
+      }
+    }
+  },
+  {
+    "_id": "660b61f8eed202b5ebf2a259",
+    "timestamp": "2024-04-02T01:40:08.785Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions",
+        "method": "POST",
+        "body": {
+          "address_id": 151085761,
+          "charge_interval_frequency": 1,
+          "next_charge_scheduled_at": "2024-04-09",
+          "order_interval_frequency": 1,
+          "order_interval_unit": "week",
+          "order_day_of_week": 1,
+          "plan_id": 2896199830,
+          "quantity": 1,
+          "price": "2.00",
+          "product_title": "Custom Vege Box",
+          "external_product_id": {
+            "ecommerce": "7542485909654"
+          },
+          "external_variant_id": {
+            "ecommerce": "43184327688342"
+          },
+          "properties": [
+            {
+              "name": "Delivery Date",
+              "value": "Fri Apr 12 2024"
+            },
+            {
+              "name": "Including",
+              "value": "None"
+            },
+            {
+              "name": "Add on Items",
+              "value": "None"
+            },
+            {
+              "name": "Swapped Items",
+              "value": "None"
+            },
+            {
+              "name": "Removed Items",
+              "value": "None"
+            },
+            {
+              "name": "box_subscription_id",
+              "value": "null"
+            }
+          ]
+        },
+        "title": "Create box subscription Custom Vege Box.",
+        "session_id": "epq2avfb6",
+        "status": "201 CREATED"
+      }
+    }
+  },
+  {
+    "_id": "660b61f7eed202b5ebf2a258",
+    "timestamp": "2024-04-02T01:40:07.266Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "path": "addresses",
+        "query": {
+          "customer_id": 84185810,
+          "is_active": true
+        },
+        "title": "Get customer addresses",
+        "session_id": "epq2avfb6",
+        "method": "GET",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "660b61f64258e8696b0fdeda",
+    "timestamp": "2024-04-02T01:40:06.316Z",
+    "level": "notice",
+    "message": "Boxesapp api request subscription created.",
+    "meta": {
+      "recharge": {
+        "box": "Custom Vege Box - Friday",
+        "charge_id": "new",
+        "customer_id": 84185810,
+        "delivered": "Fri Apr 12 2024",
+        "email": "jon.doe@mail.me",
+        "label": "created",
+        "plan": "Delivery every 1 week",
+        "scheduled_at": "2024-04-09"
+      }
+    }
+  }
+]

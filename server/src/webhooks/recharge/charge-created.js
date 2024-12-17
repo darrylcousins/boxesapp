@@ -3,16 +3,15 @@
  */
 import { ObjectId } from "mongodb";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
-import { formatDate, sortObjectByKeys, matchNumberedString, delay } from "../../lib/helpers.js";
+import { formatDate, sortObjectByKeys } from "../../lib/helpers.js";
+import updateSubscriptions from "../../lib/recharge/update-subscriptions.js";
 import { upsertPending } from "../../api/recharge/lib.js";
-import { updateSubscription, updateChargeDate, getSubscription } from "../../lib/recharge/helpers.js";
+import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import subscriptionCreatedMail from "../../mail/subscription-created.js";
 import {
   getBoxesForCharge,
   getMetaForCharge,
-  getMetaForSubscription,
   writeFileForCharge,
-  writeFileForSubscription,
   updatePendingEntry,
 } from "./helpers.js";
 
@@ -29,7 +28,7 @@ import {
  * NOTE Returns false if no action is taken and true if some update occured
  *
  */
-export default async function chargeCreated(topic, shop, body, { io, sockets }) {
+export default async function chargeCreated(topic, shop, body, { io, sockets, req }) {
 
   const mytopic = "CHARGE_CREATED";
   if (topic !== mytopic) {
@@ -76,100 +75,110 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
   };
 
   // Only process charges that have been successful i.e. were created an charged via shopify
-  if ( charge.status !== "success") {
-    if ( charge.status === "queued") {
+  try {
+    if ( charge.status !== "success") {
+      if ( charge.status === "queued") {
 
-      /* NOTE special case where when a subscription is paused or rescheduled a
-       * new charge is created with all the line items correctly configured and
-       * therefore 'after' the subscriptions are updated we no longer receive
-       * a charge/upcoming webhook and the pending entry is never deleted
-       * So here we attempt to do so in one algorithm. The idea being that if
-       * we get through all the line_items and they are updated we can delete
-       * the entry and emit finished
-       * NOTE May need to add a delay because the front-end will then fetch the
-       * box subscription which may not have yet been updated?
-       */
-      // start with the line_items using updatePendingEntry
-      const meta = { recharge: { // base construct for meta
-        customer_id: charge.customer.id,
-        address_id: charge.address_id,
-        scheduled_at: charge.scheduled_at,
-      }};
-      const actions = {};
-      for (const boxId of box_subscription_ids) {
-        actions[boxId] = null;
-        const query = { ...meta.recharge, subscription_id: boxId };
-        const entry = await _mongodb.collection("updates_pending").findOne(query);
-        if (entry) actions[boxId] = entry.action;
-      };
-      // ensure the box subscription is the last to be processed
-      for(var x in charge.line_items) charge.line_items[x].properties.some(el => el.name === "Including") 
-        ? charge.line_items.push(charge.line_items.splice(x,1)[0]) : 0;
-      for (const line_item of charge.line_items) {
-        if (line_item.properties.some(el => el.name === "box_subscription_id")) {
-          // build meta from line_item
-          meta.recharge.scheduled_at = charge.scheduled_at;
-          meta.recharge.title = line_item.title;
-          meta.recharge.variant_title = line_item.variant_title;
-          meta.recharge.quantity = line_item.quantity;
-          meta.recharge.item_subscription_id = line_item.purchase_item_id;
-          meta.recharge.shopify_product_id = parseInt(line_item.external_product_id.ecommerce);
-          meta.recharge.subscription_id = parseInt(line_item.properties.find(el => el.name === "box_subscription_id").value);
-          meta.recharge["Delivery Date"] = line_item.properties.find(el => el.name === "Delivery Date").value;
-          const action = (Object.hasOwn(actions, meta.recharge.subscription_id)) ? actions[meta.recharge.subscription_id] : "updated";
-          if (action) {
-            const { updated, entry } = await updatePendingEntry(meta, action);
-            console.log(action, updated);
-            if (updated) {
-
-              // sure that box is last
-
-              if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
-                const socket_id = sockets[entry.session_id];
-                io = io.to(socket_id);
-                const variant_title = meta.recharge.variant_title ? ` (${meta.recharge.variant_title})` : "";
-                io.emit("completed", `Subscription ${topicLower}: ${meta.recharge.title}${variant_title}`);
-              };
-
-              // check that all have been updated
-              const allUpdated = entry.rc_subscription_ids.every(el => {
-                // check that all subscriptions have updated or have been created
-                return el.updated === true && Number.isInteger(el.subscription_id);
-              });
-              if (allUpdated) {
-                delay(10000);
-                await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
-                if (parseInt(process.env.DEBUG) === 1) {
-                  _logger.notice(`Deleting pending entry subscription/updated (${meta.recharge.title})`, { meta: { recharge: entry }});
-                };
+        /* NOTE special case where when a subscription is paused or rescheduled a
+         * new charge is created with all the line items correctly configured and
+         * therefore 'after' the subscriptions are updated we no longer receive
+         * a charge/upcoming webhook and the pending entry is never deleted
+         * So here we attempt to do so in one algorithm. The idea being that if
+         * we get through all the line_items and they are updated we can delete
+         * the entry and emit finished
+         * NOTE May need to add a delay because the front-end will then fetch the
+         * box subscription which may not have yet been updated?
+         * NOTE Found the situation where the newly created charge was not
+         * updated when the new subscription was updated with
+         * box_subscription_property so doesn't appear here in box_subscription_ids
+         * So I'm now attempting to update the box_subscription property here
+         * similar to what I do below with a new charge
+         *
+         */
+        // start with the line_items using updatePendingEntry
+        const meta = { recharge: { // base construct for meta
+          customer_id: charge.customer.id,
+          address_id: charge.address_id,
+          scheduled_at: charge.scheduled_at,
+        }};
+        const actions = {};
+        for (const boxId of box_subscription_ids) {
+          actions[boxId] = null;
+          const query = { ...meta.recharge, subscription_id: boxId };
+          //console.log("charge/created pending query", query);
+          const pending = await _mongodb.collection("updates_pending").findOne(query);
+          //console.log("charge/created entry", pending);
+          if (pending) actions[boxId] = pending.action;
+        };
+        // ensure the box subscription is the last to be processed
+        for(var x in charge.line_items) charge.line_items[x].properties.some(el => el.name === "Including") 
+          ? charge.line_items.push(charge.line_items.splice(x,1)[0]) : 0;
+        for (const line_item of charge.line_items) {
+          if (line_item.properties.some(el => el.name === "box_subscription_id")) {
+            // build meta from line_item
+            meta.recharge.scheduled_at = charge.scheduled_at;
+            meta.recharge.title = line_item.title;
+            meta.recharge.variant_title = line_item.variant_title;
+            meta.recharge.quantity = line_item.quantity;
+            meta.recharge.item_subscription_id = line_item.purchase_item_id;
+            meta.recharge.shopify_product_id = parseInt(line_item.external_product_id.ecommerce);
+            meta.recharge.subscription_id = parseInt(line_item.properties.find(el => el.name === "box_subscription_id").value);
+            meta.recharge["Delivery Date"] = line_item.properties.find(el => el.name === "Delivery Date").value;
+            const action = (Object.hasOwn(actions, meta.recharge.subscription_id)) ? actions[meta.recharge.subscription_id] : "updated";
+            //console.log("charge/created entry.action", action);
+            if (false) { // NOTE wait and see
+              const { updated, entry } = await updatePendingEntry(meta, action, io, sockets);
+              if (updated) {
+                // sure that box is last
                 if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
-                  io.emit("completed", `Removing updates entry ${topicLower}.`);
-                  io.emit("completed", `Updates completed.`);
-                  const message = entry.action === "created" ? "created.complete" : "finished";
-                  io.emit(message, {
-                    action: entry.action,
-                    session_id: entry.session_id,
-                    subscription_id: entry.subscription_id,
-                    address_id: entry.address_id,
-                    customer_id: entry.customer_id,
-                    scheduled_at: entry.scheduled_at,
-                    charge_id: entry.charge_id,
-                  });
+                  const socket_id = sockets[entry.session_id];
+                  io = io.to(socket_id);
+                  const variant_title = meta.recharge.variant_title ? ` (${meta.recharge.variant_title})` : "";
+                  io.emit("completed", `Subscription ${topicLower}: ${meta.recharge.title}${variant_title}`);
+                };
+
+                // check that all have been updated
+                const allUpdated = entry.rc_subscription_ids.every(el => {
+                  // check that all subscriptions have updated or have been created
+                  return el.updated === true && Number.isInteger(el.subscription_id);
+                });
+                if (allUpdated) {
+                  await _mongodb.collection("updates_pending").deleteOne({ _id: new ObjectId(entry._id) });
+                  if (parseInt(process.env.DEBUG) === 1) {
+                    _logger.notice(`Deleting pending entry subscription/updated (${meta.recharge.title})`, { meta: { recharge: entry }});
+                  };
+                  if (sockets && io && Object.hasOwnProperty.call(sockets, entry.session_id)) {
+                    io.emit("completed", `Removing updates entry ${topicLower}.`);
+                    io.emit("completed", `Updates completed.`);
+                    const message = entry.action === "created" ? "created.complete" : "finished";
+                    io.emit(message, {
+                      action: entry.action,
+                      session_id: entry.session_id,
+                      subscription_id: entry.subscription_id,
+                      address_id: entry.address_id,
+                      customer_id: entry.customer_id,
+                      scheduled_at: entry.scheduled_at,
+                      charge_id: entry.charge_id,
+                    });
+                  };
+                } else {
+                  if (parseInt(process.env.DEBUG) === 1) {
+                    _logger.notice(`Updated ${meta.recharge.title} - entry still pending.`, { meta: { recharge: entry } });
+                  };
                 };
               } else {
                 if (parseInt(process.env.DEBUG) === 1) {
-                  _logger.notice(`Updated ${meta.recharge.title} - entry still pending.`, { meta: { recharge: entry } });
+                  _logger.notice(`Updated ${meta.recharge.title} - unable to update pending.`, { meta: { recharge: entry } });
                 };
-              };
-            } else {
-              if (parseInt(process.env.DEBUG) === 1) {
-                _logger.notice(`Updated ${meta.recharge.title} - unable to update pending.`, { meta: { recharge: entry } });
               };
             };
           };
         };
       };
+      return false;
     };
+  } catch(err) {
+    _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
     return false;
   };
 
@@ -178,18 +187,23 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
     return false;
   };
 
-  if (box_subscriptions_possible.length > 1) {
-    // log as an error because it will need investigating
-    const err = {
-      message: "Charge created, more than 1 possible box",
-      level: "error",
-      stack: null,
-      charge_id: charge.id,
-      box_subscriptions: box_subscription_possible.map(el => el.subscription_id),
-      customer_id: charge.customer.id,
-      address_id: charge.address_id,
-      description: "charge/created webhook exited so action required",
+  try {
+    if (box_subscriptions_possible.length > 1) {
+      // log as an error because it will need investigating
+      const err = {
+        message: "Charge created, more than 1 possible box",
+        level: "error",
+        stack: null,
+        charge_id: charge.id,
+        box_subscriptions: box_subscription_possible.map(el => el.subscription_id),
+        customer_id: charge.customer.id,
+        address_id: charge.address_id,
+        description: "charge/created webhook exited so action required",
+      };
+      _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+      return false;
     };
+  } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
     return false;
   };
@@ -220,7 +234,12 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
     boxSubscription = box_item.line_items.find(el => el.purchase_item_id === boxSubscriptionId);
 
     // get the subscription so as to access order_interval_frequency
-    subscription = await getSubscription(boxSubscriptionId, box_item.title);
+    const query = await makeRechargeQuery({
+      path: `subscriptions/${boxSubscriptionId}`,
+      method: "GET",
+      title: `Fetching ${box_item.title} for ${topicLower}`,
+    });
+    subscription = query.subscription;
 
     /*
      * Update the Delivery Date using "order_interval_frequency" and
@@ -279,15 +298,11 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
 
       updatedLineItems.push(line_item);
 
-      const updateData = {
+      updates.push({
+        subscription_id: line_item.purchase_item_id, 
         order_day_of_week: orderDayOfWeek, // assign orderDay
         properties: line_item.properties,
-      };
-      updates.push({
-        id: line_item.purchase_item_id, 
-        title: line_item.title, 
-        body: updateData,
-        date: nextChargeScheduledAt 
+        next_charge_scheduled_at: nextChargeScheduledAt,
       });
     };
 
@@ -363,28 +378,8 @@ export default async function chargeCreated(topic, shop, body, { io, sockets }) 
       };
     }, 10000);
 
-    /*
-     * do all the work and now run the updates
-     */
-    for (const update of updates) {
-      const opts = {
-        id: update.id,
-        title: `Updating properties for ${update.title} for new subscription`,
-        body: update.body,
-      };
-      await updateSubscription(opts);
-    };
-
-    await delay(10000); // pause to ensure not calling to same resource
-
-    for (const update of updates) {
-      const opts = {
-        id: update.id,
-        title: update.title,
-        date: update.date,
-      };
-      await updateChargeDate(opts);
-    };
+    // now run the updates
+    await updateSubscriptions({ address_id: charge.address_id, updates, req });
 
   } catch(err) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

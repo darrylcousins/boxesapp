@@ -33,7 +33,7 @@ export const makeMailJob = async (opts) => {
  */
 export const makeApiJob = async (opts) => {
 
-  const { io, session_id, finish } = opts;
+  const { io, session_id } = opts;
   delete opts.io;
 
   /*
@@ -58,11 +58,10 @@ export const makeApiJob = async (opts) => {
       removeOnComplete: 100, removeOnFail: 50
     },
   )
-  //console.log("Queued")
   emit({
     io,
     eventName: "progress",
-    message: `Queued "${opts.title}" ...`
+    message: `Queued ${opts.title ? `"${opts.title}"` : "" } ...`
   });
 
   await job.updateProgress(`Update ${opts.title} executing...`);
@@ -83,9 +82,6 @@ export const makeApiJob = async (opts) => {
     throw new Error(`${job.name} request failed with code ${finished.returnvalue.status}: "${finished.returnvalue.statusText}"`);
   };
 
-  if (finish) { // only used by updateSubscriptions?
-    // final subscription of list, didn't prove useful at all
-  };
   emit({
     io,
     eventName: "completed",

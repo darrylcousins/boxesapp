@@ -157,7 +157,6 @@ function* CurrentBoxes({ timestamp }) {
         } else {
           const dates = json.dates.filter(el => el.toUpperCase() !== "INVALID DATE");
           // setting selectedDate after duplicating boxes
-          console.log(selectedDate);
           if (!selectedDate) {
             if (timestamp) selectedDate = new Date(parseInt(timestamp)).toDateString();
             if (!selectedDate) {
@@ -188,19 +187,13 @@ function* CurrentBoxes({ timestamp }) {
   const reloadBoxes = (ev) => {
     if (ev) {
       try {
-        console.log(ev.detail);
-        console.log("selectedDate", selectedDate)
         if (Object.hasOwnProperty.call(ev.detail, "src")) {
-          console.log("src", ev.detail.src);
           if (ev.detail.src === "/api/duplicate-boxes") {
             selectedDate = ev.detail.json.delivered;
-            console.log(ev.detail.json.delivered);
           } else if (ev.detail.src === "/api/remove-boxes") {
-            console.log(fetchDates);
             selectedDate = fetchDates.at(-2).delivered;
           };
         };
-        console.log("selectedDate", selectedDate)
       } catch(err) {
         console.log(err);
       };
@@ -401,7 +394,9 @@ function* CurrentBoxes({ timestamp }) {
     yield (
       <div class="w-100 pb2">
         {loading && <BarLoader />}
-        <PushMenu children={sideMenu} />
+        { false && (
+          <PushMenu children={sideMenu} />
+        )}
         <div class="pl5" style="margin-top: -35px">
           <h4 class="pt0 lh-title ma0 fg-streamside-maroon" id="boxes-title">
             Current Boxes {selectedDate ? `for ${selectedDate}` : ""}

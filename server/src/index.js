@@ -220,5 +220,8 @@ if (!isTest) {
         socketInstance.emit('uploadProgress', 'File uploaded, processing data...');
     */
 
+    const async_batches = [];
+    app.set("async_batches", async_batches);
+
   });
 };

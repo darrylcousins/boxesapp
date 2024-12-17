@@ -38,6 +38,7 @@ export default async (req, res, next) => {
                 id
                 title
                 price
+                sku
               }
             }
           }
@@ -84,6 +85,7 @@ export default async (req, res, next) => {
                   id: parseInt(el.id.split("/").pop()),
                   title: el.title,
                   price: el.price,
+                  sku: el.sku,
                   order_day_of_week: getOrderDayOfWeek(el.title)
                 };
               }),

@@ -81,6 +81,24 @@ const getBoxes = async ({search, delivered}) => {
  * @returns {object} Error (if any) and the fields
  */
 const getAddFields = async (delivered, onDeliveredChange) => {
+  const fields = {};
+  fields.Box = { // selected from product list
+    id: "shopify_product_id",
+    type: "hidden",
+    datatype: "integer",
+    required: true,
+  };
+  fields.Delivered = {
+    id: "delivered",
+    type: "date", // needs to be calendar select
+    size: "100",
+    datatype: "date",
+    required: true,
+    min: dateStringForInput(),
+    onchange: onDeliveredChange,
+  };
+  return { error: null, fields };
+  /* removed core box Apr 2024 
   const uri = "/api/get-core-box";
   let { error, json } = await Fetch(uri)
     .then((result) => result)
@@ -117,6 +135,7 @@ const getAddFields = async (delivered, onDeliveredChange) => {
     };
   }
   return { error, fields };
+  */
 };
 
 /**
@@ -220,11 +239,6 @@ async function* AddBox(props) {
       document.getElementById("product-search-alert").classList.add("db");
     } else if (shopify_product_id) {
       document.getElementById("add-box").shopify_product_id.value = parseInt(shopify_product_id);
-      /*
-      console.log('shopify_product_id', shopify_product_id);
-      console.log('add box value', document.getElementById("add-box").shopify_product_id.value);
-      console.log('delivered value', document.getElementById("add-box").delivered.value);
-      */
       doSave();
     };
   };

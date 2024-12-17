@@ -321,6 +321,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
     };
     */
 
+    /* boxRules no longer used because with variants a liquid template could do the job */
     boxRules = getRules(selectedBox.shopify_product_id, selectedDate);
 
     // The box has no products
@@ -1169,10 +1170,10 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
             <VariantSelector boxVariants={getVariants()} selectedVariant={selectedVariant} />
             <DateSelector fetchDates={fetchDates} selectedDate={selectedDate} variantTitle={selectedVariant.title} />
             { boxHasChanged && fetchDates.length>1 && (<p>Changing dates may alter the selections you have made.</p>) }
-            { selectedDate && boxRules.length > 0 && (
+            { true && selectedDate && boxRules.length > 0 && (
               <div class="boxesapp-notice">
                 {boxRules.map(rule => (
-                  <p>{rule}</p>
+                  <div>{rule}</div>
                 ))}
               </div>
             )}
@@ -1190,10 +1191,10 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
               />
             ) : (
               <div class="boxesapp-notice">
-                No products included in this box, please see description.
+                <div>No products included in this box, please see description.</div>
               </div>
             )}
-            { showBoxActive && selectedDate && !boxIsEmpty && (
+              { showBoxActive && selectedDate && !boxIsEmpty && (selectedIncludes.length > 0 || selectedAddons.length > 0) && (
               <div style="margin-bottom: 0.5em">
                 <button
                   title="Change product quantities"
@@ -1224,7 +1225,7 @@ async function* ContainerBoxApp({ productJson, cartJson }) {
                 <div id="add-button-wrapper">
                   { cartBoxId && (selectedBox.shopify_product_id !== cartBoxId) && (
                     <div class="boxesapp-notice">
-                      <p data-setting="existing-box-warn">{getSetting("Translation", "existing-box-warn")}</p>
+                      <div data-setting="existing-box-warn">{getSetting("Translation", "existing-box-warn")}</div>
                     </div>
                   )}
                   <button

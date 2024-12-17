@@ -34,6 +34,7 @@ import {
   collapseElement,
   transitionElementHeight,
   formatCount,
+  formatDate,
   LABELKEYS,
   userNavigator,
   dateStringNow,
@@ -57,25 +58,6 @@ import {
  * renderer.render(<Subscription subscription={subscription} />, document.querySelector('#app'))
  */
 async function *Subscription({ subscription, customer, idx, admin, brokenSubscriptions, completedAction }) {
-
-  console.log(subscription);
-  /*
-  console.log("TITLE", subscription.attributes.title);
-  console.log("Box", subscription.box);
-  console.log("Address", subscription.address);
-  console.log("Messages", subscription.messages);
-  console.log("Properties", subscription.properties);
-  console.log("Updates", subscription.updates);
-  console.log(JSON.stringify(
-    subscription.attributes.rc_subscription_ids.map(el => {
-      return [ el.subscription_id, el.shopify_product_id, el.quantity ].sort();
-    }).sort()
-    ,null, 2));
-  console.log("Ids", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
-  console.log("RC_IDS", JSON.stringify(subscription.attributes.rc_subscription_ids, null, 2));
-  console.log("Includes", subscription.includes);
-  console.log("Attributes", subscription.attributes);
-  */
 
   let CollapsibleProducts = CollapseWrapper(EditProducts);
   /**
@@ -177,7 +159,6 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
    */
   const collectMessages = async (ev) => {
     // default sleep is for 10 seconds - pass a value if needed
-    console.log("collect messages", ev.detail);
     await sleepUntil(() => document.getElementById(`displayMessages-${subscription.attributes.subscription_id}`), 3000)
       .then((res) => {
         displayMessages(res, ev.detail.messages);
@@ -214,8 +195,9 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
    * Control the collapse of product list
    * @function toggleCollapse
    */
-  const toggleCollapse = async () => {
+  const toggleCollapse = async (ev) => {
     collapsed = !collapsed;
+    const target = ev.target.closest("button");
     await this.refresh();
     setTimeout(() => {
       if (!collapsed) {
@@ -233,6 +215,7 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
           })
         );
       };
+      if (target) target.blur();
     }, 500);
   };
 
@@ -255,7 +238,17 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
     delay(1000);
     try {
       document.getElementById(`products-${subscription.attributes.subscription_id}-${idx}`).classList.add("disableevents");
+    } catch(e) {
+      // should never fail
+      console.warn(e);
+    };
+    try {
       document.getElementById(`buttons-${subscription.attributes.subscription_id}-${idx}`).classList.add("disableevents");
+    } catch(e) {
+      // should never fail
+      console.warn(e);
+    };
+    try {
       document.getElementById(`saveMessages-${subscription.attributes.subscription_id }`).classList.remove("dn");
     } catch(e) {
       // should never fail
@@ -643,7 +636,7 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
         });
       };
 
-      // bugfix here, found that I can push a new item onto rc_subscription_ids
+      // XXX ?? bugfix here, found that I can push a new item onto rc_subscription_ids
       // even though it may already be present with quantity set to zero, i.e.
       // a deletion
 
@@ -730,6 +723,7 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
       subscriptionBox.properties.push({
         name: "box_subscription_id", value: `${subscription.attributes.subscription_id}`
       });
+      subscriptionBox.next_charge_scheduled_at = formatDate(new Date(Date.parse(subscription.attributes.nextChargeDate)));
       updates.push(subscriptionBox);
     };
     // make sure that the box is last
@@ -745,15 +739,17 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
     const bar = document.querySelector(`#saveBar-${subscription.attributes.subscription_id}`);
     bar.classList.remove("open");
 
+    window.dispatchEvent(
+      new CustomEvent("product.cancel.changes", {
+        bubbles: true,
+        detail: { subscription_id: subscription.attributes.subscription_id },
+      })
+    );
     // let the save bar close nicely first
+    subscription.attributes.rc_subscription_ids = rc_subscription_ids_orig.map(el => { return {...el}; });
     setTimeout(() => {
-      this.dispatchEvent(
-        new CustomEvent("customer.reload", {
-          bubbles: true,
-          detail: { charge_id: subscription.attributes.charge_id },
-        })
-      );
-    }, 500);
+      this.refresh();
+    }, 2500);
   };
 
   /*
@@ -767,8 +763,6 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
    */
   const listingReload = async (ev) => {
     const result = ev.detail.json; // success, action, subscription_id
-
-    console.log("listing.reload", ev.detail);
 
     // start the timer
     timer = new Date();
@@ -996,10 +990,6 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
    */
   const reloadSubscription = async (ev) => {
     if (ev.detail.session_id !== loadingSession) return;
-    console.log(ev.detail.session_id);
-    console.log(loadingSession);
-    console.log(ev.detail.subscription_id);
-    console.log(subscription.attributes.subscription_id);
     ev.stopPropagation();
     const socketMessages = document.getElementById(messageDivId);
     const saveMessages = document.getElementById(`saveMessages-${ev.detail.subscription_id }`);
@@ -1022,11 +1012,12 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
       const timeTaken = findTimeTaken(timer);
       timer = null;
       this.dispatchEvent(toastEvent({
-        notice: `Updates (${ev.detail.action}) completed after ${timeTaken} minutes` ,
+        notice: `Updates (${ev.detail.action}) completed after ${timeTaken}` ,
         bgColour: "black",
         borderColour: "black"
       }));
     };
+    ev.detail.includes = subscription.includes.map(el => el.subscription_id);
     // get Customer to reload everything
     this.dispatchEvent(new CustomEvent(`subscription.updates.completed`, {
       bubbles: true,
@@ -1068,19 +1059,19 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
           </span></div>
         )}
         <div class="flex-container-reverse w-100 pt2 relative" id={ `title-${idx}` }>
-          { admin && (
-            <div class="dt">
-              <AttributeColumn data={ idData() } />
-            </div>
-          )}
+          <div class="dt tr nowrap">
+            <AddressColumn data={ addressData() } />
+          </div>
           <div class="dt">
             <div class="">
               <AttributeColumn data={ chargeData() } />
             </div>
           </div>
-          <div class="dt tr nowrap">
-            <AddressColumn data={ addressData() } />
-          </div>
+          { admin && (
+            <div class="dt">
+              <AttributeColumn data={ idData() } />
+            </div>
+          )}
         </div>
         { subscription.messages.length === 0 && (
           <div id={`skip_cancel-${subscription.attributes.subscription_id}`} class="cf w-100 pv2">
@@ -1102,17 +1093,17 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
                   <SkipChargeModal subscription={ subscription }
                     admin={ admin }
                     socketMessageId={ `${messageDivId}` } />
+                  { unskippable && (
+                    <UnSkipChargeModal subscription={ subscription }
+                      admin={ admin }
+                      socketMessageId={ `${messageDivId}` } />
+                  )}
                   <EditBoxModal
                     subscription={ subscription }
                     customer={ customer }
                     admin={ admin }
                     type="changed"
                     socketMessageId={ `${messageDivId}` } />
-                  { unskippable && (
-                    <UnSkipChargeModal subscription={ subscription }
-                      admin={ admin }
-                      socketMessageId={ `${messageDivId}` } />
-                  )}
                   { admin && (
                     <LogsModal customer_id={ subscription.attributes.customer.id }
                       subscription_id={ subscription.attributes.subscription_id }
@@ -1132,7 +1123,7 @@ async function *Subscription({ subscription, customer, idx, admin, brokenSubscri
         { (editsPending || subscription.attributes.pending) && (
           <Fragment>
             <div id={ `saveMessages-${subscription.attributes.subscription_id }` }
-              class="tl w-100 saveMessages dn">
+              class="tl w-100 saveMessages">
               <div class="alert-box relative dark-blue pa2 ma1 br3 ba b--dark-blue bg-washed-blue">
                 { ( !subscription.attributes.pending) && (
                   <div class="i fr cf mr3 pt2 pb1 ph1 pointer bb"

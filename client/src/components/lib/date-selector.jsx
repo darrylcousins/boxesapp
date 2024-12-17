@@ -88,7 +88,7 @@ function* DateSelector({fetchDates, selectedDate, variantTitle}) {
           <Fragment>
             { !selectedDate &&  (
               <div class="boxesapp-notice">
-                <p data-setting="notice-choose-date">{getSetting("Translation", "notice-choose-date")}</p>
+                <div data-setting="notice-choose-date">{getSetting("Translation", "notice-choose-date")}</div>
               </div>
             )}
             <div class="relative">
@@ -108,8 +108,8 @@ function* DateSelector({fetchDates, selectedDate, variantTitle}) {
               ) : (
                 <div class="boxesapp-wrapper">
                   <div id="delivery-date">
-                    <span>Next delivery: </span>
-                    <span style="float: right">{ selectedDate }</span>
+                    <div>Next delivery: </div>
+                    <div style="text-align: right">{ selectedDate }</div>
                   </div>
                 </div>
               )}
@@ -117,7 +117,7 @@ function* DateSelector({fetchDates, selectedDate, variantTitle}) {
           </Fragment>
         ) : (
           <div class="boxesapp-notice">
-            <p data-setting="notice-no-boxes">{getSetting("Translation", "notice-no-boxes")}</p>
+            <div data-setting="notice-no-boxes">{getSetting("Translation", "notice-no-boxes")}</div>
           </div>
         )}
       </div>

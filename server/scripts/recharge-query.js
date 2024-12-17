@@ -33,6 +33,7 @@ const pathMap = {
   'metafields': 'metafield',
   'charges': 'charge',
   'orders': 'order',
+  'async_batches': 'async_batches',
 };
 const paths = Object.keys(pathMap);
 
@@ -84,6 +85,9 @@ const run = async () => {
       let url = path.join(base_url, result.path);
       if (result.id !== 'null') {
         url = path.join(url, result.id);
+        if (result.path === "async_batches" && result.method !== "DELETE") {
+          url = path.join(url, "tasks");
+        };
       };
       if (["subscriptions"].includes(result.path) && result.method !== "DELETE") {
         url = `${url}?include=metafields`;

@@ -131,15 +131,14 @@ async function *Page() {
    * @method {Promise} pullPage
    */
   const pullPage = async (pathname, index, params) => {
-    if (!index) history.pushState("", "", pathname);
-    let query;
+    let query = "";
     if (params) {
       for (const [key, value] of params.entries()) {
         query = (!query) ? "?": `${query}&`;
         query = `${query}${key}=${value}`;
       };
-      console.log(query);
     };
+    if (!index) history.pushState("", "", `${pathname}${query}`);
     //history.replaceState("", "", pathname)
     //if (pathname === `/reports${query ? query : ""}`) {
     if (pathname === `/reports`) {
@@ -155,36 +154,42 @@ async function *Page() {
       "Accept": "text/markdown",
     };
     if (staticUrl.length < 2) headers["Cache-Control"] = "no-cache";
-    fetch(`${staticUrl}${pathname}.md`, {headers})
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`${res.status} (${res.statusText})`);
-        }
-        return res.text();
-      }).then((text) => {
-        const div = document.createElement('div');
-        div.innerHTML = marked.parse(text).trim();
-        // highlight code syntax - see also registerLanguage in main.jsx
-        div.querySelectorAll('pre code').forEach((el) => {
-          hljs.highlightElement(el);
+    try {
+      fetch(`${staticUrl}${pathname}.md`, {headers})
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`${res.status} (${res.statusText})`);
+          }
+          return res.text();
+        }).then((text) => {
+          const div = document.createElement('div');
+          div.innerHTML = marked.parse(text).trim();
+          // highlight code syntax - see also registerLanguage in main.jsx
+          div.querySelectorAll('pre code').forEach((el) => {
+            hljs.highlightElement(el);
+          });
+          html = div.innerHTML;
+          // place 4 spaces at start of each line for nested code block
+          md = text.split("\n").map(line => `    ${line}`).join("\n");
+          parsed = true; // always start with parsed html
+        }).catch((err) => {
+          html = `
+          <h1>${err.message}</h1>
+          `;
+        }).finally(() => {
+          // animate this
+          if (pathname.includes("changelog") || pathname.includes("thoughts")) {
+            showAlert = false;
+          };
+          loading = false;
+          this.refresh();
+          imageEvents();
         });
-        html = div.innerHTML;
-        // place 4 spaces at start of each line for nested code block
-        md = text.split("\n").map(line => `    ${line}`).join("\n");
-        parsed = true; // always start with parsed html
-      }).catch((err) => {
-        html = `
-        <h1>${err.message}</h1>
-        `;
-      }).finally(() => {
-        // animate this
-        if (pathname.includes("changelog") || pathname.includes("thoughts")) {
-          showAlert = false;
-        };
-        loading = false;
-        this.refresh();
-        imageEvents();
-      });
+    } catch(e) {
+      html = `
+      <h1>${err.message}</h1>
+      `;
+    };
   };
 
   /**
@@ -242,7 +247,7 @@ ${ `${ fence }` }
 
   pathname = window.location.pathname === "/" ? "/index" : window.location.pathname;
   params = new URLSearchParams(window.location.search)
-  if (pathname === "/index.html") {
+  if (pathname === "/index.html" || pathname.includes("mail")) {
     pathname = "/index";
   };
   await pullPage(pathname, window.location.pathname === "/index.html", params);

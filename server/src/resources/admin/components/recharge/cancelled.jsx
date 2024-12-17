@@ -144,7 +144,7 @@ async function* Cancelled({ subscription, customer, idx, admin, completedAction 
       const timeTaken = findTimeTaken(timer);
       timer = null;
       this.dispatchEvent(toastEvent({
-        notice: `Updates (${ev.detail.action}) completed after ${timeTaken} minutes` ,
+        notice: `Updates (${ev.detail.action}) completed after ${timeTaken}` ,
         bgColour: "black",
         borderColour: "black"
       }));

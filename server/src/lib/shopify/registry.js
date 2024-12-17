@@ -5,7 +5,7 @@
 import "dotenv/config";
 import "isomorphic-fetch";
 import crypto from "crypto";
-import { logWebhook } from "../recharge/helpers.js";
+import logWebhook from "../recharge/log-webhook.js";
 import { Shopify } from "./index.js";
 
 export default class Registry {
@@ -95,7 +95,7 @@ export default class Registry {
           } else {
             const err = new Error(`Shopify webhook ${topic} unknown handler.`);
             _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-            return reject(error);
+            return reject(err);
           };
           return resolve();
         };

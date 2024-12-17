@@ -164,6 +164,7 @@ function FormModalWrapper(Component, options) {
       let uri = (typeof src === "string") ? src : src();
 
       /* Dev logging - do not delete, nearly did one day :-) */
+      console.log(data);
       /*
       console.log(uri);
       console.log(data);

@@ -242,7 +242,7 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
                       id="removeItem"
                       type="button"
                       >
-                      Done&nbsp;&nbsp;&nbsp;▴
+                      No more swaps.&nbsp;&nbsp;&nbsp;▴
                     </button>
                   )}
                   <SwapSelector
@@ -284,7 +284,7 @@ function* ProductSelector({selectedIncludes, possibleAddons, selectedExcludes}) 
                   id="addItem"
                   type="button"
                   >
-                  Done&nbsp;&nbsp;&nbsp;▴
+                  Finished selecting add ons.&nbsp;&nbsp;&nbsp;▴
                 </button>
               )}
               <ProductListing

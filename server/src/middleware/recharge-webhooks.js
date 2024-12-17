@@ -37,9 +37,12 @@ export default function applyRechargeWebhooks({ app }) {
             _logger.info(`Recharge webhook ${topic} failed and logged.`);
             _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
           }
-        );
+        ).catch(err => {
+          _logger.info(`Recharge webhook ${topic} failed and logged.`);
+          _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+        });
     } catch (err) {
-      _logger.info(`Recharge webhook ${topic} failed and logged.`);
+      _logger.info(`EVEN HERE Recharge webhook ${topic} failed and logged.`);
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
       if (!res.headersSent) {
         res.status(500).send(err.message);

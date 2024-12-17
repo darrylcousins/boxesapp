@@ -137,21 +137,54 @@ async function* Customers() {
 
   /**
    * Handle the event calling to load another customer
+   * Refresh faultySubscriptions and updatesPending
    *
    * @function getNewCustomer
    * @listens loadAnotherCustomer
    */
-  const getNewCustomer = async () => {
-    fetchError = null;
-    loading = false;
-    fetchCustomer = null;
-    customerCharge = null;
-    // also reload pending and verify?
-    await this.refresh();
-    if (document.getElementById("searchTerm")) {
-      document.querySelector("#searchTerm").focus();
-    };
+  const getNewCustomer = async (ev) => {
+    loading = true;
+    this.refresh();
+    let uri = `/api/recharge-get-faulty-subscriptions`;
+    await Fetch(encodeURI(uri))
+      .then(async (result) => {
+        const { error, json } = result;
+        if (error !== null) {
+          fetchError = error;
+          loading = false;
+          this.refresh();
+          return null;
+        };
+        updatesPending = json.updatesPending;
+        faultySubscriptions = json.faultySubscriptions;
+        if (ev) {
+          if (Object.hasOwnProperty.call(ev.detail, "customer_id")) {
+            // also reload charges for the previous customer if passed the id
+            await updateRechargeCustomer(ev.detail.customer_id);
+          };
+        };
+        fetchError = null;
+        loading = false;
+        fetchCustomer = null;
+        customerCharge = null;
+        if (document.getElementById("customer-table")) {
+          animateFadeForAction("customer-table", async () => {
+            await this.refresh();
+          if (document.getElementById("searchTerm")) document.querySelector("#searchTerm").focus();
+          });
+        } else {
+          await this.refresh();
+          if (document.getElementById("searchTerm")) document.querySelector("#searchTerm").focus();
+        };
+      })
+      .catch((err) => {
+        fetchError = err;
+        loading = false;
+        this.refresh();
+        return null;
+      });
   };
+
   this.addEventListener("loadAnotherCustomer", getNewCustomer);
 
   /**
@@ -229,9 +262,8 @@ async function* Customers() {
    * @param {string} id The recharge charge id
    * @function fetchCustomerCharge
    */
-  const fetchCustomerCharge = async (customer, charge_id) => {
-    console.log(charge_id);
-    customerCharge = charge_id;
+  const fetchCustomerCharge = async (customer, scheduled_at, address_id) => {
+    customerCharge = { scheduled_at, address_id };
     await fetchRechargeCustomer(customer.recharge_id);
   };
 
@@ -311,6 +343,7 @@ async function* Customers() {
           // toast event and obvious reload
           return null;
         };
+        console.log(json);
         fetchCustomers();
       })
       .catch((err) => {
@@ -504,11 +537,8 @@ async function* Customers() {
             </p>
           </div>
         )}
-        { false && (
-            <Customer customer={ fetchCustomer } charge={ customerCharge } admin={ true } /> 
-        )}
         { fetchCustomer && (
-            <Customer customer={ fetchCustomer } charge_id={customerCharge} admin={ true } /> 
+            <Customer customer={ fetchCustomer } charge={customerCharge} admin={ true } /> 
         )}
         { !fetchCustomer && (
           <Fragment>
@@ -529,25 +559,17 @@ async function* Customers() {
                     <Fragment>
                       <thead>
                         <tr>
-                          <th class="fw6 bb b--black-20 tl pb3 pr1 bg-white">{ "" }</th>
                           <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Customer</th>
                           <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Email</th>
                           <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Recharge</th>
                           <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Shopify</th>
                           <th class="fw6 bb b--black-20 tl pb3 pr3 bg-white">Upcoming (charge date)</th>
+                          <th class="fw6 bb b--black-20 tl pb3 pr1 bg-white">{ "" }</th>
                         </tr>
                       </thead>
                       <tbody class="tl">
                         { rechargeCustomers.map((customer, idx) => (
                           <tr crank-key={ `${ customer.last_name }-${ idx }` }>
-                            <td class="pr1 pt1 bb b--black-20 v-top">
-                              <div onclick={ () => updateRechargeCustomer(customer.recharge_id) }>
-                                <IconButton color="fg-streamside-blue" title="Sync"
-                                  name="Sync" id={`sync-${customer.recharge_id}`}>
-                                  <SyncIcon />
-                                </IconButton>
-                              </div>
-                            </td>
                             <td class="pr3 pt1 bb b--black-20 v-top">
                               <div class="w-100">
                                 <div class="pa3 ml2 pointer hover-black hover-bg-near-white fg-streamside-blue b w-100"
@@ -587,7 +609,7 @@ async function* Customers() {
                                 { customer.charge_list.map((charge, idx) => (
                                   <div class="dt-row pb1 pointer hover-black hover-bg-near-white fg-streamside-blue b"
                                       title={ `Load charge #${charge[0]}` }
-                                      onclick={ () => fetchCustomerCharge(customer, charge[0]) }>
+                                      onclick={ () => fetchCustomerCharge(customer, charge[1], charge[2]) }>
                                     <div class="dtc mv1 pl2">
                                       { charge[0] }
                                     </div>
@@ -596,6 +618,14 @@ async function* Customers() {
                                     </div>
                                   </div>
                                 ))}
+                              </div>
+                            </td>
+                            <td class="pr1 pt1 bb b--black-20 v-top">
+                              <div onclick={ () => updateRechargeCustomer(customer.recharge_id) }>
+                                <IconButton color="fg-streamside-blue" title="Sync"
+                                  name="Sync" id={`sync-${customer.recharge_id}`}>
+                                  <SyncIcon />
+                                </IconButton>
                               </div>
                             </td>
                           </tr>

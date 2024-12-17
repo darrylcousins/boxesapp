@@ -27,7 +27,7 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
     const showPrice = !includes || (includes && el.quantity > 1);
 
     return (
-      <div style="display: inline-block; width: 80%">
+      <div style="display: inline-block; width: 70%">
         { `${el.shopify_title} ${ showPrice ? `(${getPrice(el, includes)})` : "" }` }
       </div>
     );
@@ -41,23 +41,31 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
     const button = {
       "cursor": "pointer",
       "font-weight": "bold",
-      "font-size": "1.2em",
+      "font-size": "1.4em",
       "display": "inline-flex",
       "justify-content": "center",
       "align-items": "center",
       "background": "transparent",
-      "border": "0",
       "color": "inherit",
+      "padding-right": "10px",
+      "padding-left": "10px",
+      "margin-right": "10px",
+      "border": "1px solid",
+      "border-radius": "3px",
     };
-    const buttonMinus = el.quantity === min ? { ...button, ...disabled } : { ...button };
+    const buttonRight = {
+    };
+    const buttonLeft = {
+      "margin-right": "10px",
+    };
+    const buttonMinus = el.quantity === min ? { ...button, ...disabled, ...buttonLeft } : { ...button };
     return (
       <div style={ {
         "display": "inline-flex",
-        "justify-content": "center",
-        "align-items": "center",
-        "border": "1px solid",
-        "width": "20%",
-        "padding-right": "10px",
+        "justify-content": "right",
+        "align-items": "right",
+        "width": "30%",
+        //"padding-right": "10px",
         "padding-left": "10px",
       } }>
         <div style={buttonMinus}
@@ -68,17 +76,6 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
         >
           -
         </div>
-        <input
-          class="quantity__input"
-          type="number"
-          steps="1"
-          min={ min }
-          name="quantity"
-          data-id={id}
-          id={el.shopify_product_id}
-          value={el.quantity}
-          autocomplete="off"
-        />
         <div style={button}
           data-id={id}
           data-product={el.shopify_product_id}
@@ -91,6 +88,23 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
     );
   };
 
+  /*
+        <input
+          style={{
+            "padding-right": "10px",
+            "padding-left": "10px",
+          }}
+          class="quantity__input"
+          type="number"
+          steps="1"
+          min={ min }
+          name="quantity"
+          data-id={id}
+          id={el.shopify_product_id}
+          value={el.quantity}
+          autocomplete="off"
+        />
+        */
   const PriceInput = ({ el, includes }) => {
     // Should look in moveProduct to find where the quantity is not set
     if (!Object.hasOwnProperty.call(el, "quantity")) el.quantity = 1; 
@@ -162,6 +176,9 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
   const handleChange = (ev) => {
     if (ev.target.tagName === "INPUT") {
       if (ev.target.name === "quantity") {
+        console.log(ev.keyCode);
+        if (ev.keyCode && ev.keyCode === 8 || ev.keyCode === 46) return;
+        console.log(ev.target.value);
         if (ev.target.value === "0") {
           animateFadeForAction(ev.target.parentNode, async () => {
             await this.dispatchEvent(quantityUpdateEvent(ev.target.id, ev.target.value, ev.target.getAttribute("data-id")));
@@ -169,11 +186,13 @@ function *QuantityForm({ selectedIncludes, selectedAddons, selectedSwaps }) {
           ev.target.blur();
         } else {
           this.dispatchEvent(quantityUpdateEvent(ev.target.id, ev.target.value, ev.target.getAttribute("data-id")));
+          ev.target.blur();
         };
       };
     };
   };
   this.addEventListener("change", handleChange);
+  this.addEventListener("keyup", handleChange);
   this.addEventListener("mouseup", handleClick);
 
   for ({selectedIncludes, selectedAddons, selectedSwaps} of this) {

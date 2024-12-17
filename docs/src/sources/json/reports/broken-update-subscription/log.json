@@ -1,0 +1,505 @@
+[
+  {
+    "_id": "66197b4c93a4907c55122052",
+    "timestamp": "2024-04-12T18:19:56.895Z",
+    "level": "notice",
+    "message": "Charge upcoming email sent.",
+    "meta": {
+      "recharge": {
+        "customer_id": 117434158,
+        "charge_id": 1053230626,
+        "titles": [
+          "The Small Vege Box"
+        ],
+        "subscription_ids": [
+          459430662
+        ],
+        "subject": "Charge Upcoming The Small Vege Box - Thursday",
+        "email": "veggies@streamsideorganics.co.nz"
+      }
+    }
+  },
+  {
+    "_id": "66197b4393a4907c55122051",
+    "timestamp": "2024-04-12T18:19:47.478Z",
+    "level": "notice",
+    "message": "Deleted Carrots 1kg - updated pending entry",
+    "meta": {
+      "recharge": {
+        "_id": {},
+        "address_id": 128418536,
+        "customer_id": 117434158,
+        "subscription_id": 459430662,
+        "action": "upcoming",
+        "charge_id": 1053230626,
+        "deliver_at": "Thu Apr 18 2024",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 6163982876822,
+            "subscription_id": 459430662,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "price": 2500,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6621185933462,
+            "subscription_id": 459433372,
+            "quantity": 0,
+            "title": "Carrots 1kg",
+            "price": 500,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 459433379,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "price": 450,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": true
+          }
+        ],
+        "scheduled_at": "2024-04-15",
+        "session_id": null,
+        "timestamp": "2024-04-12T18:19:45.343Z",
+        "title": "The Small Vege Box"
+      }
+    }
+  },
+  {
+    "_id": "66197b4393a4907c55122050",
+    "timestamp": "2024-04-12T18:19:47.475Z",
+    "level": "notice",
+    "message": "Deleting pending entry (deleted) (Carrots 1kg)",
+    "meta": {
+      "recharge": {
+        "_id": {},
+        "address_id": 128418536,
+        "customer_id": 117434158,
+        "subscription_id": 459430662,
+        "action": "upcoming",
+        "charge_id": 1053230626,
+        "deliver_at": "Thu Apr 18 2024",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 6163982876822,
+            "subscription_id": 459430662,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "price": 2500,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6621185933462,
+            "subscription_id": 459433372,
+            "quantity": 0,
+            "title": "Carrots 1kg",
+            "price": 500,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 459433379,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "price": 450,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": true
+          }
+        ],
+        "scheduled_at": "2024-04-15",
+        "session_id": null,
+        "timestamp": "2024-04-12T18:19:45.343Z",
+        "title": "The Small Vege Box"
+      }
+    }
+  },
+  {
+    "_id": "66197b4393a4907c5512204f",
+    "timestamp": "2024-04-12T18:19:47.462Z",
+    "level": "notice",
+    "message": "Webhook received subscription/deleted.",
+    "meta": {
+      "recharge": {
+        "subscription_id": 459433372,
+        "address_id": 128418536,
+        "customer_id": 117434158,
+        "scheduled_at": null,
+        "deliver_at": "Thu Apr 18 2024",
+        "quantity": 1,
+        "title": "Carrots 1kg",
+        "box_subscription_id": 459430662,
+        "properties": {
+          "Delivery Date": "Thu Apr 18 2024",
+          "Add on product to": "The Small Vege Box",
+          "box_subscription_id": "459430662"
+        }
+      }
+    }
+  },
+  {
+    "_id": "66197b4293a4907c5512204e",
+    "timestamp": "2024-04-12T18:19:46.833Z",
+    "level": "notice",
+    "message": "Updated The Small Vege Box - updated pending entry",
+    "meta": {
+      "recharge": {
+        "_id": {},
+        "address_id": 128418536,
+        "customer_id": 117434158,
+        "subscription_id": 459430662,
+        "action": "upcoming",
+        "charge_id": 1053230626,
+        "deliver_at": "Thu Apr 18 2024",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 6163982876822,
+            "subscription_id": 459430662,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "price": 2500,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": true
+          },
+          {
+            "shopify_product_id": 6621185933462,
+            "subscription_id": 459433372,
+            "quantity": 0,
+            "title": "Carrots 1kg",
+            "price": 500,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 459433379,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "price": 450,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": true
+          }
+        ],
+        "scheduled_at": "2024-04-15",
+        "session_id": null,
+        "timestamp": "2024-04-12T18:19:45.343Z",
+        "title": "The Small Vege Box"
+      }
+    }
+  },
+  {
+    "_id": "66197b4293a4907c5512204d",
+    "timestamp": "2024-04-12T18:19:46.824Z",
+    "level": "notice",
+    "message": "Webhook received subscription/updated.",
+    "meta": {
+      "recharge": {
+        "subscription_id": 459430662,
+        "address_id": 128418536,
+        "customer_id": 117434158,
+        "scheduled_at": "2024-04-15",
+        "deliver_at": "Thu Apr 18 2024",
+        "quantity": 1,
+        "title": "The Small Vege Box",
+        "box_subscription_id": 459430662,
+        "properties": {
+          "Delivery Date": "Thu Apr 18 2024",
+          "Including": "Cabbage Green,Carrots 1kg,Chard Red,Coriander Bunch,Onions Brown 4x,Potato Agria 1kg",
+          "Add on Items": "Apple Braeburn 1kg",
+          "Swapped Items": "",
+          "Removed Items": "",
+          "box_subscription_id": "459430662"
+        }
+      }
+    }
+  },
+  {
+    "_id": "66197b42291b8151a8534ee7",
+    "timestamp": "2024-04-12T18:19:46.733Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions/459433372",
+        "method": "DELETE",
+        "title": "Deleting 459433372",
+        "status": "204 NO CONTENT"
+      }
+    }
+  },
+  {
+    "_id": "66197b41291b8151a8534ee6",
+    "timestamp": "2024-04-12T18:19:45.996Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions/459430662",
+        "method": "PUT",
+        "title": "Updating 459430662",
+        "body": {
+          "id": 459430662,
+          "quantity": 1,
+          "properties": [
+            {
+              "name": "Delivery Date",
+              "value": "Thu Apr 18 2024"
+            },
+            {
+              "name": "Including",
+              "value": "Cabbage Green,Carrots 1kg,Chard Red,Coriander Bunch,Onions Brown 4x,Potato Agria 1kg"
+            },
+            {
+              "name": "Add on Items",
+              "value": "Apple Braeburn 1kg"
+            },
+            {
+              "name": "Swapped Items",
+              "value": ""
+            },
+            {
+              "name": "Removed Items",
+              "value": ""
+            },
+            {
+              "name": "box_subscription_id",
+              "value": "459430662"
+            }
+          ],
+          "price": "25.00"
+        },
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "66197b4193a4907c5512204c",
+    "timestamp": "2024-04-12T18:19:45.357Z",
+    "level": "notice",
+    "message": "Charge upcoming updates required.",
+    "meta": {
+      "recharge": {
+        "Add on Items": "Apple Braeburn 1kg",
+        "Delivery Date": "Thu Apr 18 2024",
+        "Including": "Cabbage Green,Carrots 1kg,Chard Red,Coriander Bunch,Onions Brown 4x,Potato Agria 1kg",
+        "Removed Items": "",
+        "Swapped Items": "",
+        "action": "upcoming",
+        "address_id": 128418536,
+        "box_subscription_id": "459430662",
+        "change_messages": [
+          "The included items have been changed this week",
+          "Add on item Carrots 1kg already included so removed as an add on."
+        ],
+        "charge_id": 1053230626,
+        "customer_id": 117434158,
+        "deliver_at": "Thu Apr 18 2024",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 6163982876822,
+            "subscription_id": 459430662,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "price": 2500,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6621185933462,
+            "subscription_id": 459433372,
+            "quantity": 0,
+            "title": "Carrots 1kg",
+            "price": 500,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 459433379,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "price": 450,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": true
+          }
+        ],
+        "scheduled_at": "2024-04-15",
+        "subscription_id": 459430662,
+        "title": "The Small Vege Box",
+        "variant": "Thursday"
+      }
+    }
+  },
+  {
+    "_id": "66197b4193a4907c5512204b",
+    "timestamp": "2024-04-12T18:19:45.350Z",
+    "level": "notice",
+    "message": "Insert updates_pending entry",
+    "meta": {
+      "recharge": {
+        "customer_id": 117434158,
+        "address_id": 128418536,
+        "subscription_id": 459430662,
+        "action": "upcoming",
+        "charge_id": 1053230626,
+        "session_id": null,
+        "scheduled_at": "2024-04-15",
+        "deliver_at": "Thu Apr 18 2024",
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": 6163982876822,
+            "subscription_id": 459430662,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "price": 2500,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6621185933462,
+            "subscription_id": 459433372,
+            "quantity": 0,
+            "title": "Carrots 1kg",
+            "price": 500,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": false
+          },
+          {
+            "shopify_product_id": 6166841393302,
+            "subscription_id": 459433379,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "price": 450,
+            "deliver_at": "Thu Apr 18 2024",
+            "updated": true
+          }
+        ],
+        "title": "The Small Vege Box",
+        "timestamp": "2024-04-12T18:19:45.343Z"
+      }
+    }
+  },
+  {
+    "_id": "66197b41291b8151a8534ee5",
+    "timestamp": "2024-04-12T18:19:45.330Z",
+    "level": "notice",
+    "message": "API call to Shopify",
+    "meta": {
+      "shopify": {
+        "path": "orders/5611408982166.json",
+        "fields": [
+          "current_total_price",
+          "order_number",
+          "tags",
+          "line_items"
+        ],
+        "title": "Get order",
+        "method": "GET",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "66197b40291b8151a8534ee4",
+    "timestamp": "2024-04-12T18:19:44.634Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "path": "charges",
+        "query": {
+          "customer_id": 117434158,
+          "address_id": null,
+          "purchase_item_id": 459430662,
+          "status": "success",
+          "limit": 1
+        },
+        "title": "Get last order",
+        "method": "GET",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "66197b40291b8151a8534ee3",
+    "timestamp": "2024-04-12T18:19:44.287Z",
+    "level": "notice",
+    "message": "API call to Recharge",
+    "meta": {
+      "recharge": {
+        "path": "subscriptions/459430662",
+        "title": "Fetching subscription The Small Vege Box Thursday",
+        "method": "GET",
+        "status": "200 OK"
+      }
+    }
+  },
+  {
+    "_id": "66197b3f93a4907c5512204a",
+    "timestamp": "2024-04-12T18:19:43.361Z",
+    "level": "notice",
+    "message": "Webhook received charge/upcoming.",
+    "meta": {
+      "recharge": {
+        "charge_id": 1053230626,
+        "address_id": 128418536,
+        "customer_id": 117434158,
+        "scheduled_at": "2024-04-15",
+        "status": "queued",
+        "deliver_at": "Thu Apr 18 2024",
+        "box_titles": [
+          "The Small Vege Box"
+        ],
+        "box_subscription_ids": [
+          459430662
+        ],
+        "rc_subscription_ids": [
+          {
+            "shopify_product_id": "6163982876822",
+            "subscription_id": 459430662,
+            "quantity": 1,
+            "title": "The Small Vege Box",
+            "box_subscription_id": 459430662,
+            "properties": {
+              "Including": "Chard Red,Coriander Bunch,Curly Kale,Mesclun Mix,Onions Brown 4x,Potato Agria 1kg",
+              "Add on Items": "Apple Braeburn 1kg,Carrots 1kg",
+              "Delivery Date": "Thu Apr 18 2024",
+              "Removed Items": "None",
+              "Swapped Items": "None",
+              "box_subscription_id": "459430662"
+            }
+          },
+          {
+            "shopify_product_id": "6621185933462",
+            "subscription_id": 459433372,
+            "quantity": 1,
+            "title": "Carrots 1kg",
+            "box_subscription_id": 459430662,
+            "properties": {
+              "Delivery Date": "Thu Apr 18 2024",
+              "Add on product to": "The Small Vege Box",
+              "box_subscription_id": "459430662"
+            }
+          },
+          {
+            "shopify_product_id": "6166841393302",
+            "subscription_id": 459433379,
+            "quantity": 1,
+            "title": "Apple Braeburn 1kg",
+            "box_subscription_id": 459430662,
+            "properties": {
+              "Delivery Date": "Thu Apr 18 2024",
+              "Add on product to": "The Small Vege Box",
+              "box_subscription_id": "459430662"
+            }
+          }
+        ]
+      }
+    }
+  }
+]

@@ -1,0 +1,65 @@
+{
+  "timedelta": 68.204,
+  "files": [
+    {
+      "partner": "recharge",
+      "key": "charge",
+      "objId": "1049831417",
+      "webhook": "updated",
+      "day": "2024/04/03",
+      "time": "00:50:28.315",
+      "filename": "recharge.charge-updated-2024-04-03-00:50:28.315-1049831417.json",
+      "fileDate": null
+    },
+    {
+      "partner": "recharge",
+      "key": "charge",
+      "objId": "1043513697",
+      "webhook": "updated",
+      "day": "2024/04/03",
+      "time": "00:49:29.383",
+      "filename": "recharge.charge-updated-2024-04-03-00:49:29.383-1043513697.json",
+      "fileDate": null
+    },
+    {
+      "partner": "recharge",
+      "key": "subscription",
+      "objId": "471350549",
+      "webhook": "updated",
+      "day": "2024/04/03",
+      "time": "00:49:25.595",
+      "filename": "recharge.subscription-updated-2024-04-03-00:49:25.595-471350549.json",
+      "fileDate": null
+    },
+    {
+      "partner": "recharge",
+      "key": "subscription",
+      "objId": "471350549",
+      "webhook": "created",
+      "day": "2024/04/03",
+      "time": "00:49:25.083",
+      "filename": "recharge.subscription-created-2024-04-03-00:49:25.083-471350549.json",
+      "fileDate": null
+    },
+    {
+      "partner": "recharge",
+      "key": "charge",
+      "objId": "1043513697",
+      "webhook": "updated",
+      "day": "2024/04/03",
+      "time": "00:49:25.010",
+      "filename": "recharge.charge-updated-2024-04-03-00:49:25.010-1043513697.json",
+      "fileDate": null
+    },
+    {
+      "partner": "recharge",
+      "key": "charge",
+      "objId": "1049831417",
+      "webhook": "created",
+      "day": "2024/04/03",
+      "time": "00:49:24.070",
+      "filename": "recharge.charge-created-2024-04-03-00:49:24.070-1049831417.json",
+      "fileDate": null
+    }
+  ]
+}

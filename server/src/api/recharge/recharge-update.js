@@ -3,7 +3,7 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { updateSubscriptions } from "../../lib/recharge/helpers.js";
+import updateSubscriptions from "../../lib/recharge/update-subscriptions.js";
 import { sortObjectByKeys, formatDate } from "../../lib/helpers.js";
 import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
 
@@ -118,8 +118,7 @@ export default async (req, res, next) => {
       throw err;
     };
 
-    //for (const update of updates) console.log(update);
-    await updateSubscriptions({ updates, io, session_id });
+    await updateSubscriptions({ updates, address_id, req, io, session_id });
 
   } catch(err) {
     if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);

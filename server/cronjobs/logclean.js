@@ -69,7 +69,7 @@ const main = async () => {
     };
     const opts = {
       to: process.env.SERVER_EMAIL,
-      subject: `\[${process.env.DB_NAME}-db\] Log clean report`,
+      subject: `${process.env.EMAIL_SUBJECT} Log clean report`,
       text: report.join("\n"),
       attachments,
     };

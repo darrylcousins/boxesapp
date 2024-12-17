@@ -2,7 +2,8 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 import { ObjectId } from "mongodb";
-import { getSubscription, updateSubscription, makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import updateSubscriptions from "../../lib/recharge/update-subscriptions.js";
 import chargeProcessedMail from "../../mail/charge-processed.js";
 import { formatDate, sortObjectByKeys, matchNumberedString } from "../../lib/helpers.js";
 import { writeFileForOrder, getMetaForCharge } from "./helpers.js";
@@ -16,7 +17,7 @@ import { upsertPending } from "../../api/recharge/lib.js";
  * NOTE Returns false if no action is taken and true if some update occured
  *
  */
-export default async function orderProcessed(topic, shop, body) {
+export default async function orderProcessed(topic, shop, body, { io, sockets, req }) {
 
   const mytopic = "ORDER_PROCESSED";
 
@@ -69,6 +70,109 @@ export default async function orderProcessed(topic, shop, body) {
     email: order.customer.email,
     line_items: lines,
   }}});
+
+  // there is 2 ways the order can come in broken, one is that the properties
+  // have been swapped between subscriptions and the 2nd is that
+  // purchase_item_id can be null :-(
+  const broken = [];
+  const nulled = [];
+
+  // First correct any broken properties - this is for the errored orders coming in with the properties mixed up
+  // And for line items coming in with purchase_item_id = null
+  for (const line_item of [ ...order.line_items.filter(el => el.properties.some(el => el.name === "Including")) ]) {
+    const box_subscription_property = line_item.properties.find(el => el.name === "box_subscription_id");
+    if (box_subscription_property) {
+      const box_subscription_id = parseInt(box_subscription_property.value);
+      // this depends on the line_item properties not having been swapped around
+      // hence the check made in the previous loop
+      line_item.box_subscription_id = box_subscription_id;
+      if (box_subscription_id === line_item.purchase_item_id) {
+        continue;
+      } else {
+        if (line_item.purchase_item_id === null) {
+          nulled.push({ ...line_item });
+        } else {
+          broken.push({ ...line_item });
+        };
+      };
+    };
+  };
+  // first we try to fix the swapped properties
+  for (const item of [ ...broken.reverse() ]) {
+    if (order.line_items.some(el => el.purchase_item_id === item.box_subscription_id)) {
+      const found = order.line_items.find(el => el.purchase_item_id === item.box_subscription_id);
+      found.properties = [ ...item.properties ]; // we might still need the found properties?
+      broken.splice(broken.indexOf(item), 1);
+    };
+  };
+  // now used the nulled to find and fix other line items
+  for (const item of [ ...nulled.reverse() ]) {
+    if (order.line_items.some(el => el.purchase_item_id === item.box_subscription_id)) {
+      const found = order.line_items.find(el => el.purchase_item_id === item.box_subscription_id);
+      found.properties = [ ...item.properties ]; // we might still need the found properties?
+      nulled.splice(broken.indexOf(item), 1);
+    };
+  };
+  // finally now we just loop through the remainder broken and assign to any nulled line items
+  // need to also compare the ecommerce id to ensure we are assigning the correct properties
+  for (const item of [ ...broken.reverse() ]) {
+    if (order.line_items.some(el => el.purchase_item_id === null)) {
+      const found = order.line_items.find(el => el.purchase_item_id === null);
+      found.properties = [ ...item.properties ]; // we might still need the found properties?
+      found.purchase_item_id = item.box_subscription_id;
+      broken.splice(broken.indexOf(item), 1);
+    };
+  };
+  // and again if any remain in nulled just assign the purchase item id
+  // need to also compare the ecommerce id to ensure we are assigning the correct properties
+  for (const item of [ ...nulled.reverse() ]) {
+    if (order.line_items.some(el => el.purchase_item_id === null)) {
+      const found = order.line_items.find(el => el.purchase_item_id === null);
+      found.properties = [ ...item.properties ]; // we might still need the found properties?
+      found.purchase_item_id = item.box_subscription_id;
+      nulled.splice(nulled.indexOf(item), 1);
+    };
+  };
+  /* NOTE should get to here ok but could well have assigned properties to a
+   * nulled item which the external product id does not match, but the thing is
+   * that nulled purchase_item_id should never happen, though it did to me
+   * once, and Recharge conceded that it had happened once before
+  */
+  if (broken.length > 0 || nulled.length > 0) {
+    _logger.error({message: "Webhook order/processed but haven't been able to fix broken line items", meta: {
+      order_number: order.external_order_name.ecommerce,
+      customer_id: order.customer.id,
+      address_id: order.address_id,
+      charge_id: order.charge.id,
+      order_id: order.id,
+      first_name: order.billing_address.first_name,
+      last_name: order.billing_address.last_name,
+      email: order.customer.email,
+      processed_at: order.processed_at,
+      line_items: order.line_items.map(el => ({
+        purchase_item_id: el.purchase_item_id,
+        title: el.title,
+        variant: el.variant_title,
+        box_subscription_id: el.properties.some(el => el.name === "box_subscription_id")
+         ? el.properties.find(el => el.name === "box_subscription_id").value : null,
+      })),
+      broken: broken.map(el => ({
+        purchase_item_id: el.purchase_item_id,
+        title: el.title,
+        variant: el.variant_title,
+        box_subscription_id: el.properties.some(el => el.name === "box_subscription_id")
+         ? el.properties.find(el => el.name === "box_subscription_id").value : null,
+      })),
+      nulled: nulled.map(el => ({
+        purchase_item_id: el.purchase_item_id,
+        title: el.title,
+        variant: el.variant_title,
+        box_subscription_id: el.properties.some(el => el.name === "box_subscription_id")
+         ? el.properties.find(el => el.name === "box_subscription_id").value : null,
+      })),
+    }});
+  };
+
   // Figure out how many box subscriptions are included in this order
   const box_subscriptions = {};
   try {
@@ -88,16 +192,10 @@ export default async function orderProcessed(topic, shop, body) {
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 
-  /*
-  for (const box of Object.values(box_subscriptions)) {
-    console.log(box);
-    if (box.includes.length > 0) console.log(box.includes);
-  };
-  */
   // if no box subscriptions then log and exit
   if (Object.keys(box_subscriptions).length === 0) {
-    const err = {
-      message: "Order processed but no box subscriptions found",
+    _logger.error({message: "Webhook order/processed but no box subscriptions found", meta: {
+      box_subscription_id,
       order_number: order.external_order_name.ecommerce,
       customer_id: order.customer.id,
       address_id: order.address_id,
@@ -106,8 +204,15 @@ export default async function orderProcessed(topic, shop, body) {
       first_name: order.billing_address.first_name,
       last_name: order.billing_address.last_name,
       email: order.customer.email,
-    };
-    _logger.notice({message: err.message, level: err.level, stack: err.stack, meta: err});
+      processed_at: order.processed_at,
+      line_items: order.line_items.map(el => ({
+        purchase_item_id: el.purchase_item_id,
+        title: el.title,
+        variant: el.variant_title,
+        box_subscription_id: el.properties.some(el => el.name === "box_subscription_id")
+         ? el.properties.find(el => el.name === "box_subscription_id").value : null,
+      })),
+    }});
     return false;
   };
   
@@ -152,10 +257,39 @@ export default async function orderProcessed(topic, shop, body) {
       // get the subscription so as to access order_interval_frequency
       let boxSubscription = fetchSubscriptions.find(el => parseInt(el.id) === box_subscription_id);
       if (!boxSubscription) {
-        boxSubscription = await getSubscription(box_subscription_id, "Fetching for order processed");
+        // get the subscription so as to access order_interval_frequency
+        const query = await makeRechargeQuery({
+          path: `subscriptions/${box_subscription_id}`,
+          method: "GET",
+          title: `Fetching subscription for ${topicLower}`,
+        });
+        boxSubscription = query.subscription;
       };
 
       const line_item = order.line_items.find(el => el.purchase_item_id === parseInt(box_subscription_id));
+      if (!line_item) { // broken webhook with purchase_item_id=null
+        // log as error so I receive an email and move on to next box_subscription
+        _logger.error({message: "Webhook order/processed but line_items broken", meta: {
+          box_subscription_id,
+          order_number: order.external_order_name.ecommerce,
+          customer_id: order.customer.id,
+          address_id: order.address_id,
+          charge_id: order.charge.id,
+          order_id: order.id,
+          first_name: order.billing_address.first_name,
+          last_name: order.billing_address.last_name,
+          email: order.customer.email,
+          processed_at: order.processed_at,
+          line_items: order.line_items.map(el => ({
+            purchase_item_id: el.purchase_item_id,
+            title: el.title,
+            variant: el.variant_title,
+            box_subscription_id: el.properties.some(el => el.name === "box_subscription_id")
+             ? el.properties.find(el => el.name === "box_subscription_id").value : null,
+          })),
+        }});
+        continue;
+      };
       const idx = order.line_items.indexOf(line_item);
       order.line_items.splice(idx, 1); // remove this item
       subscriptions[box_subscription_id].attributes.title = line_item.title;
@@ -176,6 +310,7 @@ export default async function orderProcessed(topic, shop, body) {
       deliveryDate = dateObj.toDateString();
       dateObj.setDate(dateObj.getDate() - 3);
       nextChargeDate = dateObj.toDateString();
+      dateItem.value = deliveryDate;
       
       // set the properties as an object instead of name/value pairs
       subscriptions[box_subscription_id].properties = box.properties.reduce( // old delivery date and properties
@@ -192,18 +327,13 @@ export default async function orderProcessed(topic, shop, body) {
       subscriptions[box_subscription_id].attributes.name = boxName;
       subscriptions[box_subscription_id].attributes.box = { name: boxName };
       subscriptions[box_subscription_id].box = { shopify_title: line_item.title };
-
-      //const orderCreated = new Date(order.created_at);
-      //orderCreated.setDate(orderCreated.getDate() + days); // calculate next charge date
       subscriptions[box_subscription_id].attributes.nextChargeDate = nextChargeDate;
       subscriptions[box_subscription_id].attributes.nextDeliveryDate = deliveryDate;
       subscriptions[box_subscription_id].attributes.lastOrder.delivered = currentDeliveryDate;
       subscriptions[box_subscription_id].attributes.lastOrder.box = { name: boxName };
       subscriptions[box_subscription_id].attributes.lastOrder.order_number = order.external_order_number.ecommerce;
       subscriptions[box_subscription_id].attributes.lastOrder.current = true; // flag the template to mark as current
-
       subscriptions[box_subscription_id].attributes.totalPrice += parseFloat(line_item.total_price);
-
       subscriptions[box_subscription_id].includes.unshift({
         shopify_product_id: parseInt(line_item.external_product_id.ecommerce),
         title: line_item.title,
@@ -254,18 +384,26 @@ export default async function orderProcessed(topic, shop, body) {
           return el.title === item.title && el.quantity === item.quantity;
         });
         if (possible_els.length === 0) {
-          _logger.error({
-            message: "Unable to match line item to subscription",
-            level: "error",
-            meta: {
-              order_id: order.id,
-              charge_id: order.charge.id,
-              email: order.customer.email,
-              line_items: order.line_items,
-              box_subscription_id,
-              missing_item: item.title,
-            },
-          });
+          _logger.error({message: "Webhook order/processed but unable to match line item to subscription", meta: {
+            missing_item: item.title,
+            missing_quantity: item.quantity,
+            order_number: order.external_order_name.ecommerce,
+            customer_id: order.customer.id,
+            address_id: order.address_id,
+            charge_id: order.charge.id,
+            order_id: order.id,
+            first_name: order.billing_address.first_name,
+            last_name: order.billing_address.last_name,
+            email: order.customer.email,
+            processed_at: order.processed_at,
+            line_items: order.line_items.map(el => ({
+              purchase_item_id: el.purchase_item_id,
+              title: el.title,
+              variant: el.variant_title,
+              box_subscription_id: el.properties.some(el => el.name === "box_subscription_id")
+               ? el.properties.find(el => el.name === "box_subscription_id").value : null,
+            })),
+          }});
         } else if (possible_els.length === 1) {
           line_el = possible_els[0]; // easy match
         } else {
@@ -297,7 +435,7 @@ export default async function orderProcessed(topic, shop, body) {
             quantity: line_el.quantity,
             price: parseFloat(line_el.original_price) * 100,
             properties: [
-              { name: "Delivery Date", value: currentDeliveryDate },
+              { name: "Delivery Date", value: deliveryDate },
               { name: "Add on product to", value: boxTitle },
               { name: "box_subscription_id", value: box_subscription_id },
             ],
@@ -368,34 +506,35 @@ export default async function orderProcessed(topic, shop, body) {
 
     if (order.line_items.length > 0) {
       // we should have accounted for all items
-      _logger.error({
-        message: "Extra line items in order",
-        level: "error",
-        meta: {
-          order_id: order.id,
-          charge_id: order.charge.id,
-          email: order.customer.email,
-          line_items: order.line_items 
-        },
-      });
+      _logger.error({message: "Webhook order/processed but extra line items in order", meta: {
+        order_number: order.external_order_name.ecommerce,
+        customer_id: order.customer.id,
+        address_id: order.address_id,
+        charge_id: order.charge.id,
+        order_id: order.id,
+        first_name: order.billing_address.first_name,
+        last_name: order.billing_address.last_name,
+        email: order.customer.email,
+        processed_at: order.processed_at,
+        line_items: order.line_items.map(el => ({
+          purchase_item_id: el.purchase_item_id,
+          title: el.title,
+          variant: el.variant_title,
+          box_subscription_id: el.properties.some(el => el.name === "box_subscription_id")
+           ? el.properties.find(el => el.name === "box_subscription_id").value : null,
+        })),
+      }});
     };
 
-    // update the delivery date for all items
+    // update the subscription with new delivery date
+    const updates = [];
     for (const line_item of allLineItems) {
-      const dateItem = line_item.properties.find(el => el.name === "Delivery Date");
-      if (dateItem) {
-        if (dateItem.value !== deliveryDate) {
-          const boxId = line_item.properties.find(el => el.name === "box_subscription_id").value;
-          dateItem.value = deliveryDate; // always the same for every item on the order
-          const opts = {
-            id: line_item.purchase_item_id,
-            body: { properties: line_item.properties },
-            title: `Updating delivery date for ${line_item.title} in order/processed`,
-          };
-          await updateSubscription(opts);
-        };
-      };
+      updates.push({
+        subscription_id: line_item.purchase_item_id,
+        properties: line_item.properties,
+      });
     };
+    await updateSubscriptions({ address_id: order.address_id, updates, req });
 
     const mailOpts = {
       subscriptions: finalSubscriptions,
@@ -417,6 +556,7 @@ export default async function orderProcessed(topic, shop, body) {
     _logger.notice(`Order processed for ${order.customer.email}.`, { meta });
 
   } catch(err) {
+    console.log(err);
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
     return false;
   };

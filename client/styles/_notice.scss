@@ -1,23 +1,28 @@
 .boxesapp-notice {
-  font-weight: 400;
-  line-height: 1.5;
-  font-family: inherit;
   box-sizing: border-box;
   border-style: solid;
   border-width: 1px;
   border-radius: .25rem;
   width: 100%;
   margin-bottom: .5rem;
-  text-align: center;
+  text-align: left;
   color: inherit;
   padding: 3px;
   background-color: #cdeef9;
 }
-.boxesapp-notice > p {
-  padding: 0;
+.boxesapp-notice > div {
+  padding: 3px 10px;
   margin: 0;
+  display: inline-block;
+  width: 100%;
+  line-height: 1.5em;
 }
-.boxesapp-notice > p:before {
+@media (max-width: 450px) {
+  .boxesapp-notice > div {
+    font-size: smaller;
+  }
+}
+.boxesapp-notice > div:before {
   content: "! ";
   font-weight: bold;
 }

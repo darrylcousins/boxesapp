@@ -52,6 +52,7 @@ const run = async () => {
 const main = async () => {
   await run();
   process.emit('SIGINT'); // will close mongo connection
+  //process.exit(1); // alternative if not using mongo
 };
 
 main().catch(console.error);

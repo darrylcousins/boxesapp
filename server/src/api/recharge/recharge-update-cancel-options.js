@@ -20,7 +20,6 @@ export default async (req, res, next) => {
     tag: "recharge-cancel-options",
     options,
   };
-  console.log(doc);
 
   try {
     const result = await _mongodb.collection("settings").updateOne(
@@ -28,7 +27,6 @@ export default async (req, res, next) => {
       { "$set" : doc },
       { "upsert": true }
     );
-    console.log(result);
     res.status(200).json(result);
   
   } catch(err) {

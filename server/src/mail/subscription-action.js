@@ -37,6 +37,24 @@ export default async ({ type, descriptiveType, attributes, properties, address, 
     type,
   };
 
+  for (const item of includes) {
+    item.total_price = parseFloat(item.price * item.quantity).toFixed(2);
+  };
+  if (counter) {
+    let [minutes, seconds] = counter.split(":");
+    minutes = parseInt(minutes);
+    seconds = parseInt(seconds);
+    if (minutes === 0) {
+      if (seconds === 60) {
+        minutes = 1;
+        seconds = 0;
+      };
+    };
+    minutes = minutes === 0 ? "" : `${ `${minutes}`.padStart(2, "0") }:`;
+    counter = minutes !== "" ? `${minutes}${ `${seconds}`.padStart(2, "0") } minutes` : `${seconds} seconds`;
+  };
+  console.log(counter);
+
   const opts = {
     to: email,
     address: customerAddress,

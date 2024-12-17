@@ -3,7 +3,8 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { makeRechargeQuery, getLastOrder } from "../../lib/recharge/helpers.js";
+import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import getLastOrder from "../../lib/recharge/get-last-order.js";
 import { reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import { getIOSocket } from "./lib.js";
 

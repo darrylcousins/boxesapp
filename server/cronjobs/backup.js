@@ -49,7 +49,7 @@ const main = async () => {
     };
     const opts = {
       to: process.env.SERVER_EMAIL,
-      subject: `\[${process.env.DB_NAME}-db\] Nightly backup report`,
+      subject: `${process.env.EMAIL_SUBJECT} Nightly backup report`,
       text: report.join("\n"),
       attachments,
     };

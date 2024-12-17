@@ -37,7 +37,10 @@ export default function applyShopifyWebhooks({ app }) {
             _logger.info(`Shopify webhook ${topic} failed and logged.`);
             _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
           }
-        );
+        ).catch(err => {
+          _logger.info(`Shopify webhook ${topic} failed and logged.`);
+          _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+        });
     } catch (err) {
       _logger.info(`Shopify webhook ${topic} failed and logged.`);
       _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});

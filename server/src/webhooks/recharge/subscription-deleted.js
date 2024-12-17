@@ -31,7 +31,7 @@ export default async function subscriptionDeleted(topic, shop, body, { io, socke
 
     // find the updates_pending document and set the update as completed i.e. updated: true
     const topic = "deleted";
-    const { updated, entry } = await updatePendingEntry(meta, topic);
+    const { updated, entry } = await updatePendingEntry(meta, topic, io, sockets);
     if (updated) {
       // only logging on a completed update
       meta.recharge.update_label = entry.action;

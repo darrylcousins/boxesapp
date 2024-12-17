@@ -3,7 +3,8 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import { makeRechargeQuery, getLastOrder } from "../../lib/recharge/helpers.js";
+import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import getLastOrder from "../../lib/recharge/get-last-order.js";
 import { gatherVerifiedData } from "../../lib/recharge/verify-customer-subscriptions.js";
 import { reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import { getIOSocket } from "./lib.js";
@@ -26,8 +27,6 @@ export default async (req, res, next) => {
   let charge_id = req.params.charge_id;
   const { action, customer, subscription_id, address_id, scheduled_at, lastOrder } = req.body;
 
-  console.log("get curstomer subscription", subscription_id, action);
-  //console.log(req.body);
   let io;
   let session_id;
   let socket;
@@ -53,7 +52,7 @@ export default async (req, res, next) => {
     try {
       result = await makeRechargeQuery({
         path: `charges`,
-        title: `Get subscription ${ subscription_id }`,
+        title: `Get charges ${ subscription_id }`,
         query,
         io,
       });
@@ -111,9 +110,6 @@ export default async (req, res, next) => {
         if (dataErrors) errors = dataErrors;
 
       } else {
-
-        console.log("unfiltered", result.charges.length);
-        console.log("filtered", charges.length);
 
         // also need to get the subscriptions because that is where cancel data is
         const cancelQuery = [

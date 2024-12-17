@@ -19,6 +19,7 @@ import subscriptionDeleted from "../../webhooks/recharge/subscription-deleted.js
 import subscriptionUpdated from "../../webhooks/recharge/subscription-updated.js";
 import subscriptionCancelled from "../../webhooks/recharge/subscription-cancelled.js";
 import subscriptionActivated from "../../webhooks/recharge/subscription-activated.js";
+import asyncBatchProcessed from "../../webhooks/recharge/async-batch-processed.js";
 
 export const webhook_topics = {
   "SUBSCRIPTION_CREATED": subscriptionCreated,
@@ -34,6 +35,8 @@ export const webhook_topics = {
   "CHARGE_UPCOMING": chargeUpcoming,
   "CHARGE_UPDATED": chargeUpdated,
   "CHARGE_DELETED": chargeDeleted,
+  "CHARGE_DELETED": chargeDeleted,
+  "ASYNC_BATCH_PROCESSED": asyncBatchProcessed,
 };
 
 export const addRechargeWebhooks = () => {

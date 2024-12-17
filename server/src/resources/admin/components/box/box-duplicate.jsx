@@ -172,11 +172,6 @@ async function* DuplicateBox(props) {
       document.getElementById("product-search-alert").classList.add("db");
     } else if (shopify_product_id) {
       document.getElementById("duplicate-box").shopify_product_id.value = parseInt(shopify_product_id);
-      /*
-      console.log('shopify_product_id', shopify_product_id);
-      console.log('duplicate box value', document.getElementById("duplicate-box").shopify_product_id.value);
-      console.log('delivered value', document.getElementById("duplicate-box").delivered.value);
-      */
       doSave();
     };
   };
@@ -186,7 +181,6 @@ async function* DuplicateBox(props) {
    *
    */
   const saveBoxId = ({id, title}) => {
-    console.log(id, title);
     document.getElementById("duplicate-box").shopify_product_id.value = id;
     document.getElementById(id.toString()).classList.remove("dn");
     document.getElementById("product-search").value = title;

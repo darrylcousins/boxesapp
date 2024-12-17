@@ -10,7 +10,6 @@ const isValidDateString = (str) => {
   return d instanceof Date && !isNaN(d);
 };
 const getQuery = (result, date) => {
-  console.log(date);
   let query = [
     ["limit", 250 ],
     ["scheduled_at", date ],
@@ -46,7 +45,6 @@ export default async (req, res, next) => {
         path: `charges`,
         query: getQuery(result, date),
       });
-      console.log(result.charges.length);
       charges = [ ...charges, ...result.charges ];
       if (!result.next_cursor) nextCursor = false;
       count++;

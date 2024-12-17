@@ -83,6 +83,11 @@ async function *Reports({ mode, pathname, params }) {
    */
   let mailHtml = null;
   /**
+   * Checks if the mail file doesn't 404
+   * @member {boolean} mailCheck
+   */
+  let mailCheck = false;
+  /**
    * The parsed markdown text for log notes
    * @member {object} logNotesHtml
    */
@@ -166,15 +171,19 @@ async function *Reports({ mode, pathname, params }) {
       "Accept": "application/json",
     };
     if (staticUrl.length < 2) headers["Cache-Control"] = "no-cache";
-    return await fetch(`${staticUrl}${path}`, {headers})
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`${res.status} (${res.statusText})`);
-        }
-        return res.json();
-      }).catch((err) => {
-        return null;
-      });
+    try {
+      return await fetch(`${staticUrl}${path}`, {headers})
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`${res.status} (${res.statusText})`);
+          }
+          return res.json();
+        }).catch((err) => {
+          return null;
+        });
+    } catch(e) {
+      return null;
+    };
   };
 
   /**
@@ -186,23 +195,28 @@ async function *Reports({ mode, pathname, params }) {
       "Accept": "text/markdown",
     };
     if (staticUrl.length < 2) headers["Cache-Control"] = "no-cache";
-    return await fetch(`${staticUrl}${path}`, {headers})
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`${res.status} (${res.statusText})`);
-        };
-        return res.text();
-      }).then((text) => {
-        const div = document.createElement('div');
-        div.innerHTML = marked.parse(text).trim();
-        // highlight code syntax - see also registerLanguage in main.jsx
-        div.querySelectorAll('pre code').forEach((el) => {
-          hljs.highlightElement(el);
+    try {
+      return await fetch(`${staticUrl}${path}`, {headers})
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`${res.status} (${res.statusText})`);
+          };
+          return res.text();
+        }).then((text) => {
+          if (text.startsWith("<!doctype")) return null;
+          const div = document.createElement('div');
+          div.innerHTML = marked.parse(text).trim();
+          // highlight code syntax - see also registerLanguage in main.jsx
+          div.querySelectorAll('pre code').forEach((el) => {
+            hljs.highlightElement(el);
+          });
+          return div.innerHTML;
+        }).catch((err) => {
+          return null;
         });
-        return div.innerHTML;
-      }).catch((err) => {
-        return null;
-      });
+    } catch(e) {
+      return null;
+    };
   };
 
   const handleClick = async (ev, obj) => {
@@ -230,6 +244,20 @@ async function *Reports({ mode, pathname, params }) {
       await this.refresh();
     };
     mailHtml = `/mail/${obj.folder}.html`;
+    const headers = {
+      "Accept": "text/html",
+    };
+    mailCheck = await fetch(`${mailHtml}`, {headers})
+      .then(async (res) => {
+        if (!res.ok) {
+          return false;
+        }
+        const text = await res.text();
+        if (text.startsWith("</doctyp")) return false;
+        return true;
+      }).catch((err) => {
+        return false;
+      });
     reportHtml = await pullMarkdown(`${reportDir}.md`);
     logNotesHtml = await pullMarkdown(`/reports/log-notes.md`);
     log = await pullJson(logPath);
@@ -294,10 +322,10 @@ async function *Reports({ mode, pathname, params }) {
         </div>
       );
     } else if (src) {
-      content = (
+      content = true ? ( //mailCheck
         <iframe src={ src } width="100%" height="600">
         </iframe>
-      );
+      ) : ( "Not found" );
     } else if (component) {
       content = component;
     };
@@ -379,9 +407,8 @@ async function *Reports({ mode, pathname, params }) {
     loading = false;
     this.refresh()
     if (params.get("report")) {
-      const obj = [ ...reports.webhook, ...reports.user ].find(el => el.folder === params.get("report"));
+      const obj = [ ...reports.webhook, ...reports.user, ...reports.broken ].find(el => el.folder === params.get("report"));
       await delay(2000);
-      console.log(obj);
       if (obj) handleClick(null, obj);
     };
 

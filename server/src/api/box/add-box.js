@@ -19,7 +19,7 @@ import { getDefaultBoxSettings } from "../../lib/boxes.js";
 export default async (req, res, next) => {
 
   try {
-    const {delivered, shopify_product_id, useCoreBox} = req.body;
+    const {delivered, shopify_product_id} = req.body;
     const deliveryDay = getNZDeliveryDay(new Date(delivered).getTime());
 
     // before adding check that the box is not already created for this delivery date
@@ -28,17 +28,6 @@ export default async (req, res, next) => {
     if (result) {
       res.status(200).json({error: `${deliveryDay} already has ${result.shopify_title}`});
       return;
-    };
-
-    let coreBox;
-
-    if (useCoreBox) {
-      try {
-        coreBox = await collection.findOne({ delivered: "Core Box" });
-        _logger.info("Found the core box");
-      } catch(e) {
-        _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
-      };
     };
 
     // first collect the product details from shopify
@@ -77,17 +66,6 @@ export default async (req, res, next) => {
           return makeDoc(products[0]);
         }
       });
-
-    if (coreBox) {
-      productDoc.addOnProducts = coreBox.addOnProducts.map(prod => {
-        prod._id = new ObjectId();
-        return prod;
-      });
-      productDoc.includedProducts = coreBox.includedProducts.map(prod => {
-        prod._id = new ObjectId();
-        return prod;
-      });
-    };
 
     const insertResult = await collection.insertOne(productDoc);
     _logger.info(

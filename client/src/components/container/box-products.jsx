@@ -57,13 +57,13 @@ function* BoxProducts({selectedIncludes, selectedAddons, selectedExcludes, selec
   
     yield (
       <div id="defaultBox" class="">
-        <div class="listing-title">
-          {getSetting("Translation", "included-products-title")}
-        </div>
+        { selectedIncludes.length > 0 && (
+          <div class="listing-title">
+            {getSetting("Translation", "included-products-title")}
+          </div>
+        )}
         <div class="pill-wrapper">
-          { !selectedIncludes.length ? (
-              <div>Build your own box with available products.</div>
-          ) : (
+          { selectedIncludes.length > 0 && (
            selectedIncludes.map(el => 
             <div
               class={ `pill included-product ${el.quantity > 1 ? "included-product-hi" : ""}` }>

@@ -116,6 +116,17 @@ export default async (req, res, next) => {
     address_id = address.id; // just use the first active address
     io.emit("step", `Using address id: ${address_id}`);
 
+    for (const [key, value] of Object.entries(data.properties)) {
+      if (value === "") data.properties[key] = "None";
+    };
+    const properties = Object.entries(data.properties).map(([name, value]) => ({ name, value }));
+    const boxProperty = properties.find(el => el.name === "box_subscription_id");
+    if (boxProperty) {
+      boxProperty.value = `${null}`;
+    } else {
+      properties.push({ name: "box_subscription_id", value: `${null}` }); 
+    };
+
     // now build the new subscription
     const insert = {
       address_id: address_id,
@@ -134,6 +145,7 @@ export default async (req, res, next) => {
       external_variant_id: {
         ecommerce: data.variant_id
       },
+      properties,
     };
     // ok create the subscription
     const { subscription } = await makeRechargeQuery({
@@ -150,13 +162,31 @@ export default async (req, res, next) => {
       throw new Error(errMessage);
     };
 
-    const properties = Object.entries(data.properties).map(([name, value]) => ({ name, value }));
-    const boxItem = properties.find(el => el.name === "box_subscription_id");
-    if (boxItem) {
-      boxItem.value = `${subscription.id}`;
-    } else {
-      properties.push({ name: "box_subscription_id", value: `${subscription.id}` }); 
-    };
+    const rc_subscription_ids = [{
+      deliver_at: data.properties["Delivery Date"],
+      price: data.price,
+      quantity: 1,
+      shopify_product_id: parseInt(data.product_id),
+      subscription_id: parseInt(subscription.id),
+      title: data.product_title,
+      updated: true,
+    }];
+
+    // create an appropiate updates_pending entry so we can wait for the new or updated charge
+    const entry_id = await upsertPending({
+      action: "created",
+      charge_id: null,
+      customer_id: data.customer.id,
+      address_id,
+      subscription_id: subscription.id,
+      scheduled_at: data.scheduled_at,
+      deliver_at: data.properties["Delivery Date"],
+      rc_subscription_ids,
+      title: data.product_title,
+      session_id,
+    });
+
+    properties.find(el => el.name === "box_subscription_id").value = `${subscription.id}`;
 
     const result = await updateSubscription({
       id: subscription.id,
@@ -201,30 +231,6 @@ export default async (req, res, next) => {
       admin,
       change_messages: null,
     };
-
-    const rc_subscription_ids = [{
-      deliver_at: data.properties["Delivery Date"],
-      price: data.price,
-      quantity: 1,
-      shopify_product_id: parseInt(data.product_id),
-      subscription_id: parseInt(subscription.id),
-      title: data.product_title,
-      updated: true,
-    }];
-
-    // create an appropiate updates_pending entry so we can wait for the new or updated charge
-    const entry_id = await upsertPending({
-      action: "created",
-      charge_id: null,
-      customer_id: data.customer.id,
-      address_id,
-      subscription_id: subscription.id,
-      scheduled_at: data.scheduled_at,
-      deliver_at: data.properties["Delivery Date"],
-      rc_subscription_ids,
-      title: data.product_title,
-      session_id,
-    });
 
     if (io) {
       makeIntervalForFinish({req, io, session_id, entry_id, counter, admin, mailOpts });

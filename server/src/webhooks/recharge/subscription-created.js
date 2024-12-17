@@ -37,7 +37,7 @@ export default async function subscriptionCreated(topic, shop, body, { io, socke
 
     // find the updates_pending document and set the update as completed i.e. updated: true
     const topic = "created";
-    const { updated, entry } = await updatePendingEntry(meta, topic);
+    const { updated, entry } = await updatePendingEntry(meta, topic, io, sockets);
 
     if (updated) {
       // only logging on a completed update

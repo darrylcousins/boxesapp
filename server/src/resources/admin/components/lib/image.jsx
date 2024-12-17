@@ -40,7 +40,7 @@ async function *Image({ src, id, size, title }) {
         { loading ? (
           <div class="ba skeleton ma0 w-100 h-100" style={ `width: ${width}; height: ${width}` }>{ " " }</div>
         ) : (
-          <img src={ uri } class="ba ma0" style={ `width: ${width}; height: ${width}` } draggable="false" />
+          <img src={ uri } class="ba ma0 v-mid" style={ `width: ${width}; height: ${width}` } draggable="false" />
         )}
       </div>
     );

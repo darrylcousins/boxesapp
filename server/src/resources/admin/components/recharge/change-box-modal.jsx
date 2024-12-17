@@ -36,7 +36,7 @@ import {
  * @function calculateDates
  * @returns { deliveryDate (obj), chargeDate (obj), orderDayOfWeek (int) }
  */
-const calculateDates = (newVariant, currentDate, lastOrderDate) => {
+const calculateDates = (newVariant, currentDate, lastOrderDate, chargeDates) => {
 
   // need to figure what to do if no dates passed on add box
 
@@ -70,10 +70,25 @@ const calculateDates = (newVariant, currentDate, lastOrderDate) => {
   // finally a sanity check that the chargeDate is in the future and later than the last order
   const now = new Date();
 
+  // set zero hours
+  // and not wholly necessary
+  //chargeDate.setHours(12, 0, 0, 0); // NZT specific
+  //deliveryDate.setHours(12, 0, 0, 0);
+
   while (chargeDate.getTime() <= now.getTime() || chargeDate.getTime() <= lastOrderTime) {
     chargeDate.setDate(chargeDate.getDate() + 7);
     deliveryDate.setDate(deliveryDate.getDate() + 7);
   };
+
+  /* NOTE adding another week to keep out of range of possible order-processed
+   * activity which may have caused an issue I found whereby the new charge
+   * was not being updated correctly
+   * Actually, what I really need to do is to avoid a charge date equal to today + 7
+   * Problem with that idea is that then I'll be adjusting a single day in the list
+   * Better then just to push everything out another week
+   */
+  chargeDate.setDate(chargeDate.getDate() + 7);
+  deliveryDate.setDate(deliveryDate.getDate() + 7);
 
   // Put to the required yyyy-mm-dd format
   // Not returned, just testing
@@ -166,14 +181,13 @@ const getBoxes = async () => {
  * @param {string} props.formId - The unique form indentifier
  */
 async function* ChangeBox(props) {
-  const { doSave, closeModal, title, type, customer, subscription, formId } = props;
+  const { doSave, closeModal, title, type, customer, subscription, formId, chargeDates } = props;
 
   /**
    * Holds all the data
    *
    * @member {object} boxAttributes and others
    */
-  console.log(customer);
   let boxAttributes = {};
   boxAttributes.customer = customer;
   if (subscription) { // may be a new box subscription
@@ -202,7 +216,7 @@ async function* ChangeBox(props) {
   /**
    * Feedback to user
    *
-   * @member {object} boxMessages
+   * @member {object} alertMessage
    */
   let alertMessage;
   /**
@@ -211,6 +225,12 @@ async function* ChangeBox(props) {
    * @member {object} boxMessages
    */
   let boxMessages;
+  /**
+   * Updates after reconcile box - only includes zero'd items
+   *
+   * @member {object} boxUpdates
+   */
+  let boxUpdates;
   /**
    * Delivery dates match so will need to reconcile the box before saving changes
    *
@@ -264,6 +284,7 @@ async function* ChangeBox(props) {
         variant_id: currentVariant.id,
         product_title: currentBox.title,
         variant_title: currentVariant.title,
+        sku: currentVariant.sku,
         plan: JSON.stringify(currentPlan),
         price: currentVariant.price,
       };
@@ -273,27 +294,33 @@ async function* ChangeBox(props) {
         variant_id: boxAttributes.variant_id,
         product_title: boxAttributes.title,
         variant_title: boxAttributes.variant,
+        sku: boxAttributes.sku,
         plan: boxAttributes.boxPlan,
         price: boxAttributes.boxPrice,
       };
     };
-    //data.scheduled_at = new Date(Date.parse(boxAttributes.nextChargeDate)).toISOString().split('T')[0];
-    data.scheduled_at = formatDate(new Date(Date.parse(boxAttributes.nextChargeDate)));
-    data.delivery_date = boxAttributes.nextDeliveryDate;
-    data.charge_id = boxAttributes.charge_id;
-    data.address_id = boxAttributes.address_id;
-    data.subscription_id = boxAttributes.subscription_id;
-    data.order_day_of_week = boxAttributes.orderDayOfWeek;
+    if (Object.keys(boxAttributes).length > 1) { // will have customer at most if add box
+      data.scheduled_at = formatDate(new Date(Date.parse(boxAttributes.nextChargeDate)));
+      data.delivery_date = boxAttributes.nextDeliveryDate;
+      data.charge_id = boxAttributes.charge_id;
+      data.address_id = boxAttributes.address_id;
+      data.subscription_id = boxAttributes.subscription_id;
+      data.order_day_of_week = boxAttributes.orderDayOfWeek;
+      data.last_order = JSON.stringify(boxAttributes.lastOrder);
+    };
+    data.customer = JSON.stringify(boxAttributes.customer);
+    if (subscription) {
+      data.orig_scheduled_at = subscription.attributes.scheduled_at;
+    };
     data.do_update = false;
     data.now = dateStringNow();
     data.type = type;
     data.navigator = userNavigator();
     data.admin = props.admin;
-    data.customer = JSON.stringify(boxAttributes.customer);
-    data.last_order = JSON.stringify(boxAttributes.lastOrder);
     data.properties = JSON.stringify(boxProperties);
-    data.box = JSON.stringify(selectedBox);
     data.change_messages = JSON.stringify(boxMessages);
+    data.updates = JSON.stringify(boxUpdates);
+    data.box = JSON.stringify(selectedBox);
 
     return data;
   };
@@ -322,6 +349,10 @@ async function* ChangeBox(props) {
         type: "hidden",
         datatype: "string",
       },
+      sku: {
+        type: "hidden",
+        datatype: "string",
+      },
       plan: {
         type: "hidden",
         datatype: "string",
@@ -331,6 +362,10 @@ async function* ChangeBox(props) {
         datatype: "string",
       },
       scheduled_at: {
+        type: "hidden",
+        datatype: "string",
+      },
+      orig_scheduled_at: {
         type: "hidden",
         datatype: "string",
       },
@@ -398,6 +433,10 @@ async function* ChangeBox(props) {
         type: "hidden",
         datatype: "string",
       },
+      updates: {
+        type: "hidden",
+        datatype: "string",
+      },
       box: {
         type: "hidden",
         datatype: "string",
@@ -458,8 +497,8 @@ async function* ChangeBox(props) {
           from.push(subscription.attributes.variant);
           to.push(currentVariant.title);
         };
-        if (from.length === 2) from.splice(1, 0, "-");
-        if (to.length === 2) from.splice(1, 0, "-");
+        if (from.length === 2) from.splice(1, 0, "");
+        if (to.length === 2) to.splice(1, 0, "");
         final = ["Box subscription changed from", ...from, "to", ...to].join(" ");
       };
       if (final) messages.unshift(final);
@@ -523,13 +562,9 @@ async function* ChangeBox(props) {
     if (!foundDate) {
       foundDate = Object.keys(json).sort(dateStringSort).pop();
     };
-    console.log("boxes by product", json);
-    console.log("currentBox", currentBox);
-    console.log("currentVariant", currentVariant);
-    console.log("foundDate", foundDate);
     selectedBox = json[foundDate];
+    selectedBox.shopify_price = currentVariant.price;
 
-    console.log("selected box", selectedBox);
     const boxLists = {};
     if (subscription) {
       for (const [key, value] of Object.entries(subscription.properties)) {
@@ -546,6 +581,7 @@ async function* ChangeBox(props) {
 
     selectedBox.variant_id = currentVariant.id;
     selectedBox.variant_title = currentVariant.title;
+    selectedBox.sku = currentVariant.sku;
     selectedBox.variant_name = `${currentBox.title} - ${currentVariant.title}`;;
 
     const headers = { "Content-Type": "application/json" };
@@ -566,6 +602,7 @@ async function* ChangeBox(props) {
           );
           boxProperties["Delivery Date"] = boxAttributes.nextDeliveryDate;
           boxMessages = json.messages;
+          boxUpdates = json.updates;
           loading = false;
           this.refresh();
         };
@@ -604,27 +641,29 @@ async function* ChangeBox(props) {
           currentVariant = searchVariant;
         } else {
           currentVariant = currentVariants[0];
-          // now we have changed the variant all the dates need to be updated
-          // and let the user know
-          if (currentVariant.title !== boxAttributes.variant) {
-            alertMessage = subscription ? 
-              `${value} does not have a ${boxAttributes.variant} option so ${currentVariant.title} has been selected instead`
-              : null;
-            // now must set the boxAttributes for this option
-            const { deliveryDate, chargeDate, orderDayOfWeek } = calculateDates(
-              currentVariant.title, // our new variant
-              boxAttributes.nextDeliveryDate,
-              subscription ? subscription.attributes.lastOrder.delivered : null,
-            );
-            // assign to collected data
-            boxAttributes.nextDeliveryDate = deliveryDate.toDateString();
-            boxAttributes.nextChargeDate = chargeDate.toDateString();
-            boxAttributes.orderDayOfWeek = orderDayOfWeek;
-            boxAttributes.variant = currentVariant.title;
-            boxAttributes.variant_id = currentVariant.id;
-            boxAttributes.boxPrice = currentVariant.price;
-          };
         };
+        // now we have changed the variant all the dates need to be updated
+        // and let the user know
+        if (currentVariant.title !== boxAttributes.variant) {
+          alertMessage = subscription ? 
+            `${value} does not have a ${boxAttributes.variant} option so ${currentVariant.title} has been selected instead`
+            : null;
+        };
+        // now must set the boxAttributes for this option
+        const { deliveryDate, chargeDate, orderDayOfWeek } = calculateDates(
+          currentVariant.title, // our new variant
+          boxAttributes.nextDeliveryDate,
+          subscription ? subscription.attributes.lastOrder.delivered : null,
+          chargeDates,
+        );
+        // assign to collected data
+        boxAttributes.nextDeliveryDate = deliveryDate.toDateString();
+        boxAttributes.nextChargeDate = chargeDate.toDateString();
+        boxAttributes.orderDayOfWeek = orderDayOfWeek;
+        boxAttributes.variant = currentVariant.title;
+        boxAttributes.sku = currentVariant.sku;
+        boxAttributes.variant_id = currentVariant.id;
+        boxAttributes.boxPrice = currentVariant.price;
         currentPlans = currentBox.plans;
         // what if it doesn't have the currently selected plan?
         const searchPlan = currentPlan ? currentBox.plans.find(el => el.name === currentPlan.name) : null;
@@ -649,6 +688,7 @@ async function* ChangeBox(props) {
           boxAttributes.nextChargeDate = subscription.attributes.nextChargeDate;
           boxAttributes.orderDayOfWeek = subscription.attributes.orderDayOfWeek;
           boxAttributes.variant = subscription.attributes.variant;
+          boxAttributes.sku = subscription.attributes.sku;
           boxAttributes.variant_id = subscription.attributes.variant_id;
           boxAttributes.boxPrice = subscription.attributes.boxPrice;
         } else {
@@ -657,6 +697,7 @@ async function* ChangeBox(props) {
             value, // our new variant
             boxAttributes.nextDeliveryDate,
             subscription ? subscription.attributes.lastOrder.delivered : null,
+            chargeDates,
           );
           // assign to collected data
           boxAttributes.nextDeliveryDate = deliveryDate.toDateString();
@@ -664,6 +705,7 @@ async function* ChangeBox(props) {
           boxAttributes.orderDayOfWeek = orderDayOfWeek;
           boxAttributes.variant = value;
           boxAttributes.variant_id = currentVariant.id;
+          boxAttributes.sku = currentVariant.sku;
           boxAttributes.boxPrice = currentVariant.price;
         };
         break;
@@ -678,6 +720,7 @@ async function* ChangeBox(props) {
       wrapper = document.getElementById(`change-box-modal`);
       selectedBox = null;
       boxMessages = null;
+      boxUpdates = null;
       boxProperties = null;
     } else {
       wrapper = document.getElementById(`box-header`);
@@ -744,18 +787,18 @@ async function* ChangeBox(props) {
                     <div class="dt w-100">
                       <div class="dt-row w-100">
                         <div class="dt-cell w-50 fl tr pr2">
-                          <span class="black-80">Charge date:</span>
-                        </div>
-                        <div class="tl dt-cell w-50 fl pl2">
-                          { boxAttributes.nextChargeDate }
-                        </div>
-                      </div>
-                      <div class="dt-row w-100">
-                        <div class="dt-cell w-50 fl tr pr2">
                           <span class="black-80">Delivery date:</span>
                         </div>
                         <div class="tl dt-cell w-50 fl pl2">
                           { boxAttributes.nextDeliveryDate }
+                        </div>
+                      </div>
+                      <div class="dt-row w-100">
+                        <div class="dt-cell w-50 fl tr pr2">
+                          <span class="black-80">Charge date:</span>
+                        </div>
+                        <div class="tl dt-cell w-50 fl pl2">
+                          { boxAttributes.nextChargeDate }
                         </div>
                       </div>
                     </div>
@@ -765,7 +808,7 @@ async function* ChangeBox(props) {
             )}
             { currentBoxes && (
               <div class="alert-box dark-blue pa3 mt0 mb3 br3 ba b--dark-blue bg-washed-blue">
-                <ul class="list ml1">
+                <ul class="list ml1 pl2 tl">
                   <li>Delivery dates can be paused or rescheduled after changes have been saved.</li>
                   <li>Products in the box can be changed and edited after changes have been saved.</li>
                 </ul>
@@ -941,6 +984,7 @@ async function* ChangeBox(props) {
         if (error) fetchError = error;
 
         currentBoxes = [ ...boxes ];
+
         currentBox = Object.hasOwnProperty.call(boxAttributes, "product_id") 
           ? currentBoxes.find(el => el.id === boxAttributes.product_id) : null;
         currentVariants = currentBox ? sortVariants(currentBox.variants) : [];

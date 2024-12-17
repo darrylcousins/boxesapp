@@ -59,7 +59,13 @@ const main = async () => {
         });
       };
 
-      const { orphans, date_mismatch, price_mismatch, count_mismatch, price_table } = await verifyCustomerSubscriptions({ customer, box_price_table });
+      const {
+        orphans,
+        date_mismatch,
+        price_mismatch,
+        count_mismatch,
+        price_table
+      } = await verifyCustomerSubscriptions({ customer, price_table: box_price_table });
       box_price_table = [ ...price_table ];
 
       // actually confident that I can delete all the orphans but we shan't at

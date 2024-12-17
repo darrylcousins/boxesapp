@@ -21,6 +21,15 @@ function* SellingPlans({ productJson, selectedVariant, selectedSellingPlanId }) 
   //const variant_price = selectedVariant.selling_plan_allocations[0].compare_at_price;
   const variant_price = selectedVariant.price;
 
+  const titleStyle = {
+    display: "flex",
+    padding: "10px 0px 0px 10px",
+    "font-weight": "bold",
+    "font-size": "smaller",
+  };
+  const inputStyle = {
+    "margin-right": "10px",
+  };
   const lineStyle = {
     display: "flex",
     padding: "10px 5px",
@@ -30,7 +39,8 @@ function* SellingPlans({ productJson, selectedVariant, selectedSellingPlanId }) 
     "align-items": "center",
     display: "flex",
     "margin-bottom": "0",
-    cursor: "pointer"
+    cursor: "pointer",
+    valign: "bottom",
   };
   const priceStyle = {
     //"font-weight": "700",
@@ -105,10 +115,14 @@ function* SellingPlans({ productJson, selectedVariant, selectedSellingPlanId }) 
       <div class="boxesapp-wrapper">
         { !selectedVariant.requires_selling_plan && (
           <div>
-            <div style={ lineStyle }>
+            <div style={ titleStyle }>
+              Purchase options:
+            </div>
+            <div style={ { ...lineStyle, "padding-top": "0px" } }>
               <label style={ labelStyle }>
                 <input 
                   checked={ !selectedSellingPlanId }
+                  style={ inputStyle }
                   type="radio"
                   id="one-time"
                   value="One-time purchase"
@@ -129,6 +143,7 @@ function* SellingPlans({ productJson, selectedVariant, selectedSellingPlanId }) 
             <label style={ labelStyle }>
               <input 
                 type="radio"
+                style={ inputStyle }
                 id="subscribe"
                 value="subscribe"
                 checked={ selectedVariant.requires_selling_plan || selling_plan }

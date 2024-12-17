@@ -18,8 +18,8 @@ export default async (req, res, next) => {
   try {
     const { box, boxLists } = req.body;
 
-    const { properties, messages } = await reconcileBoxLists(box, boxLists);
-    return res.status(200).json({ properties, messages });
+    const { properties, messages, updates } = await reconcileBoxLists(box, boxLists);
+    return res.status(200).json({ properties, messages, updates });
 
   } catch(err) {
     res.status(200).json({ error: err.message });

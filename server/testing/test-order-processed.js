@@ -4,7 +4,6 @@ import path from "path";
 import { MongoClient, ObjectId } from "mongodb";
 import { getMongoConnection, MongoStore } from "../src/lib/mongo/mongo.js";
 import { winstonLogger } from "../config/winston.js";
-import { logWebhook } from "../src/lib/recharge/helpers.js";
 
 global._filename = (_meta) => _meta.url.split("/").pop();
 dotenv.config({ path: path.resolve(_filename(import.meta), '../.env') });

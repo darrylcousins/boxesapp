@@ -78,7 +78,7 @@ const main = async () => {
         const boxes = await mongodb.collection(collection).find(query).toArray();
         if (boxes.length) {
           for (const record of boxes) {
-            //console.log(record);
+            console.log(record);
           };
         };
       };
@@ -99,7 +99,7 @@ const main = async () => {
     };
     const opts = {
       to: process.env.SERVER_EMAIL,
-      subject: `\[${process.env.DB_NAME}-db\] Data clean report`,
+      subject: `${process.env.EMAIL_SUBJECT} Data clean report`,
       text: report.join("\n"),
       attachments,
     };

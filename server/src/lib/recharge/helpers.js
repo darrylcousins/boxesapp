@@ -3,180 +3,8 @@
  */
 import "dotenv/config";
 import { sortObjectByKeys, delay } from "../helpers.js";
-import { makeShopQuery } from "../shopify/helpers.js";
-import { getNZDeliveryDay } from "../dates.js";
 import { makeApiJob } from "../../bull/job.js";
 import { winstonLogger } from "../../../config/winston.js"
-
-/*
- * Helper method for debugging the flow of updates made to recharge so that we
- * can allow the user to further edit their box. See registry.js.
- * The result is true or false. Webhook handlers return false if no action was
- * taken or an error occurred.
-*/
-export const logWebhook = async (topic, body, key) => {
-  const dt = new Date();
-  let month = ("0" + (dt.getMonth() + 1)).slice(-2);
-  let day = ("0" + dt.getDate()).slice(-2);
-  let printDate = `${dt.getFullYear()}-${month}-${day} ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`;
-
-  let data = {};
-  if (topic === "CHARGE_DELETED") {
-    data.charge_id = body.charge.id;
-  } else if (topic.startsWith("PRODUCT")) {
-    let product;
-    if (Object.hasOwn(body, "product")) {
-      product = body.product;
-    } else {
-      product = body;
-    };
-    data.product_id = product.id;
-    data.title = product.title;
-  } else if (topic.startsWith("ORDER") && key === "shopify") {
-    let order;
-    if (Object.hasOwn(body, "order")) {
-      order = body.order;
-    } else {
-      order = body;
-    };
-    let deliver_at;
-    let box_titles = [];
-    let box_subscription_ids = [];
-    let rc_subscription_ids = [];
-    for (const line_item of order.line_items) {
-      const properties = line_item.properties.reduce(
-        (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
-        {});
-      if (Object.hasOwn(properties, "Including")) {
-        box_titles.push(line_item.title);
-        deliver_at = properties["Delivery Date"];
-      };
-      const rc_ids = {
-        shopify_product_id: line_item.id,
-        quantity: line_item.quantity,
-        title: line_item.name,
-        properties,
-      };
-      if (Object.hasOwn(properties, "box_subscription_id")) {
-        box_subscription_ids.push(parseInt(properties["box_subscription_id"]));
-        rc_ids.box_subscripion_id = parseInt(properties["box_subscription_id"]);
-      };
-      rc_subscription_ids.push(rc_ids);
-    };
-    data = {
-      box_titles,
-      box_subscription_ids: Array.from(new Set(box_subscription_ids)),
-      rc_subscription_ids,
-    };
-    data.order_id = order.id;
-    data.created_at = order.created_at;
-    data.contact_email = order.contact_email;
-  } else if (topic.startsWith("ORDER") && key === "recharge") {
-    let order;
-    if (Object.hasOwn(body, "order")) {
-      order = body.order;
-    } else {
-      order = body;
-    };
-    let deliver_at;
-    let box_titles = [];
-    let box_subscription_ids = [];
-    let rc_subscription_ids = [];
-    for (const line_item of order.line_items) {
-      const properties = line_item.properties.reduce(
-        (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
-        {});
-      if (Object.hasOwn(properties, "Including")) {
-        box_titles.push(line_item.title);
-        box_subscription_ids.push(line_item.purchase_item_id);
-        deliver_at = properties["Delivery Date"];
-      };
-      rc_subscription_ids.push({
-        shopify_product_id: line_item.external_product_id.ecommerce,
-        subscription_id: line_item.purchase_item_id,
-        quantity: line_item.quantity,
-        title: line_item.title,
-        box_subscription_id: parseInt(properties["box_subscription_id"]),
-        properties,
-      });
-    };
-    data = {
-      charge_id: order.charge.id,
-      address_id: order.address_id,
-      customer_id: order.customer.id,
-      scheduled_at: order.scheduled_at.split("T")[0],
-      status: order.status,
-      deliver_at,
-      box_titles,
-      box_subscription_ids,
-      rc_subscription_ids,
-    };
-  } else if (topic.startsWith("CHARGE")) {
-    let charge;
-    if (Object.hasOwn(body, "charge")) {
-      charge = body.charge;
-    } else {
-      charge = body;
-    };
-    let deliver_at;
-    let box_titles = [];
-    let box_subscription_ids = [];
-    let rc_subscription_ids = [];
-    for (const line_item of charge.line_items) {
-      const properties = line_item.properties.reduce(
-        (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
-        {});
-      if (Object.hasOwn(properties, "Including")) {
-        box_titles.push(line_item.title);
-        box_subscription_ids.push(line_item.purchase_item_id);
-        deliver_at = properties["Delivery Date"];
-      };
-      rc_subscription_ids.push({
-        shopify_product_id: line_item.external_product_id.ecommerce,
-        subscription_id: line_item.purchase_item_id,
-        quantity: line_item.quantity,
-        title: line_item.title,
-        box_subscription_id: parseInt(properties["box_subscription_id"]),
-        properties,
-      });
-    };
-    data = {
-      charge_id: charge.id,
-      address_id: charge.address_id,
-      customer_id: charge.customer.id,
-      scheduled_at: charge.scheduled_at,
-      status: charge.status,
-      deliver_at,
-      box_titles,
-      box_subscription_ids,
-      rc_subscription_ids,
-    };
-  } else if (topic.startsWith("SUBSCRIPTION")) {
-    let subscription;
-    if (Object.hasOwn(body, "subscription")) {
-      subscription = body.subscription;
-    } else {
-      subscription = body;
-    };
-    const properties = subscription.properties.reduce(
-      (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
-      {});
-    data = {
-      subscription_id: subscription.id,
-      address_id: subscription.address_id,
-      customer_id: subscription.customer_id,
-      scheduled_at: subscription.next_charge_scheduled_at,
-      deliver_at: properties["Delivery Date"],
-      quantity: subscription.quantity,
-      title: subscription.product_title,
-      box_subscription_id: parseInt(properties["box_subscription_id"]),
-      properties,
-    };
-  };
-  const meta = {};
-  meta[key] = data;
-  _logger.notice(`Webhook received ${topic.toLowerCase().replace("_", "/")}.`, { meta });
-};
 
 /*
  * Recharge error codes
@@ -234,12 +62,14 @@ export const doRechargeQuery = async (opts) => {
   
   const url = `${process.env.RECHARGE_URL}/${path}${searchString}`;
 
+  const api_version = path.includes("batches") ? "2021-01" : process.env.RECHARGE_VERSION;
+
   return await fetch(encodeURI(url), {
     method: http_method,
     headers: {
       "Content-Type": "application/json",
       "Accept": "application/json",
-      "X-RECHARGE-VERSION": process.env.RECHARGE_VERSION,
+      "X-RECHARGE-VERSION": api_version,
       "X-RECHARGE-ACCESS-TOKEN": process.env.RECHARGE_ACCESS_TOKEN,
     },
     body,
@@ -253,6 +83,7 @@ export const doRechargeQuery = async (opts) => {
         method: http_method,
         status: response.status,
         text: response.statusText,
+        api_version,
       },
     };
     if (body) meta.recharge.body = JSON.parse(body);
@@ -298,47 +129,19 @@ export const doRechargeQuery = async (opts) => {
     if (parseInt(response.status) > 299) {
       const err = {
         message: "Recharge request failed",
-        name: "Recharge fetch error",
+        method: http_method,
         status: response.status,
         statusText: response.statusText,
         title: title,
         uri: `${path}${searchString}`,
+        api_version,
       };
       winstonLogger.error({message: err.message, meta: err});
-      throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}", fetching ${path}${searchString}`);
+      throw new Error(`Recharge request failed with code ${response.status}: "${response.statusText}", ${http_method} ${path}${searchString}`);
     };
 
     return json;
   });
-};
-
-/*
- * @function getSubscription
- * @return { subscription } 
- */
-export const getSubscription = async (id, title) => {
-  const { subscription } = await makeRechargeQuery({
-    path: `subscriptions/${id}`,
-    method: "GET",
-    title,
-  });
-  return subscription;
-};
-
-/*
- * @function updateChargeDate
- * @return { subscription }
- */
-export const updateChargeDate = async ({ id, date, title, io, session_id }) => {
-  const options = {};
-  options.path = `subscriptions/${id}/set_next_charge_date`;
-  options.method = "POST";
-  options.title = title;
-  options.body = JSON.stringify({ date });
-  options.io = io;
-  options.session_id = session_id;
-  const result = await makeRechargeQuery(options);
-  return result;
 };
 
 /*
@@ -415,150 +218,4 @@ export const updateSubscriptions = async ({ updates, io, session_id }) => {
     await delay(3000);
   };
   return;
-};
-
-/*
- * @function getCharge
- * @returns { charge }
- */
-export const getCharge = async ({ charge_id }) => {
-  const { charge } = await makeRechargeQuery({
-    path: `charges/${charge_id}`,
-    title: "Get charge by id",
-  });
-  return charge;
-};
-
-/*
- * @function getLastOrder
- * @returns { order }
- */
-export const getLastOrder = async ({ customer_id, address_id, subscription_id, product_id, io }) => {
-  const { charges } = await makeRechargeQuery({
-    path: `charges`,
-    query: [
-      ["customer_id", customer_id ],
-      ["address_id", address_id ],
-      ["purchase_item_id", subscription_id ],
-      ["status", "success" ],
-      ["limit", 1 ],
-    ],
-    title: "Get last order",
-    io,
-  });
-  const charge = (charges.length) ? charges[0] : null;
-  if (charge) {
-    const { order } = await makeShopQuery({
-      path: `orders/${charge.external_order_id.ecommerce}.json`,
-      fields: ["current_total_price", "order_number", "tags", "line_items"],
-      title: "Get order",
-      io,
-    });
-    if (!order) return {};
-    order.delivered = null;
-    for (const tag of order.tags.split(",")) {
-      const parsed = Date.parse(tag.trim()); // ensure we get a date
-      if (!isNaN(parsed)) {
-        order.delivered = tag;
-        break;
-      };
-    };
-    delete order.tags;
-    order.line_items = order.line_items
-        .map(el => {
-        return {
-          name: el.name,
-          properties: el.properties,
-          price: el.price,
-          product_id: el.product_id,
-          title: el.title,
-          variant_title: el.variant_title,
-        };
-      });
-    order.box = order.line_items.find(el => el.properties.some(e => e.name === "Including"));
-    delete order.line_items; // more data than required
-    return order;
-  };
-  return {}; // always return an object
-};
-
-/*
- * @function findBoxes
- * @returns { fetchBox, previousBox, hasNextBox }
- */
-export const findBoxes = async ({ days, nextDeliveryDate, shopify_product_id }) => {
-  let fetchBox = null;
-  let previousBox = null;
-  let hasNextBox = false;
-  let delivered = new Date(nextDeliveryDate);
-  let dayOfWeek = delivered.getDay();
-  if (dayOfWeek === 0) dayOfWeek = 7; // Sunday fix to match with dayOfWeek returned from mongo
-
-  const pipeline = [
-    { "$match": { 
-      active: true,
-      shopify_product_id,
-    }},
-    { "$project": {
-      deliverDate: {
-        $dateFromString: {dateString: "$delivered", timezone: "Pacific/Auckland"}
-      },
-      delivered: "$delivered",
-      deliverDay: { "$dayOfWeek": { $dateFromString: {dateString: "$delivered", timezone: "Pacific/Auckland"} }},
-    }},
-    { "$match": { deliverDay: dayOfWeek } },
-    { "$project": {
-      delivered: "$delivered",
-      deliverDate: "$deliverDate",
-      deliverDay: "$deliverDay",
-    }},
-  ];
-
-  let dates = await _mongodb.collection("boxes").aggregate(pipeline).toArray();
-  dates = dates.map(el => el.delivered).reverse();
-
-  // if our date is in the array then we have the next box
-  if (dates.indexOf(delivered.toDateString()) !== -1) hasNextBox = true;
-
-  // if not then we need to dial back the deliver date until we find a box
-  if (!hasNextBox) {
-
-    // to avoid dropping into an infinite loop first check that our date is at
-    // least greater than the earliest date of the list
-    if (new Date(dates[dates.length - 1]).getTime() < delivered.getTime()) {
-      while (dates.indexOf(delivered.toDateString()) === -1) {
-        delivered.setDate(delivered.getDate() - days);
-      };
-    };
-  };
-
-  // first find if the targeted date is in the list by splicing the list to that date
-  for (const d of dates) {
-    if (!fetchBox) {
-      if (d === delivered.toDateString()) { // do we have the upcoming box? i.e. nextBox
-        fetchBox = await _mongodb.collection("boxes").findOne({delivered: d, shopify_product_id});
-        delivered.setDate(delivered.getDate() - days); // do we have the next box?
-      };
-    } else if (!previousBox) {
-      if (d === delivered.toDateString()) { // do we have the upcoming box? i.e. nextBox
-        previousBox = await _mongodb.collection("boxes").findOne({delivered: d, shopify_product_id});
-        delivered.setDate(delivered.getDate() - days); // do we have the next box?
-      };
-    };
-  };
-
-  // create a mock box
-  if (!fetchBox) {
-    fetchBox = {
-      shopify_title: "",
-      includedProducts: [],
-      addOnProducts: [],
-    };
-  };
-
-  return {
-    fetchBox,
-    previousBox,
-    hasNextBox
-  };
 };

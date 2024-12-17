@@ -16,18 +16,17 @@ export default class WinstonNodemailer extends Transport {
     const { level, message, ...meta } = info;
     const opts = {
       to: this.admin_email,
-      subject: `\[${process.env.DB_NAME}\] [ERROR]`,
-      text: `${message} ${JSON.stringify(meta)}`,
+      subject: `${process.env.EMAIL_SUBJECT} ERROR`,
+      text: `${message} ${JSON.stringify(meta || {}, null, 2)}`,
       html: `
         ${message}</br>
         </br>
-        ${JSON.stringify(meta || {})}</br>
+        ${JSON.stringify(meta || {}, null, 2)}</br>
         </br>
       `
     };
     sendmail(opts);
     callback();
-    // callback(null, true); // I'm unsure
   };
 
 };

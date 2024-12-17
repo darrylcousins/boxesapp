@@ -5,6 +5,7 @@
 
 //import fs from "fs";
 import subscriptionActionMail from "../../mail/subscription-action.js";
+import updateSubscriptions from "../../lib/recharge/update-subscriptions.js";
 import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
 import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
@@ -29,10 +30,6 @@ export default async (req, res, next) => {
   const counter = new Date();
 
   const { title, customer, address_id, rc_subscription_ids, subscription_id, scheduled_at } = attributes;
-
-  //console.log(attributes);
-  //console.log("INCLUDES",includes);
-  //console.log(properties);
 
   // add updated flag to rec_subscription_ids
   // rc_subscription_ids should have everything in includes
@@ -82,8 +79,6 @@ export default async (req, res, next) => {
       session_id,
     });
 
-    try {
-
       const mailOpts = {
         type,
         includes,
@@ -97,37 +92,25 @@ export default async (req, res, next) => {
         makeIntervalForFinish({req, io, session_id, entry_id, counter, admin, mailOpts });
       };
 
-    } catch(err) {
-      if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
-      throw err;
-    };
-
     res.status(200).json({ success: true, action: "cancelled", subscription_id });
 
-    try {
-      for (const update of includes) {
-        await makeRechargeQuery({
-          method: "POST",
-          path: `subscriptions/${update.subscription_id}/cancel`,
-          body: JSON.stringify({
-            cancellation_reason_comments: "BoxesApp cancel subscription",
-            cancellation_reason: cancellation_reason,
-            send_email: (update.subscription_id === subscription_id),
-          }),
-          title: `Cancel ${update.title}`,
-          io,
-          session_id,
-        });
-      };
-    } catch(err) {
-      res.status(200).json({ error: err.message });
-      _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
+    const batch = [];
+    for (const update of includes) {
+      batch.push({
+        subscription_id: update.subscription_id,
+        title: update.title,
+        cancellation_reason_comments: "BoxesApp cancel subscription",
+        cancellation_reason: cancellation_reason,
+        send_email: (update.subscription_id === subscription_id),
+      });
     };
-
+    console.log("Cancelling", batch);
+    await updateSubscriptions({ updates: batch, address_id, req, io, session_id });
 
   } catch(err) {
-    res.status(200).json({ error: err.message });
+    if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
+
 };
 

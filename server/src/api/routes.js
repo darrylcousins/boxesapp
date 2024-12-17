@@ -147,20 +147,14 @@ router.post(
   "/remove-orders", 
   await import("./order/remove-orders.js").then(({ default: fn }) => fn));
 router.get(
-  "/recharge-customer-charge/", 
-  await import("./recharge/recharge-customer-charge.js").then(({ default: fn }) => fn));
-router.get(
-  "/recharge-customer-charge/:customer_id", 
-  await import("./recharge/recharge-customer-charge.js").then(({ default: fn }) => fn));
-router.get(
-  "/recharge-customer-charge/:customer_id/:charge_id", 
+  "/recharge-customer-charge/:customer_id/:scheduled_at/:address_id", 
   await import("./recharge/recharge-customer-charge.js").then(({ default: fn }) => fn));
 router.post(
   "/recharge-customer-subscription/", 
   await import("./recharge/recharge-customer-subscription.js").then(({ default: fn }) => fn));
-router.get(
-    "/recharge-customer-charges/:customer_id", 
-    await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
+router.post(
+  "/recharge-customer-charges/:customer_id/:session_id", 
+  await import("./recharge/recharge-customer-charges.js").then(({ default: fn }) => fn));
 router.get(
   "/recharge-customers-update/:recharge_id",
   await import("./recharge/recharge-customers-update.js").then(({ default: fn }) => fn));
@@ -209,6 +203,9 @@ router.get(
 router.get(
   "/recharge-cancelled-subscriptions/:customer_id", 
   await import("./recharge/recharge-cancelled-subscriptions.js").then(({ default: fn }) => fn));
+router.get(
+  "/recharge-get-faulty-subscriptions", 
+  await import("./recharge/recharge-get-faulty-subscriptions.js").then(({ default: fn }) => fn));
 router.get(
   "/recharge-get-subscriptions-by-date", 
   await import("./recharge/recharge-get-subscriptions-by-date.js").then(({ default: fn }) => fn));

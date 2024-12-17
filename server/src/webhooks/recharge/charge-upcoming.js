@@ -3,7 +3,7 @@
  */
 import { ObjectId } from "mongodb";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
-import { updateSubscriptions } from "../../lib/recharge/helpers.js";
+import updateSubscriptions from "../../lib/recharge/update-subscriptions.js";
 import { sortObjectByKeys } from "../../lib/helpers.js";
 import chargeUpcomingMail from "../../mail/charge-upcoming.js";
 import { groupedMetaForCharge, getMetaForBox, writeFileForCharge } from "./helpers.js";
@@ -20,7 +20,7 @@ import { upsertPending } from "../../api/recharge/lib.js";
  * NOTE Returns false if no action is taken and true if some update occured
  *
  */
-export default async function chargeUpcoming(topic, shop, body) {
+export default async function chargeUpcoming(topic, shop, body, { io, sockets, req }) {
 
   const mytopic = "CHARGE_UPCOMING";
   if (topic !== mytopic) {
@@ -38,6 +38,7 @@ export default async function chargeUpcoming(topic, shop, body) {
   const grouped = await reconcileGetGrouped({ charge });
 
   let result = [];
+  let allUpdates = [];
   try {
     result = await gatherData({ grouped, result });
 
@@ -83,8 +84,7 @@ export default async function chargeUpcoming(topic, shop, body) {
 
         _logger.notice(`Charge upcoming updates required.`, { meta: { recharge: sortObjectByKeys(pendingData) } });
 
-        // Reconcile the items in the subscription with the new box
-        await updateSubscriptions({ updates: subscription.updates });
+        allUpdates = [ ...allUpdates, ...subscription.updates ];
 
         // Fix up the lists for the charge upcoming email
 
@@ -131,6 +131,10 @@ export default async function chargeUpcoming(topic, shop, body) {
         "$set": { frozen: true }
       });
     };
+
+    // Reconcile the items in the subscription with the new box
+    console.log("upcoming:  updates", allUpdates);
+    await updateSubscriptions({ address_id: charge.address_id, updates: allUpdates, req });
 
     const mailOpts = {
       subscriptions: result,

@@ -17,7 +17,6 @@ export default async (req, res, next) => {
   doc._id = new ObjectId(doc._id);
   try {
     const result = await mongoUpdate(_mongodb.collection("settings"), doc);
-    console.log(result);
     res.status(200).json(result);
   } catch(err) {
     res.status(200).json({ error: err.message });

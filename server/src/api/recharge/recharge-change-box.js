@@ -3,9 +3,9 @@
  * @author Darryl Cousins <darryljcousins@gmail.com>
  */
 
-import subscriptionActionMail from "../../mail/subscription-action.js";
 import { makeShopQuery } from "../../lib/shopify/helpers.js";
-import { makeRechargeQuery, updateSubscription, updateSubscriptions,  updateChargeDate, findBoxes } from "../../lib/recharge/helpers.js";
+import { makeRechargeQuery } from "../../lib/recharge/helpers.js";
+import updateSubscriptions from "../../lib/recharge/update-subscriptions.js";
 import { gatherData, reconcileGetGrouped } from "../../lib/recharge/reconcile-charge-group.js";
 import { sortObjectByKeys, matchNumberedString, makeItemString, delay } from "../../lib/helpers.js";
 import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
@@ -36,6 +36,7 @@ import { getIOSocket, upsertPending, makeIntervalForFinish } from "./lib.js";
       charge_id: string,
       subscription_id: string,
       price: string,
+      sku: string,
       scheduled_at: string, // formatted "yyyy-mm-dd"
       delivery_date: timestamp, // formatted "Tue Sep 21 2023"
       order_day_of_week: integer
@@ -65,30 +66,50 @@ export default async (req, res, next) => {
   data.plan = JSON.parse(data.plan);
   const { now, navigator, admin, type } = data;
 
-  // return early
-  res.status(200).json({
-    success: true,
-    action: "changed",
-    subscription_id: parseInt(data.subscription_id),
-    scheduled_at: data.scheduled_at,
-    nextchargedate: data.scheduled_at,
-    nextdeliverydate: data.delivery_date,
-  });
-
-
   try {
 
-    const { charge } = await makeRechargeQuery({
-      path: `charges/${data.charge_id}`,
-      title: `Get charge (${data.charge_id})`,
-      // debugging
+    // return early
+    res.status(200).json({
+      success: true,
+      action: "changed",
       subscription_id: parseInt(data.subscription_id),
+      scheduled_at: data.scheduled_at,
+      nextchargedate: data.scheduled_at,
+      nextdeliverydate: data.delivery_date,
+    });
+
+    const { address } = await makeRechargeQuery({
+      path: `addresses/${data.address_id}`,
+      title: `Get address ${ data.address_id }`,
+      io,
+      session_id
+    });
+    const { subscriptions } = await makeRechargeQuery({
+      path: `subscriptions`,
+      title: `Get subscriptions for change box (${data.subscription_id})`,
+      query: [
+        ["customer_id", data.customer.id],
+        ["status", "active"],
+        ["limit", 100],
+        ["address_id", data.address_id],
+      ],
       io,
       session_id,
     });
-
+    for (const subscription of subscriptions) {
+      subscription.purchase_item_id = subscription.id;
+      subscription.title = subscription.product_title;
+    };
+    const charge = {
+      shipping_address: address,
+      customer: JSON.parse(data.customer),
+      address_id: data.address_id,
+      scheduled_at: data.orig_scheduled_at,
+      line_items: subscriptions
+    };
     const box = JSON.parse(data.box);
     const boxProperties = JSON.parse(data.properties);
+    const boxUpdates = JSON.parse(data.updates);
     const boxMessages = JSON.parse(data.change_messages);
     // so these are the updated properties for the subscription - how now to get the updates?
     // I know I have the code to figure the updates
@@ -120,15 +141,17 @@ export default async (req, res, next) => {
         // this is so we reconcile against an actual box, it later put back the the data.delivery_date
         if (prop) prop.value = box.delivered; // later correct to the data.delivery_date
         prop = el.properties.find(el => el.name === "Add on product to");
+        el.unit_price = el.price;
         if (prop) prop.value = data.product_title;
         // for the actual box we now also want to update relevant properties
         prop = el.properties.find(el => el.name === "Including");
         if (prop) {
           el.external_product_id.ecommerce = data.product_id;
           el.external_variant_id.ecommerce = data.variant_id;
-          el.title = data.product_title;
           el.variant_title = data.variant_title;
+          el.title = data.product_title;
           el.price = data.price;
+          el.sku = data.sku;
           fakeSubscription = { ...el };
           fakeSubscription.price = data.price;
           fakeSubscription.order_interval_frequency = data.plan.frequency;
@@ -136,69 +159,12 @@ export default async (req, res, next) => {
           fakeSubscription.product_title = data.product_title;
           fakeSubscription.variant_title = data.variant_title;
           fakeSubscription.id = parseInt(data.subscription_id);
-          const props = el.properties.reduce(
-            (acc, curr) => Object.assign(acc, { [`${curr.name}`]: curr.value === null ? "" : curr.value }),
-            {});
-          const included = props["Including"] // only the 'extra' items
-            .split(",").map(el => el.trim())
-            .filter(el => el !== "" && el !== "None")
-            .map(el => matchNumberedString(el))
-            .map(el => ({ title: el.title, quantity: el.quantity - 1 }))
-            .filter(el => el.quantity > 0); // only items with quantity > 1
-          const addons = props["Add on Items"]
-            .split(",").map(el => el.trim())
-            .filter(el => el !== "" && el !== "None")
-            .map(el => matchNumberedString(el));
-          const swapped = props["Swapped Items"] // only the 'extra' items
-            .split(",").map(el => el.trim())
-            .filter(el => el !== "" && el !== "None")
-            .map(el => matchNumberedString(el))
-            .map(el => ({ title: el.title, quantity: el.quantity - 1 }))
-            .filter(el => el.quantity > 0); // only items with quantity > 1
-          if (custom_box_id && data.product_id === custom_box_id) {
-            // special case of custom box
-            // move swapped items to addon items (the subscribed item remains)
-            // this will prompt a zeroing of unavailable items
-            for (const item of [ ...swapped, ...included ]) {
-              addons.push(item);
-            };
-            // clear the other properties for custom box
-            for (const propName of ["Removed Items", "Swapped Items", "Including"]) {
-              el.properties.find(el => el.name === propName).value = "";
-            };
-          } else {
-            // but also need to account for incremented quantities and remove the extra subscription if unavailable
-            // XXX an extra included needs to be moved to addons
-            const boxIncludes = box.includedProducts.map(el => el.shopify_title);
-            const boxAddons = box.addOnProducts.map(el => el.shopify_title);
-            for (const el of included) {
-              const idx = boxIncludes.indexOf(el.title);
-              if (idx !== -1) {
-                // push in the quantity from the current subscription includes
-                boxIncludes[idx] = `${el.title} (${el.quantity + 1})`;
-              } else {
-                // not available in includes, by pushing it only addons then
-                // the reconcile algorthim will pick up that it is unavailable
-                // and will zero the update, therefore it will be removed
-                addons.push(el); // quantity was fixed in makeing the included array
-              };
-            };
-            for (const el of swapped) {
-              const idx = boxAddons.indexOf(el.title);
-              if (idx === -1) {
-                // as above with extra includes
-                addons.push(el); // quantity was fixed in makeing the included array
-              };
-            };
-            el.properties.find(el => el.name === "Including").value = boxIncludes.join(",");
-          };
-          // reset the addon property, it may have been changed
-          el.properties.find(el => el.name === "Add on Items").value = makeItemString(addons); // rejoin as string
-          el.properties.find(el => el.name === "Swapped Items")
-            .value = boxProperties["Swapped Items"]; // used the reconciled list
-          el.properties.find(el => el.name === "Removed Items")
-            .value = boxProperties["Removed Items"]; // used the reconciled list
-          properties = el.properties;
+          // these properties have already been reconciled and are sent as data.properties
+          properties = Object.entries(boxProperties).map(([name, value]) => {
+            return { name, value, };
+          });
+          properties.push({ name: "box_subscription_id", value: `${data.subscription_id}` });
+          el.properties = properties;
           fakeSubscription.properties = properties;
         };
         return el;
@@ -207,18 +173,18 @@ export default async (req, res, next) => {
 
     let subscription;
     if (box) {
-      console.log("Box requires reconciliation");
       const grouped = await reconcileGetGrouped({ charge });
       grouped[data.subscription_id].subscription = fakeSubscription;
       // this works because the fake reconciles against an actual box
+      console.log(grouped);
 
       let result = [];
       // must pass a subscription to the group else the original is fetched
       result = await gatherData({ grouped, result });
+      console.log(result);
 
       subscription = result[0]; // only one because we have filtered line_items
     } else {
-      console.log("Box does not require reconciliation");
       subscription = { updates: [] };
     };
 
@@ -234,6 +200,7 @@ export default async (req, res, next) => {
         external_product_id: item.external_product_id,
         external_variant_id: item.external_variant_id,
         price: item.unit_price,
+        sku: item.sku,
         total_price: item.total_price,
         order_day_of_week: data.order_day_of_week,
         order_interval_frequency: data.plan.frequency,
@@ -242,13 +209,16 @@ export default async (req, res, next) => {
         product_title: item.title,
         variant_title: item.variant_title,
       };
+      if (boxUpdates.some(el => el.title === item.title)) {
+        start.quantity = boxUpdates.find(el => el.title === item.title).quantity;
+      };
       // fix any changes from the updates
       let final;
       if (found) {
         // found will be missing total_price
         tempPrice = parseFloat(found.price) * found.quantity;
         found.total_price = `${tempPrice.toFixed(2)}`
-        final = { ...start, ...found };
+        final = { ...found, ...start };
       } else {
         final = start;
       };
@@ -363,118 +333,85 @@ export default async (req, res, next) => {
       scheduled_at: data.scheduled_at, // "yyyy-mm-dd" this will match the updated subscriptions and charges
       rc_subscription_ids,
       deliver_at: data.delivery_date, // formatted "Tue Sep 21 2023"
-      title: `${data.product_title} - ${data.variant_title}`,
+      title: `${data.product_title}`,
       session_id,
       schedule_only: data.schedule_only,
     });
 
-    try {
-
-      const mailOpts = {
-        type,
-        attributes,
-        address: subscription.address,
-        includes,
-        now,
-        navigator,
-        admin,
-        properties: boxProperties,
-        change_messages: boxMessages,
-      };
-
-      if (io) {
-        makeIntervalForFinish({req, io, session_id, entry_id, counter, admin, mailOpts });
-      };
-
-    } catch {
-      if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
-      throw err;
+    const mailOpts = {
+      type,
+      attributes,
+      address: subscription.address,
+      includes,
+      now,
+      navigator,
+      admin,
+      properties: boxProperties,
+      change_messages: boxMessages,
     };
-    
+
+    if (io) {
+      makeIntervalForFinish({req, io, session_id, entry_id, counter, admin, mailOpts });
+    };
+
     for(var x in updates) updates[x].variant_title !== null ? updates.unshift(updates.splice(x,1)[0]) : 0;
 
     // don't update items for deletion
     // don't update frequency if not changed
-    for (const update of updates.filter(el => el.quantity > 0)) {
+    const allUpdates = [];
+    for (const update of updates) {
       const body = {};
-      let subtitle = "Updating";
+      body.title = update.title;
       if (update.subscription_id === parseInt(data.subscription_id)) {
-        subtitle = "Changing";
         // IF VARIANT CHANGED!
-        if (data.variant_changed) {
+        if (data.variant_changed || data.product_changed) {
           for (const key of [
             "variant_title",
-            "external_variant_id"]) { 
-            body[key] = update[key];
-          };
-        };
-        // IF PRODUCT CHANGED!
-        if (data.product_changed) {
-          for (const key of [
+            "external_variant_id",
             "product_title",
-            "external_product_id"]) { 
+            "external_product_id",
+            "price"]) { 
             body[key] = update[key];
+            body.sku = data.sku;
           };
         };
       };
-
-      // IF SCHEDULE CHANGED!
-      if (data.schedule_changed) {
-        for (const key of [
-          "order_interval_frequency",
-          "order_day_of_week",
-          "charge_interval_frequency",
-          "order_interval_unit"]) { 
-          body[key] = update[key];
-          delete update[key];
+      // leave this out for deletions
+      if (update.quantity > 0) {
+        // IF SCHEDULE CHANGED!
+        if (data.schedule_changed) {
+          for (const key of [
+            "order_interval_frequency",
+            "charge_interval_frequency",
+            "order_interval_unit",
+            ]) { 
+            body[key] = update[key];
+          };
         };
+        // IF CHARGE DATE CHANGED!
+        if (data.variant_changed) {
+          body.next_charge_scheduled_at = data.scheduled_at;
+          body.order_day_of_week = data.order_day_of_week;
+        };
+        if (data.variant_changed || data.product_changed) {
+          // will include the new delivery date and new product title
+          body.properties = update.properties;
+        };
+        body.quantity = update.quantity;
+      } else {
+        body.quantity = 0;
       };
 
       if (Object.keys(body).length) {
-        const opts = {
-          id: update.subscription_id,
-          body,
-          title: `${subtitle} subscription ${update.product_title}`,
-          io,
-          session_id,
-        };
-        await updateSubscription(opts);
-        await delay(3000);
-      };
-
-      // this will update an existing charge with the matching scheduled_at or create a new charge
-    };
-
-    await delay(10000); // avoid possibly making second call to same resource
-
-    // IF CHARGE DATE CHANGED!
-    if (charge.scheduled_at !== data.scheduled_at) {
-      for (const update of updates.filter(el => el.quantity > 0)) {
-        const opts = {
-          id: update.subscription_id,
-          title: `Updating charge date ${update.product_title}`,
-          date: data.scheduled_at,
-          io,
-          session_id,
-        };
-        // this will update an existing charge with the matching scheduled_at or create a new charge
-        await updateChargeDate(opts);
-        await delay(3000);
+        body.subscription_id = update.subscription_id;
+        allUpdates.push(body);
       };
     };
-
-    for (const update of updates) {
-      delete update.external_product_id;
-      delete update.external_variant_id;
-      delete update.variant_title;
-      delete update.product_title;
-    };
-
-    // don't update properties if not changed - i.e. only if delivery date changed
-    await updateSubscriptions({ updates, io, session_id });
+    //console.log(JSON.stringify(allUpdates, null, 2));
+    await updateSubscriptions({ address_id: parseInt(data.address_id), updates: allUpdates, req, io, session_id });
 
   } catch(err) {
-    res.status(200).json({ error: err.message });
+    if (io) io.emit("error", `Ooops an error has occurred ... ${ err.message }`);
     _logger.error({message: err.message, level: err.level, stack: err.stack, meta: err});
   };
 };

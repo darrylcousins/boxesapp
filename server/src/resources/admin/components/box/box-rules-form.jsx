@@ -82,7 +82,7 @@ function *RulesForm({ rule, disabled, toggleCollapse }) {
         if (el.checked) {
           multipleFieldIds.forEach(fid => {
             if (el.name === fid) {
-              if (data.hasOwnProperty(el.name)) {
+              if (Object.hasOwnProperty.call(data, el.name)) {
                 data[el.name].push(el.value);
               } else {
                 data[el.name] = [el.value];

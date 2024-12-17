@@ -37,6 +37,8 @@ const makeString = (d) => d.toISOString().replace("T", "-").replace("Z", "");
 const customer_email = "cousinsd@proton.me"; // used to find files
 const customer_id = 84185810; // used to find files
 
+//const customer_email = "veggies@streamsideorganics.co.nz"; // used to find files
+//const customer_id = 117434158; // used to find files
 /*
  * @function buildReport
  * @params {string} webhookFolder Path to source folder of saved json webhook body files
@@ -79,14 +81,11 @@ export default async ({ webhookFolder, mailFolder, dateString, deltaMinutes, typ
           const dotSplit = f.split(".");
           const fileType = dotSplit[dotSplit.length - 1];
           const fileDate = getDate(f, fileType);
-          console.log(fileDate);
-          console.log(startTime,  endTime);
           if (startTime.getTime() < fileDate.getTime() &&  fileDate.getTime() < endTime.getTime()) {
             await fs.readFile(path.join(folder, f))
               .then(content => {
-                console.log(fileType);
                 if (fileType === "json") {
-                  if (regexEmail.test(content) || regexCustomer.test(content)) {
+                  if (regexEmail.test(content) || regexCustomer.test(content) || f.includes("async_batches")) {
 
                     const parts = f.split(".");
                     const subparts = parts[1].split("-")
@@ -165,7 +164,7 @@ export default async ({ webhookFolder, mailFolder, dateString, deltaMinutes, typ
       /^Get last order/,
       /^Get store price/,
       /^Collecting subscription/,
-      /^Get order/,
+      ///^Get order/,
     ];
     if (type === "user") {
       user_and = {"meta.recharge.title": { "$nin": nin }};
@@ -179,6 +178,9 @@ export default async ({ webhookFolder, mailFolder, dateString, deltaMinutes, typ
     });
     webhook_or.push({
       "meta.recharge.query.customer_id": { "$eq": customer_id, "$exists": true },
+    });
+    webhook_or.push({
+      "meta.recharge.path": { "$regex": `^asycn_batches` , "$exists": true },
     });
     for (const id of recharge_subscription_ids) {
       webhook_or.push({

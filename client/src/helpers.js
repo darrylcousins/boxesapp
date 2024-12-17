@@ -30,6 +30,8 @@ export const getSetting = (type, key) => {
 };
 
 /** Provide access to the app box rules
+ * This used to provide box/day specific messages, removed since now using
+ * variants so easy enough to use a liquid template
  *
  * @method {object} getRule
  * @param {string} Box sku
@@ -63,7 +65,7 @@ export const findGetParameter = (parameterName) => {
       if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
   });
   return result;
-}
+};
 
 /**
  * Shallow compare two objects - adequate from 'flat' objects of key/value pairs
@@ -82,16 +84,16 @@ export const shallowEqual = (object1, object2) => {
 
   if (keys1.length !== keys2.length) {
     return false;
-  }
+  };
 
   for (let key of keys1) {
     if (object1[key] !== object2[key]) {
       return false;
-    }
-  }
+    };
+  };
 
   return true;
-}
+};
 
 /** Provide standard animationOptions
  *
@@ -122,7 +124,7 @@ export const animateFadeForAction = (id, action) => {
   animate.addEventListener("finish", async () => {
     if (action) {
       await action();
-    }
+    };
     target.animate({
       opacity: 1
     }, animationOptions);

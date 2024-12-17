@@ -32,7 +32,7 @@ export default async function subscriptionCancelled(topic, shop, body, { io, soc
 
     // find the updates_pending document and set the update as completed i.e. updated: true
     const topic = "cancelled";
-    const { updated, entry } = await updatePendingEntry(meta, topic);
+    const { updated, entry } = await updatePendingEntry(meta, topic, io, sockets);
     if (updated && entry) {
       // only logging on a completed update
       meta.recharge.update_label = entry.action;

@@ -4,7 +4,9 @@
  */
 import { sortObjectByKeys, matchNumberedString, compareArrays } from "../helpers.js";
 import { getNZDeliveryDay } from "../dates.js";
-import { getLastOrder, makeRechargeQuery, findBoxes } from "./helpers.js";
+import { makeRechargeQuery } from "./helpers.js";
+import getLastOrder from "./get-last-order.js";
+import findBoxes from "./find-boxes.js";
 import isEqual from "lodash.isequal";
 import { winstonLogger } from "../../../config/winston.js";
 import reconcileBoxLists from "./reconcile-box-lists.js";
@@ -307,15 +309,15 @@ export const gatherData = async ({ grouped, result, io }) => {
 
     let subscription;
     // NOTE in order to get the frequency I need to get the actual subscription
-    // XXX need to fix this in the verify script!!!! Because I'm always be called!!!
+    // NOTE Usually the subscription is here e.g. from verify algorithm
     if (!Object.hasOwnProperty.call(group, "subscription")) {
       let res;
       try {
         const item_id = Object.hasOwnProperty.call(group.box, "purchase_item_id")
           ? group.box.purchase_item_id : group.box.id;
 
-        // XXX try/catch? This can fail with 404 when subscriptions have been
-        // orphaned so the box_subscription_id value is dead
+        // This has failed with 404 when subscriptions have been
+        // orphaned so the box_subscription_id value is dead hence the try/catch
         const title = Object.hasOwn(group.box, "product_title") ? group.box.product_title : group.box.title;
         res = await makeRechargeQuery({
           path: `subscriptions/${item_id}`,
@@ -408,6 +410,7 @@ export const gatherData = async ({ grouped, result, io }) => {
       orderDayOfWeek: subscription.order_day_of_week,
       hasNextBox,
       title: subscription.product_title,
+      sku: subscription.sku,
       variant: subscription.variant_title,
       variant_id: parseInt(subscription.external_variant_id.ecommerce),
       product_id: parseInt(subscription.external_product_id.ecommerce),
@@ -446,11 +449,6 @@ export const gatherData = async ({ grouped, result, io }) => {
       fetchBox.shopify_price = subscription.price;
     };
 
-    /*
-    console.log("------------------------");
-    for (const el of updates) console.log(el);
-    console.log("------------------------");
-    */
     result.push({
       box: fetchBox,
       properties: finalProperties,

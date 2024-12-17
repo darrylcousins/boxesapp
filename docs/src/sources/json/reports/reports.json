@@ -16,6 +16,8 @@
     { "title": "Create subscription", "folder": "user-subscription-created" }
   ],
   "broken": [
-    { "title": "Broken pause", "folder": "broken-pause-subscription" }
+    { "title": "Broken create", "folder": "broken-create-subscription" },
+    { "title": "Not broken create", "folder": "notbroken-create-subscription" },
+    { "title": "Broken update?", "folder": "broken-update-subscription" }
   ]
 }

@@ -17,8 +17,14 @@ import { sleepUntil } from "./helpers";
  * complete, we could wait for a signal via a socket that would indicate the
  * the server side process had been completed.
  */
-const appendMessage = async (data, colour, divId) => {
+const appendMessage = async (start, data, colour, divId) => {
   //console.log(data);
+  let text;
+  if (window.innerWidth < 500) {
+    text = `${data}`;
+  } else {
+    text = `${start} ${data}`;
+  };
 
   await sleepUntil(() => document.getElementById(divId), 50)
     .then((res) => {
@@ -31,8 +37,8 @@ const appendMessage = async (data, colour, divId) => {
           socketMessages.appendChild(innerDiv);
         };
         let message = document.createElement("p");
-        message.classList.add("mt0", "mb1", "pv0", colour);
-        message.textContent = data;
+        message.classList.add("mt0", "mb1", "pv0", "truncate", colour);
+        message.textContent = text;
         innerDiv.appendChild(message);
         socketMessages.scrollTo({
           top: socketMessages.scrollHeight,
@@ -70,23 +76,23 @@ export const getSessionId = async (callback, data, divId, component) => {
   });
   socket.on('fail', async (data) => { // unused for now
     const start = `[warn]`.padEnd(9);
-    await appendMessage(`${start} ${data}`, "red", divId);
+    await appendMessage(start, data, "red", divId);
   });
   socket.on('message', async (data) => { // start and othe info
     const start = `[info]`.padEnd(9);
-    await appendMessage(`${start} ${data}`, "dark-blue", divId);
+    await appendMessage(start, data, "dark-blue", divId);
   });
   socket.on('progress', async (data) => { // usually progress from bull job
     const start = `[step]`.padEnd(9);
-    await appendMessage(`${start} ${data}`, "black", divId);
+    await appendMessage(start, data, "black", divId);
   });
   socket.on('completed', async (data) => { // usually from webhook confiming update from Recharge
     const start = `[success]`.padEnd(9);
-    await appendMessage(`${start} ${data}`, "dark-green", divId);
+    await appendMessage(start, data, "dark-green", divId);
   });
   socket.on('error', async (data) => { // usually progress from bull job
     const start = `[error]`.padEnd(9);
-    await appendMessage(`${start} ${data}`, "red", divId);
+    await appendMessage(start, data, "red", divId);
   });
   socket.on('created.complete', async (data) => {
     // some care needed here to make sure we send to the correct component
@@ -94,9 +100,9 @@ export const getSessionId = async (callback, data, divId, component) => {
       console.log('closing connection for id', session_id);
       const start = `[success]`.padEnd(9);
       const message = "Subscription created.";
-      await appendMessage(`${start} ${message}`, "dark-green", divId);
+      await appendMessage(start, message, "dark-green", divId);
       const msg = "Finished, closing connection";
-      await appendMessage(`${start} ${msg}`, "dark-green", divId);
+      await appendMessage(start, msg, "dark-green", divId);
 
       // pick up socket.closed with Subscription and subscription.created with Customer
       //let event = data.action !== "created" ? "socket.closed" : "subscription.created";
@@ -118,7 +124,7 @@ export const getSessionId = async (callback, data, divId, component) => {
     const start = `[success]`.padEnd(9);
     const message = "Finished, closing connection";
     console.log(message);
-    await appendMessage(`${start} ${message}`, "dark-green", divId);
+    await appendMessage(start, message, "dark-green", divId);
     socket.disconnect();
     window.dispatchEvent(
       new CustomEvent("socket.closed", {

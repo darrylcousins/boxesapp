@@ -44,7 +44,6 @@ export default async (req, res, next) => {
 
   try {
     const result = await _mongodb.collection("orders").insertOne(data);
-    console.log("add-order", result)
     res.status(200).json(result);
   } catch(err) {
     res.status(200).json({ error: err.message });

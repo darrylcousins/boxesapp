@@ -26,7 +26,7 @@ const ShowLink = (opts) => {
   const { admin, name, title, color } = opts;
   return (
     <button
-      class={ `b navy dib bg-white bg-animate hover-white hover-bg-navy ${admin ? "w-100 w-20-ns" : "w-100 w-20-ns" } pv2 outline-0 ml1 mv1 pointer b--navy ba br2 br--left` }
+      class={ `b navy dib bg-white bg-animate hover-white hover-bg-navy ${admin ? "w-100 w-20-ns ml1" : "w-100 w-20-ns" } pv2 outline-0 mv1 pointer b--navy ba br2` }
       title="Add Box"
       type="button"
       name="add-box"
